@@ -7,7 +7,7 @@ Compose words from the word
 The game "Compose words" offers players the known puzzle in which it is necessary to make different words of one long word.
 Compete with friends in number of the put words and the used letters, and learn who cleverer. 
 
-Based on Vue.js CLI.
+Based on Vue.js CLI
 
 #### Project setup
 ```
