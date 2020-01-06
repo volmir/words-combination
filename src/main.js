@@ -3,6 +3,8 @@ import App from './App.vue'
 import VueRouter from 'vue-router'
 import 'bootstrap'
 import 'bootstrap/dist/css/bootstrap.min.css'
+import '@fortawesome/fontawesome-free/css/all.css'
+import '@fortawesome/fontawesome-free/js/all.js'
 
 import routes from './routes';
 
