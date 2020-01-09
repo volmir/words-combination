@@ -49,24 +49,19 @@
     
     
 
-<div id="modalWaiting" class="modal fade">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <p class="text-center" style="padding: 40px 0px 30px 0px;">
-                <img src="@/assets/images/waiting.gif" width="40" border="0">
-                <strong>Идет поиск комбинаций слов ...</strong>
-            </p>
-        </div>
-    </div>
-</div>         
+<Waiting/>       
 
 
     </div>
 </template>
 
 <script>
-export default {
+import Waiting from './modal/Waiting.vue';
 
+export default {
+    components: {
+        Waiting
+    }    
 }
 </script>
 

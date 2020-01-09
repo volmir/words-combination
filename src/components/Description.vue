@@ -60,7 +60,6 @@ export default {
         return {
             word: '',
             descriptions: [],
-            posts: [],
             error: false
         }
     },
