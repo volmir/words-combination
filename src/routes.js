@@ -15,7 +15,7 @@ const routes = [
     { path: '/about/rules', component: Rules },
     { path: '/game', component: Game },
     { path: '/service/answers', component: Answers },
-    { path: '/service/description', component: Description },
+    { path: '/service/description', component: Description, name: "description", props: true},
 ];
 
 export default routes;

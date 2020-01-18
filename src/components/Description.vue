@@ -5,7 +5,14 @@
 
 <div v-if="error" class="alert alert-danger alert-dismissible fade show" role="alert">
   Произошла ошибка при загрузке данных
-  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+  <button type="button" class="close" v-on:click="closeError" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+
+<div v-if="warning" class="alert alert-warning alert-dismissible fade show" role="alert">
+  Не найдено толкований слова "{{previosWord}}"
+  <button type="button" class="close" v-on:click="closeWarning" aria-label="Закрыть">
     <span aria-hidden="true">&times;</span>
   </button>
 </div>
@@ -47,6 +54,7 @@
 </blockquote>        
 </template>        
         
+        <Waiting ref="waitingModal"></Waiting> 
 
     </div>
 </template>
@@ -54,27 +62,63 @@
 <script>
 
 import axios from 'axios';
+import Waiting from './modal/Waiting.vue';
 
 export default {
+    components: {
+        Waiting
+    },  
+    props: {
+        initialWord: {
+            type: String,
+            default: ''
+        }
+    },
     data: function() {
         return {
-            word: '',
+            word: this.initialWord,
+            previousWord: '',
             descriptions: [],
-            error: false
+            error: false,
+            warning: false
         }
     },
     methods: {
         onSubmit: function () {   
-            axios.get('http://combination-words.local/description/' + encodeURI(this.word))
-            .then(response => {
-                this.descriptions = response.data.data;
+            if (this.word.length) { 
+                this.$modal.show('waiting-modal');
                 this.error = false;
-            })
-            .catch(e => {
-                this.error = e;
-            });
+                this.warning = false;
+
+                axios.get('http://combination-words.local/description/' + encodeURI(this.word))
+                .then(response => {      
+                    document.title = 'Значение слова "' + this.word + '"';  
+                    this.previosWord = this.word;
+                    this.descriptions = response.data.data;
+                    this.error = false;
+                    if (!this.descriptions.length) {
+                        this.warning = true;
+                    }
+                })
+                .catch(e => {
+                    this.error = e;
+                }).then(() => {
+                    this.$modal.hide('waiting-modal');
+                });
+            }
+        },
+        closeError: function () {   
+            this.error = false;
+        },
+        closeWarning: function () {   
+            this.warning = false;
         }
-    }    
+    },   
+    created: function () {
+        if (this.word) {
+            this.onSubmit();            
+        }
+    }
 }
 </script>
 

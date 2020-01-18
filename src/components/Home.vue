@@ -7,7 +7,7 @@
 
 <div class="alert alert-success alert-dismissible fade show" role="alert">
   Для начала игры введите корректное слово
-  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+  <button type="button" class="close" data-dismiss="alert" aria-label="Закрыть">
     <span aria-hidden="true">&times;</span>
   </button>
 </div>

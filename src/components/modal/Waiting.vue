@@ -2,10 +2,10 @@
     <div>
 
 <modal name="waiting-modal" :width="500" :height="120">
-                <p class="text-center">
-                    <img src="@/assets/images/waiting.gif" width="40" border="0">
-                    <strong>Идет поиск комбинаций слов ...</strong>
-                </p>
+    <p class="text-center">
+        <img src="@/assets/images/waiting.gif" width="40" border="0">
+        <strong>Идет поиск комбинаций слов ...</strong>
+    </p>
 </modal>        
 
     </div>
