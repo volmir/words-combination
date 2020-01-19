@@ -4,19 +4,10 @@
         <h4></h4>
         <h4></h4>
 
-        <div>
-            <div class="letters">Н</div>
-            <div class="letters">Е</div>
-            <div class="letters">Н</div>
-            <div class="letters">А</div>
-            <div class="letters">У</div>
-            <div class="letters">Ч</div>
-            <div class="letters">Н</div>
-            <div class="letters">О</div>
-            <div class="letters">С</div>
-            <div class="letters">Т</div>
-            <div class="letters">Ь</div>
+        <div v-if="word && word.length">
+            <div v-for="(letter, idx) of word.split('')" v-bind:key="idx" class="letters">{{letter.toUpperCase()}}</div>
         </div>
+        
         <div class="statistic">    
             <p class="pull-left">
                 <br>
@@ -72,6 +63,22 @@ export default {
         Description,
         Help,
         ExitGame
+    },
+    props: {
+        initialWord: {
+            type: String,
+            default: ''
+        }
+    },
+    data: function() {
+        return {
+            word: this.initialWord
+        }
+    },
+    created: function () {
+        if (this.word) {
+            document.title = this.word;            
+        }
     }    
 }
 </script>
@@ -88,7 +95,7 @@ div.letters {
     vertical-align: middle;
     font-weight: bold;
     font-size: 16px;
-    padding-top: 2px;
+    padding-top: 4px;
     padding-bottom: 3px;
     margin-right: 2px;
     margin-bottom: 2px;

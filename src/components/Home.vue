@@ -5,9 +5,16 @@
                         
 <h4>Игра «Составь слова из слов»</h4>
 
-<div class="alert alert-success alert-dismissible fade show" role="alert">
+<div v-if="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+  Произошла ошибка при загрузке данных
+  <button type="button" class="close" v-on:click="closeError" aria-label="Закрыть">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+
+<div v-if="success" class="alert alert-success alert-dismissible fade show" role="alert">
   Для начала игры введите корректное слово
-  <button type="button" class="close" data-dismiss="alert" aria-label="Закрыть">
+  <button type="button" class="close"  v-on:click="closeSuccess" aria-label="Закрыть">
     <span aria-hidden="true">&times;</span>
   </button>
 </div>
@@ -16,11 +23,11 @@
     <p>
         <span>Введите слово:</span>
     </p>
-    <form class="form-inline" method="post" action="/game">
+    <form class="form-inline" method="post">
         <div class="form-group">
-            <input type="text" class="form-control form-control-lg margin-right" placeholder="" name="word" value="" maxlength="30" autocomplete="off">
+            <input type="text" class="form-control form-control-lg margin-right" placeholder="" name="word" v-model="word" maxlength="30" autocomplete="off">
         </div>
-        <button class="btn btn-primary btn-lg" id="start_search" type="submit">Начать игру</button>
+        <button class="btn btn-primary btn-lg" v-on:click.stop.prevent="onSubmit" type="submit">Начать игру</button>
     </form>
 </div>
 
@@ -29,12 +36,14 @@
         <span>Начать новую игру (<i>со случайным словом</i>):</span>
     </p>
     <form class="form-inline" method="post" action="/game">
-        <input type="hidden" name="word" class="random_word" value="">
-                <button type="button" class="btn btn-outline-secondary margin-right" data-word="роскошество">РОСКОШЕСТВО</button> 
-                <button type="button" class="btn btn-outline-secondary margin-right" data-word="нагреватель">НАГРЕВАТЕЛЬ</button> 
-                <button type="button" class="btn btn-outline-secondary margin-right" data-word="трипаносома">ТРИПАНОСОМА</button> 
-                <button type="button" class="btn btn-outline-secondary margin-right" data-word="исчёркивание">ИСЧЁРКИВАНИЕ</button>
-            </form>    
+        <template v-if="words && words.length">
+            <span v-for="(word, idx) of words" v-bind:key="idx">
+                <router-link :to="{name: 'game', params: {initialWord: word.vocab}}" class="btn btn-outline-secondary margin-right">
+                    {{word.vocab}}
+                </router-link>
+            </span>
+        </template>
+    </form>    
 </div>
 
     <h4>Об игре</h4>
@@ -46,22 +55,49 @@
 <p>
 Соревнуйтесь с друзьями в количестве сложенных слов и использованных букв, и узнайте кто более смышлёный.
     </p>
-    
-    
-
-<Waiting/>       
 
 
     </div>
 </template>
 
 <script>
-import Waiting from './modal/Waiting.vue';
+
+import axios from 'axios';
 
 export default {
-    components: {
-        Waiting
-    }    
+    data: function() {
+        return {
+            word: '',
+            words: [],
+            error: false,
+            success: false
+        }
+    },
+    methods: {
+        onSubmit: function () {
+            if (this.word.length) { 
+                this.$router.push({ name: 'game', params: {initialWord: this.word}});
+            }
+        },
+        closeError: function () {   
+            this.error = false;
+        },
+        closeSuccess: function () {   
+            this.success = false;
+        }
+    },
+    created: function () {
+        this.error = false;
+        this.success = false;
+
+        axios.get('http://combination-words.local/random/4')
+        .then(response => {    
+            this.words = Object.values(response.data.data);
+            this.error = false; 
+        }).catch(e => {
+            this.error = e;
+        });    
+    }
 }
 </script>
 

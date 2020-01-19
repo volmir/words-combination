@@ -22,7 +22,7 @@
     <p>
         <span>Введите слово или последовательность букв, из которых нужно составить слова</span>
     </p>
-    <form class="form-inline" method="get" action="/answers">
+    <form class="form-inline" method="get">
         <div class="form-group">
             <input type="text" class="form-control form-control-lg margin-right" placeholder="" name="word" v-model="word" maxlength="30" autocomplete="off">
         </div>
