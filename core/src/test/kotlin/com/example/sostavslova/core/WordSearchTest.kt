@@ -64,4 +64,21 @@ class WordSearchTest {
         val avgMs = (System.nanoTime() - t0) / 20 / 1_000_000.0
         assertTrue(avgMs < 100, "Слишком медленно: $avgMs мс")
     }
+
+    @Test
+    fun acceptanceCriteriaStage7() {
+        val r = search.searchNormalized("демонстрация")
+        assertEquals(883, r.total)
+        for ((length, words) in r.byLength) {
+            assertEquals(words.sorted(), words, "Слова длины $length должны быть отсортированы по алфавиту")
+        }
+        val yoSearch = search.search("ёж")
+        val eSearch = search.search("еж")
+        assertEquals(yoSearch, eSearch)
+        assertEquals(null, yoSearch)
+
+        val yoHedgehog = search.search("ёжик")
+        val eHedgehog = search.search("ежик")
+        assertEquals(yoHedgehog?.words, eHedgehog?.words)
+    }
 }

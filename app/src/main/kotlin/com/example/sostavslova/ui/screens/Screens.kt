@@ -36,14 +36,10 @@ private fun ScreenPlaceholder(@StringRes title: Int, content: @Composable () -> 
 }
 
 @Composable
-fun WordSearchScreen() = ScreenPlaceholder(R.string.nav_word_search)
+fun WordSearchScreen() = com.example.sostavslova.ui.search.WordSearchRoute()
 
 @Composable
-fun WordMeaningScreen() = ScreenPlaceholder(R.string.nav_word_meaning) {
-    if (!BuildConfig.HAS_DEFINITIONS) {
-        Text(stringResource(R.string.definitions_unavailable), style = MaterialTheme.typography.bodyLarge)
-    }
-}
+fun WordMeaningScreen() = com.example.sostavslova.ui.meaning.WordMeaningRoute()
 
 @Composable
 fun RulesScreen() = ScreenPlaceholder(R.string.nav_rules)

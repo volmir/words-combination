@@ -95,4 +95,9 @@
     <string name="definition_loading">Загружаем значение слова…</string>
     <string name="game_load_error">Не удалось восстановить игру. Попробуйте ещё раз.</string>
     <string name="game_save_error">Не удалось сохранить прогресс. Попробуйте ещё раз.</string>
+    <string name="search_button">Поиск</string>
+    <string name="nothing_found">Ничего не найдено</string>
+    <string name="word_search_result_title">Все слова, которые можно составить из \"%1$s\"</string>
+    <string name="word_search_summary">Из \"%1$s\" можно составить %2$d %3$s из %4$s букв</string>
+    <string name="word_search_group_header">Слова из %1$d %2$s, составленные из комбинации \"%3$s\" (%4$d %5$s):</string>
 </resources>
