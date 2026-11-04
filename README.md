@@ -1,31 +1,102 @@
-Compose words from the word
-===============
+# Составь слова — автономное Android-приложение
 
-![Version](https://img.shields.io/badge/Version-0.1.0-blue.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+Одно приложение на Kotlin / Jetpack Compose с библиотекой игровой логики `:core`.
+Временный пакет-пример: `com.example.sostavslova`. **Заменить до первой публикации**;
+окончательный applicationId ещё не выбран: [задача переименования](docs/PACKAGE_RENAME.md).
+Приложение работает офлайн, без разрешений,
+аналитики и рекламы.
 
-The game "Compose words" offers players the known puzzle in which it is necessary to make different words of one long word.
-Compete with friends in number of the put words and the used letters, and learn who cleverer. 
+## Текущее состояние
 
-Based on Vue.js CLI
+Этапы 0–6 выполнены: Android-каркас, слой данных, общие UI-компоненты, главная,
+экран игры и прохождение 30 уровней. Работают проверка ответов, подсказки,
+статистика, задания и звёзды, сохранение и продолжение игры. Экран прохождения
+показывает доступность и сохранённые звёзды; выбор уровня восстанавливает ответы.
+Подробности — [отчёт по этапу 5](docs/STAGE5_REPORT.md) и
+[отчёт по этапу 6](docs/STAGE6_REPORT.md).
 
-#### Project setup
-```
-npm install
+После аудита игровой словник независимо пересобран из русского Викисловаря
+через Kaikki/Wiktextract: **112 980 слов**, CC BY-SA 4.0. Для каждого слова
+сохранены адрес исходной статьи и положение в исходной выгрузке.
+Прежний SQL-словник больше не используется и не поддерживается сборщиком.
+
+**Все 77 309 прежних толкований исключены из поставки**, поскольку права
+на их конкретные формулировки не подтверждены индивидуально. Текущий APK
+не содержит `defs.db`; режим без определений штатный. Это консервативное
+решение, а не утверждение о незаконности каждой записи.
+
+Результаты и ограничения: [LICENSE_AUDIT.md](docs/LICENSE_AUDIT.md).
+Источники, условия и воспроизведение: [DICTIONARY_SOURCES.md](docs/DICTIONARY_SOURCES.md).
+
+## Сборка и проверка
+
+Нужны JDK 17, Android SDK Platform API 37 и Build Tools 36.0.0. Укажите JDK
+в `JAVA_HOME`, SDK — через `ANDROID_HOME` или `sdk.dir` в локальном
+`local.properties`. Gradle Wrapper закреплён на 9.6.1.
+
+```bash
+./gradlew :core:test :app:assembleDebug
+python3 -m unittest discover -s tools/tests -v
+# При запущенном эмуляторе или подключённом устройстве:
+./gradlew :app:connectedDebugAndroidTest
 ```
 
-#### Compiles and hot-reloads for development
-```
-npm run serve
+APK: `app/build/outputs/apk/debug/app-debug.apk`.
+
+`verifyDictionaryLicenses` проверяет происхождение и контрольные суммы данных,
+а также запрещает неподтверждённый `defs.db`. `syncDictionaryAssets` копирует
+сгенерированные словари, происхождение и лицензионные уведомления в assets.
+Нельзя править игровые данные и их копии в assets вручную.
+
+## Пересборка словника
+
+Используется локальный raw JSONL русского Викисловаря, полученный с
+https://kaikki.org/ruwiktionary/rawdata.html на согласованных условиях CC BY-SA 4.0.
+Скрипт ничего не скачивает.
+
+```bash
+python3 tools/build_dictionary.py \
+  --wiktionary-jsonl /path/to/raw-wiktextract-data.jsonl.gz \
+  --dump-date 2026-11-01 --out data
 ```
 
-#### Compiles and minifies for production
-```
-npm run build
-```
+Старый SQL не читается. Нельзя добавлять через `overrides/add.txt` слова,
+не подтверждённые выбранным источником. До замены данных проверяется достижимость
+всех 30 уровней. Для уровня 20 используется «правоведение» вместо
+«правотворец»; прежние задания не снижены.
 
-#### Lints and fixes files
-```
-npm run lint
-```
+Определения могут вернуться только после индивидуального подтверждения в
+`tools/definition_reviews.json` и сборки с `--with-definitions`.
+Без непустого реестра этот флаг завершается ошибкой. Старые базы при обычной
+пересборке перемещаются в `build/quarantine/` и не упаковываются.
 
+## Структура
+
+- `core/` — нормализация, поиск, игра, уровни и склонение; правила не дублируются в app.
+- `app/` — Android, репозитории, DI, навигация и UI.
+- `data/` — генерируемые слова, уровни, эталон поиска, манифест и происхождение.
+- `tools/` — генератор, тесты, overrides и реестр проверенных толкований.
+- `legal/` — уведомления исходных проектов MIT и лицензии библиотек.
+- `docs/` — ТЗ, дизайн, промпты и отчёты. Правила работы — `AGENTS.md`.
+
+Репозитории создаются один раз в `WordsApplication.container`; тяжёлые операции
+работают в фоне. Прогресс сохраняется в DataStore. При запуске сборки без
+определений прежняя установленная БД удаляется, игровой прогресс сохраняется.
+
+В debug-сборке меню → «Каталог компонентов». Каталог и его примеры не входят
+в release. Исторические проверки этапов: [этап 1](docs/STAGE1_REPORT.md),
+[этап 2](docs/STAGE2_REPORT.md), [этап 3](docs/STAGE3_REPORT.md), [этап 4](docs/STAGE4_REPORT.md), [этап 5](docs/STAGE5_REPORT.md), [этап 6](docs/STAGE6_REPORT.md).
+Числа поиска из прежних отчётов относятся к старым данным; текущие эталоны —
+`data/golden_search.json`.
+
+## Распространение
+
+Словник и обработанная версия — CC BY-SA 4.0, с атрибуцией, указанием изменений
+и сохранением условий для данных. Исходные проекты `volmir/words-combination`
+и `volmir/words-api` — MIT; уведомления сохранены. Лицензии библиотек проверены
+по Maven POM и вложенным уведомлениям; см. `legal/RUNTIME_LIBRARIES.json`.
+Эти условия не означают автоматического изменения лицензии всего кода приложения.
+
+Перед публикацией используйте свежесобранный APK/AAB и сохраняйте включённые
+уведомления и происхождение данных. Подпись, магазин и полная готовность
+игрового интерфейса относятся к отдельным этапам разработки.

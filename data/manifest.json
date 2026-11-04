@@ -1,0 +1,27 @@
+{
+  "schema": "dictionary-provenance-v1",
+  "words": 112980,
+  "sha256_words_txt": "c9e6498d8b91272576f48a2e032b65acd320205a3080a5485dd68b81a85255cf",
+  "sha256_word_sources": "0ec0473111b5a9883c6008b5364a81f3d006383edc9847fc0617123943251315",
+  "sha256_levels_json": "5259f0cc04a5edce6c687b2d7e082e213ea68b29ccdc789f597abd72b4d65488",
+  "sha256_golden_search": "a761b15dbc8aa38b87fa7682927ea57c05483082cf72dc0280f45aad19dc437b",
+  "alphabet": "абвгдежзийклмнопрстуфхцчшщъыьэюя",
+  "minLen": 3,
+  "maxLen": 30,
+  "source": {
+    "project": "Русский Викисловарь",
+    "extractor": "Kaikki.org / Wiktextract",
+    "url": "https://kaikki.org/ruwiktionary/rawdata.html",
+    "license": "CC-BY-SA-4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "dump_date": "2026-11-01",
+    "sha256_input": "98bebfb8013064d23bc6f0981b64cd097f64e098c9e434ebb97684c9606cc2da",
+    "selection": "Russian lowercase noun headwords; no SQL selection or free-text glosses"
+  },
+  "definitions": null,
+  "levels_source": {
+    "url": "https://github.com/volmir/words-api/blob/master/models/Level.php",
+    "license": "MIT",
+    "changes": "Cyrillic с in level 19; level 20 uses правоведение"
+  }
+}
