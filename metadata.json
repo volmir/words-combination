@@ -1,0 +1,8 @@
+{
+  "name": "Составь слова",
+  "description": "Автономная игра в слова на Kotlin и Jetpack Compose: составление слов из букв длинного слова с уровнями и подсказками.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

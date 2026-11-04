@@ -59,17 +59,31 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
 
 android {
     namespace = "com.example.sostavslova"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
-        // TODO: заменить временный пример до публикации; см. docs/PACKAGE_RENAME.md.
-        applicationId = "com.example.sostavslova"
+        applicationId = "com.aistudio.wordsgame.kymxpv"
         minSdk = 24
-        targetSdk = 37
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("boolean", "HAS_DEFINITIONS", hasDefinitions.toString())
+    }
+
+    signingConfigs {
+        create("debugConfig") {
+            storeFile = file("${rootDir}/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debugConfig")
+        }
     }
 
     buildFeatures {
@@ -78,14 +92,20 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }
 
 // В AGP 9 Kotlin встроен; общая версия KGP задана в корневом plugins-блоке.
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
+    compilerOptions {
+        freeCompilerArgs.addAll(
+            "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+        )
+    }
 }
 
 val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
@@ -144,13 +164,12 @@ abstract class RemoveAndroidxReceiverPermission : DefaultTask() {
         }
         val document = factory.newDocumentBuilder().parse(inputManifest.get().asFile)
         val androidNamespace = "http://schemas.android.com/apk/res/android"
-        val packageName = document.documentElement.getAttribute("package")
-        val permissionName = "$packageName.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         for (tag in listOf("uses-permission", "permission")) {
             val nodes = document.getElementsByTagName(tag)
             for (i in nodes.length - 1 downTo 0) {
                 val node = nodes.item(i)
-                if (node.attributes.getNamedItemNS(androidNamespace, "name")?.nodeValue == permissionName) {
+                val attrValue = node.attributes?.getNamedItemNS(androidNamespace, "name")?.nodeValue
+                if (attrValue != null && attrValue.endsWith(".DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")) {
                     node.parentNode.removeChild(node)
                 }
             }
