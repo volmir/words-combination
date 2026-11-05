@@ -16,7 +16,7 @@ val hasDefinitions = false
 val dictionaryData = rootProject.layout.projectDirectory.dir("data")
 
 val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
-    description = "Проверяет происхождение словника и уровней."
+    description = "Проверяет происхождение словаря и уровней."
     group = "verification"
     inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("word_sources.jsonl.gz"), dictionaryData.file("levels.json"))
     doLast {
@@ -35,11 +35,11 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
         val manifest = JsonSlurper().parse(dictionaryData.file("manifest.json").asFile) as Map<*, *>
         val source = manifest["source"] as? Map<*, *>
         check(manifest["schema"] == "dictionary-provenance-v1" && source?.get("license") == "CC-BY-SA-4.0") {
-            "Нет подтверждённого происхождения словника: пересоберите tools/build_dictionary.py."
+            "Нет подтверждённого происхождения словаря: пересоберите tools/build_dictionary.py."
         }
         check(sha256(dictionaryData.file("words.txt").asFile) == manifest["sha256_words_txt"] &&
             sha256(dictionaryData.file("word_sources.jsonl.gz").asFile) == manifest["sha256_word_sources"]) {
-            "Словник или файл происхождения изменены после генерации."
+            "Словарь или файл происхождения изменены после генерации."
         }
         check(sha256(dictionaryData.file("levels.json").asFile) == manifest["sha256_levels_json"] &&
             (manifest["levels_source"] as? Map<*, *>)?.get("license") == "MIT") {

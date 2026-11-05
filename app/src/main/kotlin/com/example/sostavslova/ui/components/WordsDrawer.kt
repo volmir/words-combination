@@ -46,7 +46,6 @@ fun WordsDrawer(
             }
             DrawerSection(R.string.nav_about)
             DrawerItem(Destination.Rules, currentRoute, onNavigate)
-            DrawerItem(Destination.Contacts, currentRoute, onNavigate)
             DrawerItem(Destination.About, currentRoute, onNavigate)
             footer()
         }

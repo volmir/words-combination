@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Офлайн-сборка игрового словника из raw JSONL русского Викисловаря.
+"""Офлайн-сборка игрового словаря из raw JSONL русского Викисловаря.
 
 Источник: Kaikki/Wiktextract, CC BY-SA 4.0. SQL не используется.
 По умолчанию включаются только заголовки существительных и их происхождение.
@@ -212,7 +212,7 @@ def sha256_file(path):
 
 
 def wiktionary_wordlist(path):
-    """Независимая выборка заголовков, не пересечение с прежним SQL-словником."""
+    """Независимая выборка заголовков, не пересечение с прежним SQL-словарём."""
     sources, excluded, stats = {}, {}, Counter()
     opener = gzip.open if str(path).endswith(".gz") else open
     with opener(path, "rt", encoding="utf-8") as source:
@@ -350,7 +350,7 @@ def main():
         with open(os.path.join(a.out, "manifest.json"), encoding="utf-8") as source:
             manifest = json.load(source)
         if manifest.get("schema") != "dictionary-provenance-v1":
-            ap.error("сначала пересоберите игровой словник из открытого источника")
+            ap.error("сначала пересоберите игровой словарь из открытого источника")
         words = set(read_list(os.path.join(a.out, "words.txt")))
         build_definitions(a.jsonl, words, a.db_out, a.dump_date, a.db_version, reviews)
         # Привязываем разрешение на упаковку к точным байтам проверенной БД.

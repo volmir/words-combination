@@ -10,7 +10,6 @@
     <string name="nav_word_search">Поиск слов</string>
     <string name="nav_word_meaning">Значение слова</string>
     <string name="nav_rules">Правила</string>
-    <string name="nav_contacts">Контакты</string>
     <string name="nav_about">Об игре</string>
     <string name="home_title">Игра «Составь слова из слов»</string>
     <string name="start_game">Начать игру</string>
@@ -61,13 +60,12 @@
     <string name="yes">Да</string>
     <string name="no">Нет</string>
     <string name="definition_source">Источник: %1$s</string>
-    <string name="about_description">Игра «Составь слова» предлагает игрокам известную головоломку, в которой нужно составлять разные слова из одного длинного слова. Соревнуйтесь с друзьями в количестве сложенных слов и использованных букв, и узнайте кто более смышлёный.</string>
-    <string name="about_definitions_heading">Источник игрового словника</string>
-    <string name="about_definitions_authors">Игровой словник собран из заголовков русского Викисловаря. Авторы — участники русского Викисловаря.\nhttps://ru.wiktionary.org/</string>
+    <string name="about_definitions_heading">Источник игрового словаря</string>
+    <string name="about_definitions_authors">Игровой словарь собран из заголовков русского Викисловаря. Авторы — участники русского Викисловаря.\nhttps://ru.wiktionary.org/</string>
     <string name="about_definitions_extraction">Машиночитаемая выгрузка: Kaikki.org / Wiktextract.\nhttps://kaikki.org/ruwiktionary/rawdata.html</string>
-    <string name="about_definitions_license">Словник и его обработанная версия распространяются на условиях Creative Commons «С указанием авторства — С сохранением условий» 4.0 Международная (CC BY-SA 4.0).\nhttps://creativecommons.org/licenses/by-sa/4.0/</string>
+    <string name="about_definitions_license">Словарь и его обработанная версия распространяются на условиях Creative Commons «С указанием авторства — С сохранением условий» 4.0 Международная (CC BY-SA 4.0).\nhttps://creativecommons.org/licenses/by-sa/4.0/</string>
     <string name="about_definitions_changes">Обработка: независимый отбор заголовков русских существительных, нормализация ё→е и исключение записей с признаками ограничений прав. Толкования и литературные примеры не включены.</string>
-    <string name="about_definitions_history">Для каждого слова сохранён адрес исходной статьи. История статьи содержит сведения об авторах. Полный список адресов включён в приложение вместе со словником.</string>
+    <string name="about_definitions_history">Для каждого слова сохранён адрес исходной статьи. История статьи содержит сведения об авторах. Полный список адресов включён в приложение вместе со словарём.</string>
     <string name="about_code_sources">Игра основана на проектах volmir/words-combination и volmir/words-api. Автор исходных проектов — Владимир Прохненко. Лицензия MIT; полные уведомления сохранены в приложении.\nhttps://github.com/volmir/words-combination\nhttps://github.com/volmir/words-api</string>
     <string name="game_counts">всего найдено %1$d %2$s, вы отгадали %3$d</string>
     <string name="answer_already_found">Вы уже разгадали слово %1$s</string>
@@ -115,15 +113,8 @@
     <string name="rules_item_8">8. Будьте внимательными и составляйте только те слова, которые имеются в русском языке.</string>
     <string name="rules_footer">Составляя слова из слов можно интересно и с пользой для ума провести время, узнать новые слова, проверить свою грамотность и эрудицию. Эта игра определенно понравится любителям разгадывать кроссворды и ребусы, играть в головоломки, а также участвовать в викторинах. Приятного и полезного времяпрепровождения вам!</string>
 
-    <!-- Контакты -->
-    <string name="contacts_title">Контакты</string>
-    <string name="contacts_description">Если у вас есть вопросы, предложения или отзывы по игре, вы можете связаться с разработчиком:</string>
-    <string name="contact_email">developer@example.com</string>
-    <string name="contact_write_developer">Написать разработчику</string>
-    <string name="contact_email_subject">Игра «Составь слова»</string>
-    <string name="contact_no_email_app">Не найдено приложение для отправки почты</string>
-
     <!-- Об игре -->
+    <string name="about_description">Игра «Составь слова» предлагает игрокам известную головоломку, в которой нужно составлять разные слова из одного длинного слова. Соревнуйтесь с друзьями в количестве сложенных слов и использованных букв, и узнайте кто более смышлёный.</string>
     <string name="about_words_count">Всего в базе игры: %1$d %2$s</string>
     <string name="about_words_loading">Загрузка количества слов…</string>
     <string name="about_version">Версия приложения: %1$s</string>

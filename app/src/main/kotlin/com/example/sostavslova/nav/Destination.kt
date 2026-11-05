@@ -10,6 +10,5 @@ enum class Destination(val route: String, @param:StringRes val label: Int) {
     WordSearch("word-search", R.string.nav_word_search),
     WordMeaning("word-meaning", R.string.nav_word_meaning),
     Rules("rules", R.string.nav_rules),
-    Contacts("contacts", R.string.nav_contacts),
     About("about", R.string.nav_about),
 }

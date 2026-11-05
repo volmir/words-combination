@@ -1,26 +1,17 @@
 package com.example.sostavslova.ui.screens
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +19,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,7 +38,6 @@ import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.data.LoadState
 import com.example.sostavslova.ui.components.Well
 import com.example.sostavslova.ui.theme.WordsColors
-import kotlinx.coroutines.launch
 
 @Composable
 fun WordSearchScreen() = com.example.sostavslova.ui.search.WordSearchRoute()
@@ -121,89 +110,6 @@ fun RulesScreen() {
                 )
             }
         }
-    }
-}
-
-@Composable
-fun ContactsScreen() {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val email = stringResource(R.string.contact_email)
-    val subject = stringResource(R.string.contact_email_subject)
-    val noEmailMessage = stringResource(R.string.contact_no_email_app)
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-                .testTag("contacts_screen"),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Column(
-                modifier = Modifier.widthIn(max = 600.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    stringResource(R.string.contacts_title),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-
-                Well {
-                    Text(
-                        stringResource(R.string.contacts_description),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-
-                    SelectionContainer {
-                        Text(
-                            email,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = WordsColors.primary,
-                        )
-                    }
-
-                    Button(
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                data = Uri.parse("mailto:$email")
-                                putExtra(Intent.EXTRA_SUBJECT, subject)
-                            }
-                            try {
-                                context.startActivity(intent)
-                            } catch (_: ActivityNotFoundException) {
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(noEmailMessage)
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                            .testTag("contact_send_button"),
-                        shape = RoundedCornerShape(4.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = WordsColors.primary,
-                            contentColor = WordsColors.background,
-                        ),
-                    ) {
-                        Text(
-                            stringResource(R.string.contact_write_developer),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
-                }
-            }
-        }
-
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp),
-        )
     }
 }
 
