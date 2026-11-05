@@ -138,7 +138,7 @@ def load_reviews(path):
 def build_definitions(path, words, output, dump_date, db_version=3, reviews=None):
     """Собирает новую БД рядом с назначением; при ошибке прежняя БД остаётся целой."""
     if not reviews:
-        raise ValueError("Нет индивидуально проверенных определений; defs.db не создаётся")
+        raise ValueError("Нет индивидуально проверенных определений; база определений не создаётся")
     digest = hashlib.sha256()
     with open(path, "rb") as source:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
@@ -198,7 +198,7 @@ def build_definitions(path, words, output, dump_date, db_version=3, reviews=None
             os.remove(staged)
     stats["definitions"] = sum(counts.values())
     stats["words"] = len(counts)
-    print("defs.db: %s -> %s (%d КБ), SHA-256 входа %s" %
+    print("definitions.db: %s -> %s (%d КБ), SHA-256 входа %s" %
           (dict(stats), output, os.path.getsize(output) // 1024, digest.hexdigest()))
     return stats
 
@@ -329,7 +329,7 @@ def main():
     ap.add_argument("--with-definitions", action="store_true")
     ap.add_argument("--definitions-only", action="store_true")
     ap.add_argument("--reviews", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "definition_reviews.json"))
-    ap.add_argument("--db-out", default="build/defs.db")
+    ap.add_argument("--db-out", default="build/definitions.db")
     ap.add_argument("--db-version", type=int, default=3)
     ap.add_argument("--audit-out", default="build/reports/licensing")
     a = ap.parse_args()

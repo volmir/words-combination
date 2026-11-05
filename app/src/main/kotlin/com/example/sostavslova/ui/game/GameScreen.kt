@@ -75,7 +75,7 @@ fun GameRoute(onReturnHome: (Int) -> Unit) {
     val factory = remember(container) {
         viewModelFactory { initializer {
             GameViewModel(createSavedStateHandle(), container.wordRepository, container.levelsRepository,
-                container.progressRepository, container.definitionsRepository)
+                container.progressRepository, container.definitionsRepository, container.random)
         } }
     }
     val model: GameViewModel = viewModel(factory = factory)

@@ -22,10 +22,10 @@ class SqliteDefinitionsRepository(
     private val hasDefinitions: Boolean = BuildConfig.HAS_DEFINITIONS,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     assetOpener: (() -> InputStream)? = null,
-    private val databaseName: String = "defs.db",
+    private val databaseName: String = "definitions.db",
 ) : DefinitionsRepository {
     private val appContext = context.applicationContext
-    private val openAsset = assetOpener ?: { appContext.assets.open("defs.db") }
+    private val openAsset = assetOpener ?: { appContext.assets.open("definitions.db") }
     private val mutex = Mutex()
     private var initialized = false
     private var helper: DefinitionsOpenHelper? = null
@@ -91,7 +91,7 @@ class SqliteDefinitionsRepository(
             staged = stagedFile
             openAsset().use { source -> stagedFile.outputStream().use { source.copyTo(it) } }
             val assetVersion = readVersion(stagedFile)
-            if (assetVersion <= 0) throw SQLiteException("defs.db: некорректный PRAGMA user_version")
+            if (assetVersion <= 0) throw SQLiteException("Некорректный PRAGMA user_version базы определений")
             val destination = appContext.getDatabasePath(databaseName)
             val installedVersion = if (destination.isFile) {
                 try { readVersion(destination) } catch (_: SQLiteException) { -1 }

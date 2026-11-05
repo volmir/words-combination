@@ -30,7 +30,7 @@ class WordRepository(
     private val readWords: suspend () -> String,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val random: Random = Random.Default,
+    var random: Random = Random.Default,
 ) {
     private val loadMutex = Mutex()
     private val candidatesMutex = Mutex()

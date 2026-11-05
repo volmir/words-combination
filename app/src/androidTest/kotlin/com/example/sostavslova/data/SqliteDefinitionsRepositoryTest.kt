@@ -52,7 +52,7 @@ class SqliteDefinitionsRepositoryTest {
         assetOpener = {
             assertNotSame(Looper.getMainLooper().thread, Thread.currentThread())
             reads.incrementAndGet()
-            asset?.inputStream() ?: throw FileNotFoundException("No test defs.db")
+            asset?.inputStream() ?: throw FileNotFoundException("No test database")
         },
     ).also { repositories.add(it) }
 

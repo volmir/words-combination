@@ -12,15 +12,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val definitionsFile = rootProject.layout.buildDirectory.file("defs.db").get().asFile
-val hasDefinitions = definitionsFile.isFile
+val hasDefinitions = false
 val dictionaryData = rootProject.layout.projectDirectory.dir("data")
 
 val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
-    description = "Проверяет происхождение словника и допуск точной версии определений."
+    description = "Проверяет происхождение словника и уровней."
     group = "verification"
     inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("word_sources.jsonl.gz"), dictionaryData.file("levels.json"))
-    if (hasDefinitions) inputs.file(definitionsFile)
     doLast {
         fun sha256(file: File): String {
             val digest = MessageDigest.getInstance("SHA-256")
@@ -46,13 +44,6 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
         check(sha256(dictionaryData.file("levels.json").asFile) == manifest["sha256_levels_json"] &&
             (manifest["levels_source"] as? Map<*, *>)?.get("license") == "MIT") {
             "Уровни изменены после генерации либо отсутствует их происхождение."
-        }
-        if (hasDefinitions) {
-            val definitions = manifest["definitions"] as? Map<*, *>
-            check(definitions?.get("rights_policy") == "individual-review-v1" &&
-                definitions["sha256"] == sha256(definitionsFile)) {
-                "defs.db не прошёл индивидуальную проверку прав либо его байты изменены."
-            }
         }
     }
 }
@@ -82,6 +73,15 @@ android {
 
     buildTypes {
         debug {
+            signingConfig = signingConfigs.getByName("debugConfig")
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             signingConfig = signingConfigs.getByName("debugConfig")
         }
     }
@@ -118,13 +118,9 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
     from(rootProject.layout.projectDirectory.dir("legal")) {
         include("THIRD_PARTY_NOTICES.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
     }
-    if (hasDefinitions) {
-        from(definitionsFile)
-    }
     into(layout.projectDirectory.dir("src/main/assets"))
-    // Удаляем устаревшие определения, сохраняя прочие будущие assets.
     preserve {
-        exclude("words.txt", "levels.json", "word_sources.jsonl.gz", "defs.db", "THIRD_PARTY_NOTICES.txt", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
+        exclude("words.txt", "levels.json", "word_sources.jsonl.gz", "THIRD_PARTY_NOTICES.txt", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
     }
 }
 

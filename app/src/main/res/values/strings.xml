@@ -100,4 +100,31 @@
     <string name="word_search_result_title">Все слова, которые можно составить из \"%1$s\"</string>
     <string name="word_search_summary">Из \"%1$s\" можно составить %2$d %3$s из %4$s букв</string>
     <string name="word_search_group_header">Слова из %1$d %2$s, составленные из комбинации \"%3$s\" (%4$d %5$s):</string>
+
+    <!-- Правила -->
+    <string name="rules_title">Правила игры</string>
+    <string name="rules_intro">Суть игры состоит в том, чтобы составить как можно больше слов из представленных на выбор букв. Одна буква должна использоваться только один раз в слове.</string>
+    <string name="rules_description_heading">Описание игры «Составь слова»:</string>
+    <string name="rules_item_1">1. Необходимо внимательно посмотреть на предложенное слово.</string>
+    <string name="rules_item_2">2. Из имеющегося длинного слова требуется составить как можно большее количество новых слов.</string>
+    <string name="rules_item_3">3. Используйте разные буквы для того чтобы получились новые слова.</string>
+    <string name="rules_item_4">4. Повторять уже использовавшиеся слова нельзя.</string>
+    <string name="rules_item_5">5. Словарь приложения содержит только слова существительные, нарицательные в именительном падеже и единственном числе.</string>
+    <string name="rules_item_6">6. Исключение составляют существительные в множественном числе, если слово не имеет единственного числа, например: макароны, очки и т.д.</string>
+    <string name="rules_item_7">7. Запрещено использовать уменьшительно-ласкательные существительные, такие как: мамочка, котик, зайчик и т.д.</string>
+    <string name="rules_item_8">8. Будьте внимательными и составляйте только те слова, которые имеются в русском языке.</string>
+    <string name="rules_footer">Составляя слова из слов можно интересно и с пользой для ума провести время, узнать новые слова, проверить свою грамотность и эрудицию. Эта игра определенно понравится любителям разгадывать кроссворды и ребусы, играть в головоломки, а также участвовать в викторинах. Приятного и полезного времяпрепровождения вам!</string>
+
+    <!-- Контакты -->
+    <string name="contacts_title">Контакты</string>
+    <string name="contacts_description">Если у вас есть вопросы, предложения или отзывы по игре, вы можете связаться с разработчиком:</string>
+    <string name="contact_email">developer@example.com</string>
+    <string name="contact_write_developer">Написать разработчику</string>
+    <string name="contact_email_subject">Игра «Составь слова»</string>
+    <string name="contact_no_email_app">Не найдено приложение для отправки почты</string>
+
+    <!-- Об игре -->
+    <string name="about_words_count">Всего в базе игры: %1$d %2$s</string>
+    <string name="about_words_loading">Загрузка количества слов…</string>
+    <string name="about_version">Версия приложения: %1$s</string>
 </resources>

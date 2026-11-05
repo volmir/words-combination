@@ -7,11 +7,9 @@ local.properties
 keystore.properties
 *.jks
 *.keystore
-# Сгенерированные базы определений и копии данных в assets
-build/defs.db
+# Сгенерированные копии данных в assets
 app/src/main/assets/words.txt
 app/src/main/assets/levels.json
-app/src/main/assets/defs.db
 app/src/main/assets/word_sources.jsonl.gz
 app/src/main/assets/THIRD_PARTY_NOTICES.txt
 app/src/main/assets/CC-BY-SA-4.0.txt

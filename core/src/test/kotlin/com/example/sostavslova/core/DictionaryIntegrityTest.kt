@@ -71,4 +71,13 @@ class DictionaryIntegrityTest {
         }
         assertTrue(!iterator.hasNext(), "Есть слова без происхождения")
     }
+
+    @Test
+    fun measureLoadingTime() {
+        val t0 = System.currentTimeMillis()
+        val index = WordIndex.fromText(TestData.wordsText)
+        val elapsed = System.currentTimeMillis() - t0
+        println("words.txt load time: $elapsed ms (${index.size} words)")
+        assertTrue(elapsed < 1000, "Загрузка words.txt должна занимать менее 1000 мс, фактически: $elapsed мс")
+    }
 }

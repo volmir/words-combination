@@ -16,7 +16,13 @@ class AppContainer(context: Context) {
     private val appContext = context.applicationContext
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    val wordRepository = WordRepository(readWords = { readAsset("words.txt") })
+    var random: kotlin.random.Random = kotlin.random.Random.Default
+        set(value) {
+            field = value
+            wordRepository.random = value
+        }
+
+    val wordRepository = WordRepository(readWords = { readAsset("words.txt") }, random = random)
     val levelsRepository = LevelsRepository(readLevels = { readAsset("levels.json") })
     val definitionsRepository: DefinitionsRepository = SqliteDefinitionsRepository(appContext)
 

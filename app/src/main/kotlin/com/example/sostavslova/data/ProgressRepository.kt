@@ -55,6 +55,14 @@ class ProgressRepository(
         dataStore.edit { it.remove(currentGameKey) }
     }
 
+    suspend fun clearAll() {
+        dataStore.edit { preferences ->
+            preferences.remove(currentGameKey)
+            preferences.remove(levelProgressKey)
+            preferences.remove(levelAnswersKey)
+        }
+    }
+
     /** Звёзды и ответы обновляются одной транзакцией, включая параллельные сохранения. */
     suspend fun saveLevelResult(level: Level, found: List<String>) = withContext(computationDispatcher) {
         dataStore.edit { preferences ->
