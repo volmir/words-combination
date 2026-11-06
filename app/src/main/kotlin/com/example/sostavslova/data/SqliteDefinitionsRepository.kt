@@ -10,6 +10,8 @@ import com.example.sostavslova.core.Alphabet
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import org.json.JSONArray
+import org.json.JSONException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -41,16 +43,16 @@ class SqliteDefinitionsRepository(
             val database = prepareDatabase() ?: return@withLock emptyList()
             try {
                 // Поддерживаем прежние базы без source; новые сборки имеют user_version >= 2.
-                val hasSource = database.rawQuery("PRAGMA table_info(definitions)", null).use { columns ->
+                val fields = database.rawQuery("PRAGMA table_info(definitions)", null).use { columns ->
                     val nameIndex = columns.getColumnIndexOrThrow("name")
-                    var found = false
-                    while (columns.moveToNext()) {
-                        if (columns.getString(nameIndex) == "source") found = true
+                    buildSet {
+                        while (columns.moveToNext()) add(columns.getString(nameIndex))
                     }
-                    found
                 }
                 val projection = mutableListOf("display", "text", "notes", "antonym", "example")
-                if (hasSource) projection.add("source")
+                if ("source" in fields) projection.add("source")
+                if ("origin" in fields) projection.add("origin")
+                val (forms, related) = wordMetadata(database, normalized)
                 database.query(
                     "definitions", projection.toTypedArray(),
                     "word = ?", arrayOf(normalized), null, null, "ord ASC, id ASC",
@@ -63,7 +65,9 @@ class SqliteDefinitionsRepository(
                                 notes = cursor.getString(2).orEmpty(),
                                 antonym = cursor.getString(3).orEmpty(),
                                 example = cursor.getString(4).orEmpty(),
-                                source = if (hasSource) cursor.getString(5).orEmpty() else "",
+                                source = if ("source" in fields) cursor.getString(cursor.getColumnIndexOrThrow("source")).orEmpty() else "",
+                                origin = if ("origin" in fields) cursor.getString(cursor.getColumnIndexOrThrow("origin")).orEmpty() else "",
+                                forms = forms, related = related,
                             ))
                         }
                     }
@@ -75,6 +79,24 @@ class SqliteDefinitionsRepository(
             }
         }
     }
+
+    private fun wordMetadata(database: SQLiteDatabase, word: String): Pair<List<String>, List<String>> {
+        val fields = database.rawQuery("PRAGMA table_info(word_metadata)", null).use { columns ->
+            val nameIndex = columns.getColumnIndex("name")
+            buildSet { if (nameIndex >= 0) while (columns.moveToNext()) add(columns.getString(nameIndex)) }
+        }
+        if (!fields.containsAll(listOf("forms", "related"))) return emptyList<String>() to emptyList()
+        return database.query("word_metadata", arrayOf("forms", "related"), "word = ?", arrayOf(word),
+            null, null, null).use { cursor ->
+            if (!cursor.moveToFirst()) emptyList<String>() to emptyList()
+            else jsonWords(cursor.getString(0)) to jsonWords(cursor.getString(1))
+        }
+    }
+
+    private fun jsonWords(value: String?): List<String> = try {
+        val array = JSONArray(value ?: "[]")
+        (0 until array.length()).map { array.getString(it) }
+    } catch (_: JSONException) { emptyList() }
 
     private fun prepareDatabase(): SQLiteDatabase? {
         if (initialized) return helper?.readableDatabase

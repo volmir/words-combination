@@ -8,6 +8,10 @@ data class Definition(
     val example: String = "",
     /** URL статьи, история которой содержит авторство (пусто у старых баз). */
     val source: String = "",
+    /** Наблюдаемые формы и ближайшее родство для обработки подсказки в core. */
+    val forms: List<String> = emptyList(),
+    val related: List<String> = emptyList(),
+    val origin: String = "",
 )
 
 interface DefinitionsRepository {

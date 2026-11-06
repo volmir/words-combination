@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.R
 import com.example.sostavslova.core.Alphabet
 import com.example.sostavslova.core.AnswerResult
+import com.example.sostavslova.core.DefinitionHint
 import com.example.sostavslova.core.GameState
 import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.LevelProgress
@@ -78,6 +79,7 @@ class GameViewModel(
     private var operation: Job? = null
     private var hintJob: Job? = null
     private var definitionJob: Job? = null
+    private var hintSequence = 0L
 
     init { onGameOpened() }
 
@@ -171,6 +173,7 @@ class GameViewModel(
                 if (next != game) {
                     // Подсказка не должна продолжать показывать уже отгаданный ответ.
                     hintJob?.cancel()
+                    hintSequence++
                     mutableState.update { it.copy(hint = null, hintLoading = false) }
                 }
             } catch (cancelled: CancellationException) {
@@ -187,30 +190,44 @@ class GameViewModel(
         val state = uiState.value
         val game = state.game ?: return
         if (!state.canPlay || hintJob?.isActive == true) return
+        val request = ++hintSequence
         mutableState.update { it.copy(hintLoading = true) }
         hintJob = viewModelScope.launch {
             try {
-                val answer = withContext(computationDispatcher) { game.hintWord(random) }
-                if (answer == null) {
+                val candidates = withContext(computationDispatcher) { game.hintCandidates(random) }
+                val fallback = candidates.firstOrNull()
+                if (fallback == null) {
                     mutableState.update { it.copy(message = GameMessage(R.string.hint_all_found), hint = null) }
                 } else {
-                    val meanings = try {
-                        if (definitions.isAvailable()) definitions.definitionsFor(answer) else emptyList()
-                    } catch (cancelled: CancellationException) { throw cancelled }
-                    catch (_: Exception) { emptyList() }
-                    // Даже если в источнике ответ встречается в примере/URL, подсказка его не выдаёт.
-                    val safe = withContext(computationDispatcher) {
-                        meanings.filter { definition ->
-                            listOf(definition.text, definition.notes, definition.antonym, definition.example)
-                                .none { containsAnswer(it, answer) }
-                        }.map { it.copy(display = "", source = "") }
+                    val available = try { definitions.isAvailable() }
+                    catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { false }
+                    var hint: GameHint? = null
+                    if (available) for (answer in candidates) {
+                        val meanings = try { definitions.definitionsFor(answer) }
+                        catch (cancelled: CancellationException) { throw cancelled }
+                        catch (_: Exception) { emptyList() }
+                        val safe = withContext(computationDispatcher) {
+                            meanings.firstNotNullOfOrNull { definition ->
+                                DefinitionHint.prepare(answer, definition.text, definition.forms, definition.related)?.let { text ->
+                                    // Вспомогательные поля, в том числе URL, могут раскрывать ответ.
+                                    definition.copy(display = "", text = text, source = "", notes = "", antonym = "", example = "",
+                                        forms = emptyList(), related = emptyList())
+                                }
+                            }
+                        }
+                        if (safe != null) {
+                            hint = GameHint(answer.length, answer.first().uppercaseChar().toString(), listOf(safe))
+                            break
+                        }
                     }
-                    if (uiState.value.game == game) mutableState.update {
-                        it.copy(hint = GameHint(answer.length, answer.first().uppercaseChar().toString(), safe))
+                    val result = hint ?: GameHint(fallback.length, fallback.first().uppercaseChar().toString(), emptyList())
+                    if (hintSequence == request && uiState.value.game == game) mutableState.update {
+                        it.copy(hint = result)
                     }
                 }
             } finally {
-                mutableState.update { it.copy(hintLoading = false) }
+                if (hintSequence == request) mutableState.update { it.copy(hintLoading = false) }
             }
         }
     }
@@ -264,9 +281,6 @@ class GameViewModel(
     private fun leave(@StringRes message: Int = 0) {
         mutableState.update { it.copy(loading = false, returnHome = true, homeMessage = message) }
     }
-
-    private fun containsAnswer(text: String, answer: String): Boolean =
-        Regex("[А-Яа-яЁё]+").findAll(text).any { Alphabet.normalize(it.value) == answer }
 
     private companion object {
         const val INPUT = "game.input"

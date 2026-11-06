@@ -2,6 +2,7 @@ package com.example.sostavslova.core
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import java.util.zip.GZIPInputStream
 import java.security.MessageDigest
@@ -27,10 +28,63 @@ class DictionaryIntegrityTest {
     }
 
     @Test
-    fun containsWordsReportedMissingByPlayers() {
-        for (w in listOf("оттиск", "насест", "тост", "кастет", "нить", "темнота", "табор", "тать")) {
+    fun containsModernWordsReportedMissingByPlayers() {
+        for (w in listOf("оттиск", "насест", "тост", "кастет", "нить", "темнота", "табор")) {
             assertTrue(TestData.index.contains(w), "нет слова $w")
         }
+    }
+
+    @Test
+    fun cleanupExcludesMarkedFormsAndKeepsIndependentMeanings() {
+        for (word in listOf("ножик", "кровотеченье", "тать")) {
+            assertFalse(TestData.index.contains(word), "Форма не должна входить в очищенную базу: $word")
+        }
+        for (word in listOf("механик", "ручка", "дерево", "каша", "зарплата", "профсоюз")) {
+            assertTrue(TestData.index.contains(word), "Утрачено самостоятельное современное слово: $word")
+        }
+    }
+
+    @Test
+    fun cleanupPolicyAndCampaignExceptionsAreRecorded() {
+        val selection = TestData.manifest.getJSONObject("selection")
+        assertEquals("game-cleanup-v1", selection.getString("mode"))
+        assertEquals(113413, selection.getInt("input_words"))
+        assertFalse(selection.getBoolean("old_overrides_used"))
+        assertFalse(selection.getBoolean("definitions_required"))
+        assertTrue(selection.isNull("candidate_limit"))
+        val exceptions = selection.getJSONObject("reference_checks").getJSONObject("level_exceptions")
+        val levelWords = TestData.levels.map { it.word }.toSet()
+        for (word in exceptions.keys()) {
+            assertTrue(word in levelWords, "Исключение не относится к кампании: $word")
+            assertTrue(TestData.index.contains(word), "Утрачено исключение кампании: $word")
+            assertTrue(exceptions.getJSONArray(word).length() > 0)
+        }
+        assertEquals("frequency-list", selection.getJSONObject("frequency_source").getString("kind"))
+    }
+
+    @Test
+    fun approvedCampaignReplacementsKeepNumericTargets() {
+        assertEquals(Level(7, "велосипед", 10, 16, 'с', 6), TestData.levels[6])
+        val weighing = TestData.levels[8]
+        assertEquals(Level(9, "взвешивание", 7, 14, 'в', 5), weighing)
+        val transfusion = TestData.levels[13]
+        assertEquals(Level(14, "переливание", 10, 15, 'п', 6), transfusion)
+        assertEquals(Level(23, "магнитофон", 12, 18, 'г', 5), TestData.levels[22])
+        assertFalse(TestData.levels.any { it.word in setOf("намеривание", "перетекание", "передвигание", "симфонизация") })
+    }
+
+    @Test
+    fun containsAllFrequentNounsFromGoldenList() {
+        val resource = checkNotNull(javaClass.classLoader.getResourceAsStream("frequent_nouns_golden.txt"))
+        val golden = resource.bufferedReader(Charsets.UTF_8).use { it.readLines() }.filter { it.isNotBlank() }
+        val missing = golden.filterNot { TestData.index.contains(it) }
+        assertTrue(missing.isEmpty(), "В словаре отсутствуют: ${missing.joinToString(", ")}")
+    }
+
+    @Test
+    fun containsAllLevelWords() {
+        val missing = TestData.levels.map { it.word }.filterNot { TestData.index.contains(it) }
+        assertTrue(missing.isEmpty(), "В словаре отсутствуют слова уровней: ${missing.joinToString(", ")}")
     }
 
     @Test

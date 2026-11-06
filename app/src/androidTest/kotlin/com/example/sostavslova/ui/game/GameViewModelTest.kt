@@ -172,7 +172,7 @@ class GameViewModelTest {
             override suspend fun isAvailable() = true
             override suspend fun definitionsFor(word: String): List<Definition> {
                 requested = word
-                return listOf(Definition(word, "Безопасное <толкование>\nВторая строка", source = "https://example.org/$word"),
+                return listOf(Definition(word, "Безопасное толкование для условного примера", source = "https://example.org/$word"),
                     Definition(word, "Ответ — ${word.uppercase()}."), Definition(word, "Текст", example = word))
             }
         }
@@ -184,10 +184,32 @@ class GameViewModelTest {
         assertEquals(1, hint.definitions.size)
         assertEquals("", hint.definitions.single().display)
         assertEquals("", hint.definitions.single().source)
+        assertEquals("", hint.definitions.single().notes)
+        assertEquals("", hint.definitions.single().example)
         model.answer("тор")
         assertNull(model.uiState.value.hint)
         withContext(Dispatchers.Main) { model.onHint() }
         model.await { !it.hintLoading && it.message?.text == R.string.hint_all_found }
+    }
+
+    @Test fun hintMasksRootsAndFormsInsteadOfDiscardingUsefulDefinition() = runTest {
+        progress.saveGame(words.startGame("портал", listOf("пар", "рот", "лот")))
+        val meanings = object : DefinitionsRepository {
+            override suspend fun isAvailable() = true
+            override suspend fun definitionsFor(word: String) = listOf(Definition(word,
+                "${word.uppercase()} и ${word}овый предмет служат условным примером.",
+                notes = word, example = word, source = "https://example.org/$word", forms = listOf(word), origin = "wiktionary"))
+        }
+        val model = model(meanings = meanings); model.ready()
+        withContext(Dispatchers.Main) { model.onHint() }
+        val hint = checkNotNull(model.await { it.hint != null && !it.hintLoading }.hint)
+        val definition = hint.definitions.single()
+        assertEquals("*** и *** предмет служат условным примером.", definition.text)
+        assertEquals("", definition.display)
+        assertEquals("", definition.source)
+        assertEquals("", definition.example)
+        assertTrue(definition.forms.isEmpty())
+        assertTrue(definition.related.isEmpty())
     }
 
     @Test fun hintFallsBackWhenUnavailableMissingOrLeaking() = runTest {
@@ -201,6 +223,24 @@ class GameViewModelTest {
             withContext(Dispatchers.Main) { model.onHint() }
             assertTrue(checkNotNull(model.await { !it.hintLoading && it.hint != null }.hint).definitions.isEmpty())
         }
+    }
+
+    @Test fun hintTriesAnotherRemainingWordWhenFirstMeaningIsUnusable() = runTest {
+        progress.saveGame(words.startGame("портал", listOf("пар", "лот")))
+        val requested = mutableListOf<String>()
+        val meanings = object : DefinitionsRepository {
+            override suspend fun isAvailable() = true
+            override suspend fun definitionsFor(word: String): List<Definition> {
+                requested.add(word)
+                return listOf(Definition(word, if (requested.size == 1) word else "Синтетический предмет служит условным примером."))
+            }
+        }
+        val model = model(meanings = meanings); model.ready()
+        withContext(Dispatchers.Main) { model.onHint() }
+        val hint = checkNotNull(model.await { it.hint != null && !it.hintLoading }.hint)
+        assertEquals(setOf("рот", "тор"), requested.toSet())
+        assertEquals(2, requested.size)
+        assertEquals(1, hint.definitions.size)
     }
 
     @Test fun definitionDialogLoadsOnlyFoundWordAndWorksWithoutDefinitions() = runTest {

@@ -148,6 +148,21 @@ class SqliteDefinitionsRepositoryTest {
     }
 
     @Test
+    fun readsFormsAndNearestCognatesFromWordMetadata() = runTest {
+        val asset = File(directory, "forms.db")
+        createDatabase(asset, 5, "Синтетический предмет для проверки.", source = "https://ru.wiktionary.org/wiki/портал")
+        SQLiteDatabase.openDatabase(asset.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
+            db.execSQL("ALTER TABLE definitions ADD COLUMN origin TEXT NOT NULL DEFAULT 'wiktionary'")
+            db.execSQL("CREATE TABLE word_metadata(word TEXT PRIMARY KEY, category TEXT, forms TEXT, related TEXT)")
+            db.execSQL("INSERT INTO word_metadata VALUES(?,?,?,?)", arrayOf("портал", "other", "[\"портала\"]", "[\"портальный\"]"))
+        }
+        val definition = repository(asset).definitionsFor("ПОРТАЛ").single()
+        assertEquals(listOf("портала"), definition.forms)
+        assertEquals(listOf("портальный"), definition.related)
+        assertEquals("wiktionary", definition.origin)
+    }
+
+    @Test
     fun bundledDictionaryUsesOpenSourceOrRemainsOptional() = runTest {
         val repository = SqliteDefinitionsRepository(context, databaseName = databaseName).also { repositories.add(it) }
         if (com.example.sostavslova.BuildConfig.HAS_DEFINITIONS) {

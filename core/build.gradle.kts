@@ -24,3 +24,11 @@ sourceSets {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.register<JavaExec>("auditDefinitionHints") {
+    group = "verification"
+    description = "Проверяет все локальные толкования обработчиком подсказок core (два пути через --args)."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("com.example.sostavslova.core.DefinitionHintDatasetAudit")
+}

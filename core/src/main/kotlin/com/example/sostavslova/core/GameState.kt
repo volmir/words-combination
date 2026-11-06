@@ -80,6 +80,12 @@ data class GameState(
         return remaining[random.nextInt(remaining.size)]
     }
 
+    /** Ограниченный набор ненайденных ответов для поиска пригодного толкования. */
+    fun hintCandidates(random: Random = Random.Default, limit: Int = 24): List<String> {
+        require(limit > 0)
+        return allWords.filter { it !in foundSet }.shuffled(random).take(limit.coerceAtMost(24))
+    }
+
     /** Таблица «длина слова -> отгадано / всего / %» и итоговая строка. */
     fun statistics(): Statistics {
         val totals = allWords.groupBy { it.length }.toSortedMap()

@@ -4,8 +4,8 @@
 
 Источник: Kaikki/Wiktextract, CC BY-SA 4.0. SQL не используется.
 По умолчанию включаются только заголовки существительных и их происхождение.
-Тексты определений требуют индивидуальной проверки в definition_reviews.json.
-Скрипт ничего не скачивает. См. docs/DICTIONARY_SOURCES.md.
+Определения и отбор для игры собирает tools/build_game_data.py.
+Скрипт ничего не скачивает. См. docs/DEFINITIONS_POLICY.md.
 """
 import argparse
 import datetime
@@ -13,8 +13,6 @@ import gzip
 import hashlib
 import json
 import os
-import re
-import sqlite3
 import tempfile
 from collections import Counter
 from urllib.parse import quote
@@ -23,9 +21,6 @@ SOURCE_PAGE = "https://kaikki.org/ruwiktionary/rawdata.html"
 SOURCE_DOWNLOAD = "https://kaikki.org/ruwiktionary/raw-wiktextract-data.jsonl.gz"
 LICENSE_URL = "https://creativecommons.org/licenses/by-sa/4.0/"
 CHANGES = "Отбор слов и значений, нормализация ё→е, извлечение обычного текста; примеры исключены."
-# JSONL не содержит полной истории лицензирования. Исключаем явно помеченные
-# несвободные материалы и ссылки на прежние защищённые словари; это не правовая экспертиза.
-EXCLUDED_SOURCE = re.compile(r"ожегов|ефремов|кузнецов|fair[ -]?use|copyright|несвободн", re.I)
 
 ALPHABET = "абвгдежзийклмнопрстуфхцчшщъыьэюя"  # 32 буквы, ё свёрнута в е
 MIN_LEN, MAX_LEN = 3, 30
@@ -71,138 +66,6 @@ def search(words, source):
     return [w for w in words if w != source and can_make(sc, w)]
 
 
-def wiktionary_definitions(path, words, stats):
-    """Потоковый импорт сырого JSONL именно ruwiktionary, не English Wiktionary."""
-    opener = gzip.open if str(path).endswith(".gz") else open
-    with opener(path, "rt", encoding="utf-8") as source:
-        for line_number, line in enumerate(source, 1):
-            if not line.strip():
-                continue
-            try:
-                entry = json.loads(line)
-                if not isinstance(entry, dict):
-                    raise ValueError("ожидался объект")
-                stats["entries"] += 1
-                if entry.get("lang_code") != "ru" or entry.get("lang") != "Русский":
-                    continue
-                display = entry.get("word", "")
-                key = fold(display)
-                if key not in words:
-                    continue
-                # Вся статья исключается при явной помете ограничений прав.
-                entry_labels = " ".join(entry.get("categories", []) + entry.get("tags", []))
-                if EXCLUDED_SOURCE.search(entry_labels):
-                    stats["excluded_source"] += 1
-                    continue
-                for sense in entry.get("senses", []):
-                    glosses = sense.get("glosses", [])
-                    if not isinstance(glosses, list) or not all(isinstance(g, str) for g in glosses):
-                        raise ValueError("glosses должен быть списком строк")
-                    # Берём только glosses, не raw_glosses, examples или переводы.
-                    text = "\n".join(g.strip() for g in glosses if g.strip())
-                    if not text or "no-gloss" in sense.get("tags", []):
-                        continue
-                    labels = sense.get("raw_tags", []) + sense.get("tags", []) + sense.get("topics", [])
-                    provenance = json.dumps(sense, ensure_ascii=False)
-                    if EXCLUDED_SOURCE.search(provenance):
-                        stats["excluded_source"] += 1
-                        continue
-                    notes = " · ".join(dict.fromkeys(labels))
-                    article = "https://ru.wiktionary.org/wiki/" + quote(display.replace(" ", "_"), safe="")
-                    yield key, display, text, notes, article
-            except (ValueError, TypeError, AttributeError) as error:
-                raise ValueError("JSONL, строка %d: %s" % (line_number, error)) from error
-
-
-def definition_digest(display, text, notes, article):
-    return hashlib.sha256(json.dumps([display, text, notes, article], ensure_ascii=False).encode()).hexdigest()
-
-
-def load_reviews(path):
-    """Явные результаты индивидуальной проверки; отсутствие записи означает запрет."""
-    with open(path, encoding="utf-8") as source:
-        data = json.load(source)
-    if data.get("schema") != 1 or not isinstance(data.get("definitions"), list):
-        raise ValueError("Некорректный реестр проверки определений")
-    reviews = {}
-    for review in data["definitions"]:
-        if (review.get("license") != "CC-BY-SA-4.0" or
-                review.get("basis") not in {"original-contribution", "compatible-permission"} or
-                not review.get("reviewer") or not review.get("evidence_url", "").startswith("https://") or
-                not re.fullmatch("[0-9a-f]{64}", review.get("sha256", ""))):
-            raise ValueError("Проверка должна содержать автора проверки, основание, доказательство и SHA-256")
-        reviews[review["sha256"]] = review
-    return reviews
-
-
-def build_definitions(path, words, output, dump_date, db_version=3, reviews=None):
-    """Собирает новую БД рядом с назначением; при ошибке прежняя БД остаётся целой."""
-    if not reviews:
-        raise ValueError("Нет индивидуально проверенных определений; база определений не создаётся")
-    digest = hashlib.sha256()
-    with open(path, "rb") as source:
-        for chunk in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(chunk)
-    directory = os.path.dirname(os.path.abspath(output))
-    os.makedirs(directory, exist_ok=True)
-    descriptor, staged = tempfile.mkstemp(prefix="defs-", suffix=".db", dir=directory)
-    os.close(descriptor)
-    stats, counts = Counter(), Counter()
-    db = None
-    try:
-        db = sqlite3.connect(staged)
-        db.executescript("""
-            CREATE TABLE definitions(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                word TEXT NOT NULL,
-                display TEXT NOT NULL,
-                ord INTEGER NOT NULL,
-                text TEXT NOT NULL,
-                notes TEXT NOT NULL DEFAULT '',
-                antonym TEXT NOT NULL DEFAULT '',
-                example TEXT NOT NULL DEFAULT '',
-                source TEXT NOT NULL DEFAULT ''
-            );
-            CREATE TABLE build_metadata(key TEXT PRIMARY KEY, value TEXT NOT NULL);
-        """)
-        for key, display, text, notes, article in wiktionary_definitions(path, words, stats):
-            if definition_digest(display, text, notes, article) not in reviews:
-                stats["unreviewed"] += 1
-                continue
-            counts[key] += 1
-            db.execute("INSERT INTO definitions(word,display,ord,text,notes,source) VALUES(?,?,?,?,?,?)",
-                       (key, display, counts[key], text, notes, article))
-        if not counts:
-            raise ValueError("Не найдено проверенных русских определений для words.txt")
-        metadata = {
-            "source": SOURCE_PAGE, "download": SOURCE_DOWNLOAD,
-            "authors": "Участники русского Викисловаря; история авторства — по URL каждой статьи",
-            "extractor": "Kaikki.org / Wiktextract", "dump_date": dump_date,
-            "license": "CC BY-SA 4.0", "license_url": LICENSE_URL,
-            "changes": CHANGES, "sha256_input": digest.hexdigest(),
-            "rights_policy": "individual-review-v1",
-            "reviews_sha256": hashlib.sha256(json.dumps(reviews, sort_keys=True).encode()).hexdigest(),
-        }
-        db.executemany("INSERT INTO build_metadata VALUES(?,?)", metadata.items())
-        db.execute("CREATE INDEX idx_definitions_word ON definitions(word)")
-        db.execute("PRAGMA user_version = %d" % db_version)
-        db.commit()
-        db.execute("VACUUM")
-        db.close()
-        db = None
-        os.replace(staged, output)
-    finally:
-        if db is not None:
-            db.close()
-        if os.path.exists(staged):
-            os.remove(staged)
-    stats["definitions"] = sum(counts.values())
-    stats["words"] = len(counts)
-    print("definitions.db: %s -> %s (%d КБ), SHA-256 входа %s" %
-          (dict(stats), output, os.path.getsize(output) // 1024, digest.hexdigest()))
-    return stats
-
-
 def sha256_file(path):
     digest = hashlib.sha256()
     with open(path, "rb") as source:
@@ -213,7 +76,7 @@ def sha256_file(path):
 
 def wiktionary_wordlist(path):
     """Независимая выборка заголовков, не пересечение с прежним SQL-словарём."""
-    sources, excluded, stats = {}, {}, Counter()
+    sources, stats = {}, Counter()
     opener = gzip.open if str(path).endswith(".gz") else open
     with opener(path, "rt", encoding="utf-8") as source:
         for line_number, line in enumerate(source, 1):
@@ -233,22 +96,12 @@ def wiktionary_wordlist(path):
             if not any(s.get("glosses") and not (set(s.get("tags", [])) & {"form-of", "diminutive", "no-gloss"})
                        for s in entry.get("senses", [])):
                 continue
-            # Консервативно исключаем весь канонический ключ, в т.ч. варианты ё/е.
-            match = EXCLUDED_SOURCE.search(json.dumps(entry, ensure_ascii=False))
-            if match:
-                excluded[word] = {"word": word, "reason": "external_source_or_rights_marker",
-                                  "marker": match.group().lower(), "line": line_number,
-                                  "source": "https://ru.wiktionary.org/wiki/" + quote(title, safe="")}
-                continue
             record = {"title": title, "line": line_number,
                       "source": "https://ru.wiktionary.org/wiki/" + quote(title, safe="")}
             if record not in sources.setdefault(word, []):
                 sources[word].append(record)
-    for word in excluded:
-        sources.pop(word, None)
-    stats["excluded_source_words"] = len(excluded)
     stats["words"] = len(sources)
-    return sources, excluded, stats
+    return sources, stats
 
 
 def write_word_sources(path, sources):
@@ -260,10 +113,10 @@ def write_word_sources(path, sources):
                 compressed.write((json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n").encode())
 
 
-def write_game_data(directory, sources, dump_date, input_sha, definitions=None):
+def write_game_data(directory, sources, dump_date, input_sha, definitions=None, levels_spec=None):
     words = sorted(sources)
     levels, errors = [], []
-    for index, (source, answers, needed, letter, count) in enumerate(LEVELS, 1):
+    for index, (source, answers, needed, letter, count) in enumerate(LEVELS if levels_spec is None else levels_spec, 1):
         available = search(words, source)
         first = sum(w.startswith(letter) for w in available)
         if source not in sources or len(available) < needed or first < count or letter not in ALPHABET:
@@ -328,9 +181,7 @@ def main():
     ap.add_argument("--sql", help="Не поддерживается: прежний SQL-источник исключён")
     ap.add_argument("--with-definitions", action="store_true")
     ap.add_argument("--definitions-only", action="store_true")
-    ap.add_argument("--reviews", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "definition_reviews.json"))
     ap.add_argument("--db-out", default="build/definitions.db")
-    ap.add_argument("--db-version", type=int, default=3)
     ap.add_argument("--audit-out", default="build/reports/licensing")
     a = ap.parse_args()
     if a.sql:
@@ -341,41 +192,19 @@ def main():
         datetime.datetime.strptime(a.dump_date, "%Y-%m-%d")
     except ValueError:
         ap.error("--dump-date должен иметь формат YYYY-MM-DD")
-    if a.db_version < 3:
-        ap.error("--db-version должен быть >= 3 для индивидуально проверенной базы")
-    reviews = load_reviews(a.reviews)
-    if (a.with_definitions or a.definitions_only) and not reviews:
-        ap.error("Нет индивидуально проверенных определений; сборка разрешена без --with-definitions")
-    if a.definitions_only:
-        with open(os.path.join(a.out, "manifest.json"), encoding="utf-8") as source:
-            manifest = json.load(source)
-        if manifest.get("schema") != "dictionary-provenance-v1":
-            ap.error("сначала пересоберите игровой словарь из открытого источника")
-        words = set(read_list(os.path.join(a.out, "words.txt")))
-        build_definitions(a.jsonl, words, a.db_out, a.dump_date, a.db_version, reviews)
-        # Привязываем разрешение на упаковку к точным байтам проверенной БД.
-        manifest["definitions"] = {"rights_policy": "individual-review-v1", "sha256": sha256_file(a.db_out)}
-        with open(os.path.join(a.out, "manifest.json"), "w", encoding="utf-8") as out:
-            json.dump(manifest, out, ensure_ascii=False, indent=2)
-        return
+    if a.with_definitions or a.definitions_only:
+        ap.error("Определения собираются tools/build_game_data.py; используйте новый конвейер")
     input_sha = sha256_file(a.jsonl)
-    sources, excluded, stats = wiktionary_wordlist(a.jsonl)
+    sources, stats = wiktionary_wordlist(a.jsonl)
     additions = set(read_list(os.path.join(a.overrides, "add.txt")))
     if additions - sources.keys():
         ap.error("Нельзя добавлять слова без происхождения: " + ", ".join(sorted(additions - sources.keys())))
     for word in read_list(os.path.join(a.overrides, "remove.txt")):
         sources.pop(word, None)
-    definitions = None
-    if a.with_definitions:
-        build_definitions(a.jsonl, set(sources), a.db_out, a.dump_date, a.db_version, reviews)
-        definitions = {"rights_policy": "individual-review-v1", "sha256": sha256_file(a.db_out)}
-    levels = write_game_data(a.out, sources, a.dump_date, input_sha, definitions)
-    quarantine = None if a.with_definitions else quarantine_definitions(a.db_out)
+    levels = write_game_data(a.out, sources, a.dump_date, input_sha)
+    quarantine = quarantine_definitions(a.db_out)
     os.makedirs(a.audit_out, exist_ok=True)
-    with open(os.path.join(a.audit_out, "excluded_words.jsonl"), "w", encoding="utf-8") as output:
-        for word in sorted(excluded):
-            output.write(json.dumps(excluded[word], ensure_ascii=False) + "\n")
-    summary = {"stats": dict(stats), "accepted_words": len(sources), "definitions_included": bool(definitions),
+    summary = {"stats": dict(stats), "accepted_words": len(sources), "definitions_included": False,
                "quarantine": quarantine, "source_sha256": input_sha,
                "levels": [{"word": level["word"], "available": level["available"]} for level in levels]}
     with open(os.path.join(a.audit_out, "summary.json"), "w", encoding="utf-8") as output:

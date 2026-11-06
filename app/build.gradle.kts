@@ -12,13 +12,25 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val hasDefinitions = false
+val hasDefinitions = true
 val dictionaryData = rootProject.layout.projectDirectory.dir("data")
 
+val verifyDefinitionsAudit = tasks.register<Exec>("verifyDefinitionsAudit") {
+    description = "Блокирует release при наличии базы определений без пройденного ручного аудита."
+    group = "verification"
+    workingDir(rootProject.projectDir)
+    commandLine("python3", "tools/build_game_data.py", "--check-release", "--out", dictionaryData.asFile.absolutePath)
+}
+
+tasks.matching { it.name in setOf("preReleaseBuild", "assembleRelease", "bundleRelease") }.configureEach {
+    dependsOn(verifyDefinitionsAudit)
+}
+
 val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
-    description = "Проверяет происхождение словаря и уровней."
+    description = "Проверяет происхождение и хэши словаря, уровней и включённых определений."
     group = "verification"
     inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("word_sources.jsonl.gz"), dictionaryData.file("levels.json"))
+    inputs.files(dictionaryData.file("definitions.db"))
     doLast {
         fun sha256(file: File): String {
             val digest = MessageDigest.getInstance("SHA-256")
@@ -44,6 +56,14 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
         check(sha256(dictionaryData.file("levels.json").asFile) == manifest["sha256_levels_json"] &&
             (manifest["levels_source"] as? Map<*, *>)?.get("license") == "MIT") {
             "Уровни изменены после генерации либо отсутствует их происхождение."
+        }
+        val database = dictionaryData.file("definitions.db").asFile
+        if (hasDefinitions || database.exists()) {
+            val definitions = manifest["definitions"] as? Map<*, *>
+            check(database.isFile && definitions != null && definitions["sha256"] == sha256(database) &&
+                definitions["dictionary_words_sha256"] == manifest["sha256_words_txt"]) {
+                "База определений отсутствует, изменена или собрана для другого словаря. Пересоберите tools/build_local_definitions.py."
+            }
         }
     }
 }
@@ -114,13 +134,14 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
     dependsOn(verifyDictionaryLicenses)
     from(dictionaryData) {
         include("words.txt", "levels.json", "word_sources.jsonl.gz")
+        if (hasDefinitions) include("definitions.db")
     }
     from(rootProject.layout.projectDirectory.dir("legal")) {
         include("THIRD_PARTY_NOTICES.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
     }
     into(layout.projectDirectory.dir("src/main/assets"))
     preserve {
-        exclude("words.txt", "levels.json", "word_sources.jsonl.gz", "THIRD_PARTY_NOTICES.txt", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
+        exclude("words.txt", "levels.json", "word_sources.jsonl.gz", "definitions.db", "THIRD_PARTY_NOTICES.txt", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
     }
 }
 

@@ -1,4 +1,7 @@
 build/
+# Локальные дампы и контрольные снимки словаря
+/.local/
+/tools/cache/
 .gradle/
 .kotlin/
 local.properties
@@ -11,6 +14,7 @@ keystore.properties
 app/src/main/assets/words.txt
 app/src/main/assets/levels.json
 app/src/main/assets/word_sources.jsonl.gz
+app/src/main/assets/definitions.db
 app/src/main/assets/THIRD_PARTY_NOTICES.txt
 app/src/main/assets/CC-BY-SA-4.0.txt
 app/src/main/assets/Apache-2.0.txt

@@ -155,7 +155,12 @@ fun GameScreen(
                                 stringResource(R.string.hint_letter_genitive_one),
                                 stringResource(R.string.hint_letter_genitive_many),
                                 stringResource(R.string.hint_letter_genitive_many)), hint.firstLetter))
-                        else hint.definitions.forEach { DefinitionBlock(it, labelWord = null) }
+                        else {
+                            hint.definitions.forEach { DefinitionBlock(it, labelWord = null) }
+                            if (hint.definitions.any { it.origin == "wiktionary" }) {
+                                Text(stringResource(R.string.hint_definition_source), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
                     }
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

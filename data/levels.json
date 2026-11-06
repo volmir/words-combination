@@ -6,7 +6,7 @@
     "words": 14,
     "letter": "п",
     "letterCount": 6,
-    "available": 133
+    "available": 94
   },
   {
     "index": 2,
@@ -15,7 +15,7 @@
     "words": 14,
     "letter": "р",
     "letterCount": 3,
-    "available": 101
+    "available": 58
   },
   {
     "index": 3,
@@ -24,7 +24,7 @@
     "words": 20,
     "letter": "к",
     "letterCount": 8,
-    "available": 130
+    "available": 95
   },
   {
     "index": 4,
@@ -33,7 +33,7 @@
     "words": 15,
     "letter": "а",
     "letterCount": 7,
-    "available": 262
+    "available": 171
   },
   {
     "index": 5,
@@ -42,7 +42,7 @@
     "words": 14,
     "letter": "ф",
     "letterCount": 7,
-    "available": 124
+    "available": 81
   },
   {
     "index": 6,
@@ -51,16 +51,16 @@
     "words": 24,
     "letter": "о",
     "letterCount": 6,
-    "available": 227
+    "available": 137
   },
   {
     "index": 7,
-    "word": "симфонизация",
+    "word": "велосипед",
     "answers": 10,
     "words": 16,
     "letter": "с",
     "letterCount": 6,
-    "available": 152
+    "available": 63
   },
   {
     "index": 8,
@@ -69,16 +69,16 @@
     "words": 15,
     "letter": "б",
     "letterCount": 6,
-    "available": 181
+    "available": 105
   },
   {
     "index": 9,
-    "word": "намеривание",
+    "word": "взвешивание",
     "answers": 7,
     "words": 14,
     "letter": "в",
     "letterCount": 5,
-    "available": 125
+    "available": 29
   },
   {
     "index": 10,
@@ -87,7 +87,7 @@
     "words": 30,
     "letter": "м",
     "letterCount": 8,
-    "available": 580
+    "available": 344
   },
   {
     "index": 11,
@@ -96,7 +96,7 @@
     "words": 45,
     "letter": "н",
     "letterCount": 7,
-    "available": 883
+    "available": 455
   },
   {
     "index": 12,
@@ -105,7 +105,7 @@
     "words": 20,
     "letter": "р",
     "letterCount": 5,
-    "available": 177
+    "available": 108
   },
   {
     "index": 13,
@@ -114,16 +114,16 @@
     "words": 40,
     "letter": "г",
     "letterCount": 10,
-    "available": 646
+    "available": 384
   },
   {
     "index": 14,
-    "word": "перетекание",
+    "word": "переливание",
     "answers": 10,
     "words": 15,
-    "letter": "к",
+    "letter": "п",
     "letterCount": 6,
-    "available": 258
+    "available": 97
   },
   {
     "index": 15,
@@ -132,7 +132,7 @@
     "words": 14,
     "letter": "о",
     "letterCount": 4,
-    "available": 137
+    "available": 81
   },
   {
     "index": 16,
@@ -141,7 +141,7 @@
     "words": 20,
     "letter": "в",
     "letterCount": 10,
-    "available": 383
+    "available": 213
   },
   {
     "index": 17,
@@ -150,7 +150,7 @@
     "words": 40,
     "letter": "т",
     "letterCount": 15,
-    "available": 675
+    "available": 363
   },
   {
     "index": 18,
@@ -159,7 +159,7 @@
     "words": 25,
     "letter": "б",
     "letterCount": 8,
-    "available": 384
+    "available": 224
   },
   {
     "index": 19,
@@ -168,7 +168,7 @@
     "words": 14,
     "letter": "с",
     "letterCount": 5,
-    "available": 103
+    "available": 75
   },
   {
     "index": 20,
@@ -177,7 +177,7 @@
     "words": 14,
     "letter": "о",
     "letterCount": 5,
-    "available": 302
+    "available": 180
   },
   {
     "index": 21,
@@ -186,7 +186,7 @@
     "words": 14,
     "letter": "д",
     "letterCount": 5,
-    "available": 165
+    "available": 118
   },
   {
     "index": 22,
@@ -195,16 +195,16 @@
     "words": 20,
     "letter": "к",
     "letterCount": 10,
-    "available": 292
+    "available": 168
   },
   {
     "index": 23,
-    "word": "передвигание",
+    "word": "магнитофон",
     "answers": 12,
     "words": 18,
     "letter": "г",
     "letterCount": 5,
-    "available": 233
+    "available": 92
   },
   {
     "index": 24,
@@ -213,7 +213,7 @@
     "words": 15,
     "letter": "ч",
     "letterCount": 6,
-    "available": 188
+    "available": 119
   },
   {
     "index": 25,
@@ -222,7 +222,7 @@
     "words": 40,
     "letter": "т",
     "letterCount": 10,
-    "available": 596
+    "available": 337
   },
   {
     "index": 26,
@@ -231,7 +231,7 @@
     "words": 24,
     "letter": "а",
     "letterCount": 6,
-    "available": 323
+    "available": 167
   },
   {
     "index": 27,
@@ -240,7 +240,7 @@
     "words": 16,
     "letter": "л",
     "letterCount": 6,
-    "available": 166
+    "available": 113
   },
   {
     "index": 28,
@@ -249,7 +249,7 @@
     "words": 24,
     "letter": "в",
     "letterCount": 8,
-    "available": 412
+    "available": 214
   },
   {
     "index": 29,
@@ -258,7 +258,7 @@
     "words": 26,
     "letter": "с",
     "letterCount": 10,
-    "available": 371
+    "available": 210
   },
   {
     "index": 30,
@@ -267,6 +267,6 @@
     "words": 30,
     "letter": "п",
     "letterCount": 10,
-    "available": 525
+    "available": 320
   }
 ]

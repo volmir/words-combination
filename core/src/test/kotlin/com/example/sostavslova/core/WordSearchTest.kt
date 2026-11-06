@@ -68,7 +68,7 @@ class WordSearchTest {
     @Test
     fun acceptanceCriteriaStage7() {
         val r = search.searchNormalized("демонстрация")
-        assertEquals(883, r.total)
+        assertEquals(455, r.total)
         for ((length, words) in r.byLength) {
             assertEquals(words.sorted(), words, "Слова длины $length должны быть отсортированы по алфавиту")
         }

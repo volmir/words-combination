@@ -15,12 +15,17 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.json.JSONObject
 
 @RunWith(AndroidJUnit4::class)
 class GameNavigationTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     private val container get() = (InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as WordsApplication).container
     private var originalGame: CurrentGame? = null
+    private val portalTotal by lazy {
+        InstrumentationRegistry.getInstrumentation().context.assets.open("golden_search.json")
+            .bufferedReader().use { JSONObject(it.readText()).getJSONObject("портал").getInt("count") }
+    }
 
     @Before fun setUp() = runTest {
         originalGame = container.progressRepository.observeCurrentGame().first()
@@ -40,7 +45,7 @@ class GameNavigationTest {
     private fun start() {
         compose.onNode(hasSetTextAction()).performTextReplacement("портал")
         compose.onNode(hasSetTextAction()).performImeAction()
-        awaitText("всего найдено 47 слов, вы отгадали 0")
+        awaitText("всего найдено $portalTotal слов, вы отгадали 0")
     }
     private fun answer(raw: String) {
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement(raw)
@@ -53,24 +58,26 @@ class GameNavigationTest {
         answer("пар"); awaitText("Правильно!")
         compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsFocused()
         assertEquals(listOf("пар"), container.progressRepository.observeCurrentGame().first()?.found)
-        awaitText("всего найдено 47 слов, вы отгадали 1")
+        awaitText("всего найдено $portalTotal слов, вы отгадали 1")
         answer("ПАР"); awaitText("Вы уже разгадали слово пар")
         answer("пaр"); awaitText("Введите слово длиной не менее 3-х символов")
         answer("нос"); awaitText("Слово нос не найдено!")
         compose.onNodeWithText("Статистика").performScrollTo().performClick()
         compose.onNodeWithText("Статистика по слову \"ПОРТАЛ\"").assertIsDisplayed()
-        compose.onNodeWithText("1 / 47").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("1 / $portalTotal").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Закрыть").performScrollTo().performClick()
         compose.onNodeWithText("пар").performScrollTo().performClick()
-        compose.onNodeWithText("Определения недоступны в этой версии").assertIsDisplayed()
+        val meaning = container.definitionsRepository.definitionsFor("пар").first().text
+        compose.waitUntil(10_000) { compose.onAllNodesWithText(meaning, substring = true).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText(meaning, substring = true).assertIsDisplayed()
     }
 
-    @Test fun fallbackHintCancelAndFinishClearOnlyCurrentGame() = runTest {
+    @Test fun definitionHintCancelAndFinishClearOnlyCurrentGame() = runTest {
         start(); answer("пар"); awaitText("Правильно!")
         compose.onNodeWithText("Показать подсказку").performScrollTo().performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_hint").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("game_hint").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Слово из ", substring = true).assertExists()
+        compose.onNodeWithText("Викисловарь · CC BY-SA 4.0", substring = true).assertExists()
         compose.onNodeWithText("Завершить игру").performScrollTo().performClick()
         compose.onNodeWithText("Нет").performClick()
         assertNotNull(container.progressRepository.observeCurrentGame().first())
@@ -90,11 +97,11 @@ class GameNavigationTest {
         start(); answer("пар"); awaitText("Правильно!")
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("ЧеРнОвИк")
         compose.activityRule.scenario.recreate()
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("всего найдено 47 слов, вы отгадали 1").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("всего найдено $portalTotal слов, вы отгадали 1").fetchSemanticsNodes().isNotEmpty() }
         compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("ЧеРнОвИк")
         back()
         compose.onNodeWithText("Продолжить игру").performScrollTo().performClick()
-        awaitText("всего найдено 47 слов, вы отгадали 1")
+        awaitText("всего найдено $portalTotal слов, вы отгадали 1")
         assertEquals(listOf("пар"), container.progressRepository.observeCurrentGame().first()?.found)
     }
 }
