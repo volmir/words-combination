@@ -109,10 +109,10 @@ def parse_tasks(path):
 
 DEFAULTS = {
     "tasks_file": "orchestrator/TASKS.md", "progress_file": "orchestrator/PROGRESS.md",
-    "branch": "auto/tasks", "remote": "origin", "push": False,
+    "branch": "auto/tasks", "remote": "origin", "push": True,
     "codex_bin": "codex", "sandbox": "workspace-write", "gate_base": [],
     "task_timeout": 3600, "gate_timeout": 1800, "git_timeout": 120,
-    "models": {"light": "gpt-5.6-luna", "standard": "gpt-6.1-terra", "heavy": "gpt-6-astra"},
+    "models": {"light": "gpt-5.6-luna", "standard": "gpt-6.1-sol", "heavy": "gpt-6-astra"},
     "efforts": {"light": "low", "standard": "medium", "heavy": "high"},
 }
 

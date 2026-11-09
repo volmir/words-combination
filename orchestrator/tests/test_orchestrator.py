@@ -156,12 +156,12 @@ class OrchestratorTests(unittest.TestCase):
         self.assertIn('Совсем новая задача', self.calls()[-1]['prompt'])
         self.assertFalse((self.repo / 'orchestrator/archive').exists())
 
-    def test_configured_models_and_explicit_push(self):
+    def test_configured_models_and_default_push(self):
         configured = json.loads((self.repo / 'orchestrator/config.json').read_text())
-        expected = {'light': 'gpt-5.6-luna', 'standard': 'gpt-6.1-terra', 'heavy': 'gpt-6-astra'}
+        expected = {'light': 'gpt-5.6-luna', 'standard': 'gpt-6.1-sol', 'heavy': 'gpt-6-astra'}
         self.assertEqual(configured['models'], expected)
-        self.assertFalse(configured['push'])
-        self.assertFalse(module.DEFAULTS['push'])
+        self.assertTrue(configured['push'])
+        self.assertTrue(module.DEFAULTS['push'])
         self.save_tasks(task(tier='light') + '\n' + task('B', 'true') + '\n' + task('C', 'true', tier='heavy'))
         self.commit()
         output = self.run_cli('--list')
@@ -171,12 +171,22 @@ class OrchestratorTests(unittest.TestCase):
         subprocess.run(['git', 'init', '--bare', '-q', str(remote)], check=True, env=self.env)
         self.g('remote', 'add', 'origin', str(remote))
         self.env.pop('NO_PUSH')
-        self.run_cli('--push')
+        self.run_cli()
         self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/auto/tasks'))
 
-    def test_default_run_works_without_remote_and_keeps_commit_local(self):
+    def test_default_push_without_config(self):
+        (self.repo / 'orchestrator/config.json').unlink()
+        self.commit()
+        remote = self.base / 'fallback-push.git'
+        subprocess.run(['git', 'init', '--bare', '-q', str(remote)], check=True, env=self.env)
+        self.g('remote', 'add', 'origin', str(remote))
         self.env.pop('NO_PUSH')
         self.run_cli()
+        self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/auto/tasks'))
+
+    def test_no_push_works_without_remote_and_keeps_commit_local(self):
+        self.env.pop('NO_PUSH')
+        self.run_cli('--no-push')
         self.assertIn('A-1', self.progress())
         self.assertEqual(self.g('remote'), '')
         self.assertEqual(self.g('status', '--porcelain'), '')

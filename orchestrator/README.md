@@ -26,8 +26,9 @@ bash orchestrator/run.sh --dry-run
 bash orchestrator/run.sh
 ```
 
-По умолчанию используется ветка `auto/tasks`, push отключён. Remote для локальной
-работы не нужен. После добавления задачи, например `DOC-1`, можно выполнить только её:
+По умолчанию используется ветка `auto/tasks`, push включён и требует настроенного
+remote `origin`. Для локальной работы без remote используйте `--no-push`.
+После добавления задачи, например `DOC-1`, можно выполнить только её:
 
 ```bash
 bash orchestrator/run.sh --only DOC-1
@@ -72,7 +73,7 @@ bash orchestrator/run.sh --dry-run          # также команды пров
 bash orchestrator/run.sh --only DOC-1       # только эта задача
 bash orchestrator/run.sh --from FIX-2       # с этой секции до конца
 bash orchestrator/run.sh                    # вся невыполненная очередь
-bash orchestrator/run.sh --push             # также push после каждого коммита
+bash orchestrator/run.sh --push             # явно включить push после каждого коммита
 bash orchestrator/run.sh --no-push          # явно отключить push из config/окружения
 bash orchestrator/run.sh --check full       # только проверки проекта
 bash orchestrator/run.sh --help             # справка по очереди и проверкам
@@ -201,14 +202,14 @@ Release остаётся заблокированным до ручного ау
 | `progress_file` | `orchestrator/PROGRESS.md` | Журнал и состояние завершённых задач |
 | `branch` | `auto/tasks` | Локальная ветка для работы |
 | `remote` | `origin` | Remote для необязательного push |
-| `push` | `false` | Выполнять ли push; включать только явно |
+| `push` | `true` | Выполнять push после каждой завершённой задачи |
 | `codex_bin` | `codex` | Имя программы или путь к Codex CLI |
 | `sandbox` | `workspace-write` | Песочница агента |
 | `gate_base` | `[]` | Префикс команды проверки массивом аргументов |
 | `task_timeout` | `3600` | Секунд на один запуск Codex |
 | `gate_timeout` | `1800` | Секунд на один запуск gate |
 | `git_timeout` | `120` | Секунд на commit и на push |
-| `models` | light: `gpt-5.6-luna`; standard: `gpt-6.1-terra`; heavy: `gpt-6-astra` | Модель для каждого tier |
+| `models` | light: `gpt-5.6-luna`; standard: `gpt-6.1-sol`; heavy: `gpt-6-astra` | Модель для каждого tier |
 | `efforts` | `low` / `medium` / `high` | Усилие для light / standard / heavy |
 
 В `models` и `efforts` используйте ключи `light`, `standard`, `heavy`.
@@ -220,7 +221,7 @@ Release остаётся заблокированным до ручного ау
 
 ```bash
 export MODEL_LIGHT="gpt-5.6-luna"
-export MODEL_STANDARD="gpt-6.1-terra"
+export MODEL_STANDARD="gpt-6.1-sol"
 export MODEL_HEAVY="gpt-6-astra"
 export EFFORT_LIGHT=low EFFORT_STANDARD=medium EFFORT_HEAVY=high
 ```
@@ -300,8 +301,8 @@ BRANCH=auto/batch-02 bash orchestrator/run.sh
   root `.gitignore` целевого проекта менять не требуется. Linked worktrees поддерживаются.
 - Скрипт использует файловую блокировку на общий Git-репозиторий: второй оркестратор
   не стартует даже в другом linked worktree этого репозитория.
-- Push отключён по умолчанию (`push: false`); `--push` включает его на один запуск
-  после явного решения владельца. При его провале локальный коммит сохраняется,
+- Push включён по умолчанию (`push: true`); `--no-push` отключает его на один запуск.
+  При провале push локальный коммит сохраняется,
   следующие задачи не запускаются. Исправьте доступ и выполните `git push` вручную,
   затем продолжите обычным запуском. Пропуск завершённых задач сам по себе push не повторяет.
 
