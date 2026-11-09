@@ -1,15 +1,16 @@
 # Проверка интеграции в «Составь слова»
 
-Дата: 9 ноября 2026 года. Оркестратор подключён к проверкам и правилам проекта.
+Дата: 9 ноября 2026 года. Проверки перенесены в `run.sh --check`;
+очередь и проверки используют одну точку входа.
 
 ## Выполнено
 
 ```text
-bash orchestrator/gate.sh orchestrator
-Ran 41 tests
+bash orchestrator/run.sh --check orchestrator
+Ran 44 tests
 OK
 
-bash orchestrator/gate.sh tools
+# Тесты tools/ в составе bash orchestrator/run.sh --check full
 Ran 71 tests
 OK
 ```
@@ -25,6 +26,10 @@ OK
 - Профили проверок `tools`, `orchestrator`, `core`, `data`, `android`, `full`:
   запуск из другого каталога и пути с пробелами, состав гейта перед коммитом,
   остановка при ошибке с сохранением кода возврата, справка и неверные аргументы.
+- Вызов `run.sh --check` внутри работающей очереди с повторной попыткой после
+  провала проверки; отдельный запуск при занятой блокировке, изменённых файлах,
+  некорректной очереди и конфигурации, отсутствующем Codex. Режим проверок не меняет
+  ветку, Git-историю, журнал и состояние очереди.
 - Полная замена пачки с очисткой очереди и удалением журнала, затем новые задачи
   с повторным использованием ID без архивных файлов.
 - Размещение логов в `orchestrator/.runtime/` и отсутствие их в Git-индексе.
@@ -49,21 +54,23 @@ OK
 
 Дополнительно выполнены:
 
-- `bash -n orchestrator/run.sh` и `bash -n orchestrator/gate.sh` — успешно.
+- `bash -n orchestrator/run.sh`, `git diff --check` — успешно.
+- `bash orchestrator/run.sh --help` и `bash orchestrator/run.sh --check --help` —
+  успешно; общая справка описывает очередь и режим проверок.
 - `bash orchestrator/run.sh --dry-run` — успешно, рабочая очередь пуста,
   демонстрационные задания в неё не включены. Codex и Git-записи не запускаются.
 - Разбор очереди и примеров — 0, 1 и 2 задачи соответственно; компиляция всех
   Python-файлов оркестратора через `compile()` — успешно.
-- Полный гейт `bash orchestrator/gate.sh full` с локальным JDK 21: обе Python-серии
+- Полный гейт `bash orchestrator/run.sh --check full` с локальным JDK 21: обе Python-серии
   прошли, Gradle остановился до выполнения задач с `SDK location not found`.
   `local.properties` указывает на отсутствующий
   `/tmp/words-combination-tools/android-sdk`. Сборка debug не проверена.
-- Отдельный `bash orchestrator/gate.sh core` с тем же JDK 21 — `BUILD SUCCESSFUL`,
+- Отдельный `bash orchestrator/run.sh --check core` с тем же JDK 21 — `BUILD SUCCESSFUL`,
   задача `:core:test` получила `UP-TO-DATE` (использован ранее сохранённый результат).
   Для этих запусков `JAVA_HOME` задан на существующий локальный JDK в
   `/tmp/personal-finance-build-tools/jdk-root/usr/lib/jvm/java-21-openjdk-amd64`;
-  настройки проекта и системный JDK не менялись. Без `JAVA_HOME` исходная попытка
-  `core` завершилась ошибкой поиска toolchain 21.
+  настройки проекта и системный JDK не менялись. В предыдущей проверке без
+  `JAVA_HOME` команда `core` завершилась ошибкой поиска toolchain 21.
 
 Исходные 34 теста комплекта сохранены. Ожидание push изменено по существу:
 проект теперь требует явного включения отправки; сценарии push в локальный

@@ -16,7 +16,7 @@ class ProjectGateTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         (self.root / "orchestrator").mkdir()
-        shutil.copy2(PACKAGE / "gate.sh", self.root / "orchestrator/gate.sh")
+        shutil.copy2(PACKAGE / "run.sh", self.root / "orchestrator/run.sh")
         binaries = self.root / "bin"
         binaries.mkdir()
         self.log = self.root / "commands.log"
@@ -31,7 +31,7 @@ class ProjectGateTests(unittest.TestCase):
 
     def run_gate(self, *args, exit_code=0):
         result = subprocess.run(
-            ["bash", str(self.root / "orchestrator/gate.sh"), *args],
+            ["bash", str(self.root / "orchestrator/run.sh"), "--check", *args],
             cwd=self.root / "bin", env={**self.env, "GATE_TEST_EXIT": str(exit_code)},
             capture_output=True, text=True, timeout=10)
         calls = self.log.read_text().splitlines() if self.log.exists() else []
@@ -77,7 +77,8 @@ class ProjectGateTests(unittest.TestCase):
         self.assertEqual(len(calls), 1)
 
     def test_invalid_arguments_do_not_run_checks(self):
-        for args in (("unknown",), ("tools", "core")):
+        for args in (("unknown",), ("",), ("tools", "core"),
+                     ("core", "--only", "A-1"), ("--dry-run",)):
             with self.subTest(args=args):
                 result, calls = self.run_gate(*args)
                 self.assertEqual(result.returncode, 2)

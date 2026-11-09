@@ -193,6 +193,46 @@ class OrchestratorTests(unittest.TestCase):
         self.assertEqual(len(list((self.repo / 'orchestrator/.runtime/logs').rglob('*.gate.*.log'))), 2)
         self.assertEqual(self.progress()['A-1']['gate'], 'passed')
 
+    def test_check_mode_runs_inside_queue_and_retries_failed_check(self):
+        self.save_tasks(task(gate='bash orchestrator/run.sh --check core'))
+        (self.repo / 'gradlew').write_text(
+            '#!/usr/bin/env bash\n'
+            'test "$*" = ":core:test --console=plain" && '
+            'test "$(cat result-A-1.txt)" = good\n')
+        self.commit()
+        self.run_cli(MOCK_MODE='retry')
+        self.assertEqual(len(self.calls()), 2)
+        logs = list((self.repo / 'orchestrator/.runtime/logs').rglob('*.gate.*.log'))
+        self.assertEqual(len(logs), 2)
+        self.assertEqual(self.progress()['A-1']['gate'], 'passed')
+        self.assertEqual(self.g('status', '--porcelain'), '')
+
+    def test_check_mode_ignores_queue_config_dirty_tree_and_queue_lock(self):
+        (self.repo / 'gradlew').write_text('#!/usr/bin/env bash\nexit 0\n')
+        self.commit()
+        (self.repo / 'orchestrator/config.json').write_text('invalid JSON')
+        self.save_tasks('invalid queue')
+        head = self.g('rev-parse', 'HEAD')
+        status = self.g('status', '--porcelain')
+        common = self.repo / self.g('rev-parse', '--git-common-dir')
+        with (common / 'universal-orchestrator.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            self.run_cli('--check', 'core', CODEX_BIN=str(self.base / 'missing-codex'))
+        self.assertEqual(self.g('rev-parse', 'HEAD'), head)
+        self.assertEqual(self.g('branch', '--show-current'), 'main')
+        self.assertEqual(self.g('status', '--porcelain'), status)
+        self.assertEqual(self.calls(), [])
+        self.assertFalse((self.repo / 'orchestrator/PROGRESS.md').exists())
+        self.assertFalse((self.repo / 'orchestrator/.runtime').exists())
+
+    def test_help_includes_queue_and_check_options_without_running_them(self):
+        for flag in ('--help', '-h'):
+            with self.subTest(flag=flag):
+                output = self.run_cli(flag)
+                self.assertIn('--dry-run', output)
+                self.assertIn('--check', output)
+                self.assertFalse((self.repo / 'orchestrator/.runtime').exists())
+
     def test_failure_stops_queue_without_commit(self):
         self.save_tasks(task(gate='exit 9', retries=0) + '\n' + task('B', 'true'))
         self.commit()

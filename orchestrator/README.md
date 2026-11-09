@@ -40,8 +40,8 @@ bash orchestrator/run.sh --only DOC-1
 
 | Путь внутри `orchestrator/` | Назначение |
 |---|---|
-| `run.sh`, `orchestrator.py` | Точка входа и выполнение очереди |
-| `gate.sh` | Узкие проверки и полный гейт проекта |
+| `run.sh` | Точка входа: очередь задач или проверки через `--check` |
+| `orchestrator.py` | Выполнение очереди |
 | `config.json` | Модели, Git, проверки, таймауты и пути |
 | `TASKS.md` | Текущая очередь; изначально пуста |
 | `PROGRESS.md` | Журнал и состояние; создаётся при первом завершении задачи |
@@ -75,6 +75,8 @@ bash orchestrator/run.sh --from FIX-2       # с этой секции до ко
 bash orchestrator/run.sh                    # вся невыполненная очередь
 bash orchestrator/run.sh --push             # также push после каждого коммита
 bash orchestrator/run.sh --no-push          # явно отключить push из config/окружения
+bash orchestrator/run.sh --check full       # только проверки проекта
+bash orchestrator/run.sh --help             # справка по очереди и проверкам
 ```
 
 `--only`, `--from` и `--mark-done` взаимоисключающие. Неизвестный ID — ошибка.
@@ -127,25 +129,29 @@ retries: 1
 
 ## Проверки
 
-Для этого проекта используйте `gate: bash orchestrator/gate.sh full`.
+Для этого проекта используйте `gate: bash orchestrator/run.sh --check full`.
+Без аргументов `run.sh` выполняет очередь. Режим `--check` запускает только проверки;
+без имени профиля выбирается `full`. Он не читает очередь и конфигурацию, не требует
+чистого рабочего дерева, не захватывает блокировку очереди и не выполняет Git-операции.
+Такой вызов работает и внутри уже запущенного оркестратора.
 Профили запускаются и вручную из любого рабочего каталога, если указать путь к скрипту:
 
-| Профиль `gate.sh` | Команды |
+| Профиль `run.sh --check` | Команды |
 |---|---|
 | `tools` | `python3 -m unittest discover -s tools/tests` |
 | `orchestrator` | `python3 -m unittest discover -s orchestrator/tests` |
 | `core` | `bash ./gradlew :core:test --console=plain` |
 | `data` | `bash ./gradlew :app:verifyDictionaryLicenses :core:test --console=plain` |
 | `android` | Компиляция debug Kotlin, `lintDebug`, компиляция `androidTest` |
-| `full` (по умолчанию) | Обе Python-серии, затем `:core:test :app:assembleDebug` |
+| `full` (по умолчанию для `--check`) | Обе Python-серии, затем `:core:test :app:assembleDebug` |
 
 `full` выполняет гейт перед коммитом из корневого `AGENTS.md`. Сборка debug сама
 запускает `syncDictionaryAssets` и `verifyDictionaryLicenses`. Узкие профили нужны
 для промежуточных проверок. Дополнительные проверки по типу задачи добавляйте явно:
 
 ```text
-gate: bash orchestrator/gate.sh full && bash orchestrator/gate.sh android
-gate: bash orchestrator/gate.sh full && bash ./gradlew :app:assembleRelease --console=plain
+gate: bash orchestrator/run.sh --check full && bash orchestrator/run.sh --check android
+gate: bash orchestrator/run.sh --check full && bash ./gradlew :app:assembleRelease --console=plain
 ```
 
 Для UI-поведения нужен также тест на устройстве/эмуляторе согласно `AGENTS.md`.

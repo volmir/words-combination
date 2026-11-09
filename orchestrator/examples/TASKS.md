@@ -2,7 +2,7 @@
 
 ## DOC-1: Уточнить инструкцию локальной сборки
 tier: light
-gate: bash orchestrator/gate.sh full
+gate: bash orchestrator/run.sh --check full
 retries: 1
 ```prompt
 Проверь раздел «Сборка и запуск» в README.md по текущим Gradle-файлам и AGENTS.md.

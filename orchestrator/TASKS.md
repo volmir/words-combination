@@ -1,5 +1,5 @@
 # Задачи проекта «Составь слова»
 
 Очередь пока пуста. Добавляйте только согласованные задачи в формате из README.md.
-Гейт перед коммитом: `gate: bash orchestrator/gate.sh full`.
+Гейт перед коммитом: `gate: bash orchestrator/run.sh --check full`.
 Дополнительные проверки выбирайте по AGENTS.md; примеры — в examples/TASKS.md.

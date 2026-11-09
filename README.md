@@ -134,7 +134,7 @@ python3 tools/build_local_definitions.py --dump .local/dictionary/raw-wiktextrac
 ```bash
 # 1. Запуск unit-тестов игровой логики (:core)
 python3 -m unittest discover tools/tests
-bash orchestrator/gate.sh orchestrator
+bash orchestrator/run.sh --check orchestrator
 bash ./gradlew :core:test
 
 # 2. Сборка отладочного APK
@@ -163,9 +163,9 @@ Release-команды сейчас должны завершаться отка
 и Android SDK из требований выше. Зависимости Android-приложения не меняются.
 
 ```bash
-bash orchestrator/run.sh --dry-run   # план без запуска моделей и изменений
-bash orchestrator/gate.sh full      # Python-тесты, :core:test, :app:assembleDebug
-bash orchestrator/run.sh            # выполнение сохранённой в Git очереди
+bash orchestrator/run.sh --dry-run     # план без запуска моделей и изменений
+bash orchestrator/run.sh --check full  # Python-тесты, :core:test, :app:assembleDebug
+bash orchestrator/run.sh              # выполнение сохранённой в Git очереди
 ```
 
 Рабочая очередь [orchestrator/TASKS.md](orchestrator/TASKS.md) изначально пуста.
