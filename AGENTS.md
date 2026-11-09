@@ -17,6 +17,7 @@
 | Тесты в `androidTest` | `./gradlew :app:compileDebugAndroidTestKotlin`; `:app:connectedDebugAndroidTest` только при наличии эмулятора или устройства |
 | Строки, ресурсы, манифест | `./gradlew :app:lintDebug` |
 | `tools/` | `python3 -m unittest discover tools/tests` |
+| `orchestrator/` | `bash -n orchestrator/run.sh && bash -n orchestrator/gate.sh`, затем `bash orchestrator/gate.sh orchestrator` |
 | `data/`, `legal/` | `./gradlew :app:verifyDictionaryLicenses`, затем `:core:test` |
 | Gradle, R8, манифест, подпись | `./gradlew :app:assembleRelease` |
 | Гейт перед коммитом | `:core:test` и `:app:assembleDebug` (он сам запускает `syncDictionaryAssets` и `verifyDictionaryLicenses`) плюс строки выше по типу правки |
@@ -36,6 +37,7 @@ app/    data/    WordRepository, LevelsRepository, ProgressRepository (DataStore
         src/debug         каталог компонентов
         src/androidTest   инструментальные тесты
 tools/  build_dictionary.py, overrides/ (add.txt, remove.txt), tests/
+orchestrator/ последовательное выполнение задач разработки, gate.sh, tests/ (вне Android-приложения)
 data/   words.txt, levels.json, golden_search.json, word_sources.jsonl.gz, manifest.json (ГЕНЕРИРУЮТСЯ)
 legal/  лицензии и инвентарь библиотек (копируются в assets)
 ```
@@ -121,3 +123,26 @@ legal/  лицензии и инвентарь библиотек (копиру�
 - [ ] Строки в `strings.xml`, нет `!!`, нет блокировок UI-потока, нет новых разрешений и зависимостей без решения владельца.
 - [ ] Данные не правились вручную; хэши и `manifest.json` согласованы.
 - [ ] Отчёт составлен по §10, непроверенное названо.
+
+## 12. Последовательный оркестратор
+
+Инструкция: `orchestrator/README.md`. Очередь — `orchestrator/TASKS.md`, журнал —
+`orchestrator/PROGRESS.md`, локальные логи — `orchestrator/.runtime/` (не коммитятся).
+Примеры из `orchestrator/examples/` не входят в активную очередь.
+
+* План: `bash orchestrator/run.sh --dry-run`; выполнение: `bash orchestrator/run.sh`.
+  Запускать из корня проекта после сохранения изменений коммитом. Агентские задачи
+  выполняются последовательно в `auto/tasks`; push по умолчанию отключён.
+* В задаче указывать `gate: bash orchestrator/gate.sh full`: тесты `tools/`,
+  оркестратора, `:core:test` и `:app:assembleDebug`. Дополнительные проверки по §1
+  добавлять через `&&`; для Gradle/R8/подписи требуется также `:app:assembleRelease`.
+  Узкие профили `gate.sh` нужны для промежуточной проверки и не заменяют полный гейт.
+* Отсутствие JDK/SDK и провал ручного аудита — причины остановки, а не повод
+  подменять проверку `skip` или ослаблять её. Оркестратор не устанавливает SDK,
+  не регенерирует данные и не разрешает публикацию.
+* Только внутри задания, полученного от оркестратора: не выполнять `git commit`,
+  push, переключение ветки и изменение служебных файлов `orchestrator/`.
+  Коммит и запись результата делает внешний процесс после успешного gate.
+  При обычной работе над интеграцией эти файлы можно редактировать.
+* Согласования из §8 действуют и для автоматических задач. Если без решения
+  владельца продолжать нельзя, завершить ответ строкой `BLOCKED: <причина>`.
