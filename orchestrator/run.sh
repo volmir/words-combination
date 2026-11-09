@@ -31,6 +31,9 @@ if [[ "${1:-}" == --check ]]; then
         *) check_usage >&2; exit 2 ;;
     esac
     cd -- "$SCRIPT_DIR/.."
+    # Вложенный gate не должен создавать __pycache__ в защищённом orchestrator/.
+    # Переменная наследуется и дочерними Python-процессами проверок.
+    export PYTHONDONTWRITEBYTECODE=1
     case "$profile" in
         tools) python3 -m unittest discover -s tools/tests ;;
         orchestrator) python3 -m unittest discover -s orchestrator/tests ;;

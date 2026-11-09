@@ -225,6 +225,25 @@ class OrchestratorTests(unittest.TestCase):
         self.assertFalse((self.repo / 'orchestrator/PROGRESS.md').exists())
         self.assertFalse((self.repo / 'orchestrator/.runtime').exists())
 
+    def test_python_check_inside_queue_does_not_create_protected_bytecode(self):
+        self.env.pop('PYTHONDONTWRITEBYTECODE', None)
+        # Вложенный запуск использует маленькую серию, чтобы не запускать этот
+        # интеграционный тест рекурсивно. Discovery импортирует тестовый модуль.
+        suite = self.repo / 'orchestrator/tests'
+        shutil.rmtree(suite)
+        suite.mkdir()
+        (suite / 'test_probe.py').write_text(
+            'import unittest\n'
+            'class Probe(unittest.TestCase):\n'
+            '    def test_discovery(self):\n'
+            '        self.assertTrue(__name__.startswith("test_"))\n')
+        self.save_tasks(task(gate='bash orchestrator/run.sh --check orchestrator'))
+        self.commit()
+        self.run_cli()
+        self.assertEqual(self.progress()['A-1']['gate'], 'passed')
+        self.assertEqual(list((self.repo / 'orchestrator').rglob('__pycache__')), [])
+        self.assertEqual(self.g('status', '--porcelain'), '')
+
     def test_help_includes_queue_and_check_options_without_running_them(self):
         for flag in ('--help', '-h'):
             with self.subTest(flag=flag):
