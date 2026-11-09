@@ -60,13 +60,41 @@ def task(task_id="A-1", gate="test -f result-A-1.txt", retries=1, tier="standard
     return f"## {task_id}: Название {task_id}\ntier: {tier}\ngate: {gate}\nretries: {retries}\n```prompt\n{prompt}\n```\n"
 
 
+def copy_test_package(source, destination):
+    # Рабочий журнал относится к очереди проекта, а не к тестовой фикстуре.
+    shutil.copytree(source, destination, ignore=shutil.ignore_patterns('__pycache__', '.runtime', 'PROGRESS.md'))
+
+
+class FixtureTests(unittest.TestCase):
+    def test_copy_starts_without_existing_run_state_and_preserves_source(self):
+        with tempfile.TemporaryDirectory(prefix='orchestrator fixture ') as temp:
+            source = Path(temp) / 'source'
+            destination = Path(temp) / 'destination'
+            source.mkdir()
+            (source / 'run.sh').write_text('#!/bin/sh\n')
+            progress = source / 'PROGRESS.md'
+            progress.write_text('# Журнал\n\n- [DONE-1] Выполнено\n', encoding='utf-8')
+            runtime = source / '.runtime'
+            runtime.mkdir()
+            (runtime / 'calls.jsonl').write_text('{"id": "DONE-1"}\n')
+            before = {p.relative_to(source): p.read_bytes() for p in source.rglob('*') if p.is_file()}
+
+            copy_test_package(source, destination)
+
+            self.assertEqual((destination / 'run.sh').read_bytes(), (source / 'run.sh').read_bytes())
+            self.assertFalse((destination / 'PROGRESS.md').exists())
+            self.assertFalse((destination / '.runtime').exists())
+            self.assertEqual(
+                {p.relative_to(source): p.read_bytes() for p in source.rglob('*') if p.is_file()}, before)
+
+
 class OrchestratorTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="orchestrator space ")
         self.base = Path(self.temp.name)
         self.repo = self.base / "project space"
         self.repo.mkdir()
-        shutil.copytree(PACKAGE, self.repo / 'orchestrator', ignore=shutil.ignore_patterns('__pycache__', '.runtime'))
+        copy_test_package(PACKAGE, self.repo / 'orchestrator')
         self.mock = self.base / "mock codex"
         self.mock.write_text(MOCK)
         self.mock.chmod(0o755)
