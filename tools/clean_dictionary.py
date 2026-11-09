@@ -15,6 +15,7 @@ import build_dictionary as dictionary
 from build_game_data import frequencies, publish, write_csv
 from game_data_providers import atomic_json, json_digest
 from game_data_quality import normalize_form
+from prepare_frequency import resolve_frequency_list
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
@@ -246,12 +247,14 @@ def reports(directory, decisions, records, golden, original_levels, seed):
 def run(args):
     if args.dump is None or not args.dump.is_file():
         raise ValueError("Нужен существующий локальный дамп --dump; загрузок нет")
-    if args.frequency_list is None or not args.frequency_list.is_file():
-        raise ValueError("Нужен существующий локальный --frequency-list; загрузок нет")
+    explicit_frequency = getattr(args, "frequency_list", None)
+    if explicit_frequency is not None and not explicit_frequency.is_file():
+        raise ValueError("Указанный --frequency-list отсутствует; скачивания нет")
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     dump_sha = dictionary.sha256_file(args.dump)
     if dump_sha != manifest["source"]["sha256_input"] or manifest["source"]["dump_date"] != "2026-11-01":
         raise ValueError("SHA-256 или дата дампа не совпадает с манифестом 2026-11-01")
+    args.frequency_list = resolve_frequency_list(explicit_frequency, args.manifest)
     config = load_config(args.config)
     frequency_sha = dictionary.sha256_file(args.frequency_list)
     frequency_source = frequency_provenance(args.frequency_list, frequency_sha)
@@ -343,7 +346,7 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dump", type=Path, required=True)
-    parser.add_argument("--frequency-list", type=Path, required=True)
+    parser.add_argument("--frequency-list", type=Path, help="Локальный список; иначе проверенный стандартный кэш")
     parser.add_argument("--source-words", type=Path, help="Необязательный исходный набор; иначе фиксированный снимок или полный отбор из дампа")
     parser.add_argument("--manifest", type=Path, default=ROOT / "data/manifest.json")
     parser.add_argument("--config", type=Path, default=TOOLS / "selection_config.json")

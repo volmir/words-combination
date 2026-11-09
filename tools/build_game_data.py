@@ -19,6 +19,7 @@ from urllib.parse import quote
 import build_dictionary as dictionary
 from game_data_providers import ApiProvider, FileProvider, OllamaProvider, atomic_json, json_digest, prompt_hash
 from game_data_quality import definition_issues, fold, normalize_form, tokens
+from prepare_frequency import resolve_frequency_list
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
@@ -156,7 +157,9 @@ def frequencies(records, corpus=None, frequency_list=None):
     eligible = {word: record for word, record in records.items() if record["eligible"]}
     if corpus is None and frequency_list is None:
         return {"skipped": True, "B": len(eligible), "words": {word: {"frequency": None, "freq_rank": None} for word in eligible}}
-    forms = {form for word, record in eligible.items() for form in set(record["forms"]) | {word}}
+    lemma_forms = {word: {normalize_form(form) for form in record["forms"]} | {normalize_form(word)}
+                   for word, record in eligible.items()}
+    forms = set().union(*lemma_forms.values())
     counts = Counter()
     if frequency_list is not None:
         rows = 0
@@ -188,7 +191,7 @@ def frequencies(records, corpus=None, frequency_list=None):
                 token = normalize_form(carry)
                 if token in forms:
                     counts[token] += 1
-    totals = {word: sum(counts[form] for form in set(record["forms"]) | {word}) for word, record in eligible.items()}
+    totals = {word: sum(counts[form] for form in lemma_forms[word]) for word in eligible}
     ordered = sorted(totals, key=lambda word: (-totals[word], word))
     return {"skipped": False, "B": len(eligible), "words": {
         word: {"frequency": totals[word], "freq_rank": rank if totals[word] else None}
@@ -710,8 +713,6 @@ def run(args):
     if args.verify_audit:
         return verify_audit(args.verify_audit, args.out, args.reviewer, args.overrides, args.config)
     if getattr(args, "definitions_source", "own") == "clean":
-        if getattr(args, "frequency_list", None) is None:
-            raise ValueError("Для очистки нужен локальный --frequency-list")
         import clean_dictionary
         cleanup_args = argparse.Namespace(**vars(args))
         cleanup_args.cache = args.cache / "cleanup"
@@ -737,8 +738,8 @@ def run(args):
     frequency_list = getattr(args, "frequency_list", None)
     if args.corpus is not None and frequency_list is not None:
         raise ValueError("--corpus и --frequency-list нельзя использовать одновременно")
-    if frequency_list is not None and not frequency_list.is_file():
-        raise ValueError("Указанный --frequency-list отсутствует; скачивания нет")
+    if args.corpus is None:
+        frequency_list = resolve_frequency_list(frequency_list, args.manifest, required=False)
     config = load_config(args.config)
     definitions_source = getattr(args, "definitions_source", "own")
     if definitions_source == "dump" and pilot_size:
@@ -979,7 +980,7 @@ def main():
     frequency_input = parser.add_mutually_exclusive_group()
     frequency_input.add_argument("--corpus", type=Path, help="Локальный текстовый корпус UTF-8")
     frequency_input.add_argument("--frequency-list", type=Path,
-                                 help="Локальный список UTF-8: словоформа и число употреблений (FrequencyWords)")
+                                 help="Локальный список UTF-8: словоформа и число употреблений; иначе стандартный кэш FrequencyWords")
     parser.add_argument("--definitions-source", choices=("clean", "dump", "own"), default="clean",
                         help="По умолчанию очистка игровой базы без определений; dump/own — прежние эксперименты")
     parser.add_argument("--prepare-only", action="store_true", help="Для clean: собрать в кэше без замены data/")

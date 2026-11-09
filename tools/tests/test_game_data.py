@@ -27,6 +27,9 @@ class PipelineTest(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
+        cache_patch = patch("prepare_frequency.DEFAULT_CACHE", self.root / "absent-frequency-cache")
+        cache_patch.start()
+        self.addCleanup(cache_patch.stop)
         self.dump = self.root / "source.jsonl"
         self.config = game.load_config(game.TOOLS / "selection_config.json")
         self.config.update(target_size=5, target_min_size=1, llm_candidates=10)
