@@ -63,4 +63,5 @@ data class CurrentCampaignLevel(
     val level: CampaignLevel,
     val game: GameState,
     val completedTaskIds: Set<String> = emptySet(),
+    val hints: HintState = HintState(),
 )

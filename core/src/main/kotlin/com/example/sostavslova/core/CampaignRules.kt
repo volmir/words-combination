@@ -4,6 +4,7 @@ package com.example.sostavslova.core
 data class CampaignLevelProgress(
     val found: List<String> = emptyList(),
     val completedTaskIds: Set<String> = emptySet(),
+    val hints: HintState = HintState(),
 )
 
 /**
@@ -59,7 +60,7 @@ object CampaignRules {
         val level = campaign.levels[levelNumber - 1]
         val saved = progress.levels[level.word] ?: CampaignLevelProgress()
         val game = GameState.start(level.word, index, normalizedFound(saved.found))
-        return CurrentCampaignLevel(level, game, saved.completedTaskIds.intersect(taskIds(level)))
+        return CurrentCampaignLevel(level, game, saved.completedTaskIds.intersect(taskIds(level)), saved.hints)
     }
 
     /**
@@ -94,6 +95,11 @@ object CampaignRules {
             levels = progress.levels + (level.word to CampaignLevelProgress(
                 found = evaluated.game.found,
                 completedTaskIds = evaluated.completedTaskIds,
+                // Неполный/старый снимок игры не возвращает уже потраченный бюджет.
+                hints = if (evaluated.hints.shownSteps > saved.hints.shownSteps ||
+                    (evaluated.hints.shownSteps == saved.hints.shownSteps &&
+                        (evaluated.hints.ladder.target != null || saved.hints.ladder.target?.word in evaluated.game.found))
+                ) evaluated.hints else saved.hints,
             )),
             highestUnlockedLevel = frontier,
             finaleReached = progress.finaleReached || (last && passed),
