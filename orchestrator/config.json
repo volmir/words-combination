@@ -10,6 +10,8 @@
   "task_timeout": 3600,
   "gate_timeout": 1800,
   "git_timeout": 120,
+  "restart_retries": 3,
+  "retry_delay": 30,
   "models": {
     "light": "gpt-5.6-luna",
     "standard": "gpt-6.1-sol",

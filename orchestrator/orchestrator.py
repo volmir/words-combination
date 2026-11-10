@@ -13,11 +13,16 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 
 
 class Error(Exception):
+    pass
+
+
+class RetryableError(Error):
     pass
 
 
@@ -112,6 +117,7 @@ DEFAULTS = {
     "branch": "auto/tasks", "remote": "origin", "push": True,
     "codex_bin": "codex", "sandbox": "workspace-write", "gate_base": [],
     "task_timeout": 3600, "gate_timeout": 1800, "git_timeout": 120,
+    "restart_retries": 3, "retry_delay": 30,
     "models": {"light": "gpt-5.6-luna", "standard": "gpt-6.1-sol", "heavy": "gpt-6-astra"},
     "efforts": {"light": "low", "standard": "medium", "heavy": "high"},
 }
@@ -139,6 +145,13 @@ def load_config(path):
             config[key] = int(os.environ[key.upper()])
         if type(config[key]) is not int or config[key] <= 0:
             raise Error(f"{key}: нужно положительное число секунд")
+    for key in ("restart_retries", "retry_delay"):
+        if key.upper() in os.environ:
+            config[key] = int(os.environ[key.upper()])
+        if type(config[key]) is not int or config[key] < 0:
+            raise Error(f"{key}: нужно неотрицательное целое число")
+    if config["restart_retries"] > 20:
+        raise Error("restart_retries: допустимы значения 0–20")
     for tier in config["models"]:
         config["models"][tier] = os.environ.get("MODEL_" + tier.upper(), config["models"][tier])
         config["efforts"][tier] = os.environ.get("EFFORT_" + tier.upper(), config["efforts"][tier])
@@ -211,7 +224,7 @@ def snapshot(paths, excluded=()):
             if entry.is_symlink():
                 raise Error(f"symlink в защищённом пути: {entry}")
             if entry.is_file():
-                result[str(entry)] = (hashlib.sha256(entry.read_bytes()).hexdigest(), entry.stat().st_mode)
+                result[str(entry)] = [hashlib.sha256(entry.read_bytes()).hexdigest(), entry.stat().st_mode]
             else:
                 result[str(entry)] = "directory" if entry.is_dir() else "missing"
     return result
@@ -234,19 +247,26 @@ def stop_group(process):
     process.wait()
 
 
-def run_logged(command, log, timeout, prompt=None):
+def run_logged(command, log, timeout, prompt=None, lock_fd=None):
     # Prompt через stdin: нет ограничения длины аргументов и shell-интерполяции.
     with log.open("wb") as output, tempfile.TemporaryFile() as input_file:
         if prompt is not None:
             input_file.write(prompt.encode())
             input_file.seek(0)
         process = subprocess.Popen(command, stdin=input_file, stdout=output,
-                                   stderr=subprocess.STDOUT, start_new_session=True)
+                                   stderr=subprocess.STDOUT, start_new_session=True,
+                                   pass_fds=() if lock_fd is None else (lock_fd,))
         try:
-            return process.wait(timeout=timeout)
-        except (subprocess.TimeoutExpired, KeyboardInterrupt):
+            code = process.wait(timeout=timeout)
+            if code:
+                stop_group(process)
+            return code
+        except subprocess.TimeoutExpired:
             stop_group(process)
-            raise Error(f"таймаут или остановка; лог: {log}")
+            raise RetryableError(f"таймаут; лог: {log}")
+        except KeyboardInterrupt:
+            stop_group(process)
+            raise Error(f"остановка; лог: {log}; повторный запуск продолжит задачу")
 
 
 def tail(path, limit=12000):
@@ -277,7 +297,7 @@ def prompt_for(task, context, protected):
 """
 
 
-def append_progress(path, task, summary, manual, model, effort):
+def progress_content(path, task, summary, manual, model, effort):
     content = path.read_text(encoding="utf-8") if path.exists() else "# Журнал задач\n"
     record = {"id": task.id, "fingerprint": task.fingerprint(),
               "date": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -287,11 +307,80 @@ def append_progress(path, task, summary, manual, model, effort):
     if task.gate == "skip":
         content += "  Проверка: ПРОПУЩЕНА (gate: skip).\n"
     content += "<!-- orchestrator:v1 " + json.dumps(record, ensure_ascii=False).replace("-->", "--\\u003e") + " -->\n"
+    return content
+
+
+def atomic_text(path, content, directory):
     path.parent.mkdir(parents=True, exist_ok=True)
-    # Atomic write: Ctrl+C не оставит половину JSON-записи.
-    temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(content, encoding="utf-8")
-    os.replace(temporary, path)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=directory,
+                                         prefix=".checkpoint-", delete=False) as stream:
+            temporary = Path(stream.name)
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+        # Сохраняем также rename перед возможным отключением питания.
+        descriptor = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def read_checkpoint(path, root):
+    if path.is_symlink():
+        raise Error("checkpoint.json не должен быть symlink")
+    if not path.exists():
+        return None
+    try:
+        state = json.loads(path.read_text(encoding="utf-8"))
+        if (type(state["version"]) is not int or state["version"] != 1 or state["root"] != str(root)
+                or state["phase"] not in ("agent", "gate", "commit", "push")
+                or any(not isinstance(state[key], str) for key in
+                       ("task", "branch", "logs", "summary", "model", "effort"))
+                or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", state["task"])
+                or type(state["manual"]) is not bool
+                or not isinstance(state["baseline"], dict)
+                or not re.fullmatch(r"[0-9a-f]{40,64}", state["head"])
+                or not re.fullmatch(r"[0-9a-f]{64}", state["fingerprint"])
+                or any(type(state[key]) is not int or state[key] < 0
+                       for key in ("attempt", "exec_runs", "gate_runs", "commit_runs", "push_runs"))):
+            raise ValueError("неверная версия, проект или поля")
+        if state["phase"] == "commit" and (not isinstance(state["progress_after"], str)
+                or state["progress_before"] is not None and not isinstance(state["progress_before"], str)):
+            raise ValueError("неверные поля журнала")
+        return state
+    except (KeyError, TypeError, ValueError) as error:
+        raise Error(f"повреждена контрольная точка {path}: {error}; правки сохранены") from error
+
+
+def retry_wait(log, default, now=None):
+    """Время сброса лимита из CLI задано в локальном часовом поясе машины."""
+    match = re.search(r"try again at ([A-Za-z]{3}) (\d{1,2})(?:st|nd|rd|th)?, (\d{4}) "
+                      r"(\d{1,2}):(\d{2}) (AM|PM)", tail(log), re.IGNORECASE)
+    if match:
+        month, day, year, hour, minute, meridiem = match.groups()
+        months = "jan feb mar apr may jun jul aug sep oct nov dec".split()
+        try:
+            if not 1 <= int(hour) <= 12:
+                return default
+            reset = datetime(int(year), months.index(month.lower()) + 1, int(day),
+                             int(hour) % 12 + (12 if meridiem.upper() == "PM" else 0), int(minute)).astimezone()
+            return max(default, reset.timestamp() - (now or datetime.now(timezone.utc)).timestamp() + 5)
+        except ValueError:
+            pass
+    return default
+
+
+def wait_for_retry(delay):
+    deadline = time.monotonic() + delay
+    while time.monotonic() < deadline:
+        time.sleep(min(60, max(0, deadline - time.monotonic())))
 
 
 def execute(args):
@@ -331,13 +420,13 @@ def execute(args):
                 print(f"  gate: {task.gate}; retries: {task.retries}")
         return
     pending = [task for task in selected if task.id not in records]
-    if args.mark_done and not pending:
+    if args.mark_done and not pending and not (work / "checkpoint.json").exists():
         raise Error(f"{args.mark_done}: уже выполнено")
-    if records:
-        relative_progress = str(progress_path.relative_to(root))
-        if not git("ls-files", "--", relative_progress) or git("diff", "HEAD", "--", relative_progress):
-            raise Error("журнал содержит незакоммиченные результаты; сначала завершите или исправьте предыдущий коммит")
-    if not pending:
+    if not pending and not (work / "checkpoint.json").exists():
+        if records:
+            relative_progress = str(progress_path.relative_to(root))
+            if not git("ls-files", "--", relative_progress) or git("diff", "HEAD", "--", relative_progress):
+                raise Error("журнал содержит незакоммиченные результаты; сначала завершите или исправьте предыдущий коммит")
         print("Нет невыполненных задач.")
         return
     if git("rev-parse", "--show-toplevel") != str(root):
@@ -357,10 +446,10 @@ def execute(args):
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise Error("другой оркестратор уже работает с этим репозиторием")
-        run_queue(args, config, root, script_dir, config_path, tasks_path, progress_path, records, pending)
+        run_queue(args, config, root, script_dir, config_path, tasks_path, progress_path, selected, lock.fileno())
 
 
-def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_path, records, pending):
+def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_path, selected, lock_fd):
     work = script_dir / ".runtime"
     relative_work = work.relative_to(root).as_posix()
     if work.is_symlink():
@@ -380,103 +469,224 @@ def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_
     for name in ("MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "rebase-merge", "rebase-apply"):
         if Path(git("rev-parse", "--git-path", name)).exists():
             raise Error(f"сначала завершите текущую Git-операцию ({name})")
+    checkpoint = work / "checkpoint.json"
+    state = read_checkpoint(checkpoint, root)
+    records = read_progress(progress_path)
+    active = None
+    if state:
+        active = next((task for task in selected if task.id == state["task"]), None)
+        if active is None:
+            raise Error(f"сначала продолжите незавершённую задачу {state['task']}")
+        if active.fingerprint() != state["fingerprint"]:
+            raise Error(f"{active.id}: незавершённая задача изменена; контрольная точка сохранена")
+        if state["branch"] != config["branch"] or current_branch != state["branch"]:
+            raise Error("изменена Git-история или ветка незавершённой задачи")
+        if state.get("blocked") and not args.mark_done:
+            raise Error(f"{active.id}: {state['blocked']}; требуется решение владельца или --mark-done после исправления")
+    if records:
+        relative_progress = str(progress_path.relative_to(root))
+        uncommitted = not git("ls-files", "--", relative_progress) or git("diff", "HEAD", "--", relative_progress)
+        own_journal = (state and state["phase"] == "commit"
+                       and progress_path.read_text(encoding="utf-8") == state["progress_after"])
+        if uncommitted and not own_journal:
+            raise Error("журнал содержит незакоммиченные результаты; сначала завершите или исправьте предыдущий коммит")
     if args.mark_done:
         if current_branch != config["branch"]:
             raise Error("--mark-done запускается в настроенной ветке задач")
-    elif git("status", "--porcelain"):
-        raise Error("рабочее дерево должно быть чистым; сохраните изменения коммитом перед запуском")
+    elif not state and git("status", "--porcelain"):
+        raise Error("рабочее дерево должно быть чистым; сохраните изменения коммитом перед запуском; "
+                    "автовозобновление допускает только правки задачи с контрольной точкой")
     if git("var", "GIT_AUTHOR_IDENT", check=False) == "" or git("var", "GIT_COMMITTER_IDENT", check=False) == "":
         raise Error("настройте git user.name и user.email")
-    if not args.mark_done and shutil.which(config["codex_bin"]) is None:
-        raise Error(f"не найден CODEX_BIN: {config['codex_bin']}")
     if config["push"]:
         git("remote", "get-url", config["remote"])
-    # Задачи и конфигурация должны быть закоммичены, а не скрыты .gitignore.
     for path in (tasks_path, config_path, script_dir / "orchestrator.py", script_dir / "run.sh"):
         if path.exists() and not git("ls-files", "--", str(path.relative_to(root))):
             raise Error(f"добавьте в Git: {path.relative_to(root)}")
-    if not args.mark_done:
-        # Не переходим автоматически на существующую чужую/старую ветку.
-        if current_branch != config["branch"]:
-            exists = git("show-ref", "--verify", f"refs/heads/{config['branch']}", check=False)
-            if exists:
-                raise Error(f"ветка {config['branch']} уже существует; выберите её вручную или задайте BRANCH")
-            git("checkout", "-b", config["branch"])
-    run_name = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
-    logs = work / "logs" / run_name
-    logs.mkdir(parents=True)
+    if not args.mark_done and current_branch != config["branch"]:
+        exists = git("show-ref", "--verify", f"refs/heads/{config['branch']}", check=False)
+        if exists:
+            raise Error(f"ветка {config['branch']} уже существует; выберите её вручную или задайте BRANCH")
+        git("checkout", "-b", config["branch"])
     protected = [script_dir, tasks_path, progress_path, config_path]
     display_paths = list(dict.fromkeys(str(path.relative_to(root)) for path in protected))
+    pending = [task for task in selected if task.id not in records and task != active]
+    if active:
+        pending.insert(0, active)
     for task in pending:
         print(f"[{task.id}] {task.title}", flush=True)
-        head = git("rev-parse", "HEAD")
-        baseline = snapshot(protected, excluded=[work])
+        resumed = state is not None
+        if state is None:
+            logs = work / "logs" / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
+            logs.mkdir(parents=True)
+            state = {"version": 1, "root": str(root), "branch": config["branch"], "task": task.id,
+                     "fingerprint": task.fingerprint(), "head": git("rev-parse", "HEAD"),
+                     "baseline": snapshot(protected, excluded=[work]), "phase": "gate" if args.mark_done else "agent",
+                     "attempt": 0, "exec_runs": 0, "gate_runs": 0, "commit_runs": 0, "push_runs": 0,
+                     "logs": str(logs.relative_to(root)), "summary": "Выполнено вручную; проверка запущена оркестратором.",
+                     "manual": bool(args.mark_done), "model": config["models"][task.tier],
+                     "effort": config["efforts"][task.tier]}
+        logs = local_path(root, state["logs"])
+        if not logs.is_relative_to(work / "logs") or not logs.is_dir():
+            raise Error("контрольная точка ссылается на недопустимый каталог логов")
 
-        def verify():
-            if snapshot(protected, excluded=[work]) != baseline:
+        def save():
+            atomic_text(checkpoint, json.dumps(state, ensure_ascii=False, indent=2) + "\n", work)
+
+        def verify(check_head=True):
+            actual = snapshot(protected, excluded=[work])
+            expected = dict(state["baseline"])
+            if state["phase"] == "commit":
+                current = progress_path.read_text(encoding="utf-8") if progress_path.exists() else None
+                if current not in (state["progress_before"], state["progress_after"]):
+                    raise Error(f"{task.id}: изменены защищённые файлы: журнал")
+                expected[str(progress_path)] = actual[str(progress_path)]
+            if actual != expected:
                 raise Error(f"{task.id}: изменены защищённые файлы; изменения оставлены без коммита")
-            if git("rev-parse", "HEAD") != head or git("symbolic-ref", "--short", "HEAD") != config["branch"]:
+            if (git("symbolic-ref", "--short", "HEAD") != state["branch"]
+                    or check_head and git("rev-parse", "HEAD") != state["head"]):
                 raise Error(f"{task.id}: изменена Git-история или ветка; остановка")
 
-        model, effort = config["models"][task.tier], config["efforts"][task.tier]
+        def confirm_commit():
+            verify(check_head=False)
+            parents = git("rev-list", "--parents", "-n", "1", "HEAD").split()
+            if (parents[1:] != [state["head"]] or git("rev-parse", "HEAD^{tree}") != state.get("tree")
+                    or progress_path.read_text(encoding="utf-8") != state["progress_after"]):
+                raise Error(f"{task.id}: изменена Git-история; не удалось подтвердить собственный коммит")
+            state.update(phase="push", head=git("rev-parse", "HEAD"), baseline=snapshot(protected, excluded=[work]))
+            save()
+
+        # Коммит мог успеть завершиться перед остановкой родительского процесса.
+        if state["phase"] == "commit" and git("rev-parse", "HEAD") != state["head"]:
+            confirm_commit()
+        verify()
+        if resumed:
+            print(f"  продолжение: этап {state['phase']}; правки и логи сохранены", flush=True)
+        if args.mark_done and state["phase"] in ("agent", "gate"):
+            state.update(phase="gate", manual=True, blocked=None)
+        save()
+        model, effort = state["model"], state["effort"]
         context = "\n".join(f"{r['id']}: {r.get('summary', '')}" for r in list(records.values())[-15:])
-        prompt = prompt_for(task, context, display_paths)
+        base_prompt = prompt_for(task, context, display_paths)
         last = logs / f"{task.id}.last.md"
-        summary = "Выполнено вручную; проверка запущена оркестратором."
-        for attempt in range(task.retries + 1):
-            if not args.mark_done:
-                command = [config["codex_bin"], "exec"]
-                if model:
-                    command += ["--model", model]
-                command += ["-c", "model_reasoning_effort=" + json.dumps(effort),
+
+        def run_step(kind, command_for, timeout, prompt_for_run=None, failure_on_exit=False):
+            for restart in range(config["restart_retries"] + 1):
+                number = state[kind + "_runs"]
+                state[kind + "_runs"] += 1
+                log = logs / f"{task.id}.{kind}.{number}.log"
+                prompt = prompt_for_run() if prompt_for_run else None
+                state["last_log"] = str(log.relative_to(root))
+                save()  # Всегда до запуска дочернего процесса.
+                try:
+                    try:
+                        code = run_logged(command_for(), log, timeout, prompt, lock_fd)
+                    finally:
+                        verify()
+                    if kind == "exec" and last.exists():
+                        blocked = re.search(r"^BLOCKED:.*", last.read_text(encoding="utf-8"), re.MULTILINE)
+                        if blocked:
+                            state["blocked"] = blocked[0]
+                            save()
+                            raise Error(f"{task.id}: {blocked[0]}; агент не подтвердил завершение; см. {last}")
+                    if code and failure_on_exit:
+                        raise RetryableError(f"{task.id}: {kind} завершился с кодом {code}; лог: {log}")
+                    if kind == "exec" and (not last.exists() or not last.read_text(encoding="utf-8").strip()):
+                        raise RetryableError(f"{task.id}: пустой ответ агента; лог: {log}")
+                    return code, log
+                except (RetryableError, OSError) as error:
+                    state["error"] = str(error)
+                    save()
+                    if restart == config["restart_retries"]:
+                        raise Error(f"{error}; повторы исчерпаны; повторный запуск продолжит эту задачу") from error
+                    delay = retry_wait(log, config["retry_delay"])
+                    print(f"  {error}; повтор {restart + 1}/{config['restart_retries']} через {delay:.0f} с", flush=True)
+                    wait_for_retry(delay)
+
+        while state["phase"] in ("agent", "gate", "commit"):
+            if state["phase"] == "agent":
+                if shutil.which(config["codex_bin"]) is None:
+                    raise Error(f"не найден CODEX_BIN: {config['codex_bin']}")
+                def agent_prompt():
+                    previous = tail(last)
+                    last.unlink(missing_ok=True)
+                    prompt = base_prompt
+                    if resumed or state["exec_runs"] > 1:
+                        previous_log = local_path(root, state["last_log"]) if state.get("last_log") else None
+                        prompt += ("\nЭто продолжение незавершённой задачи, возможно повторная попытка после сбоя. "
+                                   "Предыдущие изменения остались в рабочем дереве. Изучи git status, diff и новые файлы; "
+                                   "сохрани полезную работу, не начинай с удаления правок.\n"
+                                   f"Предыдущий ответ:\n{previous}\nПричина/проверка: {state.get('error', '')}\n"
+                                   f"Последний вывод:\n{tail(previous_log) if previous_log else '(нет вывода)'}\n")
+                    return prompt
+
+                def agent_command():
+                    command = [config["codex_bin"], "exec"]
+                    if model:
+                        command += ["--model", model]
+                    return [*command, "-c", "model_reasoning_effort=" + json.dumps(effort),
                             "--sandbox", config["sandbox"], "--output-last-message", str(last), "-"]
-                last.unlink(missing_ok=True)
-                code = run_logged(command, logs / f"{task.id}.exec.{attempt}.log", config["task_timeout"], prompt)
-                verify()
-                if code:
-                    raise Error(f"{task.id}: Codex завершился с кодом {code}; см. {logs}")
+
+                # Отсутствие last.md равнозначно пустому ответу, но не старому успеху.
+                last.touch(exist_ok=True)
+                run_step("exec", agent_command, config["task_timeout"], agent_prompt, failure_on_exit=True)
                 reply = last.read_text(encoding="utf-8") if last.exists() else ""
-                if not reply.strip() or re.search(r"^BLOCKED:", reply, re.MULTILINE):
-                    raise Error(f"{task.id}: агент не подтвердил завершение; см. {last}")
-                summary = next((line for line in reply.splitlines() if line.startswith("ИТОГ:")), reply.splitlines()[0])
-                summary = " ".join(summary.split())[:300]
-            gate_log = logs / f"{task.id}.gate.{attempt}.log"
+                state["summary"] = " ".join(next((line for line in reply.splitlines() if line.startswith("ИТОГ:")),
+                                                 reply.splitlines()[0]).split())[:300]
+                state["phase"] = "gate"
+                save()
             if task.gate == "skip":
                 print("  gate: ПРОПУЩЕНА по TASKS.md", flush=True)
-                break
-            print(f"  gate (попытка {attempt + 1}): {task.gate}", flush=True)
-            code = run_logged([*config["gate_base"], "sh", "-c", task.gate], gate_log, config["gate_timeout"])
-            verify()
-            if code == 0:
-                print("  gate: OK", flush=True)
-                break
-            if args.mark_done or attempt == task.retries:
-                raise Error(f"{task.id}: gate завершился с кодом {code}; нет коммита. Лог: {gate_log}")
-            prompt = prompt_for(task, context, display_paths) + f"""
-Это повторная попытка исправления {attempt + 1}/{task.retries}.
-Предыдущие изменения остались в рабочем дереве. Изучи их перед правками.
-Предыдущий ответ:
-{tail(last)}
-Gate завершился с кодом {code}. Последний вывод:
-{tail(gate_log)}
-Исправь причину. Не отключай и не ослабляй gate ради прохождения.
-"""
-        verify()
-        append_progress(progress_path, task, summary, bool(args.mark_done), model, effort)
-        git("add", "-A", "--", ".")
-        git("commit", "-m", f"{task.id}: {task.title}", timeout=config["git_timeout"])
-        print(f"  commit: {git('rev-parse', '--short', 'HEAD')}", flush=True)
-        records = read_progress(progress_path)
-        if config["push"]:
-            push_log = logs / f"{task.id}.push.log"
-            code = run_logged(["git", "push", "-u", config["remote"], f"HEAD:refs/heads/{config['branch']}"],
-                              push_log, config["git_timeout"])
+                code, gate_log = 0, None
+            else:
+                print(f"  gate (попытка {state['attempt'] + 1}): {task.gate}", flush=True)
+                code, gate_log = run_step("gate", lambda: [*config["gate_base"], "sh", "-c", task.gate],
+                                          config["gate_timeout"])
             if code:
-                raise Error(f"push не прошёл; коммит {task.id} сохранён локально. Выполните git push вручную. Лог: {push_log}")
-        # Hooks не должны оставлять изменения, попадающие в следующую задачу.
+                state["error"] = f"Gate завершился с кодом {code}. Последний вывод:\n{tail(gate_log)}"
+                if args.mark_done or state["manual"] or state["attempt"] >= task.retries or state["phase"] == "commit":
+                    save()
+                    raise Error(f"{task.id}: gate завершился с кодом {code}; нет коммита. Лог: {gate_log}")
+                state["attempt"] += 1
+                state["phase"] = "agent"
+                save()
+                continue
+            if task.gate != "skip":
+                print("  gate: OK", flush=True)
+            verify()
+            if state["phase"] != "commit":
+                state.update(phase="commit", progress_before=progress_path.read_text(encoding="utf-8") if progress_path.exists() else None,
+                             progress_after=progress_content(progress_path, task, state["summary"], state["manual"], model, effort))
+                save()
+            atomic_text(progress_path, state["progress_after"], work)
+            verify()
+            git("add", "-A", "--", ".")
+            state["tree"] = git("write-tree")
+            state["commit_runs"] += 1
+            save()
+            commit_log = logs / f"{task.id}.commit.{state['commit_runs']}.log"
+            code = run_logged(["git", "commit", "-m", f"{task.id}: {task.title}"], commit_log,
+                              config["git_timeout"], lock_fd=lock_fd)
+            if code:
+                raise Error(f"git commit: код {code}; лог: {commit_log}; повторный запуск повторит gate и коммит")
+            confirm_commit()
+            print(f"  commit: {git('rev-parse', '--short', 'HEAD')}", flush=True)
+        verify()
         if git("status", "--porcelain"):
             raise Error("после коммита остались изменения (возможно, Git hook); разберите их вручную")
-    print(f"Готово. Журнал: {progress_path.relative_to(root)}; логи: {logs.relative_to(root)}")
+        if config["push"]:
+            try:
+                run_step("push", lambda: ["git", "push", "-u", config["remote"], f"HEAD:refs/heads/{config['branch']}"],
+                         config["git_timeout"], failure_on_exit=True)
+            except Error as error:
+                raise Error(f"push не прошёл; коммит {task.id} сохранён локально. Повторный запуск повторит push. {error}") from error
+        verify()
+        if git("status", "--porcelain"):
+            raise Error("после push остались изменения; разберите их вручную")
+        checkpoint.unlink()
+        state = None
+        records = read_progress(progress_path)
+    print(f"Готово. Журнал: {progress_path.relative_to(root)}; логи: {work.relative_to(root) / 'logs'}")
 
 
 def main():

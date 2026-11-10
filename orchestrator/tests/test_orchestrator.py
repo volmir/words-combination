@@ -11,6 +11,8 @@ import sys
 import tempfile
 import time
 import unittest
+from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 
 PACKAGE = Path(__file__).resolve().parents[1]
@@ -28,6 +30,7 @@ assert 'resume' not in args
 prompt = sys.stdin.read()
 task = re.search(r'одно задание: ([A-Za-z0-9_-]+):', prompt)[1]
 work = Path('orchestrator/.runtime'); work.mkdir(exist_ok=True)
+(work / 'worker.pid').write_text(str(os.getpid()))
 with (work / 'calls.jsonl').open('a') as stream:
     stream.write(json.dumps({'id': task, 'args': args, 'prompt': prompt}) + '\n')
 count_file = work / ('count-' + task)
@@ -44,15 +47,27 @@ if mode == 'edit-tasks':
     with Path('orchestrator/TASKS.md').open('a') as f: f.write('\nchanged\n')
 if mode == 'edit-progress':
     Path('orchestrator/PROGRESS.md').write_text('changed')
+if mode == 'transient' and count > 1:
+    assert Path('result-' + task + '.txt').read_text() == 'good', 'previous work lost'
 if mode not in ('nochange', 'blocked'):
     Path('result-' + task + '.txt').write_text('bad' if mode == 'retry' and count == 1 else 'good')
+if mode == 'interrupt-once' and count == 1 and task == os.environ.get('MOCK_INTERRUPT_TASK', task):
+    import signal
+    os.kill(os.getppid(), signal.SIGTERM)
+    time.sleep(30)
+if mode == 'transient' and count == 1:
+    print('temporary service unavailable', flush=True)
+    sys.exit(1)
+if mode == 'timeout-once' and count == 1:
+    time.sleep(30)
 if mode == 'commit':
     subprocess.run(['git', 'add', '-A'], check=True)
     subprocess.run(['git', 'commit', '-qm', 'unexpected agent commit'], check=True)
 if mode == 'fail': sys.exit(7)
 out = Path(args[args.index('--output-last-message') + 1])
-if mode != 'empty':
-    out.write_text('BLOCKED: нет данных' if mode == 'blocked' else 'ИТОГ: ' + 'Привет 🛠 ' * 80 + '\nПРОВЕРЕНО: заглушка\n', encoding='utf-8')
+if mode != 'empty' and not (mode == 'empty-once' and count == 1):
+    out.write_text('BLOCKED: нет данных' if mode in ('blocked', 'blocked-error') else 'ИТОГ: ' + 'Привет 🛠 ' * 80 + '\nПРОВЕРЕНО: заглушка\n', encoding='utf-8')
+if mode == 'blocked-error': sys.exit(7)
 '''
 
 
@@ -66,6 +81,27 @@ def copy_test_package(source, destination):
 
 
 class FixtureTests(unittest.TestCase):
+    def test_usage_limit_retry_uses_reported_reset_and_falls_back_for_unknown_errors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / 'exec.log'
+            # CLI выводит время в локальном часовом поясе, без обозначения зоны.
+            reset = datetime(2026, 11, 10, 1, 48).astimezone()
+            log.write_text('ERROR: usage limit. try again at Nov 10th, 2026 1:48 AM.\n')
+            self.assertEqual(module.retry_wait(log, 30, now=reset - timedelta(hours=2)), 7205)
+            self.assertEqual(module.retry_wait(log, 30, now=reset + timedelta(hours=2)), 30)
+            log.write_text('temporary service unavailable')
+            self.assertEqual(module.retry_wait(log, 30, now=datetime(2026, 1, 1, tzinfo=timezone.utc)), 30)
+
+    def test_retry_settings_reject_invalid_values(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {}, clear=True):
+            config = Path(directory) / 'config.json'
+            for values in ({'restart_retries': -1}, {'restart_retries': 21}, {'restart_retries': True},
+                           {'retry_delay': -1}, {'retry_delay': 0.5}):
+                with self.subTest(values=values):
+                    config.write_text(json.dumps(values))
+                    with self.assertRaises(module.Error):
+                        module.load_config(config)
+
     def test_copy_starts_without_existing_run_state_and_preserves_source(self):
         with tempfile.TemporaryDirectory(prefix='orchestrator fixture ') as temp:
             source = Path(temp) / 'source'
@@ -105,7 +141,8 @@ class OrchestratorTests(unittest.TestCase):
         for tier in ('LIGHT', 'STANDARD', 'HEAVY'):
             self.env.pop('MODEL_' + tier, None)
             self.env.pop('EFFORT_' + tier, None)
-        self.env.update(NO_PUSH='1', CODEX_BIN=str(self.mock), GIT_CONFIG_GLOBAL='/dev/null', GIT_CONFIG_NOSYSTEM='1')
+        self.env.update(NO_PUSH='1', CODEX_BIN=str(self.mock), GIT_CONFIG_GLOBAL='/dev/null', GIT_CONFIG_NOSYSTEM='1',
+                        RESTART_RETRIES='0', RETRY_DELAY='0')
         self.g('init', '-q', '-b', 'main')
         self.g('config', 'user.name', 'Test')
         self.g('config', 'user.email', 'test@example.invalid')
@@ -300,6 +337,95 @@ class OrchestratorTests(unittest.TestCase):
         self.assertFalse(self.progress())
         self.assertTrue((self.repo / 'result-A-1.txt').exists())
 
+    def test_resume_interrupted_task_preserves_changes_and_skips_completed_tasks(self):
+        self.save_tasks(task() + '\n' + task('B', 'test -f result-B.txt') + '\n' + task('C', 'true'))
+        self.commit()
+        self.run_cli(ok=False, MOCK_MODE='interrupt-once', MOCK_INTERRUPT_TASK='B', RESTART_RETRIES='2')
+        self.assertEqual(set(self.progress()), {'A-1'})
+        self.assertEqual((self.repo / 'result-B.txt').read_text(), 'good')
+        self.run_cli()
+        self.assertEqual([c['id'] for c in self.calls()], ['A-1', 'B', 'B', 'C'])
+        self.assertIn('продолжение', self.calls()[2]['prompt'])
+        self.assertEqual(set(self.progress()), {'A-1', 'B', 'C'})
+        self.assertEqual(self.g('status', '--porcelain'), '')
+        self.assertFalse((self.repo / 'orchestrator/.runtime/checkpoint.json').exists())
+
+    def test_transient_agent_error_restarts_without_losing_partial_work(self):
+        self.run_cli(MOCK_MODE='transient', RESTART_RETRIES='1')
+        self.assertEqual(len(self.calls()), 2)
+        self.assertEqual(self.progress()['A-1']['gate'], 'passed')
+        self.assertEqual(len(list((self.repo / 'orchestrator/.runtime/logs').rglob('*.exec.*.log'))), 2)
+
+    def test_empty_agent_reply_can_restart(self):
+        self.run_cli(MOCK_MODE='empty-once', RESTART_RETRIES='1')
+        self.assertEqual(len(self.calls()), 2)
+        self.assertEqual(self.progress()['A-1']['gate'], 'passed')
+
+    def test_agent_timeout_can_restart_without_spending_gate_retries(self):
+        self.save_tasks(task(retries=0))
+        self.commit()
+        self.run_cli(MOCK_MODE='timeout-once', TASK_TIMEOUT='1', RESTART_RETRIES='1')
+        self.assertEqual(len(self.calls()), 2)
+        self.assertEqual(self.progress()['A-1']['gate'], 'passed')
+
+    def test_gate_timeout_restarts_only_gate(self):
+        self.save_tasks(task(retries=0, gate='if test ! -f orchestrator/.runtime/gate-started; then '
+                             'touch orchestrator/.runtime/gate-started; sleep 30; fi'))
+        self.commit()
+        self.run_cli(GATE_TIMEOUT='1', RESTART_RETRIES='1')
+        self.assertEqual(len(self.calls()), 1)
+        self.assertEqual(self.progress()['A-1']['gate'], 'passed')
+
+    def test_resume_interrupted_gate_does_not_rerun_agent(self):
+        self.save_tasks(task(gate='if test ! -f orchestrator/.runtime/gate-started; then '
+                             'touch orchestrator/.runtime/gate-started; kill -TERM "$PPID"; sleep 30; fi'))
+        self.commit()
+        self.run_cli(ok=False)
+        self.assertFalse(self.progress())
+        self.run_cli()
+        self.assertEqual(len(self.calls()), 1)
+        self.assertEqual(self.progress()['A-1']['gate'], 'passed')
+
+    def test_resume_rejects_changed_task_selection_history_and_protected_files(self):
+        self.save_tasks(task() + '\n' + task('B', 'true'))
+        self.commit()
+        self.run_cli(ok=False, MOCK_MODE='fail')
+        calls = len(self.calls())
+        self.assertIn('A-1', self.run_cli('--only', 'B', ok=False))
+        (self.repo / 'orchestrator/notes.txt').write_text('external change')
+        self.assertIn('защищённые', self.run_cli(ok=False))
+        (self.repo / 'orchestrator/notes.txt').unlink()
+        self.save_tasks(task(prompt='Changed unfinished task') + '\n' + task('B', 'true'))
+        self.assertIn('изменена', self.run_cli(ok=False))
+        self.g('restore', 'orchestrator/TASKS.md')
+        self.commit()
+        self.assertIn('Git-история', self.run_cli(ok=False))
+        self.assertEqual(len(self.calls()), calls)
+
+    def test_explicit_blocked_reply_is_not_retried_or_automatically_resumed(self):
+        self.run_cli(ok=False, MOCK_MODE='blocked', RESTART_RETRIES='2')
+        self.assertEqual(len(self.calls()), 1)
+        self.assertIn('BLOCKED', self.run_cli(ok=False))
+        self.assertEqual(len(self.calls()), 1)
+
+    def test_nonzero_codex_exit_with_blocked_reply_never_retries(self):
+        self.run_cli(ok=False, MOCK_MODE='blocked-error', RESTART_RETRIES='2')
+        self.assertEqual(len(self.calls()), 1)
+        self.assertIn('BLOCKED', self.run_cli(ok=False))
+        self.assertEqual(len(self.calls()), 1)
+
+    def test_corrupted_checkpoint_never_adopts_dirty_work(self):
+        self.run_cli(ok=False, MOCK_MODE='fail')
+        checkpoint = self.repo / 'orchestrator/.runtime/checkpoint.json'
+        original = json.loads(checkpoint.read_text())
+        for body in ('{broken', '{}', json.dumps({**original, 'phase': 'unknown'}),
+                     json.dumps({key: value for key, value in original.items() if key != 'summary'})):
+            with self.subTest(body=body[:40]):
+                checkpoint.write_text(body)
+                self.assertIn('повреждена', self.run_cli(ok=False))
+        self.assertEqual(len(self.calls()), 1)
+        self.assertEqual((self.repo / 'result-A-1.txt').read_text(), 'good')
+
     def test_retries_exhausted(self):
         self.save_tasks(task(gate='false', retries=2))
         self.commit()
@@ -341,11 +467,19 @@ class OrchestratorTests(unittest.TestCase):
         self.assertFalse(self.progress())
 
     def test_blocked_empty_or_codex_error(self):
-        for mode in ('blocked', 'empty', 'fail'):
-            with self.subTest(mode=mode):
-                self.run_cli(ok=False, MOCK_MODE=mode)
-                self.assertFalse(self.progress())
-                (self.repo / 'result-A-1.txt').unlink(missing_ok=True)
+        self.run_cli(ok=False, MOCK_MODE='blocked')
+        self.assertFalse(self.progress())
+        self.assertEqual(len(self.calls()), 1)
+
+    def test_empty_agent_reply_stops_without_completion(self):
+        self.run_cli(ok=False, MOCK_MODE='empty')
+        self.assertFalse(self.progress())
+        self.assertEqual(len(self.calls()), 1)
+
+    def test_codex_error_stops_without_completion(self):
+        self.run_cli(ok=False, MOCK_MODE='fail')
+        self.assertFalse(self.progress())
+        self.assertEqual(len(self.calls()), 1)
 
     def test_no_project_change_can_finish(self):
         self.save_tasks(task(gate='true'))
@@ -409,11 +543,34 @@ class OrchestratorTests(unittest.TestCase):
         hook.chmod(0o755)
         self.g('config', 'core.hooksPath', str(hooks))
         self.run_cli(ok=False)
-        self.assertIn('незакоммиченные результаты', self.run_cli(ok=False))
+        self.assertIn('git commit', self.run_cli(ok=False))
+        self.assertEqual(len(self.calls()), 1)
         self.g('config', 'core.hooksPath', '/dev/null')
-        self.g('commit', '-qm', 'complete verified task')
         self.run_cli()
         self.assertEqual(len(self.calls()), 1)
+        self.assertEqual(self.g('status', '--porcelain'), '')
+        self.assertEqual(self.g('log', '-1', '--format=%s'), 'A-1: Название A-1')
+
+    def test_resume_after_commit_completed_before_parent_interruption(self):
+        hooks = self.base / 'hooks'
+        hooks.mkdir()
+        hook = hooks / 'post-commit'
+        hook.write_text(
+            '#!/usr/bin/env python3\n'
+            'import os, signal, subprocess, time\n'
+            'parent = int(subprocess.check_output(["ps", "-o", "ppid=", "-p", str(os.getppid())]))\n'
+            'os.kill(parent, signal.SIGTERM)\n'
+            'time.sleep(30)\n')
+        hook.chmod(0o755)
+        self.g('config', 'core.hooksPath', str(hooks))
+        self.run_cli(ok=False)
+        committed = self.g('rev-parse', 'HEAD')
+        self.assertEqual(self.g('log', '-1', '--format=%s'), 'A-1: Название A-1')
+        self.g('config', 'core.hooksPath', '/dev/null')
+        self.run_cli()
+        self.assertEqual(self.g('rev-parse', 'HEAD'), committed)
+        self.assertEqual(len(self.calls()), 1)
+        self.assertEqual(len(self.progress()), 1)
 
     def test_custom_paths_models_and_gate_base(self):
         (self.repo / 'plans').mkdir()
@@ -458,6 +615,59 @@ class OrchestratorTests(unittest.TestCase):
         self.assertIn('сохранён локально', self.run_cli('--push', ok=False))
         self.assertEqual([c['id'] for c in self.calls()], ['A-1'])
         self.assertIn('A-1', self.progress())
+
+    def test_resume_retries_push_before_running_next_task(self):
+        self.save_tasks(task() + '\n' + task('B', 'true'))
+        self.commit()
+        remote = self.base / 'initially unavailable.git'
+        self.g('remote', 'add', 'origin', str(remote))
+        self.run_cli('--push', ok=False)
+        committed = self.g('rev-parse', 'HEAD')
+        self.assertEqual([c['id'] for c in self.calls()], ['A-1'])
+        subprocess.run(['git', 'init', '--bare', '-q', str(remote)], check=True, env=self.env)
+        self.run_cli('--push')
+        self.assertEqual([c['id'] for c in self.calls()], ['A-1', 'B'])
+        self.assertEqual(self.g('rev-parse', 'HEAD~1'), committed)
+        self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/auto/tasks'))
+
+    def test_sigkill_parent_cannot_start_second_agent_while_orphan_holds_lock(self):
+        with tempfile.TemporaryFile() as output:
+            process = subprocess.Popen(['bash', 'orchestrator/run.sh'], cwd=self.repo,
+                                       env={**self.env, 'MOCK_MODE': 'timeout'}, stdout=output, stderr=output)
+            worker = self.repo / 'orchestrator/.runtime/worker.pid'
+            ready = self.repo / 'orchestrator/.runtime/child.pid'
+            pid = None
+            try:
+                deadline = time.monotonic() + 5
+                while not ready.exists() and time.monotonic() < deadline:
+                    time.sleep(0.02)
+                self.assertTrue(ready.exists())
+                pid = int(worker.read_text())
+                process.kill()
+                process.wait(timeout=5)
+                self.assertIn('уже работает', self.run_cli(ok=False))
+                self.assertEqual(len(self.calls()), 1)
+            finally:
+                if process.poll() is None:
+                    process.terminate()
+                    process.wait(timeout=5)
+                if pid is not None:
+                    try:
+                        os.killpg(pid, signal.SIGTERM)
+                    except ProcessLookupError:
+                        pass
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                try:
+                    status = Path(f'/proc/{pid}/stat').read_text().split()[2]
+                except FileNotFoundError:
+                    break
+                if status == 'Z':
+                    break
+                time.sleep(0.02)
+            self.run_cli()
+            self.assertEqual(len(self.calls()), 2)
+            self.assertEqual(self.progress()['A-1']['gate'], 'passed')
 
     def test_timeout_stops_child_group(self):
         self.assertIn('таймаут', self.run_cli(ok=False, MOCK_MODE='timeout', TASK_TIMEOUT='1'))
