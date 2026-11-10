@@ -104,6 +104,175 @@ class CleanupTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "правил"):
             self.decide(invalid, protected={"два слова"})
 
+    def test_label_chains_full_formulas_and_raw_fields(self):
+        for text in ("разг., а также уменьшительное и ласкательное от мама",
+                     "(разг.; иногда шутл.) уменьшительно-ласкательное к мама",
+                     "ласкательное от мама", "уменьшительное от мама"):
+            with self.subTest(text=text):
+                self.assertIn("diminutive", clean.gloss_labels(text, self.config)[0])
+        records = self.records(article("мамочка", senses=[{
+            "raw_tags": ["разг., экспр., уменьшительно-ласкательное"],
+            "glosses": ["Синтетическое значение."]}]),
+            article("грубиян", senses=[{"tags": ["vulgar"], "glosses": ["Тест."]}]))
+        self.assertIn("diminutive", self.decide(records)["мамочка"]["reasons"])
+        self.assertIn("offensive", self.decide(records)["грубиян"]["reasons"])
+
+    def test_glosses_of_one_sense_cannot_rescue_each_other(self):
+        records = self.records(article("котик", senses=[{
+            "glosses": ["уменьшительное от кот", "Синтетическое пояснение."]}]),
+            article("замочек", senses=[{"glosses": ["уменьшительное от замок"]},
+                                        {"glosses": ["Синтетическое самостоятельное устройство."]}]))
+        self.assertEqual(1, len(records["котик"]["senses"]))
+        self.assertEqual("exclude", self.decide(records)["котик"]["decision"])
+        self.assertEqual(1, self.decide(records)["замочек"]["usable_sense_count"])
+        self.assertEqual(["ambiguous_diminutive_usage"], self.decide(records)["замочек"]["reasons"])
+
+    def test_owner_lexicalization_requires_source_and_does_not_override_bad_labels(self):
+        records = self.records(*(article(w, "уменьшительное от " + base) for w, base in
+            (("ручка", "рука"), ("ножка", "нога"), ("рыбка", "рыба"),
+             ("мамочка", "мама"), ("котик", "кот"), ("зайчик", "заяц"))),
+            article("очки"), article("макароны"), article("механик"), article("цепочка"))
+        decisions = self.decide(records)
+        for word in ("ручка", "ножка", "рыбка", "очки", "макароны", "механик", "цепочка"):
+            self.assertEqual("keep", decisions[word]["decision"], word)
+        for word in ("мамочка", "котик", "зайчик"):
+            self.assertEqual("exclude", decisions[word]["decision"], word)
+        self.assertTrue(decisions["рыбка"]["roles"]["answer"]["exception"])
+        records = self.records(article("рыбка", "диал. уменьшительное от рыба"),
+                               article("ручка", pos="verb"))
+        self.assertNotEqual("keep", self.decide(records)["рыбка"]["decision"])
+        self.assertNotEqual("keep", self.decide(records)["ручка"]["decision"])
+
+    def test_reference_uses_stem_all_senses_and_fixed_point(self):
+        entries = [article("предметик", "уменьшительное от предмет"),
+                   article("предметица", "то же, что предметик"),
+                   article("предметишка", "то же, что предметица"),
+                   article("домик", "то же, что предметик"),
+                   article("замочек", senses=[{"glosses": ["уменьшительное от замок"]},
+                                                {"glosses": ["Синтетический механизм."]}]),
+                   article("замочечка", "то же, что замочек")]
+        records = self.records(*entries)
+        decisions = self.decide(records)
+        for word in ("предметица", "предметишка"):
+            self.assertIn("diminutive", decisions[word]["reasons"])
+        self.assertEqual("keep", decisions["домик"]["decision"])
+        self.assertEqual("review", decisions["замочечка"]["decision"])
+        entries[4]["senses"].reverse()
+        self.assertEqual(decisions, self.decide(self.records(*reversed(entries))))
+
+    def test_abbreviations_need_lexicalization_and_compounds_need_review(self):
+        records = self.records(article("зарплата", "сокр. от синтетического сочетания"),
+            article("профсоюз", "сложносокращённое слово от синтетического сочетания"),
+            article("спецотдел", "сложносокращённое слово от синтетического сочетания"),
+            article("госотдел"), article("отдел"),
+            article("условник", "сокращённое наименование синтетического сочетания"))
+        decisions = self.decide(records)
+        for word in ("зарплата", "профсоюз"):
+            self.assertEqual("keep", decisions[word]["decision"])
+        for word in ("спецотдел", "условник"):
+            self.assertIn("abbreviation", decisions[word]["reasons"])
+        self.assertEqual("review", decisions["госотдел"]["decision"])
+        self.assertIn("compound_abbreviation_candidate", decisions["госотдел"]["reasons"])
+
+    def test_restricted_semantics_frequency_and_independent_senses(self):
+        records = self.records(article("летопись", "истор., редк. Синтетический предмет."),
+            article("обряд", "религ. Синтетический предмет."),
+            article("авторка", "женск. к автор"), article("дежурный", "субстантивир. Синтетическое лицо."),
+            article("старина", "устар. Синтетический предмет."))
+        high = self.decide(records)
+        for word in ("летопись", "обряд", "авторка", "дежурный"):
+            self.assertEqual("keep", high[word]["decision"], word)
+            self.assertNotEqual("keep", self.decide(records, {word: 20})[word]["decision"], word)
+        self.assertEqual("exclude", high["старина"]["decision"])
+
+    def test_v2_roles_do_not_inherit_v1_exceptions(self):
+        records = self.records(*(article(w) for w in ("прелюбодейка", "брудершафт", "праймериз",
+            "хлопкопункт", "реввоенсовет", "селитроварня", "неизвестность")))
+        decisions = self.decide(records, {w: 0 for w in ("хлопкопункт", "реввоенсовет", "селитроварня", "неизвестность")},
+                                {"неизвестность"})
+        for word in ("прелюбодейка", "брудершафт", "праймериз"):
+            self.assertEqual("keep", decisions[word]["roles"]["answer"]["decision"])
+            for role in ("source", "target"):
+                self.assertIn("campaign_role_exclusion", decisions[word]["roles"][role]["reasons"])
+        for word in ("хлопкопункт", "реввоенсовет", "селитроварня"):
+            self.assertEqual("keep", decisions[word]["roles"]["source"]["decision"])
+            self.assertNotEqual("keep", decisions[word]["roles"]["target"]["decision"])
+        self.assertEqual("keep", decisions["неизвестность"]["decision"])
+        self.assertEqual("review", decisions["неизвестность"]["roles"]["answer"]["decision"])
+        self.assertTrue(decisions["неизвестность"]["level_exception"])
+
+    def test_broad_input_retains_only_diminutive_entries_for_owner_policy(self):
+        self.records(article("рыбка", senses=[{"tags": ["diminutive"], "glosses": ["Тест."]}]),
+                     article("рыба"), article("Заголовок"), article("бежать", pos="verb"))
+        records = clean.extract_records(self.dump, None, self.config)
+        self.assertEqual({"рыбка", "рыба"}, set(records))
+        self.assertEqual("keep", self.decide(records)["рыбка"]["decision"])
+
+    def test_inherited_fields_and_independent_plural_sense(self):
+        records = self.records(article("предмет", tags=["obsolete"], senses=[
+            {"glosses": ["Синтетический предмет."]}, {"glosses": ["Синтетический механизм."]}]),
+            article("очки"), article("очки", senses=[{"tags": ["form-of"], "form_of": [{"word": "очко"}]}]),
+            article("макароны", tags=["plural-only"]))
+        decisions = self.decide(records)
+        self.assertEqual("exclude", decisions["предмет"]["decision"])
+        for word in ("очки", "макароны"):
+            self.assertEqual("keep", decisions[word]["decision"])
+
+    def test_unknown_label_does_not_hide_forbidden_chain_and_body_mentions_are_ignored(self):
+        reasons, _, _ = clean.gloss_labels("неизв., разг.-сниж., диал. Синтетический предмет.", self.config)
+        self.assertTrue({"unknown_label", "slang", "dialect"} <= reasons)
+        self.assertEqual(set(), clean.gloss_labels("Синтетический прибор с пометой уменьшительное от образец.", self.config)[0])
+        self.assertEqual(set(), clean.gloss_labels("Синтетический прибор из словаря автора.", self.config)[0])
+
+    def test_obsolete_diminutive_and_affectionate_usage_do_not_hide_independent_sense(self):
+        records = self.records(article("бабочка", senses=[{"glosses": ["устар. уменьшительное от баба"]},
+                                                          {"glosses": ["энтомол. Синтетический вид."]}]),
+            article("сокол", senses=[{"glosses": ["ласк. Синтетическое обращение."]},
+                                     {"glosses": ["орнитол. Синтетический вид."]}]),
+            article("компьютер"), article("пьютер", "техн. Синтетический материал."))
+        for word in ("бабочка", "сокол", "компьютер"):
+            self.assertEqual("keep", self.decide(records)[word]["decision"], word)
+
+    def test_source_preference_does_not_override_forbidden_senses(self):
+        for label in ("диал.", "устар.", "груб.", "обсц."):
+            with self.subTest(label=label):
+                records = self.records(article("хлопкопункт", label + " Синтетический предмет."))
+                self.assertEqual("exclude", self.decide(records)["хлопкопункт"]["roles"]["source"]["decision"])
+        records = self.records(article("реввоенсовет", "аббревиатура от синтетического сочетания"))
+        decision = self.decide(records, {"реввоенсовет": 0})["реввоенсовет"]
+        self.assertEqual("exclude", decision["roles"]["answer"]["decision"])
+        self.assertEqual("keep", decision["roles"]["source"]["decision"])
+
+    def test_audit_only_reports_roles_funnel_golden_and_never_builds_package(self):
+        self.records(article("рыбка", "уменьшительное от рыба"), article("котик", "уменьшительное от кот"),
+                     article("праймериз"), article("реввоенсовет"))
+        manifest = self.root / "manifest.json"
+        manifest.write_text(json.dumps({"source": {"dump_date": "2026-11-01",
+            "sha256_input": dictionary.sha256_file(self.dump)}}))
+        corpus = self.root / "freq.txt"
+        corpus.write_text("рыбка 1000\nкотик 1000\nпраймериз 100\n")
+        golden = self.root / "golden.txt"
+        golden.write_text("рыбка\nкотик\nнетслова\n")
+        args = argparse.Namespace(dump=self.dump, manifest=manifest, source_words=None,
+            frequency_list=corpus, config=clean.TOOLS / "selection_config.json", cache=self.root / "cache",
+            reports=self.root / "reports", out=self.root / "out", golden=golden, prepare_only=False, audit_only=True)
+        with patch.object(clean, "publish", side_effect=AssertionError("audit must not publish")), \
+             patch.object(clean, "prepare_levels", side_effect=AssertionError("audit must not build levels")):
+            result = clean.run(args)
+            before = {p.name: p.read_bytes() for p in args.reports.iterdir()}
+            with patch.object(clean, "extract_records", side_effect=AssertionError("cache must be used")):
+                self.assertEqual(result, clean.run(args))
+        self.assertEqual(before, {p.name: p.read_bytes() for p in args.reports.iterdir()})
+        self.assertEqual("audited", result["status"])
+        self.assertFalse(args.out.exists())
+        self.assertFalse((args.cache / "builds").exists())
+        self.assertEqual({"котик": ["diminutive"], "нетслова": ["outside_input"]}, result["reference_checks"]["golden_excluded"])
+        self.assertEqual({}, result["reference_checks"]["level_exceptions"])
+        self.assertEqual(4, json.loads((args.reports / "funnel.json").read_text())["input"])
+        self.assertIn('"frequency": 1000', (args.reports / "rejection_examples.json").read_text())
+        self.assertIn("owner-confirmed-lexicalization", (args.reports / "role_exceptions.csv").read_text())
+        self.assertEqual("рыбка\nкотик\nнетслова\n", golden.read_text())
+
     def test_replacements_preserve_numbers_and_unapproved_unreachable_levels_fail(self):
         selected = {"рот", "тор", "торт", "трот"}
         old = [("исходник", 1, 2, "и", 1)]
