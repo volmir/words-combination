@@ -35,6 +35,13 @@ object DefinitionHint {
 
     fun prepare(answer: String, text: String, forms: Collection<String> = emptyList(),
                 related: Collection<String> = emptyList()): String? {
+        val cleaned = HintText.clean(text) ?: return null
+        return prepareUncleaned(answer, cleaned, forms, related)
+    }
+
+    /** Снимок прежнего поведения для сравнения в офлайн-аудите. Игра использует prepare. */
+    internal fun prepareUncleaned(answer: String, text: String, forms: Collection<String> = emptyList(),
+                                  related: Collection<String> = emptyList()): String? {
         if (text.isBlank() || text.length > 4000 || '<' in text || '>' in text || link.containsMatchIn(text)) return null
         val displayText = Normalizer.normalize(text.trim(), Normalizer.Form.NFC)
         val normalized = normalize(displayText)
