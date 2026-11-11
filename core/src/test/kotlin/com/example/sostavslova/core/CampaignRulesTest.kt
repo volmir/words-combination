@@ -9,6 +9,36 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CampaignRulesTest {
+    @Test fun hintTotalsAreDerivedFromTheSameSnapshotAndOnlyCurrentSourceWords() {
+        val campaign = mini()
+        val saved = CampaignProgress(levels = mapOf(
+            campaign.levels[0].word to CampaignLevelProgress(hints = HintState(shownSteps = 3, paidUnits = 1)),
+            campaign.levels[1].word to CampaignLevelProgress(hints = HintState(shownSteps = 5, paidUnits = 4)),
+            "замененный" to CampaignLevelProgress(hints = HintState(shownSteps = 10, paidUnits = 10)),
+        ))
+        val summary = CampaignRules.summary(campaign, saved)
+        assertEquals(8, summary.shownHintSteps)
+        assertEquals(5, summary.paidHintUnits)
+        assertEquals(0, CampaignRules.summary(campaign, CampaignRules.reset()).shownHintSteps)
+        assertEquals(0, CampaignRules.summary(campaign, CampaignRules.reset()).paidHintUnits)
+    }
+
+    @Test fun recordsSolvedRiddleTargetsAndPreservesGlobalNavigationMetadata() {
+        val first = CampaignLevel(1, "картотека", 1, 1,
+            listOf(CampaignTask.T4("riddle", listOf("кот", "торт"))))
+        val campaign = Campaign(listOf(Stage(1, 1, 1)), listOf(first))
+        val initial = CampaignProgress(lastVisitedLevel = 1, seenExplanations = setOf(TaskType.T4))
+        val partial = CampaignRules.recordLevel(campaign, initial, current(first, emptySet(), listOf("кот")))
+        assertEquals(setOf("кот"), partial.levels.getValue(first.word).solvedRiddleTargets)
+        assertEquals(0, CampaignRules.stars(first, partial))
+        val complete = CampaignRules.recordLevel(campaign, partial, current(first, emptySet(), listOf("торт")))
+        assertEquals(setOf("кот", "торт"), complete.levels.getValue(first.word).solvedRiddleTargets)
+        assertEquals(1, CampaignRules.stars(first, complete))
+        assertEquals(1, complete.lastVisitedLevel)
+        assertEquals(setOf(TaskType.T4), complete.seenExplanations)
+        assertEquals(CampaignProgress(), CampaignRules.reset())
+    }
+
     private val index = WordIndex(listOf("кот", "крот", "торт", "елка"))
 
     private fun level(number: Int, m: Int = 5, r: Int = 3): CampaignLevel = CampaignLevel(

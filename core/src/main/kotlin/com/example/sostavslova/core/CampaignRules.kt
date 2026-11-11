@@ -5,6 +5,7 @@ data class CampaignLevelProgress(
     val found: List<String> = emptyList(),
     val completedTaskIds: Set<String> = emptySet(),
     val hints: HintState = HintState(),
+    val solvedRiddleTargets: Set<String> = emptySet(),
 )
 
 /**
@@ -16,6 +17,8 @@ data class CampaignProgress(
     val highestUnlockedLevel: Int = 1,
     val finaleReached: Boolean = false,
     val finaleShown: Boolean = false,
+    val lastVisitedLevel: Int? = null,
+    val seenExplanations: Set<TaskType> = emptySet(),
 )
 
 data class CampaignSummary(
@@ -24,6 +27,8 @@ data class CampaignSummary(
     val passedLevels: Int,
     val totalLevels: Int,
     val foundWords: Int,
+    val shownHintSteps: Int = 0,
+    val paidHintUnits: Int = 0,
 ) {
     /** Для производственной кампании максимум равен 100; финал сам по себе недостаточен. */
     val isMaster: Boolean get() = maxStars > 0 && stars == maxStars
@@ -95,6 +100,8 @@ object CampaignRules {
             levels = progress.levels + (level.word to CampaignLevelProgress(
                 found = evaluated.game.found,
                 completedTaskIds = evaluated.completedTaskIds,
+                solvedRiddleTargets = level.tasks.filterIsInstance<CampaignTask.T4>()
+                    .flatMap { it.targets }.filter { it in evaluated.game.found }.toSet(),
                 // Неполный/старый снимок игры не возвращает уже потраченный бюджет.
                 hints = if (evaluated.hints.shownSteps > saved.hints.shownSteps ||
                     (evaluated.hints.shownSteps == saved.hints.shownSteps &&
@@ -131,6 +138,8 @@ object CampaignRules {
         passedLevels = campaign.levels.count { isPassed(it, progress) },
         totalLevels = campaign.levels.size,
         foundWords = campaign.levels.sumOf { normalizedFound(progress.levels[it.word]?.found.orEmpty()).size },
+        shownHintSteps = campaign.levels.sumOf { progress.levels[it.word]?.hints?.shownSteps ?: 0 },
+        paidHintUnits = campaign.levels.sumOf { progress.levels[it.word]?.hints?.paidUnits ?: 0 },
     )
 
     /** Вызывать только по явному пользовательскому сбросу, заменяя всё сохранение кампании. */
