@@ -6,6 +6,11 @@ GEN-02. Создаёт кандидат `build/reports/campaign/campaign.json`, 
 словарь, категории, определения и приложение не меняет. Новых зависимостей
 и сетевых вызовов нет. Проверка и установка полного пакета — следующие задачи.
 
+Независимый валидатор GEN-04: `python3 tools/validate_campaign.py`.
+Контракт, JVM-проверка, отдельные списки отклонений и текущий отказ кандидата
+описаны в [CAMPAIGN_VALIDATION.md](CAMPAIGN_VALIDATION.md). Флаг `installable`
+генератора не заменяет этот гейт.
+
 ```sh
 python3 tools/build_campaign.py
 python3 -m unittest discover -s tools/tests -p test_campaign.py

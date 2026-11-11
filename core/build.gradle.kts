@@ -32,3 +32,11 @@ tasks.register<JavaExec>("auditDefinitionHints") {
     classpath = sourceSets.test.get().runtimeClasspath
     mainClass.set("com.example.sostavslova.core.DefinitionHintDatasetAudit")
 }
+
+tasks.register<JavaExec>("auditCampaign") {
+    group = "verification"
+    description = "Независимая проверка кампании игровыми правилами core; --args='<input bundle> <output>'."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("com.example.sostavslova.core.CampaignDatasetAudit")
+}
