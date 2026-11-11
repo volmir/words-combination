@@ -1,0 +1,87 @@
+{
+  "words": [
+    "ёжик",
+    "образец",
+    "ручка",
+    "ножка",
+    "рыбка",
+    "самолёт",
+    "кот",
+    "мир"
+  ],
+  "binary_hex": "52554b4e4f574e00010000005000000007000000080000000100000048dd22dda8d7c59c9f03fbcfdb2923f9b3b14f8676123821104abf0e38b8e7a9f87e7d984bd7fb293f9b",
+  "queries": [
+    {
+      "raw": "ЁЖИК",
+      "expected": true
+    },
+    {
+      "raw": " ё-жик! 123",
+      "expected": true
+    },
+    {
+      "raw": "САМОЛЁТ",
+      "expected": true
+    },
+    {
+      "raw": "Самолет",
+      "expected": true
+    },
+    {
+      "raw": "ручка",
+      "expected": true
+    },
+    {
+      "raw": "НОЖКА",
+      "expected": true
+    },
+    {
+      "raw": "рыбка",
+      "expected": true
+    },
+    {
+      "raw": "кот",
+      "expected": true
+    },
+    {
+      "raw": "мир",
+      "expected": true
+    },
+    {
+      "raw": "образец",
+      "expected": true
+    },
+    {
+      "raw": "",
+      "expected": false
+    },
+    {
+      "raw": "abc123",
+      "expected": false
+    },
+    {
+      "raw": "ыыыыы",
+      "expected": false
+    },
+    {
+      "raw": "несуществующее",
+      "expected": false
+    },
+    {
+      "raw": "ёжик",
+      "expected": true
+    },
+    {
+      "raw": "самолёт",
+      "expected": true
+    },
+    {
+      "raw": "йод",
+      "expected": false
+    },
+    {
+      "raw": "ЙОД",
+      "expected": false
+    }
+  ]
+}
