@@ -318,7 +318,7 @@ class GameViewModel(
             } finally {
                 mutableState.update { it.copy(busy = false) }
             }
-        }
+        }.also(progress::trackOperation)
     }
 
     fun onHint() {
@@ -387,7 +387,7 @@ class GameViewModel(
             } finally {
                 if (hintSequence == request) mutableState.update { it.copy(hintLoading = false) }
             }
-        }
+        }.also(progress::trackOperation)
     }
 
     /** Только составимые ответы этого уровня; подготовленные шаги затем читаются из DataStore. */
@@ -458,7 +458,7 @@ class GameViewModel(
             } finally {
                 mutableState.update { it.copy(finaleClosing = false) }
             }
-        }
+        }.also(progress::trackOperation)
     }
 
     fun onDismissExplanations() { mutableState.update { it.copy(explanations = emptyList()) } }

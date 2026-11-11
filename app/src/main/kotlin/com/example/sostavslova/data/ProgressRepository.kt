@@ -27,6 +27,9 @@ import com.example.sostavslova.core.WordIndex
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -64,6 +67,48 @@ class ProgressRepository(
     private val dataStore: DataStore<Preferences>,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
+    private val writeMutex = Mutex()
+    private val operations = mutableSetOf<Job>()
+    private val failedWrites = mutableListOf<suspend () -> Unit>()
+
+    /** Регистрируется сразу при принятии UI-события, до фоновой подготовки записи. */
+    fun trackOperation(job: Job) {
+        synchronized(operations) { operations.add(job) }
+        job.invokeOnCompletion { synchronized(operations) { operations.remove(job) } }
+    }
+
+    private suspend fun <T> committedWrite(block: suspend () -> T): T =
+        withContext(NonCancellable + computationDispatcher) {
+            writeMutex.withLock {
+                try { block() }
+                catch (error: Exception) {
+                    // Транзакции повторяются с исходными аргументами. Ответы объединяются,
+                    // а расход подсказки защищён expectedShownSteps (SAVE-01).
+                    failedWrites.add { block(); Unit }
+                    throw error
+                }
+            }
+        }
+
+    /** Барьер выхода: подготовка событий, принятые записи, повтор ошибок и DataStore. */
+    suspend fun awaitSaved() {
+        while (true) {
+            val pending = synchronized(operations) { operations.toList() }
+            if (pending.isEmpty()) break
+            pending.forEach { it.join() }
+        }
+        withContext(computationDispatcher) {
+            writeMutex.withLock {
+                while (failedWrites.isNotEmpty()) {
+                    failedWrites.first().invoke()
+                    failedWrites.removeAt(0)
+                }
+                // Даже при отсутствии изменений проверяет доступность хранилища.
+                dataStore.edit { }
+            }
+        }
+    }
+
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val currentGameKey = stringPreferencesKey("currentGame")
     private val levelProgressKey = stringPreferencesKey("levelProgress")
@@ -89,7 +134,7 @@ class ProgressRepository(
             "Campaign source words must be canonical and unambiguous"
         }
         currentCoroutineContext().ensureActive()
-        return withContext(NonCancellable + computationDispatcher) {
+        return committedWrite {
             val committed = dataStore.edit { preferences ->
                 if (preferences[campaignProgressKey] != null) {
                     // Проверка также запрещает перезаписывать будущую версию или битый v2.
@@ -232,7 +277,7 @@ class ProgressRepository(
         currentCoroutineContext().ensureActive()
         // После принятия события навигация не отменяет запись. Ошибки DataStore
         // передаются вызывающему коду; результат публикуется только после edit.
-        return withContext(NonCancellable + computationDispatcher) {
+        return committedWrite {
             var result: Pair<CampaignProgress, T>? = null
             dataStore.edit { preferences ->
                 check(preferences[campaignProgressKey] != null || !hasLegacyProgress(preferences)) {
@@ -257,7 +302,7 @@ class ProgressRepository(
     )
 
     /** Переходная v1: старые ключи читаются один раз, свободная игра не переносится. */
-    suspend fun migrateLegacyLevels(levels: List<Level>) = withContext(NonCancellable + computationDispatcher) {
+    suspend fun migrateLegacyLevels(levels: List<Level>) = committedWrite {
         dataStore.edit { preferences ->
             if (preferences[legacyLevelsKey] != null) return@edit
             validateLegacyPayloads(preferences)
@@ -303,7 +348,7 @@ class ProgressRepository(
                 saved.progress[source]?.toCore() ?: LevelProgress())
         }.distinctUntilChanged().flowOn(computationDispatcher)
 
-    suspend fun clearAll() = withContext(NonCancellable + computationDispatcher) {
+    suspend fun clearAll() = committedWrite {
         dataStore.edit { preferences ->
             preferences.remove(currentGameKey)
             preferences.remove(levelProgressKey)
@@ -315,7 +360,7 @@ class ProgressRepository(
     }
 
     /** Звёзды и ответы v1 сохраняются одной транзакцией, которую выход с экрана не отменяет. */
-    suspend fun saveLevelResult(level: Level, found: List<String>) = withContext(NonCancellable + computationDispatcher) {
+    suspend fun saveLevelResult(level: Level, found: List<String>) = committedWrite {
         dataStore.edit { preferences ->
             val saved = readLegacyLevels(preferences)
             val restored = (saved.answers[level.word].orEmpty() + found).distinct()

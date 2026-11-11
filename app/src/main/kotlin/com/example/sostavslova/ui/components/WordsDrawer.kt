@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -26,6 +27,7 @@ import com.example.sostavslova.ui.theme.WordsColors
 @Composable
 fun WordsDrawer(
     currentRoute: String?,
+    onExit: () -> Unit = {},
     onNavigate: (Destination) -> Unit,
 ) {
     ModalDrawerSheet(drawerContainerColor = WordsColors.background) {
@@ -42,6 +44,9 @@ fun WordsDrawer(
             DrawerSection(R.string.nav_about)
             DrawerItem(Destination.Rules, currentRoute, onNavigate)
             DrawerItem(Destination.About, currentRoute, onNavigate)
+            HorizontalDivider(Modifier.padding(vertical = 8.dp), color = WordsColors.wellBorder)
+            WordsDrawerItem(stringResource(R.string.drawer_exit), onClick = onExit,
+                modifier = Modifier.testTag("drawer_exit"))
         }
     }
 }
@@ -70,10 +75,10 @@ private fun DrawerItem(
 }
 
 @Composable
-internal fun WordsDrawerItem(label: String, selected: Boolean = false, onClick: () -> Unit) {
+internal fun WordsDrawerItem(label: String, selected: Boolean = false, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { this.selected = selected },
+        modifier = modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { this.selected = selected },
         shape = RoundedCornerShape(4.dp),
         color = if (selected) WordsColors.primary else WordsColors.background,
         contentColor = if (selected) WordsColors.background else WordsColors.text,

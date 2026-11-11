@@ -212,4 +212,12 @@
     <string name="hint_action">Подсказка · цена %1$d · осталось %2$d</string>
     <string name="hint_letters_available">Доступны подсказки по буквам.</string>
     <string name="hint_metadata_unavailable">Тема или определение недоступны. Эти шаги пропущены без расхода.</string>
+    <string name="drawer_exit">Выход</string>
+    <string name="exit_title">Выйти из игры?</string>
+    <string name="exit_saved">Прогресс сохранён.</string>
+    <string name="exit_saving">Сохраняем прогресс…</string>
+    <string name="exit_save_error">Не удалось сохранить прогресс. Нажмите «Выйти», чтобы повторить.</string>
+    <string name="exit_confirm">Выйти</string>
+    <string name="exit_cancel">Остаться</string>
+    <string name="exit_press_back_again">Нажмите «Назад» ещё раз, чтобы выйти</string>
 </resources>
