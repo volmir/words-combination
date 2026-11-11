@@ -12,7 +12,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
-class AppContainer(context: Context) {
+class AppContainer(
+    context: Context,
+    readCampaign: (suspend () -> String?)? = null,
+) {
     private val appContext = context.applicationContext
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -23,7 +26,13 @@ class AppContainer(context: Context) {
         }
 
     val wordRepository = WordRepository(readWords = { readAsset("words.txt") }, random = random)
-    val levelsRepository = LevelsRepository(readLevels = { readAsset("levels.json") })
+    val levelsRepository = LevelsRepository(
+        readLevels = { readAsset("levels.json") },
+        readCampaign = readCampaign ?: {
+            // Check presence separately: an existing but unreadable/damaged v2 must never become v1.
+            if ("campaign.json" in appContext.assets.list("").orEmpty()) readAsset("campaign.json") else null
+        },
+    )
     val definitionsRepository: DefinitionsRepository = SqliteDefinitionsRepository(appContext)
 
     private val progressDataStore by lazy {
