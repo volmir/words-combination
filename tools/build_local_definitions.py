@@ -237,6 +237,14 @@ def run(args):
                            "forms": articles.get(word, {}).get("forms", [word]),
                            "related": articles.get(word, {}).get("related", [])} for word in sorted(words)}
     index = thematic.category_index(word_metadata, taxonomy)
+    # Closed, text-free features for the independent category classifier. Articles,
+    # definitions, raw labels and source URLs never enter model requests.
+    index["classification_features"] = {
+        word: {"reason": value["category_source"].removeprefix("unknown:"),
+               "sense_count": len(by_category.get(word, [])),
+               "candidate_categories": sorted({row["category"] for row in by_category.get(word, [])
+                                                if row["category"] != "other"})}
+        for word, value in word_metadata.items() if value["category"] == "other"}
     masker_sha = dictionary.sha256_file(ROOT / "core/src/main/kotlin/com/example/sostavslova/core/DefinitionHint.kt")
     content = json_digest([extraction_key, manifest["sha256_words_txt"], settings, sorted(removed), masker_sha,
                            dictionary.sha256_file(TOOLS / "build_game_data.py"),

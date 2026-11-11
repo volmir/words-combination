@@ -4,6 +4,13 @@ import re
 from pathlib import Path
 
 TAXONOMY_PATH = Path(__file__).with_name("categories.json")
+ROLE_EXCLUSIONS = {"прелюбодейка", "брудершафт", "праймериз"}
+
+
+def category_target_allowed(word, metadata):
+    """A category decision never overrides lexical/role eligibility."""
+    return (bool(re.fullmatch(r"[а-я]{3,30}", word)) and word not in ROLE_EXCLUSIONS and
+            metadata.get("roles", {}).get("target", {}).get("decision", "keep") == "keep")
 
 # Closed vocabularies, never substring searches through a definition or a category.
 ALIASES = {
@@ -147,6 +154,7 @@ def category_index(metadata, taxonomy):
     index = {category: [] for category in sorted(taxonomy) if category != "other"}
     for word, value in sorted(metadata.items()):
         category = value["category"]
-        if category != "other" and not value["category_source"].startswith("unknown:"):
+        if (category != "other" and not value["category_source"].startswith("unknown:") and
+                category_target_allowed(word, value)):
             index[category].append(word)
     return {"schema": "word-category-index-v1", "categories": index, "word_metadata": dict(sorted(metadata.items()))}

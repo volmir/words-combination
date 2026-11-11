@@ -2,6 +2,9 @@
 import hashlib
 import json
 import os
+import math
+import re
+import subprocess
 import tempfile
 import time
 import urllib.error
@@ -261,3 +264,171 @@ class OllamaProvider(Provider):
                 if not retryable or attempt == self.config["api_retries"]:
                     raise ValueError("Локальный Ollama недоступен: запустите сервер и заранее загрузите выбранную модель") from None
                 time.sleep(min(60, 2 ** attempt))
+
+
+# Separate contract: never call the legacy definition/guess exchanges for categories.
+CATEGORY_TASK = "word-category-v1"
+CATEGORY_PROMPT = """Присвой каждому русскому слову одну рубрику из закрытой таксономии.
+Вход содержит только слово и разрешённые структурные признаки, не статьи.
+Учитывай обычные значения слова и возможную неоднозначность. Если единой
+рубрики нет или данных недостаточно, верни other с честной уверенностью.
+Не создавай определений и не оценивай разгадываемость. Не меняй допустимость
+слова: жёсткие фильтры и запреты применяются отдельно и имеют приоритет.
+Верни JSON по схеме: results, для каждого входного id ровно один объект
+{id, category, confidence}; confidence — число от 0 до 1. Не добавляй ID.
+Не используй инструменты, файлы, поиск или внешние источники. Только вход JSON.
+"""
+CATEGORY_REASONS = {"no_usable_sense", "no_thematic_evidence", "conflicting_evidence",
+                    "uncertain_sense", "ambiguous_senses"}
+
+
+def category_schema(taxonomy):
+    return {"type": "object", "additionalProperties": False, "required": ["results"],
+            "properties": {"results": {"type": "array", "items": {
+                "type": "object", "additionalProperties": False,
+                "required": ["id", "category", "confidence"], "properties": {
+                    "id": {"type": "string"},
+                    "category": {"type": "string", "enum": sorted(taxonomy)},
+                    "confidence": {"type": "number", "minimum": 0, "maximum": 1}}}}}}
+
+
+def validate_category_item(item, taxonomy):
+    if not isinstance(item, dict) or set(item) != {"id", "word", "features"}:
+        raise ValueError("Категории: посторонние поля входа")
+    if not isinstance(item["word"], str) or not re.fullmatch(r"[а-я]{3,30}", item["word"]):
+        raise ValueError("Категории: недопустимое слово")
+    features = item["features"]
+    if not isinstance(features, dict) or set(features) != {"reason", "sense_count", "candidate_categories"}:
+        raise ValueError("Категории: недопустимые признаки")
+    candidates = features["candidate_categories"]
+    if (not isinstance(features["reason"], str) or features["reason"] not in CATEGORY_REASONS or
+            type(features["sense_count"]) is not int or
+            not 0 <= features["sense_count"] <= 10000 or not isinstance(candidates, list) or
+            any(not isinstance(c, str) or c not in taxonomy or c == "other" for c in candidates) or
+            candidates != sorted(set(candidates))):
+        raise ValueError("Категории: недопустимые значения признаков")
+    if item["id"] != json_digest([item["word"], features]):
+        raise ValueError("Категории: ID не соответствует слову и признакам")
+
+
+def validate_category_results(payload, items, taxonomy):
+    if not isinstance(payload, dict) or set(payload) != {"results"} or not isinstance(payload["results"], list):
+        raise ValueError("Категории: ответ должен содержать только results")
+    expected = {item["id"] for item in items}
+    seen = set()
+    for result in payload["results"]:
+        if not isinstance(result, dict) or set(result) != {"id", "category", "confidence"}:
+            raise ValueError("Категории: неверная схема результата")
+        identity, category, confidence = result["id"], result["category"], result["confidence"]
+        if not isinstance(identity, str) or identity not in expected or identity in seen:
+            raise ValueError("Категории: лишний или повторный ID")
+        if not isinstance(category, str) or category not in taxonomy:
+            raise ValueError("Категории: неизвестный enum")
+        if type(confidence) not in (float, int) or not math.isfinite(confidence) or not 0 <= confidence <= 1:
+            raise ValueError("Категории: неверная уверенность")
+        seen.add(identity)
+    if seen != expected:
+        raise ValueError("Категории: пропущены ID")
+    return payload["results"]
+
+
+class CategoryProvider:
+    """Per-word validated cache; only missing inputs are sent, bounded retries.
+
+    Offline construction and cache reads never inspect credentials or start CLI.
+    `executor` is an injectable structured transport for deterministic offline tests.
+    """
+    def __init__(self, cache, model, taxonomy, *, provider="codex", allow_network=False,
+                 batch_size=20, timeout=120, retries=2, executor=None):
+        if not isinstance(model, str) or not model.strip() or len(model) > 200:
+            raise ValueError("Категории: задайте --model или CATEGORY_MODEL")
+        if provider != "codex":
+            raise ValueError("Категории: поддерживается уже авторизованный Codex CLI")
+        if (type(batch_size) is not int or not 1 <= batch_size <= 40 or
+                type(timeout) is not int or not 1 <= timeout <= 600 or
+                type(retries) is not int or not 0 <= retries <= 3):
+            raise ValueError("Категории: batch-size 1–40, timeout 1–600, retries 0–3")
+        self.cache, self.taxonomy = Path(cache), taxonomy
+        self.allow_network, self.batch_size, self.timeout, self.retries = allow_network, batch_size, timeout, retries
+        self.executor = executor or self.codex_complete
+        self.context = {"task": CATEGORY_TASK, "prompt_sha256": prompt_hash(CATEGORY_PROMPT),
+                        "taxonomy_sha256": json_digest(taxonomy), "schema_sha256": json_digest(category_schema(taxonomy)),
+                        "provider": provider, "model": model}
+
+    def key(self, item):
+        return json_digest([self.context, item])
+
+    def path(self, item):
+        return self.cache / (self.key(item) + ".json")
+
+    def read(self, item):
+        path = self.path(item)
+        if not path.exists():
+            return None
+        envelope = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(envelope, dict):
+            raise ValueError("Категории: повреждён кэш " + path.name)
+        body = {key: value for key, value in envelope.items() if key != "sha256"}
+        if (set(body) != {"context", "item", "result"} or envelope.get("sha256") != json_digest(body) or
+                body["context"] != self.context or body["item"] != item):
+            raise ValueError("Категории: повреждён кэш " + path.name)
+        validate_category_results({"results": [body["result"]]}, [item], self.taxonomy)
+        return body["result"]
+
+    def store(self, item, result):
+        validate_category_item(item, self.taxonomy)
+        validate_category_results({"results": [result]}, [item], self.taxonomy)
+        previous = self.read(item)
+        if previous is not None and previous != result:
+            raise ValueError("Категории: конфликт валидированных решений")
+        body = {"context": self.context, "item": item, "result": result}
+        atomic_json(self.path(item), dict(body, sha256=json_digest(body)))
+
+    def exchange(self, items):
+        for item in items:
+            validate_category_item(item, self.taxonomy)
+        if len({item["id"] for item in items}) != len(items):
+            raise ValueError("Категории: повторный входной ID")
+        answers = {item["id"]: result for item in items if (result := self.read(item)) is not None}
+        missing = [item for item in items if item["id"] not in answers]
+        if not self.allow_network:
+            return answers, len(missing), "--allow-network не задан" if missing else None
+        for offset in range(0, len(missing), self.batch_size):
+            batch = missing[offset:offset + self.batch_size]
+            request = {"task": CATEGORY_TASK, "prompt": CATEGORY_PROMPT, "taxonomy": self.taxonomy,
+                       "items": batch}
+            for attempt in range(self.retries + 1):
+                try:
+                    payload = self.executor(request, category_schema(self.taxonomy))
+                    results = validate_category_results(payload, batch, self.taxonomy)
+                    break
+                except (ValueError, OSError, subprocess.SubprocessError):
+                    if attempt == self.retries:
+                        # Do not leak CLI stderr, credentials, or raw remote output.
+                        return answers, len(items) - len(answers), "Codex CLI недоступен или вернул невалидный ответ"
+            by_id = {result["id"]: result for result in results}
+            for item in batch:
+                self.store(item, by_id[item["id"]])
+                answers[item["id"]] = by_id[item["id"]]
+        return answers, 0, None
+
+    def codex_complete(self, request, schema):
+        # Empty working directory and ignored config prevent project instructions,
+        # configured MCP servers, hooks and repository files entering the input.
+        with tempfile.TemporaryDirectory(prefix="word-categories-") as directory:
+            root = Path(directory)
+            atomic_json(root / "schema.json", schema)
+            atomic_json(root / "input.json", request)
+            command = ["codex", "exec", "--ignore-user-config", "--ephemeral", "--skip-git-repo-check",
+                       "--sandbox", "read-only", "--model", self.context["model"],
+                       "-c", "features.shell_tool=false", "-c", "features.multi_agent=false",
+                       "-c", "project_doc_max_bytes=0",
+                       "-c", 'web_search="disabled"', "--output-schema", str(root / "schema.json"),
+                       "--output-last-message", str(root / "output.json"), "-"]
+            subprocess.run(command, input=json.dumps(request, ensure_ascii=False), text=True,
+                           cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                           check=True, timeout=self.timeout)
+            output = root / "output.json"
+            if output.stat().st_size > 100000:
+                raise ValueError("Категории: превышен размер ответа")
+            return json.loads(output.read_text(encoding="utf-8"))

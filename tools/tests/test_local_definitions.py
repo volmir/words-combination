@@ -131,6 +131,11 @@ class LocalDefinitionsTest(unittest.TestCase):
         self.assertEqual(["рот"], index["categories"]["birds"])
         self.assertNotIn("other", index["categories"])
         self.assertEqual(dictionary.sha256_file(self.args.out / "definitions.db"), index["database_sha256"])
+        self.assertEqual({"reason": "ambiguous_senses", "sense_count": 3,
+                          "candidate_categories": ["birds", "tools"]}, index["classification_features"]["портал"])
+        self.assertEqual({"reason": "no_usable_sense", "sense_count": 0,
+                          "candidate_categories": []}, index["classification_features"]["тор"])
+        self.assertNotIn("рот", index["classification_features"])
         # Repeated gloss text must not hide differently labelled meanings.
         self.write_source([article("портал", "", senses=[bird, dict(tool, glosses=bird["glosses"])])])
         local.run(self.args)
