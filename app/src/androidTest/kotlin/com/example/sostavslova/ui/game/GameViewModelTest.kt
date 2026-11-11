@@ -69,7 +69,9 @@ class GameViewModelTest {
         val owner = retainedOwner ?: object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
         if (owner !in owners) owners.add(owner)
         ViewModelProvider(owner, viewModelFactory { initializer {
-            GameViewModel(handle, wordRepository, levelRepository, repository, meanings, Random(42))
+            GameViewModel(handle, wordRepository, levelRepository, repository, meanings, Random(42), categoryText = { key ->
+                CategoryNames.resource(key)?.let { InstrumentationRegistry.getInstrumentation().targetContext.getString(it) }
+            })
         } })[GameViewModel::class.java]
     }
 
@@ -289,6 +291,100 @@ class GameViewModelTest {
         assertEquals("портал", state.game?.word)
         assertEquals(listOf("пар"), state.game?.found)
         assertEquals("ЧеРнОвИк", state.input)
+    }
+
+    @Test fun hintLadderAccumulatesAndRestoresAcrossReturnRotationAndNewStore() = runTest {
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val meanings = object : DefinitionsRepository {
+            override suspend fun isAvailable() = true
+            override suspend fun categoryFor(word: String) = "animals"
+            override suspend fun definitionsFor(word: String) = listOf(Definition(word,
+                "Синтетическое существо для проверки подсказок.", origin = "wiktionary",
+                source = "https://example.invalid/$word"))
+        }
+        val owner = object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
+        val model = model(meanings = meanings, wordRepository = campaignWords, levelRepository = campaignLevels,
+            retainedOwner = owner)
+        model.ready()
+        repeat(3) {
+            withContext(Dispatchers.Main) { model.onHint() }
+            model.await { state -> !state.hintLoading && state.campaignHints.size == it + 1 }
+        }
+        val shown = model.uiState.value
+        assertEquals(listOf(com.example.sostavslova.core.HintStage.THEME,
+            com.example.sostavslova.core.HintStage.DEFINITION, com.example.sostavslova.core.HintStage.LENGTH),
+            shown.campaignHints.map { it.stage })
+        assertTrue(shown.campaignHints[1].wiktionary)
+        assertEquals(0, shown.campaignLevel?.hints?.paidUnits)
+        assertEquals("кот", shown.campaignLevel?.hints?.ladder?.target?.word)
+        assertTrue(shown.campaignHints.none { it.text?.contains("https://") == true })
+        // Повторный вход с тем же владельцем (поворот) не производит событий.
+        val rotated = model(meanings = meanings, wordRepository = campaignWords, levelRepository = campaignLevels,
+            retainedOwner = owner)
+        assertSame(model, rotated)
+        withContext(Dispatchers.Main) { rotated.onGameOpened() }
+        assertEquals(shown.campaignHints, rotated.uiState.value.campaignHints)
+        val returned = model(wordRepository = campaignWords, levelRepository = campaignLevels).ready()
+        assertEquals(shown.campaignHints, returned.campaignHints)
+        assertEquals(shown.campaignLevel?.hints, returned.campaignLevel?.hints)
+        // Закрываем все VM и файловый DataStore, читаем файл новым экземпляром.
+        withContext(Dispatchers.Main) { owners.forEach { it.viewModelStore.clear() } }
+        scope.cancel(); scope.coroutineContext.job.join()
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        store = PreferenceDataStoreFactory.create(scope = scope) { File(directory, "progress.preferences_pb") }
+        progress = ProgressRepository(store)
+        val fresh = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        val restored = fresh.ready()
+        assertEquals(shown.campaignHints, restored.campaignHints)
+        assertEquals(shown.campaignLevel?.hints, restored.campaignLevel?.hints)
+        withContext(Dispatchers.Main) { fresh.onHint() }
+        val paid = fresh.await { !it.hintLoading && it.campaignHints.size == 4 }
+        assertEquals(1, paid.campaignLevel?.hints?.paidUnits)
+        fresh.answer("кот")
+        assertTrue(fresh.uiState.value.campaignHints.isEmpty())
+        withContext(Dispatchers.Main) { fresh.onHint() }
+        val another = fresh.await { !it.hintLoading && it.campaignHint != null }
+        assertNotEquals("кот", another.campaignLevel?.hints?.ladder?.target?.word)
+    }
+
+    @Test fun campaignCategoryProvidesOptionalThemeWithoutDatabase() = runTest {
+        val json = miniCampaignJson.replace(
+            """{"id": "ending", "type": "T5", "ending": "ка", "minLength": 3}""",
+            """{"id": "theme_first", "type": "T6", "category": "animals", "n": 1, "words": ["кот"]}""")
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { json })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.ready()
+        withContext(Dispatchers.Main) { model.onHint() }
+        val state = model.await { !it.hintLoading && it.campaignHint != null }
+        assertEquals(com.example.sostavslova.core.HintStage.THEME, state.campaignHint?.stage)
+        assertEquals("Животные", state.campaignHint?.text)
+        assertEquals(0, state.campaignLevel?.hints?.paidUnits)
+    }
+
+    @Test fun noDatabaseSkipsPaidMetadataAndFreeT4LengthWorksAtZero() = runTest {
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val campaign = requireNotNull(campaignLevels.getCampaign())
+        progress.migrateCampaign(campaign, campaignWords.requireIndex())
+        // Запись fixture через тот же совместимый DTO.
+        store.edit { it[androidx.datastore.preferences.core.stringPreferencesKey("campaignProgressV2")] =
+            """{"version":2,"levels":{"картотека":{"hints":{"paidUnits":5,"shownSteps":5}}}}""" }
+        val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        val ready = model.ready()
+        assertEquals(0, ready.hintRemaining)
+        assertEquals(0, ready.hintCost)
+        withContext(Dispatchers.Main) { model.onHint() }
+        val free = model.await { !it.hintLoading && it.campaignHint != null }
+        assertEquals(com.example.sostavslova.core.HintStage.LENGTH, free.campaignHint?.stage)
+        assertEquals(5, free.campaignLevel?.hints?.paidUnits)
+        assertEquals(6, free.campaignLevel?.hints?.shownSteps)
+        assertTrue(free.hintFallback)
+        assertEquals(1, free.hintCost)
+        withContext(Dispatchers.Main) { model.onHint() }
+        model.await { !it.hintLoading && it.message?.text == R.string.hint_budget_exhausted }
+        assertEquals(free.campaignLevel?.hints, model.uiState.value.campaignLevel?.hints)
     }
 
     @Test fun v2RouteRestoresSnapshotAndSavesEachAnswerAndHintThroughSave01() = runTest {

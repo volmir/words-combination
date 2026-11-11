@@ -80,6 +80,26 @@ class SqliteDefinitionsRepository(
         }
     }
 
+    override suspend fun categoryFor(word: String): String? = withContext(ioDispatcher) {
+        val normalized = Alphabet.normalize(word)
+        if (normalized.isEmpty()) return@withContext null
+        mutex.withLock {
+            val database = prepareDatabase() ?: return@withLock null
+            try {
+                val fields = database.rawQuery("PRAGMA table_info(word_metadata)", null).use { columns ->
+                    buildSet { while (columns.moveToNext()) add(columns.getString(columns.getColumnIndexOrThrow("name"))) }
+                }
+                if ("category" !in fields) return@withLock null
+                database.query("word_metadata", arrayOf("category"), "word = ?", arrayOf(normalized),
+                    null, null, null).use { cursor ->
+                    if (!cursor.moveToFirst()) null else cursor.getString(0)?.takeIf {
+                        it != "other" && CategoryNames.resource(it) != null
+                    }
+                }
+            } catch (_: SQLiteException) { null }
+        }
+    }
+
     private fun wordMetadata(database: SQLiteDatabase, word: String): Pair<List<String>, List<String>> {
         val fields = database.rawQuery("PRAGMA table_info(word_metadata)", null).use { columns ->
             val nameIndex = columns.getColumnIndex("name")

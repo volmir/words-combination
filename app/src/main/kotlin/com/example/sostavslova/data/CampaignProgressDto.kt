@@ -105,10 +105,11 @@ internal data class HintStepDto(
     val text: String? = null,
     val length: Int? = null,
     val revealedPositions: Set<Int> = emptySet(),
+    val wiktionary: Boolean = false,
 ) {
-    fun toCore() = HintStep(HintStage.valueOf(stage), text, length, revealedPositions)
+    fun toCore() = HintStep(HintStage.valueOf(stage), text, length, revealedPositions, wiktionary)
 
     companion object {
-        fun fromCore(step: HintStep) = HintStepDto(step.stage.name, step.text, step.length, step.revealedPositions)
+        fun fromCore(step: HintStep) = HintStepDto(step.stage.name, step.text, step.length, step.revealedPositions, step.wiktionary)
     }
 }

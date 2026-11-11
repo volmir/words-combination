@@ -5,6 +5,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.R
+import com.example.sostavslova.core.HintWordData
+import com.example.sostavslova.core.HintCategory
+import com.example.sostavslova.core.HintStage
+import com.example.sostavslova.data.CategoryNames
 import com.example.sostavslova.core.Campaign
 import com.example.sostavslova.core.CampaignSummary
 import com.example.sostavslova.core.CampaignTask
@@ -78,6 +82,10 @@ data class GameUiState(
     val message: GameMessage? = null,
     val hint: GameHint? = null,
     val campaignHint: HintStep? = null,
+    val campaignHints: List<HintStep> = emptyList(),
+    val hintCost: Int? = null,
+    val hintRemaining: Int = 0,
+    val hintFallback: Boolean = false,
     val hintLoading: Boolean = false,
     val dialog: GameDialog? = null,
     val definitionWord: String = "",
@@ -98,6 +106,7 @@ class GameViewModel(
     private val definitions: DefinitionsRepository,
     private val random: Random = Random.Default,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val categoryText: (String) -> String? = { null },
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(GameUiState(input = savedState.get<String>(INPUT).orEmpty()))
     val uiState = mutableState.asStateFlow()
@@ -201,6 +210,10 @@ class GameViewModel(
 
     private suspend fun publishSession(game: GameState, level: Level?, current: CurrentCampaignLevel?, stars: LevelProgress,
         finaleSummary: CampaignSummary? = null) {
+        val (shownHints, cost) = withContext(computationDispatcher) {
+            val shown = current?.takeIf { HintRules.currentStep(it) != null }?.hints?.ladder?.shown.orEmpty()
+            shown to current?.let { HintRules.nextCost(it, campaign?.countMinLength ?: 4) }
+        }
         val (stats, tasks) = withContext(computationDispatcher) {
             game.statistics() to current?.let { TaskRules.evaluate(it, campaign?.countMinLength ?: 4).progress }.orEmpty()
         }
@@ -215,7 +228,9 @@ class GameViewModel(
         }
         mutableState.update { it.copy(loading = false, loadError = false, game = game, level = level,
             finaleSummary = finaleSummary,
-            campaignLevel = current, campaignHint = current?.let(HintRules::currentStep),
+            campaignLevel = current, campaignHint = shownHints.lastOrNull(), campaignHints = shownHints,
+            hintCost = cost, hintRemaining = current?.let { HintRules.budget(it).remaining } ?: 0,
+            hintFallback = shownHints.isNotEmpty() && current?.hints?.ladder?.steps?.none { step -> step.stage == HintStage.DEFINITION } == true,
             levelProgress = stars, statistics = stats, taskProgress = tasks,
             riddles = it.riddles.mapValues { (id, items) -> items.mapIndexed { index, riddle ->
                 riddle.copy(solved = solved[id]?.getOrNull(index) == true)
@@ -311,8 +326,11 @@ class GameViewModel(
                 val activeCampaign = campaign
                 if (activeCampaign != null) {
                     val current = requireNotNull(state.campaignLevel)
+                    val targetWord = current.hints.ladder.target?.word
+                    val metadata = if (targetWord == null || targetWord in current.game.found)
+                        loadHintWords(current) else emptyMap()
                     val result = progress.requestCampaignHint(activeCampaign, current.level.number,
-                        current.hints.shownSteps, words.requireIndex())
+                        current.hints.shownSteps, words.requireIndex(), metadata)
                     currentCoroutineContext().ensureActive()
                     if (result != null) {
                         uiState.first { (it.campaignLevel?.hints?.shownSteps ?: 0) >= result.state.hints.shownSteps }
@@ -365,6 +383,34 @@ class GameViewModel(
             }
         }
     }
+
+    /** Только составимые ответы этого уровня; подготовленные шаги затем читаются из DataStore. */
+    private suspend fun loadHintWords(current: CurrentCampaignLevel): Map<String, HintWordData> {
+        val available = withContext(Dispatchers.IO) { optional { definitions.isAvailable() } ?: false }
+        return current.game.allWords.filter { it !in current.game.found }.associateWith { answer ->
+            val (category, meanings) = withContext(Dispatchers.IO) {
+                val key = if (available) optional { definitions.categoryFor(answer) } else null
+                val campaignKey = current.level.tasks.filterIsInstance<CampaignTask.T6>()
+                    .firstOrNull { answer in it.words }?.category
+                (campaignKey ?: key) to if (available) optional { definitions.definitionsFor(answer) }.orEmpty() else emptyList()
+            }
+            withContext(computationDispatcher) {
+                val safe = meanings.firstNotNullOfOrNull { meaning ->
+                    DefinitionHint.prepare(answer, meaning.text, meaning.forms, meaning.related)?.let { it to meaning }
+                }
+                HintWordData(
+                    category = category?.takeIf { it != "other" && CategoryNames.resource(it) != null }
+                        ?.let { key -> categoryText(key)?.let { HintCategory(key, it) } },
+                    definition = safe?.first, definitionWiktionary = safe?.second?.isWiktionary == true,
+                    forms = safe?.second?.forms.orEmpty().toSet(), related = safe?.second?.related.orEmpty().toSet(),
+                )
+            }
+        }
+    }
+
+    private suspend fun <T> optional(read: suspend () -> T): T? = try { read() }
+    catch (cancelled: CancellationException) { throw cancelled }
+    catch (_: Exception) { null }
 
     private suspend fun loadRiddles(current: CurrentCampaignLevel): Map<String, List<RiddleUiState>> {
         val tasks = current.level.tasks.filterIsInstance<CampaignTask.T4>()

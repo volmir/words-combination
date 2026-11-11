@@ -72,6 +72,44 @@ class SqliteDefinitionsRepositoryTest {
     }
 
     @Test
+    fun realAssetIsAvailableAndBullHasDefinitions() = runTest {
+        val repository = SqliteDefinitionsRepository(context, databaseName = databaseName).also { repositories.add(it) }
+        assertTrue(repository.isAvailable())
+        assertTrue(repository.definitionsFor("бык").isNotEmpty())
+    }
+
+    @Test
+    fun categoriesAreOptionalNormalizedAndIndependentOfDefinitions() = runTest {
+        val asset = File(directory, "categories.db")
+        createDatabase(asset, 8, "Синтетический предмет.")
+        SQLiteDatabase.openDatabase(asset.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
+            // Старая таблица может содержать рубрику без форм и родства.
+            db.execSQL("CREATE TABLE word_metadata(word TEXT PRIMARY KEY, category TEXT)")
+            listOf("еж" to "animals", "портал" to "other", "торт" to "future", "кот" to "birds").forEach { (word, category) ->
+                db.execSQL("INSERT INTO word_metadata VALUES(?,?)", arrayOf(word, category))
+            }
+        }
+        val repo = repository(asset)
+        assertEquals("animals", withContext(Dispatchers.Main) { repo.categoryFor(" ЁЖ ") })
+        assertEquals("birds", repo.categoryFor("кот"))
+        assertNull(repo.categoryFor("портал"))
+        assertNull(repo.categoryFor("торт"))
+        assertNull(repo.categoryFor("нет"))
+        assertNull(repo.categoryFor("' OR 1=1 --"))
+        assertEquals(1, repo.definitionsFor("портал").size)
+    }
+
+    @Test
+    fun oldSchemaWithoutMetadataDoesNotBreakDefinitions() = runTest {
+        val asset = File(directory, "legacy.db")
+        createDatabase(asset, 1, "Синтетический предмет.")
+        val repo = repository(asset)
+        assertNull(repo.categoryFor("портал"))
+        assertEquals(1, repo.definitionsFor("портал").size)
+        assertNull(repository(included = false).categoryFor("портал"))
+    }
+
+    @Test
     fun absentDefinitionsReturnFalseAndEmptyListWithoutCreatingDatabase() = runTest {
         val reads = AtomicInteger()
         val repository = repository(included = false, reads = reads)

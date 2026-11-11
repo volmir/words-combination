@@ -12,9 +12,13 @@ data class Definition(
     val forms: List<String> = emptyList(),
     val related: List<String> = emptyList(),
     val origin: String = "",
-)
+) {
+    val isWiktionary: Boolean get() = origin == "wiktionary" || source.startsWith("https://ru.wiktionary.org/wiki/")
+}
 
 interface DefinitionsRepository {
     suspend fun definitionsFor(word: String): List<Definition>
     suspend fun isAvailable(): Boolean
+    /** Ключ известной содержательной рубрики; other и старая БД дают null. */
+    suspend fun categoryFor(word: String): String? = null
 }

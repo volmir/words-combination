@@ -85,6 +85,40 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         assertTextFits()
     }
 
+    @Test fun accumulatedHintStepsCostAndZeroBudgetAreVisible() {
+        val steps = listOf(HintStep(HintStage.THEME, "Животные"),
+            HintStep(HintStage.DEFINITION, "Синтетическое безопасное описание", wiktionary = true),
+            HintStep(HintStage.LENGTH, length = 4))
+        val state = mutableStateOf(initial.copy(campaignHints = steps.take(2),
+            campaignLevel = evaluated.state.copy(hints = HintState(ladder = HintLadder(
+                target = HintTarget("крот"), steps = steps + HintStep(HintStage.FIRST_LETTER, "к"), nextStepIndex = 2))),
+            hintCost = 0, hintRemaining = 0))
+        var clicks = 0
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+                WordsTheme {
+                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
+                        GameScreen(state.value, {}, {}, { clicks++ }, {}, {}, {}, {})
+                    }
+                }
+            }
+        }
+        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Ступень 2 из 4")
+        compose.onNodeWithText("Животные").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Синтетическое безопасное описание").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Викисловарь · CC BY-SA 4.0. Скрыты ответ и однокоренные слова.")
+            .performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("крот").assertDoesNotExist()
+        compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled().performClick()
+        assertEquals(1, clicks)
+        compose.runOnIdle { state.value = state.value.copy(hintCost = 1, campaignHints = steps) }
+        compose.onNodeWithText("Слово из 4 букв").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("game_hint_budget").performScrollTo()
+            .assertTextContains("Каждые 4 найденных слова", substring = true)
+        assertTextFits()
+    }
+
     @Test fun finaleSurvivesScreenRestorationAndBothActionsFit() {
         val summary = CampaignSummary(99, 100, 30, 30, 321, 12, 8)
         val state = mutableStateOf(initial.copy(finaleSummary = summary))

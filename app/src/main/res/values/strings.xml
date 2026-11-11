@@ -99,7 +99,7 @@
     <string name="back_to_levels">К карте уровней</string>
     <string name="level_stars_progress">Звёзды: %1$d из %2$d</string>
     <string name="hint_length">Слово из %1$d %2$s</string>
-    <string name="hint_budget_exhausted">Подсказки закончились. Находите слова, чтобы пополнить запас.</string>
+    <string name="hint_budget_exhausted">Подсказки закончились. Каждые 4 найденных слова дают ещё одну подсказку.</string>
     <string name="hint_ladder_complete">Все шаги этой подсказки уже показаны.</string>
     <string name="word_input_invalid">Введите корректное слово</string>
     <string name="levels_campaign_progress">Звёзд %1$d из %2$d · пройдено %3$d из %4$d</string>
@@ -203,4 +203,8 @@
     <string name="game_category_other">Другие общеупотребительные понятия</string>
     <string name="game_letter_one">буква</string>
     <string name="game_letter_few">буквы</string>
+    <string name="hint_stage">Ступень %1$d из %2$d</string>
+    <string name="hint_action">Подсказка · цена %1$d · осталось %2$d</string>
+    <string name="hint_letters_available">Доступны подсказки по буквам.</string>
+    <string name="hint_metadata_unavailable">Тема или определение недоступны. Эти шаги пропущены без расхода.</string>
 </resources>

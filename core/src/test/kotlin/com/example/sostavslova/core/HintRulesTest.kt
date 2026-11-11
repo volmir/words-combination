@@ -28,6 +28,18 @@ class HintRulesTest {
     private fun accept(current: CurrentCampaignLevel, word: String) =
         TaskRules.submit(current, word, 4).evaluation.state
 
+    @Test fun definitionAttributionSurvivesLadderAndIsNeverAttachedToOtherSteps() {
+        val result = next(start(CampaignTask.T4("riddle", listOf("станция"))),
+            content.mapValues { (_, data) -> data.copy(definitionWiktionary = true) })
+        val ladder = result.state.hints.ladder
+        assertTrue(ladder.steps.single { it.stage == HintStage.DEFINITION }.wiktionary)
+        assertTrue(ladder.steps.filter { it.stage != HintStage.DEFINITION }.none { it.wiktionary })
+        assertEquals(0, HintRules.nextCost(result.state))
+        val paid = start(CampaignTask.T3("long", 7, "станция"))
+        assertEquals(1, HintRules.nextCost(paid))
+        assertEquals(1, HintRules.nextCost(paid.copy(hints = HintState(paidUnits = 5))))
+    }
+
     @Test fun allStagesHaveSpecifiedBudgetAndChargeEveryOrdinaryStep() {
         for (stage in 1..6) {
             var current = start(CampaignTask.T3("long", 7, "станция"), stage = stage)

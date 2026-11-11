@@ -11,6 +11,7 @@ data class HintCategory(val key: String, val text: String)
 data class HintWordData(
     val category: HintCategory? = null,
     val definition: String? = null,
+    val definitionWiktionary: Boolean = false,
     val forms: Set<String> = emptySet(),
     val related: Set<String> = emptySet(),
     val familiar: Boolean = false,
@@ -31,6 +32,7 @@ data class HintStep(
     val text: String? = null,
     val length: Int? = null,
     val revealedPositions: Set<Int> = emptySet(),
+    val wiktionary: Boolean = false,
 )
 
 /**
@@ -70,6 +72,8 @@ data class HintLadder(
             addText(HintStage.DEFINITION, data.definition?.let {
                 DefinitionHint.prepare(word, it, data.forms, data.related)
             })
+            val definitionIndex = steps.indexOfFirst { it.stage == HintStage.DEFINITION }
+            if (definitionIndex >= 0) steps[definitionIndex] = steps[definitionIndex].copy(wiktionary = data.definitionWiktionary)
             steps += HintStep(HintStage.LENGTH, length = word.length)
             if (0 !in positions) {
                 positions = positions + 0

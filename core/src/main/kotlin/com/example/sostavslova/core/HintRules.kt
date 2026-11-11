@@ -71,6 +71,16 @@ object HintRules {
         return HintResult(current.copy(hints = next), step, HintStatus.SHOWN)
     }
 
+    /** Предварительная цена без записи, расхода и изменения сохранённой лестницы. */
+    fun nextCost(current: CurrentCampaignLevel, countMinLength: Int = 4): Int? {
+        val preview = next(current, countMinLength = countMinLength, random = Random(0))
+        return when (preview.status) {
+            HintStatus.SHOWN -> preview.state.hints.paidUnits - current.hints.paidUnits
+            HintStatus.BUDGET_EXHAUSTED -> 1
+            HintStatus.NO_TARGET, HintStatus.LADDER_COMPLETE -> null
+        }
+    }
+
     private fun selectTarget(
         current: CurrentCampaignLevel,
         words: Map<String, HintWordData>,

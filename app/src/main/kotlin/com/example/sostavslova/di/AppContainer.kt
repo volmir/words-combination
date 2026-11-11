@@ -19,6 +19,8 @@ class AppContainer(
     private val appContext = context.applicationContext
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    fun categoryName(resource: Int): String = appContext.getString(resource)
+
     var random: kotlin.random.Random = kotlin.random.Random.Default
 
     val wordRepository = WordRepository(readWords = { readAsset("words.txt") })

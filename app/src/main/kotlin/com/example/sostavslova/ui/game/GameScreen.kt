@@ -76,7 +76,10 @@ fun GameRoute(onReturnLevels: (Int) -> Unit) {
     val factory = remember(container) {
         viewModelFactory { initializer {
             GameViewModel(createSavedStateHandle(), container.wordRepository, container.levelsRepository,
-                container.progressRepository, container.definitionsRepository, container.random)
+                container.progressRepository, container.definitionsRepository, container.random,
+                categoryText = { key -> com.example.sostavslova.data.CategoryNames.resource(key)?.let {
+                    container.categoryName(it)
+                } })
         } }
     }
     val model: GameViewModel = viewModel(factory = factory)
@@ -185,17 +188,33 @@ fun GameScreen(
                         }
                     }
                 }
-                state.campaignHint?.let { step ->
+                if (state.campaignHints.isNotEmpty()) {
                     Column(Modifier.testTag("game_hint"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.hint_title), style = MaterialTheme.typography.titleMedium)
-                        step.text?.let { Text(it) }
-                        step.length?.let { length -> Text(stringResource(R.string.hint_length, length,
-                            RussianPlural.form(length, stringResource(R.string.hint_letter_genitive_one),
-                                stringResource(R.string.hint_letter_genitive_many), stringResource(R.string.hint_letter_genitive_many)))) }
+                        Text(stringResource(R.string.hint_stage, state.campaignHints.size,
+                            state.campaignLevel?.hints?.ladder?.steps?.size ?: 0), Modifier.testTag("game_hint_stage"))
+                        state.campaignHints.forEach { step ->
+                            step.text?.let { Text(it) }
+                            step.length?.let { length -> Text(stringResource(R.string.hint_length, length,
+                                RussianPlural.form(length, stringResource(R.string.hint_letter_genitive_one),
+                                    stringResource(R.string.hint_letter_genitive_many), stringResource(R.string.hint_letter_genitive_many)))) }
+                            if (step.wiktionary) Text(stringResource(R.string.hint_definition_source), style = MaterialTheme.typography.bodySmall)
+                        }
+                        if (state.hintFallback) {
+                            Text(stringResource(R.string.hint_letters_available), style = MaterialTheme.typography.bodySmall)
+                            if (com.example.sostavslova.BuildConfig.DEBUG) Text(stringResource(R.string.hint_metadata_unavailable),
+                                style = MaterialTheme.typography.bodySmall)
+                        }
                     }
                 }
+                if (state.campaignLevel != null && state.hintRemaining == 0 && state.hintCost != 0) {
+                    Text(stringResource(R.string.hint_budget_exhausted), Modifier.testTag("game_hint_budget"))
+                }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    GameAction(stringResource(R.string.show_hint), state.canPlay && !state.hintLoading, onHint, R.drawable.ic_help)
+                    GameAction(if (state.campaignLevel == null) stringResource(R.string.show_hint)
+                        else stringResource(R.string.hint_action, state.hintCost ?: 0, state.hintRemaining),
+                        state.canPlay && !state.hintLoading && (state.campaignLevel == null ||
+                            (state.hintCost != null && (state.hintCost == 0 || state.hintRemaining > 0))), onHint, R.drawable.ic_help, "game_hint_button")
                     GameAction(stringResource(R.string.statistics), state.canPlay, { onDialog(GameDialog.Statistics) }, R.drawable.ic_statistics)
                     if (state.level != null || state.campaignLevel != null) GameAction(stringResource(R.string.tasks), state.canPlay,
                         { onDialog(GameDialog.Tasks) }, R.drawable.ic_star_outline)
@@ -301,8 +320,8 @@ private fun GameLoading(text: String) {
 }
 
 @Composable
-private fun GameAction(text: String, enabled: Boolean, onClick: () -> Unit, icon: Int? = null) {
-    OutlinedButton(onClick, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp), shape = RoundedCornerShape(4.dp),
+private fun GameAction(text: String, enabled: Boolean, onClick: () -> Unit, icon: Int? = null, tag: String = "") {
+    OutlinedButton(onClick, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp).then(if (tag.isEmpty()) Modifier else Modifier.testTag(tag)), shape = RoundedCornerShape(4.dp),
         border = BorderStroke(1.dp, WordsColors.defaultButtonBorder),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = WordsColors.background, contentColor = WordsColors.text)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
