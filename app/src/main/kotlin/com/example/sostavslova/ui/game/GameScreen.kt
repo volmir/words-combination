@@ -33,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -52,7 +51,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.sostavslova.R
-import com.example.sostavslova.WordsApplication
+import com.example.sostavslova.di.appContainer
 import com.example.sostavslova.core.LevelRules
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.ui.components.AlertBanner
@@ -72,7 +71,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun GameRoute(onReturnLevels: (Int) -> Unit) {
     BackHandler { onReturnLevels(0) }
-    val container = (LocalContext.current.applicationContext as WordsApplication).container
+    val container = appContainer()
     val factory = remember(container) {
         viewModelFactory { initializer {
             GameViewModel(createSavedStateHandle(), container.wordRepository, container.levelsRepository,

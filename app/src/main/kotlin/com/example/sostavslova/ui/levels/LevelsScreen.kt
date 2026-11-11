@@ -37,7 +37,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -51,7 +50,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.R
-import com.example.sostavslova.WordsApplication
+import com.example.sostavslova.di.appContainer
 import com.example.sostavslova.ui.components.AlertBanner
 import com.example.sostavslova.ui.components.AlertType
 import com.example.sostavslova.ui.components.StarsRow
@@ -61,7 +60,7 @@ import java.util.Locale
 
 @Composable
 fun LevelsRoute(notice: Int = 0, onOpenGame: (Int) -> Unit) {
-    val container = (LocalContext.current.applicationContext as WordsApplication).container
+    val container = appContainer()
     val factory = remember(container) {
         viewModelFactory { initializer {
             LevelsViewModel(container.levelsRepository, container.progressRepository, container.wordRepository)

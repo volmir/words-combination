@@ -11,10 +11,14 @@ import com.example.sostavslova.data.WordRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import java.io.File
 
 class AppContainer(
     context: Context,
     readCampaign: (suspend () -> String?)? = null,
+    words: WordRepository? = null,
+    definitions: DefinitionsRepository? = null,
+    progressFile: (() -> File)? = null,
 ) {
     private val appContext = context.applicationContext
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -23,7 +27,7 @@ class AppContainer(
 
     var random: kotlin.random.Random = kotlin.random.Random.Default
 
-    val wordRepository = WordRepository(readWords = { readAsset("words.txt") })
+    val wordRepository = words ?: WordRepository(readWords = { readAsset("words.txt") })
     val levelsRepository = LevelsRepository(
         readLevels = { readAsset("levels.json") },
         readCampaign = readCampaign ?: {
@@ -31,12 +35,12 @@ class AppContainer(
             if ("campaign.json" in appContext.assets.list("").orEmpty()) readAsset("campaign.json") else null
         },
     )
-    val definitionsRepository: DefinitionsRepository = SqliteDefinitionsRepository(appContext)
+    val definitionsRepository: DefinitionsRepository = definitions ?: SqliteDefinitionsRepository(appContext)
 
     private val progressDataStore by lazy {
         PreferenceDataStoreFactory.create(
             scope = CoroutineScope(applicationScope.coroutineContext + Dispatchers.IO),
-            produceFile = { appContext.preferencesDataStoreFile("progress") },
+            produceFile = progressFile ?: { appContext.preferencesDataStoreFile("progress") },
         )
     }
     val progressRepository: ProgressRepository by lazy { ProgressRepository(progressDataStore) }

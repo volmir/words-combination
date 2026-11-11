@@ -14,7 +14,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -25,7 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.sostavslova.R
-import com.example.sostavslova.WordsApplication
+import com.example.sostavslova.di.appContainer
 import com.example.sostavslova.ui.components.AlertBanner
 import com.example.sostavslova.ui.components.AlertType
 import com.example.sostavslova.ui.components.DefinitionBlock
@@ -34,7 +33,7 @@ import com.example.sostavslova.ui.components.WordInputRow
 
 @Composable
 fun WordMeaningRoute() {
-    val container = (LocalContext.current.applicationContext as WordsApplication).container
+    val container = appContainer()
     val factory = remember(container) {
         viewModelFactory {
             initializer {

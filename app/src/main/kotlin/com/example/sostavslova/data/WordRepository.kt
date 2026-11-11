@@ -27,6 +27,7 @@ class WordRepository(
     private val readWords: suspend () -> String,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val indexFactory: (String) -> WordIndex = WordIndex::fromText,
 ) {
     private val loadMutex = Mutex()
     private var index: WordIndex? = null
@@ -39,7 +40,7 @@ class WordRepository(
             mutableState.value = LoadState.Loading
             try {
                 val text = withContext(ioDispatcher) { readWords() }
-                val loaded = withContext(computationDispatcher) { WordIndex.fromText(text) }
+                val loaded = withContext(computationDispatcher) { indexFactory(text) }
                 index = loaded
                 mutableState.value = LoadState.Ready(loaded.size)
             } catch (cancelled: CancellationException) {

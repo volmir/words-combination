@@ -22,7 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.sostavslova.R
-import com.example.sostavslova.WordsApplication
+import com.example.sostavslova.di.appContainer
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
@@ -47,7 +47,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun WordsApp() {
     val context = LocalContext.current
-    val container = (context.applicationContext as WordsApplication).container
+    val container = appContainer()
     val exit: ExitViewModel = viewModel(factory = viewModelFactory {
         initializer { ExitViewModel(createSavedStateHandle(), container.progressRepository::awaitSaved) }
     })
