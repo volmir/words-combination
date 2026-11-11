@@ -16,16 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * Compose UI-тесты (androidTest) для главных сценариев приложения:
- * 1. Ввод «портал» → экран игры → ввод «пар» → «Правильно!» → счёт «вы отгадали 1».
- * 2. Неверное слово → «Слово … не найдено!»; повтор верного → «Вы уже разгадали слово …».
- * 3. Подсказка не раскрывает слово (текст подсказки не содержит ни одного из ещё не найденных слов целиком).
- * 4. Завершить игру → подтверждение → возврат на главную; «Продолжить игру» исчезает.
- * 5. Прохождение: уровень 2 заблокирован на чистых данных.
- * 6. Поиск слов: «акробат» → 100 слов.
- * Детерминированность обеспечивается фиксированием Random через внедрение в AppContainer.
- */
+/** Основные сценарии кампании: выбор уровня, ответы, подсказка, возврат и поиск. */
 @RunWith(AndroidJUnit4::class)
 class MainScenariosUiTest {
     @get:Rule
@@ -39,7 +30,7 @@ class MainScenariosUiTest {
         container.random = Random(42)
         container.progressRepository.clearAll()
         container.wordRepository.ensureLoaded()
-        compose.waitUntil(10_000) { compose.onNodeWithText("Начать игру").isEnabled() }
+        compose.waitUntil(10_000) { compose.onNodeWithTag("level_1").isEnabled() }
     }
 
     @After
@@ -57,13 +48,12 @@ class MainScenariosUiTest {
         compose.onNodeWithText(text, substring = substring).performScrollTo().assertIsDisplayed()
     }
 
-    private fun startWithWord(word: String) {
-        compose.onNode(hasSetTextAction()).performTextReplacement(word)
-        compose.onNode(hasSetTextAction()).performImeAction()
-        compose.waitUntil(10_000) {
-            compose.onAllNodesWithTag("game_screen").fetchSemanticsNodes().isNotEmpty()
-        }
+    private fun startLevel() {
+        compose.onNodeWithTag("level_1").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_screen").fetchSemanticsNodes().isNotEmpty() &&
+            compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
     }
+    private suspend fun source() = container.levelsRepository.getLevels().first().word
 
     private fun answerWord(word: String) {
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement(word)
@@ -71,17 +61,19 @@ class MainScenariosUiTest {
     }
 
     /**
-     * Сценарий 1: Ввод «портал» → экран игры → ввод «пар» → «Правильно!» → счёт «вы отгадали 1».
+     * Доступный уровень → ответ → сохранённый счёт.
      */
     @Test
-    fun scenario1_portalInputGameScreenAnswerParCorrectAndScoreUpdated() = runTest {
-        startWithWord("портал")
-        awaitText("всего найдено 47 слов, вы отгадали 0")
+    fun levelAnswerIsSavedAndScoreUpdated() = runTest {
+        startLevel()
+        val game = container.wordRepository.startGame(source())
+        awaitText("вы отгадали 0", substring = true)
+        assertTrue("пар" in game.allWords)
 
         answerWord("пар")
         awaitText("Правильно!")
         awaitText("вы отгадали 1", substring = true)
-        assertEquals(listOf("пар"), container.progressRepository.observeCurrentGame().first()?.found)
+        assertEquals(listOf("пар"), container.progressRepository.levelAnswers(source()))
     }
 
     /**
@@ -89,7 +81,7 @@ class MainScenariosUiTest {
      */
     @Test
     fun scenario2_incorrectWordNotFoundAndRepeatedWordAlreadyFound() = runTest {
-        startWithWord("портал")
+        startLevel()
         answerWord("пар")
         awaitText("Правильно!")
 
@@ -105,13 +97,13 @@ class MainScenariosUiTest {
      */
     @Test
     fun scenario3_hintDoesNotRevealUnfoundWords() = runTest {
-        startWithWord("портал")
+        startLevel()
         answerWord("пар")
         awaitText("Правильно!")
 
-        val game = container.progressRepository.observeCurrentGame().first()
-        val allBuildable = container.wordRepository.search("портал")?.words ?: emptyList()
-        val unrevealedWords = (allBuildable - (game?.found.orEmpty())).filter { it.length >= 3 }
+        val found = container.progressRepository.levelAnswers(source())
+        val allBuildable = container.wordRepository.search(source())?.words ?: emptyList()
+        val unrevealedWords = (allBuildable - found).filter { it.length >= 3 }
         assertTrue("Должны быть неотгаданные слова", unrevealedWords.isNotEmpty())
 
         compose.onNodeWithText("Показать подсказку").performScrollTo().performClick()
@@ -140,26 +132,15 @@ class MainScenariosUiTest {
         }
     }
 
-    /**
-     * Сценарий 4: Завершить игру → подтверждение → возврат на главную; «Продолжить игру» исчезает.
-     */
     @Test
-    fun scenario4_finishGameConfirmationReturnsHomeAndContinueGameDisappears() = runTest {
-        startWithWord("портал")
-        answerWord("пар")
-        awaitText("Правильно!")
-        assertNotNull(container.progressRepository.observeCurrentGame().first())
-
-        compose.onNodeWithText("Завершить игру").performScrollTo().performClick()
-        awaitText("Вы уверены, что хотите завершить игру?")
-
-        compose.onNodeWithText("Да").performClick()
-        compose.waitUntil(10_000) {
-            compose.onAllNodesWithTag("home_screen").fetchSemanticsNodes().isNotEmpty()
-        }
-
-        compose.onNodeWithText("Продолжить игру").assertDoesNotExist()
-        assertNull(container.progressRepository.observeCurrentGame().first())
+    fun backToMapAndReopenPreservesAnswers() = runTest {
+        startLevel(); answerWord("пар"); awaitText("Правильно!")
+        compose.onNodeWithText("Завершить игру").assertDoesNotExist()
+        compose.onNodeWithTag("game_back").performClick()
+        compose.onNodeWithTag("levels_screen").assertIsDisplayed()
+        startLevel()
+        awaitText("вы отгадали 1", substring = true)
+        assertEquals(listOf("пар"), container.progressRepository.levelAnswers(source()))
     }
 
     /**
@@ -196,6 +177,7 @@ class MainScenariosUiTest {
         compose.onNode(hasSetTextAction()).performImeAction()
 
         awaitText("Все слова, которые можно составить из \"акробат\"")
-        awaitText("100 слов", substring = true)
+        val result = requireNotNull(container.wordRepository.search("акробат"))
+        awaitText("${result.total} ${com.example.sostavslova.core.RussianPlural.words(result.total)}", substring = true)
     }
 }

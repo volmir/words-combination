@@ -49,7 +49,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 @Serializable
-data class CurrentGame(val word: String, val found: List<String> = emptyList(), val version: Int = 1)
+private data class CurrentGame(val word: String, val found: List<String> = emptyList(), val version: Int = 1)
 
 class ProgressRepository(
     private val dataStore: DataStore<Preferences>,
@@ -59,6 +59,7 @@ class ProgressRepository(
     private val currentGameKey = stringPreferencesKey("currentGame")
     private val levelProgressKey = stringPreferencesKey("levelProgress")
     private val levelAnswersKey = stringPreferencesKey("levelAnswers")
+    private val legacyLevelsKey = stringPreferencesKey("levelSessionV1")
     private val campaignProgressKey = stringPreferencesKey("campaignProgressV2")
 
     /** Один снимок для уровня, доступа, подсказок и итогов CampaignRules.summary. */
@@ -88,10 +89,11 @@ class ProgressRepository(
                 }
                 // В отличие от старых наблюдателей, здесь нет fallback на пустые данные.
                 validateLegacyPayloads(preferences)
-                val progress = decodeLegacy<Map<String, StoredLevelProgress>>(
+                val transitional = readLegacyLevels(preferences)
+                val progress = transitional.progress + decodeLegacy<Map<String, StoredLevelProgress>>(
                     preferences[levelProgressKey], emptyMap(),
                 )
-                val answers = decodeLegacy<Map<String, List<String>>>(
+                val answers = transitional.answers + decodeLegacy<Map<String, List<String>>>(
                     preferences[levelAnswersKey], emptyMap(),
                 )
                 val current = decodeLegacy<CurrentGame?>(preferences[currentGameKey], null)
@@ -131,6 +133,7 @@ class ProgressRepository(
                     // пересчёт не расширяет старую границу и не запускает цепочку открытий.
                 )
                 preferences[campaignProgressKey] = json.encodeToString(CampaignProgressDto.fromCore(saved))
+                preferences.remove(legacyLevelsKey)
                 preferences.remove(currentGameKey)
                 preferences.remove(levelProgressKey)
                 preferences.remove(levelAnswersKey)
@@ -226,67 +229,80 @@ class ProgressRepository(
         }
     }
 
-    fun observeCurrentGame(): Flow<CurrentGame?> = dataStore.data
-        .map { decode<CurrentGame?>(it[currentGameKey], null) }
-        .distinctUntilChanged().flowOn(computationDispatcher)
+    @Serializable
+    private data class LegacyLevels(
+        val answers: Map<String, List<String>> = emptyMap(),
+        val progress: Map<String, StoredLevelProgress> = emptyMap(),
+        val version: Int = 1,
+    )
 
-    fun observeLevelProgress(): Flow<Map<String, LevelProgress>> = dataStore.data
-        .map { preferences ->
-            decode<Map<String, StoredLevelProgress>>(preferences[levelProgressKey], emptyMap())
-                .mapValues { it.value.toCore() }
+    /** Переходная v1: старые ключи читаются один раз, свободная игра не переносится. */
+    suspend fun migrateLegacyLevels(levels: List<Level>) = withContext(NonCancellable + computationDispatcher) {
+        dataStore.edit { preferences ->
+            if (preferences[legacyLevelsKey] != null) return@edit
+            validateLegacyPayloads(preferences)
+            val rawAnswers = decodeLegacy<Map<String, List<String>>>(preferences[levelAnswersKey], emptyMap())
+            val rawStars = decodeLegacy<Map<String, StoredLevelProgress>>(preferences[levelProgressKey], emptyMap())
+            val current = decodeLegacy<CurrentGame?>(preferences[currentGameKey], null)
+            require(rawStars.values.all { it.version == 1 } && (current == null || current.version == 1))
+            val answers = rawAnswers.entries.groupBy { Alphabet.normalize(it.key) }
+                .mapValues { (_, entries) -> entries.flatMap { it.value }.map(Alphabet::normalize).distinct() }.toMutableMap()
+            val stars = rawStars.entries.groupBy { Alphabet.normalize(it.key) }.mapValues { (_, entries) ->
+                StoredLevelProgress.fromCore(entries.fold(LevelProgress()) { result, entry -> result merge entry.value.toCore() })
+            }
+            // Слово из currentGame переносится только при отдельной записи реального уровня.
+            for (level in levels) {
+                if (current != null && Alphabet.normalize(current.word) == level.word &&
+                    (level.word in answers || level.word in stars)) {
+                    answers[level.word] = (answers[level.word].orEmpty() + current.found).map(Alphabet::normalize).distinct()
+                }
+            }
+            preferences[legacyLevelsKey] = json.encodeToString(LegacyLevels(answers, stars))
+            preferences.remove(currentGameKey)
+            preferences.remove(levelAnswersKey)
+            preferences.remove(levelProgressKey)
         }
-        .distinctUntilChanged().flowOn(computationDispatcher)
-
-    suspend fun saveGame(state: GameState) = withContext(computationDispatcher) {
-        val saved = CurrentGame(state.word, state.found.toList())
-        dataStore.edit { it[currentGameKey] = json.encodeToString(saved) }
         Unit
     }
 
-    suspend fun clearCurrentGame() {
-        dataStore.edit { it.remove(currentGameKey) }
-    }
+    private fun readLegacyLevels(preferences: Preferences): LegacyLevels =
+        preferences[legacyLevelsKey]?.let { raw ->
+            json.decodeFromString<LegacyLevels>(raw).also { require(it.version == 1) { "Unsupported v1 session version" } }
+        } ?: LegacyLevels()
+
+    fun observeLevelProgress(): Flow<Map<String, LevelProgress>> = dataStore.data
+        .map { readLegacyLevels(it).progress.mapValues { entry -> entry.value.toCore() } }
+        .distinctUntilChanged().flowOn(computationDispatcher)
 
     suspend fun clearAll() = withContext(NonCancellable + computationDispatcher) {
         dataStore.edit { preferences ->
             preferences.remove(currentGameKey)
             preferences.remove(levelProgressKey)
             preferences.remove(levelAnswersKey)
+            preferences.remove(legacyLevelsKey)
             preferences.remove(campaignProgressKey)
         }
         Unit
     }
 
-    /** Звёзды и ответы обновляются одной транзакцией, включая параллельные сохранения. */
-    suspend fun saveLevelResult(level: Level, found: List<String>) = withContext(computationDispatcher) {
+    /** Звёзды и ответы v1 сохраняются одной транзакцией, которую выход с экрана не отменяет. */
+    suspend fun saveLevelResult(level: Level, found: List<String>) = withContext(NonCancellable + computationDispatcher) {
         dataStore.edit { preferences ->
-            val answers = decode<Map<String, List<String>>>(preferences[levelAnswersKey], emptyMap()).toMutableMap()
-            val restored = (answers[level.word].orEmpty() + found).distinct()
-            answers[level.word] = restored
-
-            val progress = decode<Map<String, StoredLevelProgress>>(preferences[levelProgressKey], emptyMap()).toMutableMap()
-            val previous = progress[level.word]?.toCore() ?: LevelProgress()
+            val saved = readLegacyLevels(preferences)
+            val restored = (saved.answers[level.word].orEmpty() + found).distinct()
+            val previous = saved.progress[level.word]?.toCore() ?: LevelProgress()
             val merged = previous merge LevelRules.evaluate(level, restored)
-            progress[level.word] = StoredLevelProgress.fromCore(merged)
-
-            preferences[levelProgressKey] = json.encodeToString(progress.toMap())
-            preferences[levelAnswersKey] = json.encodeToString(answers.toMap())
+            preferences[legacyLevelsKey] = json.encodeToString(saved.copy(
+                answers = saved.answers + (level.word to restored),
+                progress = saved.progress + (level.word to StoredLevelProgress.fromCore(merged)),
+            ))
         }
         Unit
     }
 
     suspend fun levelAnswers(word: String): List<String> = withContext(computationDispatcher) {
-        val preferences = dataStore.data.first()
-        decode<Map<String, List<String>>>(preferences[levelAnswersKey], emptyMap())
-            .get(Alphabet.normalize(word)).orEmpty().toList()
+        readLegacyLevels(dataStore.data.first()).answers[Alphabet.normalize(word)].orEmpty()
     }
-
-    private inline fun <reified T> decode(raw: String?, fallback: T): T =
-        if (raw == null) fallback else try {
-            json.decodeFromString<T>(raw)
-        } catch (_: SerializationException) {
-            fallback
-        }
 
     private inline fun <reified T> decodeLegacy(raw: String?, absent: T): T =
         if (raw == null) absent else json.decodeFromString<T>(raw)
@@ -327,7 +343,7 @@ class ProgressRepository(
 
     private fun hasLegacyProgress(preferences: Preferences): Boolean =
         preferences[currentGameKey] != null || preferences[levelProgressKey] != null ||
-            preferences[levelAnswersKey] != null
+            preferences[levelAnswersKey] != null || preferences[legacyLevelsKey] != null
 
     // DTO сохраняет :core независимым от Android и kotlinx-serialization.
     @Serializable

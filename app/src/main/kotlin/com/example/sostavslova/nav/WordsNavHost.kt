@@ -3,38 +3,42 @@ package com.example.sostavslova.nav
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.sostavslova.ui.screens.AboutScreen
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.sostavslova.ui.game.GameRoute
-import com.example.sostavslova.ui.home.HomeRoute
 import com.example.sostavslova.ui.levels.LevelsRoute
-import com.example.sostavslova.ui.screens.RulesScreen
-import com.example.sostavslova.ui.screens.WordMeaningScreen
-import com.example.sostavslova.ui.screens.WordSearchScreen
+import com.example.sostavslova.ui.screens.*
+
+fun NavHostController.returnToLevels(message: Int = 0) {
+    if (!popBackStack(Destination.Levels.route, inclusive = false)) {
+        navigate(Destination.Levels.route) {
+            popUpTo(graph.id) { inclusive = false }
+            launchSingleTop = true
+        }
+    }
+    currentBackStackEntry?.savedStateHandle?.set("levels.notice", message)
+}
 
 @Composable
 fun WordsNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
-    NavHost(navController, startDestination = Destination.Home.route, modifier = modifier) {
-        composable(Destination.Home.route) { entry ->
-            val notice by entry.savedStateHandle.getStateFlow("home.notice", 0).collectAsStateWithLifecycle()
-            HomeRoute(notice, { entry.savedStateHandle["home.notice"] = 0 }) {
-                navController.navigate(Destination.Game.route) { launchSingleTop = true }
+    NavHost(navController, startDestination = Destination.Levels.route, modifier = modifier) {
+        composable(Destination.Levels.route) { entry ->
+            val notice by entry.savedStateHandle.getStateFlow("levels.notice", 0).collectAsStateWithLifecycle()
+            LevelsRoute(notice) { index ->
+                entry.savedStateHandle["levels.notice"] = 0
+                navController.navigate(Destination.level(index)) { launchSingleTop = true }
             }
         }
-        composable(Destination.Game.route) {
-            GameRoute { message ->
-                navController.getBackStackEntry(Destination.Home.route).savedStateHandle["home.notice"] = message
-                navController.navigate(Destination.Home.route) {
-                    popUpTo(Destination.Home.route)
-                    launchSingleTop = true
-                }
-            }
-        }
-        composable(Destination.Levels.route) {
-            LevelsRoute { navController.navigate(Destination.Game.route) { launchSingleTop = true } }
+        composable(Destination.Game.route,
+            arguments = listOf(navArgument("index") { type = NavType.StringType }),
+            deepLinks = listOf(navDeepLink { uriPattern = "sostavslova://level/{index}" }),
+        ) {
+            GameRoute { message -> navController.returnToLevels(message) }
         }
         composable(Destination.WordSearch.route) { WordSearchScreen() }
         composable(Destination.WordMeaning.route) { WordMeaningScreen() }

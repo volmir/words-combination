@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.game
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,7 +43,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
@@ -55,7 +55,6 @@ import com.example.sostavslova.WordsApplication
 import com.example.sostavslova.core.LevelRules
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.ui.components.AlertBanner
-import com.example.sostavslova.ui.components.ConfirmDialog
 import com.example.sostavslova.ui.components.DefinitionBlock
 import com.example.sostavslova.ui.components.DefinitionDialog
 import com.example.sostavslova.ui.components.LetterTiles
@@ -70,7 +69,8 @@ import java.util.Locale
 import kotlinx.coroutines.delay
 
 @Composable
-fun GameRoute(onReturnHome: (Int) -> Unit) {
+fun GameRoute(onReturnLevels: (Int) -> Unit) {
+    BackHandler { onReturnLevels(0) }
     val container = (LocalContext.current.applicationContext as WordsApplication).container
     val factory = remember(container) {
         viewModelFactory { initializer {
@@ -82,7 +82,6 @@ fun GameRoute(onReturnHome: (Int) -> Unit) {
     val state by model.uiState.collectAsStateWithLifecycle()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var notice by remember { mutableStateOf<GameMessage?>(null) }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { model.onGameOpened() }
     LaunchedEffect(model, lifecycle) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             try {
@@ -94,9 +93,9 @@ fun GameRoute(onReturnHome: (Int) -> Unit) {
             } finally { notice = null }
         }
     }
-    LaunchedEffect(state.returnHome) { if (state.returnHome) onReturnHome(state.homeMessage) }
+    LaunchedEffect(state.returnLevels) { if (state.returnLevels) onReturnLevels(state.levelsMessage) }
     GameScreen(state, model::onInputChanged, model::onSubmit, model::onHint, model::onDefinition,
-        model::onDialog, model::onDismissDialog, model::onFinish, model::onGameOpened, notice)
+        model::onDialog, model::onDismissDialog, model::onGameOpened, notice)
 }
 
 @Composable
@@ -108,7 +107,6 @@ fun GameScreen(
     onDefinition: (String) -> Unit,
     onDialog: (GameDialog) -> Unit,
     onDismissDialog: () -> Unit,
-    onFinish: () -> Unit,
     onRetry: () -> Unit,
     notice: GameMessage? = null,
 ) {
@@ -131,6 +129,9 @@ fun GameScreen(
                     Text(stringResource(R.string.game_counts, game.total, RussianPlural.words(game.total), game.foundCount),
                         style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic))
                     if (state.level != null) StarsRow(state.levelProgress, onClick = { onDialog(GameDialog.Tasks) })
+                    state.campaignLevel?.let { current ->
+                        Text(stringResource(R.string.level_stars_progress, current.completedTaskIds.size, current.level.maxStars))
+                    }
                 }
                 state.message?.let { GameBanner(it) }
                 notice?.let { GameBanner(it) }
@@ -140,7 +141,7 @@ fun GameScreen(
                             onSubmit()
                             focus.requestFocus()
                             keyboard?.show()
-                        }, enabled = state.canPlay, inputEnabled = !state.loading && !state.returnHome,
+                        }, enabled = state.canPlay, inputEnabled = !state.loading && !state.returnLevels,
                         focusRequester = focus)
                     if (state.busy) GameLoading(stringResource(R.string.game_saving))
                 }
@@ -163,12 +164,20 @@ fun GameScreen(
                         }
                     }
                 }
+                state.campaignHint?.let { step ->
+                    Column(Modifier.testTag("game_hint"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(R.string.hint_title), style = MaterialTheme.typography.titleMedium)
+                        step.text?.let { Text(it) }
+                        step.length?.let { length -> Text(stringResource(R.string.hint_length, length,
+                            RussianPlural.form(length, stringResource(R.string.hint_letter_genitive_one),
+                                stringResource(R.string.hint_letter_genitive_many), stringResource(R.string.hint_letter_genitive_many)))) }
+                    }
+                }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     GameAction(stringResource(R.string.show_hint), state.canPlay && !state.hintLoading, onHint, R.drawable.ic_help)
                     GameAction(stringResource(R.string.statistics), state.canPlay, { onDialog(GameDialog.Statistics) }, R.drawable.ic_statistics)
                     if (state.level != null) GameAction(stringResource(R.string.tasks), state.canPlay,
                         { onDialog(GameDialog.Tasks) }, R.drawable.ic_star_outline)
-                    GameAction(stringResource(R.string.finish_game), state.canPlay, { onDialog(GameDialog.Finish) }, R.drawable.ic_close)
                 }
             }
         }
@@ -205,7 +214,6 @@ fun GameScreen(
                 CloseDialogButton(onDismissDialog)
             }
         } else DefinitionDialog(state.definitionWord, state.definitions, onDismissDialog, state.definitionsAvailable)
-        GameDialog.Finish -> ConfirmDialog(onFinish, onDismissDialog, enabled = !state.busy)
         null -> Unit
     }
 }

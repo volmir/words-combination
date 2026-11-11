@@ -37,7 +37,7 @@ internal fun ComponentCatalogScreen(onClose: () -> Unit) {
     var selectedWord by rememberSaveable { mutableStateOf(sampleWord) }
     var dialog by rememberSaveable { mutableIntStateOf(0) }
     var submitted by rememberSaveable { mutableStateOf(false) }
-    Scaffold(topBar = { WordsTopBar(onClose) }) { insets ->
+    Scaffold(topBar = { WordsTopBar(onOpenMenu = onClose) }) { insets ->
         Column(Modifier.fillMaxSize().padding(insets).verticalScroll(rememberScrollState()).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.widthIn(max = 600.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(stringResource(R.string.catalog_title), style = MaterialTheme.typography.titleLarge)
@@ -66,7 +66,6 @@ internal fun ComponentCatalogScreen(onClose: () -> Unit) {
                 CatalogButton(R.string.catalog_definition_button) { selectedWord = sampleWord; dialog = 1 }
                 CatalogButton(R.string.catalog_missing_button) { dialog = 2 }
                 CatalogButton(R.string.catalog_unavailable_button) { dialog = 3 }
-                CatalogButton(R.string.finish_game) { dialog = 4 }
                 CatalogButton(R.string.close_dialog, onClose)
             }
         }
@@ -75,7 +74,6 @@ internal fun ComponentCatalogScreen(onClose: () -> Unit) {
         1 -> DefinitionDialog(selectedWord, listOf(definition.copy(display = selectedWord)), { dialog = 0 }, definitionsAvailable = true)
         2 -> DefinitionDialog(sampleWord, emptyList(), { dialog = 0 }, definitionsAvailable = true)
         3 -> DefinitionDialog(sampleWord, emptyList(), { dialog = 0 }, definitionsAvailable = false)
-        4 -> ConfirmDialog(onConfirm = { dialog = 0 }, onDismiss = { dialog = 0 })
     }
 }
 

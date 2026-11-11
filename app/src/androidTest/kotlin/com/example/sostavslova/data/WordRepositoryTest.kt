@@ -26,21 +26,6 @@ class WordRepositoryTest {
         .open("words.txt").bufferedReader().use { it.readText() }
 
     @Test
-    fun randomWordsAreDistinctAndPlayable() = runTest(timeout = 2.minutes) {
-        val repository = WordRepository(readWords = { readWords() }, random = Random(42))
-        // Вызываем с Main: само построение индекса и пула должно переключиться в фон.
-        val words = withContext(Dispatchers.Main) { repository.randomSourceWords() }
-        assertEquals(4, words.size)
-        assertEquals(4, words.toSet().size)
-        for (word in words) {
-            assertTrue(word.length in 11..12)
-            assertTrue(checkNotNull(repository.search(word)).total >= 20)
-        }
-        assertEquals(4, repository.randomSourceWords().toSet().size)
-        assertEquals(emptyList<String>(), repository.randomSourceWords(0))
-    }
-
-    @Test
     fun concurrentAndRepeatedLoadsReadFileOnceOffMain() = runTest {
         val reads = AtomicInteger()
         val repository = WordRepository(readWords = {

@@ -288,7 +288,8 @@ class LegacyCampaignMigrationTest {
     @Test fun readingV1AndV2DoesNotStartMigrationAndEventsCannotBypassIt() = runTest {
         seed(levelProgress = """{"рекуперация":{"completed":true}}""")
         val before = store.data.first()
-        assertTrue(repository.observeLevelProgress().first().getValue("рекуперация").completed)
+        assertTrue(repository.observeLevelProgress().first().isEmpty())
+        assertEquals("""{"рекуперация":{"completed":true}}""", store.data.first()[progress])
         assertEquals(CampaignProgress(), snapshot())
         assertTrue(runCatching { repository.markCampaignExplanationSeen(TaskType.T1) }.isFailure)
         assertTrue(runCatching { repository.submitCampaignAnswer(campaign, 1, "каре", index) }.isFailure)

@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -15,8 +14,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -54,22 +51,6 @@ fun DefinitionDialog(
         }
         TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp)) {
             Text(stringResource(R.string.close_dialog), style = MaterialTheme.typography.bodyLarge)
-        }
-    }
-}
-
-@Composable
-fun ConfirmDialog(onConfirm: () -> Unit, onDismiss: () -> Unit, enabled: Boolean = true) {
-    WordsDialog(stringResource(R.string.confirm_finish_game), onDismiss) {
-        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(
-                onClick = onConfirm, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp), shape = RoundedCornerShape(4.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = WordsColors.dangerButton, contentColor = WordsColors.background),
-            ) { Text(stringResource(R.string.yes), style = MaterialTheme.typography.bodyLarge) }
-            Button(
-                onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp), shape = RoundedCornerShape(4.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = WordsColors.successButton, contentColor = WordsColors.background),
-            ) { Text(stringResource(R.string.no), style = MaterialTheme.typography.bodyLarge) }
         }
     }
 }

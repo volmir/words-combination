@@ -311,16 +311,16 @@ class CampaignProgressRepositoryTest {
             it[stringPreferencesKey("currentGame")] = """{"word":"торт","found":["рот"]}"""
             it[key] = """{"levels":{"картотека":{"found":["крот"]}}}"""
         }
-        val legacy = repository.observeCurrentGame().first()
-        assertEquals(CurrentGame("торт", listOf("рот")), legacy)
+        val legacy = store.data.first()[stringPreferencesKey("currentGame")]
+        assertEquals("""{"word":"торт","found":["рот"]}""", legacy)
         val saved = snapshot()
         assertEquals(1, saved.highestUnlockedLevel)
         assertNull(saved.lastVisitedLevel)
         assertTrue(saved.seenExplanations.isEmpty())
         assertTrue(saved.levels.getValue("картотека").completedTaskIds.isEmpty())
         repository.markCampaignExplanationSeen(TaskType.T1)
-        assertEquals(legacy, repository.observeCurrentGame().first())
-        repository.saveGame(GameState("торт", listOf("рот"), listOf("рот")))
+        assertEquals(legacy, store.data.first()[stringPreferencesKey("currentGame")])
+        store.edit { it[stringPreferencesKey("currentGame")] = """{"word":"торт","found":["рот"]}""" }
         assertEquals(saved.levels, snapshot().levels)
     }
 
@@ -338,7 +338,7 @@ class CampaignProgressRepositoryTest {
     }
 
     @Test fun clearAllRemovesCampaignAndLegacyDataAndSurvivesRestart() = runTest {
-        repository.saveGame(GameState("торт", listOf("рот"), listOf("рот")))
+        store.edit { it[stringPreferencesKey("currentGame")] = """{"word":"торт","found":["рот"]}""" }
         repository.saveLevelResult(Level(1, "торт", answers = 2, words = 3, letter = 'т', letterCount = 2),
             listOf("тор", "тот"))
         assertFalse(repository.observeLevelProgress().first().isEmpty())
@@ -351,17 +351,17 @@ class CampaignProgressRepositoryTest {
         answer("крот", 2)
         repository.consumeCampaignFinaleDialog()
         // После миграции проверяем сброс и при одновременном наличии обеих версий.
-        repository.saveGame(GameState("торт", listOf("рот"), listOf("рот")))
+        store.edit { it[stringPreferencesKey("currentGame")] = """{"word":"торт","found":["рот"]}""" }
         repository.saveLevelResult(Level(1, "торт", answers = 2, words = 3, letter = 'т', letterCount = 2),
             listOf("тор", "тот"))
-        assertNotNull(repository.observeCurrentGame().first())
+        assertNotNull(store.data.first()[stringPreferencesKey("currentGame")])
         assertFalse(repository.observeLevelProgress().first().isEmpty())
         assertFalse(repository.levelAnswers("торт").isEmpty())
         val before = store.calls.get()
         repository.clearAll()
         assertEquals(before + 1, store.calls.get())
         assertEquals(CampaignProgress(), snapshot())
-        assertNull(repository.observeCurrentGame().first())
+        assertNull(store.data.first()[stringPreferencesKey("currentGame")])
         assertTrue(repository.observeLevelProgress().first().isEmpty())
         assertTrue(repository.levelAnswers("картотека").isEmpty())
         assertTrue(repository.levelAnswers("торт").isEmpty())

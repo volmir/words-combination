@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.sostavslova.nav.Destination
+import com.example.sostavslova.nav.returnToLevels
 import com.example.sostavslova.nav.WordsNavHost
 import com.example.sostavslova.ui.components.WordsDrawer
 import com.example.sostavslova.ui.components.WordsTopBar
@@ -31,8 +33,11 @@ fun WordsApp() {
         scope.launch { drawerState.close() }
     }
 
+    val inLevel = backStackEntry?.destination?.route == Destination.Game.route
+
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = !inLevel,
         drawerContent = {
             WordsDrawer(
                 backStackEntry?.destination?.route,
@@ -51,7 +56,9 @@ fun WordsApp() {
         },
         content = {
             Scaffold(
-                topBar = { WordsTopBar { scope.launch { drawerState.open() } } },
+                topBar = { WordsTopBar(onBack = if (inLevel) ({ navController.returnToLevels() }) else null) {
+                    scope.launch { drawerState.open() }
+                } },
             ) { innerPadding ->
                 WordsNavHost(
                     navController,

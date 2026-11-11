@@ -55,7 +55,7 @@ import com.example.sostavslova.ui.theme.WordsColors
 import java.util.Locale
 
 @Composable
-fun LevelsRoute(onOpenGame: () -> Unit) {
+fun LevelsRoute(notice: Int = 0, onOpenGame: (Int) -> Unit) {
     val container = (LocalContext.current.applicationContext as WordsApplication).container
     val factory = remember(container) {
         viewModelFactory { initializer {
@@ -64,13 +64,13 @@ fun LevelsRoute(onOpenGame: () -> Unit) {
     }
     val model: LevelsViewModel = viewModel(factory = factory)
     val state by model.uiState.collectAsStateWithLifecycle()
-    LaunchedEffect(state.openGame) {
-        if (state.openGame) {
+    LaunchedEffect(state.openLevel) {
+        state.openLevel?.let { index ->
             model.onGameOpened()
-            onOpenGame()
+            onOpenGame(index)
         }
     }
-    LevelsScreen(state, model::onSelectLevel, model::load)
+    LevelsScreen(state.copy(message = if (notice != 0) notice else state.message), model::onSelectLevel, model::load)
 }
 
 @Composable
@@ -99,10 +99,10 @@ fun LevelsScreen(state: LevelsUiState, onSelectLevel: (String) -> Unit, onRetry:
             item(key = "levels.prompt", span = { GridItemSpan(maxLineSpan) }) {
                 Well { Text(stringResource(R.string.choose_level), style = MaterialTheme.typography.bodyLarge) }
             }
-            if (state.loading || state.startingWord != null) item(key = "levels.loading", span = { GridItemSpan(maxLineSpan) }) {
+            if (state.loading) item(key = "levels.loading", span = { GridItemSpan(maxLineSpan) }) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                    Text(stringResource(if (state.loading) R.string.levels_loading else R.string.home_starting))
+                    Text(stringResource(if (state.loading) R.string.levels_loading else R.string.levels_loading))
                 }
             }
             if (state.loadError) item(key = "levels.error", span = { GridItemSpan(maxLineSpan) }) {
@@ -115,8 +115,8 @@ fun LevelsScreen(state: LevelsUiState, onSelectLevel: (String) -> Unit, onRetry:
                 AlertBanner(if (state.message == R.string.no_combinations) AlertType.Warning else AlertType.Danger,
                     stringResource(state.message))
             }
-            items(state.levels, key = { it.level.word }) { item ->
-                LevelButton(item, enabled = item.unlocked && state.canSelect, onClick = { onSelectLevel(item.level.word) })
+            items(state.levels, key = { it.word }) { item ->
+                LevelButton(item, enabled = item.unlocked && state.canSelect, onClick = { onSelectLevel(item.word) })
             }
         }
     }
@@ -124,27 +124,28 @@ fun LevelsScreen(state: LevelsUiState, onSelectLevel: (String) -> Unit, onRetry:
 
 @Composable
 private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Unit) {
-    val stars = stringResource(R.string.stars_progress, item.progress.stars)
-    OutlinedButton(onClick, Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("level_${item.level.index}")
+    val stars = stringResource(R.string.level_stars_progress, item.stars, item.maxStars)
+    OutlinedButton(onClick, Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("level_${item.index}")
         .semantics { stateDescription = stars },
         enabled = enabled, shape = RoundedCornerShape(4.dp), border = BorderStroke(1.dp, WordsColors.defaultButtonBorder),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = WordsColors.background, contentColor = WordsColors.text),
         contentPadding = PaddingValues(12.dp)) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val label = stringResource(R.string.level_button, item.level.index, item.level.word.uppercase(Locale.ROOT))
+            val label = stringResource(R.string.level_button, item.index, item.word.uppercase(Locale.ROOT))
             if (maxWidth < 280.dp || LocalDensity.current.fontScale > 1.3f) {
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                         if (!item.unlocked) LockIcon()
                     }
-                    StarsRow(item.progress, Modifier.align(Alignment.End))
+                    if (item.campaignStars == null) StarsRow(item.progress, Modifier.align(Alignment.End))
+                    else Text(stars, Modifier.align(Alignment.End))
                 }
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                     if (!item.unlocked) LockIcon()
-                    StarsRow(item.progress)
+                    if (item.campaignStars == null) StarsRow(item.progress) else Text(stars)
                 }
             }
         }

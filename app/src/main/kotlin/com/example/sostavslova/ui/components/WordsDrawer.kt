@@ -36,8 +36,6 @@ fun WordsDrawer(
                 modifier = Modifier.padding(16.dp),
                 style = MaterialTheme.typography.titleMedium,
             )
-            DrawerItem(Destination.Home, currentRoute, onNavigate)
-            DrawerItem(Destination.Game, currentRoute, onNavigate)
             DrawerItem(Destination.Levels, currentRoute, onNavigate)
             DrawerSection(R.string.nav_services)
             DrawerItem(Destination.WordSearch, currentRoute, onNavigate)

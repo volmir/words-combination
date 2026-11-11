@@ -67,7 +67,7 @@ class LevelsLayoutTest(private val width: Int, private val fontScale: Float) {
         }) }
         compose.onNodeWithTag("level_1").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Звёзды: 3 из 3"))
         compose.onNodeWithTag("level_2").assertIsEnabled()
-        compose.onNodeWithTag("levels_grid").performScrollToKey(items.last().level.word)
+        compose.onNodeWithTag("levels_grid").performScrollToKey(items.last().word)
         compose.onNodeWithTag("level_30").assertExists().assertIsNotEnabled()
         checkLayout()
     }

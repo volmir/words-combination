@@ -20,12 +20,8 @@ class AppContainer(
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     var random: kotlin.random.Random = kotlin.random.Random.Default
-        set(value) {
-            field = value
-            wordRepository.random = value
-        }
 
-    val wordRepository = WordRepository(readWords = { readAsset("words.txt") }, random = random)
+    val wordRepository = WordRepository(readWords = { readAsset("words.txt") })
     val levelsRepository = LevelsRepository(
         readLevels = { readAsset("levels.json") },
         readCampaign = readCampaign ?: {

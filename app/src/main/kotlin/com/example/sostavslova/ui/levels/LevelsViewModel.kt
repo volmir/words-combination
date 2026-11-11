@@ -4,42 +4,45 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.R
-import com.example.sostavslova.core.Alphabet
+import com.example.sostavslova.core.CampaignRules
+import com.example.sostavslova.core.CampaignProgress
+import com.example.sostavslova.data.LevelRouteRules
 import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.LevelProgress
-import com.example.sostavslova.core.LevelRules
 import com.example.sostavslova.data.LevelsRepository
 import com.example.sostavslova.data.ProgressRepository
 import com.example.sostavslova.data.WordRepository
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-data class LevelUiState(val level: Level, val progress: LevelProgress, val unlocked: Boolean)
+data class LevelUiState(
+    val index: Int, val word: String, val progress: LevelProgress, val unlocked: Boolean,
+    val campaignStars: Int? = null, val maxStars: Int = 3,
+) {
+    val stars: Int get() = campaignStars ?: progress.stars
+
+    constructor(level: Level, progress: LevelProgress, unlocked: Boolean) :
+        this(level.index, level.word, progress, unlocked)
+}
 
 data class LevelsUiState(
     val loading: Boolean = true,
     val loadError: Boolean = false,
     val levels: List<LevelUiState> = emptyList(),
-    val startingWord: String? = null,
-    val openGame: Boolean = false,
+    val openLevel: Int? = null,
     @param:StringRes val message: Int = 0,
 ) {
-    val canSelect: Boolean get() = !loading && !loadError && startingWord == null && !openGame
+    val canSelect: Boolean get() = !loading && !loadError && openLevel == null
 }
 
 class LevelsViewModel(
     private val levels: LevelsRepository,
     private val progress: ProgressRepository,
     private val words: WordRepository,
-    private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(LevelsUiState())
     val uiState = mutableState.asStateFlow()
@@ -52,14 +55,27 @@ class LevelsViewModel(
         mutableState.update { it.copy(loading = true, loadError = false) }
         loadJob = viewModelScope.launch {
             try {
-                val all = levels.getLevels()
-                progress.observeLevelProgress().collect { saved ->
-                    val items = withContext(computationDispatcher) {
-                        all.mapIndexed { position, level ->
-                            LevelUiState(level, saved[level.word] ?: LevelProgress(), LevelRules.isUnlocked(all, saved, position))
+                val campaign = levels.getCampaign()
+                if (campaign != null) {
+                    progress.migrateCampaign(campaign, words.requireIndex())
+                    progress.observeCampaignProgress().collect { saved ->
+                        val items = campaign.levels.map { level ->
+                            LevelUiState(level.number, level.word, LevelProgress(),
+                                LevelRouteRules.isUnlocked(level.number, campaign, saved, emptyList(), emptyMap()),
+                                CampaignRules.stars(level, saved), level.maxStars)
                         }
+                        mutableState.update { it.copy(loading = false, levels = items) }
                     }
-                    mutableState.update { it.copy(loading = false, levels = items) }
+                } else {
+                    val all = levels.getLevels()
+                    progress.migrateLegacyLevels(all)
+                    progress.observeLevelProgress().collect { saved ->
+                        val items = all.map { level ->
+                            LevelUiState(level, saved[level.word] ?: LevelProgress(),
+                                LevelRouteRules.isUnlocked(level.index, null, CampaignProgress(), all, saved))
+                        }
+                        mutableState.update { it.copy(loading = false, levels = items) }
+                    }
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { mutableState.update { it.copy(loading = false, loadError = true) } }
@@ -68,34 +84,12 @@ class LevelsViewModel(
 
     fun onSelectLevel(word: String) {
         val state = uiState.value
-        if (!state.canSelect || state.levels.none { it.level.word == word && it.unlocked }) return
-        mutableState.update { it.copy(startingWord = word, message = 0) }
-        viewModelScope.launch {
-            try {
-                // Перепроверяем по сохранённым звёздам, не полагаясь только на состояние кнопки.
-                val all = levels.getLevels()
-                val position = all.indexOfFirst { it.word == word }
-                val savedProgress = progress.observeLevelProgress().first()
-                if (position < 0 || !LevelRules.isUnlocked(all, savedProgress, position)) return@launch
-                val level = all[position]
-                val current = progress.observeCurrentGame().first()
-                val restored = current?.takeIf { Alphabet.normalize(it.word) == level.word }?.found.orEmpty() +
-                    progress.levelAnswers(level.word)
-                val game = words.startGame(level.word, restored)
-                if (game.hasNoWords) {
-                    mutableState.update { it.copy(message = R.string.no_combinations) }
-                } else {
-                    // Переход в игру разрешается только после записи; правила восстановления — в :core.
-                    progress.saveGame(game)
-                    mutableState.update { it.copy(openGame = true) }
-                }
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { mutableState.update { it.copy(message = R.string.level_start_error) } }
-            finally { mutableState.update { it.copy(startingWord = null) } }
-        }
+        if (!state.canSelect) return
+        val item = state.levels.firstOrNull { it.word == word } ?: return
+        // Переход не создаёт игру и ничего не сохраняет. Маршрут перепроверяет доступ.
+        if (item.unlocked) mutableState.update { it.copy(openLevel = item.index) }
+        else mutableState.update { it.copy(message = R.string.level_closed) }
     }
 
-    fun onGameOpened() {
-        mutableState.update { it.copy(openGame = false) }
-    }
+    fun onGameOpened() { mutableState.update { it.copy(openLevel = null) } }
 }

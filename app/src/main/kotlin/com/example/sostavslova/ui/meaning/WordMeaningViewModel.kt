@@ -66,7 +66,7 @@ class WordMeaningViewModel(
         val raw = uiState.value.input
         val normalized = Alphabet.normalize(raw)
         if (normalized.isEmpty()) {
-            mutableState.update { it.copy(message = R.string.enter_valid_word) }
+            mutableState.update { it.copy(message = R.string.word_input_invalid) }
             return
         }
         savedState[KEY_SEARCHED_WORD] = normalized

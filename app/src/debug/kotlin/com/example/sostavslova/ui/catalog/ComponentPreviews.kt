@@ -100,19 +100,15 @@ internal fun DefinitionDialogPreview() {
 
 @ComponentPreview
 @Composable
-internal fun ConfirmDialogPreview() { WordsTheme { ConfirmDialog({}, {}) } }
-
-@ComponentPreview
-@Composable
 internal fun WordsTopBarPreview() { WordsTheme { WordsTopBar {} } }
 
 @ComponentPreview
 @Composable
-internal fun WordsDrawerPreview() { WordsTheme { WordsDrawer(Destination.Home.route) {} } }
+internal fun WordsDrawerPreview() { WordsTheme { WordsDrawer(Destination.Levels.route) {} } }
 
 /** Тесты исполняют те же функции, которые помечены @Preview, без репозиториев и IO. */
 internal enum class ComponentExample {
-    Well, WordInput, Letters, Stars, Links, Alerts, Statistics, Definition, DefinitionDialog, ConfirmDialog, TopBar, Drawer;
+    Well, WordInput, Letters, Stars, Links, Alerts, Statistics, Definition, DefinitionDialog, TopBar, Drawer;
 
     @Composable
     fun RenderPreview() {
@@ -126,7 +122,6 @@ internal enum class ComponentExample {
             Statistics -> StatsTablePreview()
             Definition -> DefinitionBlockPreview()
             DefinitionDialog -> DefinitionDialogPreview()
-            ConfirmDialog -> ConfirmDialogPreview()
             TopBar -> WordsTopBarPreview()
             Drawer -> WordsDrawerPreview()
         }

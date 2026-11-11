@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -25,7 +26,7 @@ import com.example.sostavslova.R
 import com.example.sostavslova.ui.theme.WordsColors
 
 @Composable
-fun WordsTopBar(onOpenMenu: () -> Unit) {
+fun WordsTopBar(onBack: (() -> Unit)? = null, onOpenMenu: () -> Unit) {
     Surface(color = WordsColors.navbar, contentColor = WordsColors.navbarActive) {
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -33,8 +34,9 @@ fun WordsTopBar(onOpenMenu: () -> Unit) {
                 .heightIn(min = 64.dp).padding(horizontal = 4.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onOpenMenu, modifier = Modifier.size(48.dp)) {
-                Icon(painterResource(R.drawable.ic_menu), stringResource(R.string.open_menu))
+            IconButton(onClick = onBack ?: onOpenMenu, modifier = Modifier.size(48.dp).testTag(if (onBack != null) "game_back" else "app_menu")) {
+                Icon(painterResource(if (onBack != null) R.drawable.ic_arrow_back else R.drawable.ic_menu),
+                    stringResource(if (onBack != null) R.string.back_to_levels else R.string.open_menu))
             }
             Text(
                 stringResource(R.string.top_bar_title),

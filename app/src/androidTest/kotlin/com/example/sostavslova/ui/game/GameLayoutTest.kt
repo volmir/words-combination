@@ -39,13 +39,13 @@ class GameLayoutTest(private val fontScale: Float) {
             CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
                 WordsTheme {
                     Box(Modifier.requiredWidth(if (fontScale > 1f) 320.dp else 360.dp).fillMaxHeight()) {
-                        GameScreen(state.value, {}, {}, {}, {}, {}, {}, {}, {})
+                        GameScreen(state.value, {}, {}, {}, {}, {}, {}, {})
                     }
                 }
             }
         }
         checkLayout()
-        compose.onNodeWithText("Завершить игру").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Завершить игру").assertDoesNotExist()
         for (dialog in GameDialog.entries) {
             compose.runOnIdle { state.value = initial.copy(dialog = dialog, definitionsAvailable = false) }
             checkLayout()
@@ -53,7 +53,6 @@ class GameLayoutTest(private val fontScale: Float) {
                 GameDialog.Statistics -> compose.onAllNodesWithText("1 / 2")[1].performScrollTo().assertIsDisplayed()
                 GameDialog.Tasks -> compose.onNodeWithText("Введите 21 слово (1/21)").performScrollTo().assertIsDisplayed()
                 GameDialog.Definition -> compose.onNodeWithText("Определения недоступны в этой версии").performScrollTo().assertIsDisplayed()
-                GameDialog.Finish -> compose.onNodeWithText("Да").performScrollTo().assertIsDisplayed()
             }
         }
     }

@@ -91,7 +91,7 @@ class WordSearchViewModel(
         }
 
         val error = when (input) {
-            WordInput.Empty -> R.string.enter_valid_word
+            WordInput.Empty -> R.string.word_input_invalid
             WordInput.TooShort -> R.string.word_too_short
             WordInput.TooLong -> R.string.word_too_long
             is WordInput.Ok -> null

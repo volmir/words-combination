@@ -5,11 +5,15 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.core.GameState
 import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.LevelProgress
+import androidx.datastore.core.okio.OkioStorage
+import androidx.datastore.preferences.core.PreferencesSerializer
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
+import okio.FileSystem
+import okio.Path.Companion.toPath
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
@@ -25,10 +29,9 @@ import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
 class ProgressRepositoryTest {
+    @get:Rule val temporaryFolder = TemporaryFolder()
     private lateinit var directory: File
     private lateinit var scope: CoroutineScope
     private lateinit var store: DataStore<Preferences>
@@ -38,16 +41,16 @@ class ProgressRepositoryTest {
 
     @Before
     fun setUp() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        directory = File(context.cacheDir, "progress-test-${UUID.randomUUID()}").apply { mkdirs() }
+        directory = temporaryFolder.newFolder("progress")
         openStore()
     }
 
     private fun openStore() {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        store = PreferenceDataStoreFactory.create(scope = scope) {
-            File(directory, "progress.preferences_pb")
-        }
+        store = PreferenceDataStoreFactory.create(scope = scope,
+            storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer) {
+                File(directory, "progress.preferences_pb").absolutePath.toPath()
+            })
         repository = ProgressRepository(store)
     }
 
@@ -60,19 +63,17 @@ class ProgressRepositoryTest {
 
     @Test
     fun emptyStoreHasNoCurrentGameOrLevelProgress() = runTest {
-        assertNull(repository.observeCurrentGame().first())
+        assertNull(store.data.first()[stringPreferencesKey("currentGame")])
         assertEquals(emptyMap<String, LevelProgress>(), repository.observeLevelProgress().first())
         assertEquals(emptyList<String>(), repository.levelAnswers("торт"))
     }
 
     @Test
-    fun currentGameAndLevelAnswersSurviveReopeningDataStore() = runTest {
-        repository.saveGame(game)
+    fun levelAnswersAndStarsSurviveReopeningDataStore() = runTest {
         repository.saveLevelResult(level, listOf("тор", "тот"))
         scope.cancel()
         scope.coroutineContext.job.join()
         openStore()
-        assertEquals(CurrentGame(game.word, game.found), repository.observeCurrentGame().first())
         assertEquals(listOf("тор", "тот"), repository.levelAnswers(" ТОРТ "))
         assertEquals(2, repository.observeLevelProgress().first().getValue("торт").stars)
     }
@@ -89,18 +90,22 @@ class ProgressRepositoryTest {
     }
 
     @Test
-    fun clearingCurrentGameLeavesBothLevelJsonValuesUntouched() = runTest {
-        repository.saveGame(game)
-        repository.saveLevelResult(level, listOf("тор", "тот"))
-        val before = store.data.first()
-        repository.clearCurrentGame()
-        val after = store.data.first()
-        assertNull(repository.observeCurrentGame().first())
-        for (key in listOf("levelAnswers", "levelProgress")) {
-            assertEquals(before[stringPreferencesKey(key)], after[stringPreferencesKey(key)])
+    fun migrationKeepsLegacyLevelAnswersAndOpeningButExcludesFreeGame() = runTest {
+        store.edit {
+            it[stringPreferencesKey("currentGame")] = """{"word":"торт","found":["рот"]}"""
+            it[stringPreferencesKey("levelProgress")] = """{"торт":{"completed":true}}"""
+            it[stringPreferencesKey("levelAnswers")] = """{"торт":["тор"]}"""
         }
-        assertEquals(listOf("тор", "тот"), repository.levelAnswers("торт"))
-        assertEquals(2, repository.observeLevelProgress().first().getValue("торт").stars)
+        repository.migrateLegacyLevels(listOf(level))
+        assertEquals(listOf("тор", "рот"), repository.levelAnswers("торт"))
+        assertTrue(repository.observeLevelProgress().first().getValue("торт").completed)
+        repository.migrateLegacyLevels(listOf(level))
+        assertEquals(listOf("тор", "рот"), repository.levelAnswers("торт"))
+        assertNull(store.data.first()[stringPreferencesKey("currentGame")])
+        repository.clearAll()
+        store.edit { it[stringPreferencesKey("currentGame")] = """{"word":"торт","found":["рот"]}""" }
+        repository.migrateLegacyLevels(listOf(level))
+        assertTrue(repository.levelAnswers("торт").isEmpty())
     }
 
     @Test
@@ -115,11 +120,38 @@ class ProgressRepositoryTest {
     }
 
     @Test
-    fun malformedCurrentGameJsonDoesNotEraseLevelProgress() = runTest {
+    fun malformedLegacyMigrationDoesNotEraseExistingLevelProgress() = runTest {
         repository.saveLevelResult(level, listOf("тор", "тот"))
         store.edit { it[stringPreferencesKey("currentGame")] = "broken JSON" }
-        assertNull(repository.observeCurrentGame().first())
         assertEquals(2, repository.observeLevelProgress().first().getValue("торт").stars)
         assertEquals(listOf("тор", "тот"), repository.levelAnswers("торт"))
     }
+    @Test fun corruptLegacyPayloadIsPreservedWhenMigrationFails() = runTest {
+        store.edit { it[stringPreferencesKey("currentGame")] = "broken JSON" }
+        val before = store.data.first()
+        assertTrue(runCatching { repository.migrateLegacyLevels(listOf(level)) }.isFailure)
+        assertEquals(before, store.data.first())
+        assertNull(store.data.first()[stringPreferencesKey("levelSessionV1")])
+    }
+
+    @Test fun transitionalV1SnapshotMigratesIntoV2BySourceWord() = runTest {
+        val source = "рекуперация"
+        val legacy = Level(1, source, 1, 2, 'р', 1)
+        store.edit {
+            it[stringPreferencesKey("levelProgress")] = """{"рекуперация":{"completed":true}}"""
+            it[stringPreferencesKey("levelAnswers")] = """{"рекуперация":["река"]}"""
+        }
+        repository.migrateLegacyLevels(listOf(legacy))
+        repository.saveLevelResult(legacy, listOf("пир"))
+        val campaign = com.example.sostavslova.core.Campaign(
+            listOf(com.example.sostavslova.core.Stage(1, 1, 1)), listOf(
+                com.example.sostavslova.core.CampaignLevel(1, source, 1, 1,
+                    listOf(com.example.sostavslova.core.CampaignTask.T1("count", 1)))))
+        val migrated = repository.migrateCampaign(campaign,
+            com.example.sostavslova.core.WordIndex(listOf("река", "пир")))
+        assertEquals(listOf("река", "пир"), migrated.levels.getValue(source).found)
+        assertEquals(setOf("count"), migrated.levels.getValue(source).completedTaskIds)
+        assertNull(store.data.first()[stringPreferencesKey("levelSessionV1")])
+    }
+
 }

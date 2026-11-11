@@ -77,33 +77,6 @@ class ComponentInteractionTest {
     }
 
     @Test
-    fun confirmYesInvokesOnlyConfirmation() {
-        var confirmed = false
-        var dismissed = false
-        compose.setContent { WordsTheme { ConfirmDialog({ confirmed = true }, { dismissed = true }) } }
-        compose.onNodeWithText("Да").performClick()
-        compose.runOnIdle { assertTrue(confirmed); assertFalse(dismissed) }
-    }
-
-    @Test
-    fun confirmNoInvokesOnlyDismissal() {
-        var confirmed = false
-        var dismissed = false
-        compose.setContent { WordsTheme { ConfirmDialog({ confirmed = true }, { dismissed = true }) } }
-        compose.onNodeWithText("Нет").performClick()
-        compose.runOnIdle { assertFalse(confirmed); assertTrue(dismissed) }
-    }
-
-    @Test
-    fun outsideConfirmDialogActsAsNo() {
-        var confirmed = false
-        var dismissed = false
-        compose.setContent { WordsTheme { ConfirmDialog({ confirmed = true }, { dismissed = true }) } }
-        compose.onNode(isDialog()).performTouchInput { click(Offset(1f, 1f)) }
-        compose.runOnIdle { assertFalse(confirmed); assertTrue(dismissed) }
-    }
-
-    @Test
     fun wordLinkInvokesCallbackWithOriginalWord() {
         var selected: String? = null
         compose.setContent { WordsTheme { WordLinks(listOf("пар", "порт"), { selected = it }) } }
