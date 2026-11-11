@@ -19,7 +19,6 @@ import com.example.sostavslova.nav.returnToLevels
 import com.example.sostavslova.nav.WordsNavHost
 import com.example.sostavslova.ui.components.WordsDrawer
 import com.example.sostavslova.ui.components.WordsTopBar
-import com.example.sostavslova.ui.catalog.BuildVariantDrawerEntries
 import kotlinx.coroutines.launch
 
 @Composable
@@ -41,7 +40,6 @@ fun WordsApp() {
         drawerContent = {
             WordsDrawer(
                 backStackEntry?.destination?.route,
-                footer = { BuildVariantDrawerEntries { scope.launch { drawerState.close() } } },
             ) { destination ->
                 navController.navigate(destination.route) {
                     popUpTo(navController.graph.findStartDestination().id) { saveState = true }

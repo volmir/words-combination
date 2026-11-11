@@ -26,7 +26,6 @@ import com.example.sostavslova.ui.theme.WordsColors
 @Composable
 fun WordsDrawer(
     currentRoute: String?,
-    footer: @Composable () -> Unit = {},
     onNavigate: (Destination) -> Unit,
 ) {
     ModalDrawerSheet(drawerContainerColor = WordsColors.background) {
@@ -37,14 +36,12 @@ fun WordsDrawer(
                 style = MaterialTheme.typography.titleMedium,
             )
             DrawerItem(Destination.Levels, currentRoute, onNavigate)
-            DrawerSection(R.string.nav_services)
             if (BuildConfig.HAS_DEFINITIONS) {
                 DrawerItem(Destination.WordMeaning, currentRoute, onNavigate)
             }
             DrawerSection(R.string.nav_about)
             DrawerItem(Destination.Rules, currentRoute, onNavigate)
             DrawerItem(Destination.About, currentRoute, onNavigate)
-            footer()
         }
     }
 }
