@@ -26,7 +26,7 @@ class GameNavigationTest {
     @Before fun setUp() = runTest {
         container.progressRepository.clearAll()
         container.wordRepository.ensureLoaded()
-        compose.waitUntil(10_000) { compose.onNodeWithTag("level_1").isEnabled() }
+        compose.waitUntil(10_000) { compose.onNodeWithTag("level_card_1").isEnabled() }
     }
     @After fun tearDown() = runTest { container.progressRepository.clearAll() }
     private suspend fun source() = container.levelsRepository.getLevels().first().word
@@ -36,7 +36,7 @@ class GameNavigationTest {
         compose.onNodeWithText(text, substring = true).performScrollTo().assertIsDisplayed()
     }
     private fun start() {
-        compose.onNodeWithTag("level_1").performClick()
+        compose.onNodeWithTag("level_card_1").performClick()
         awaitText("вы отгадали 0")
     }
     private fun answer(raw: String) {
@@ -82,7 +82,7 @@ class GameNavigationTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithText("вы отгадали 1", substring = true).fetchSemanticsNodes().isNotEmpty() }
         compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("ЧеРнОвИк")
         back()
-        compose.onNodeWithTag("level_1").performClick()
+        compose.onNodeWithTag("level_card_1").performClick()
         awaitText("вы отгадали 1")
         assertEquals(listOf("пар"), container.progressRepository.levelAnswers(source()))
     }

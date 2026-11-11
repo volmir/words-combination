@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.R
 import com.example.sostavslova.core.CampaignRules
+import com.example.sostavslova.core.CampaignSummary
+import com.example.sostavslova.core.Stage
 import com.example.sostavslova.core.CampaignProgress
 import com.example.sostavslova.data.LevelRouteRules
 import com.example.sostavslova.core.Level
@@ -22,6 +24,8 @@ import kotlinx.coroutines.launch
 data class LevelUiState(
     val index: Int, val word: String, val progress: LevelProgress, val unlocked: Boolean,
     val campaignStars: Int? = null, val maxStars: Int = 3,
+    val requiredStars: Int = 1, val stage: Int = 0, val recommended: Boolean = false,
+    val crowned: Boolean = false,
 ) {
     val stars: Int get() = campaignStars ?: progress.stars
 
@@ -31,6 +35,11 @@ data class LevelUiState(
 
 data class LevelsUiState(
     val loading: Boolean = true,
+    val summary: CampaignSummary? = null,
+    val stages: List<Stage> = emptyList(),
+    val recommendedLevel: Int? = null,
+    val finaleReached: Boolean = false,
+    val lockedRequirement: Pair<Int, Int>? = null,
     val loadError: Boolean = false,
     val levels: List<LevelUiState> = emptyList(),
     val openLevel: Int? = null,
@@ -59,12 +68,16 @@ class LevelsViewModel(
                 if (campaign != null) {
                     progress.migrateCampaign(campaign, words.requireIndex())
                     progress.observeCampaignProgress().collect { saved ->
+                        val recommended = CampaignRules.continueLevel(campaign, saved).number
                         val items = campaign.levels.map { level ->
                             LevelUiState(level.number, level.word, LevelProgress(),
                                 LevelRouteRules.isUnlocked(level.number, campaign, saved, emptyList(), emptyMap()),
-                                CampaignRules.stars(level, saved), level.maxStars)
+                                CampaignRules.stars(level, saved), level.maxStars, level.requiredStars, level.stage,
+                                recommended == level.number, saved.finaleReached && level.number == campaign.levels.last().number)
                         }
-                        mutableState.update { it.copy(loading = false, levels = items) }
+                        mutableState.update { it.copy(loading = false, levels = items, stages = campaign.stages,
+                            summary = CampaignRules.summary(campaign, saved), recommendedLevel = recommended,
+                            finaleReached = saved.finaleReached) }
                     }
                 } else {
                     val all = levels.getLevels()
@@ -87,9 +100,14 @@ class LevelsViewModel(
         if (!state.canSelect) return
         val item = state.levels.firstOrNull { it.word == word } ?: return
         // Переход не создаёт игру и ничего не сохраняет. Маршрут перепроверяет доступ.
-        if (item.unlocked) mutableState.update { it.copy(openLevel = item.index) }
-        else mutableState.update { it.copy(message = R.string.level_closed) }
+        if (item.unlocked) mutableState.update { it.copy(openLevel = item.index, message = 0, lockedRequirement = null) }
+        else if (item.campaignStars != null) {
+            val previous = state.levels.firstOrNull { it.index == item.index - 1 } ?: return
+            mutableState.update { it.copy(lockedRequirement = previous.index to previous.requiredStars) }
+        } else mutableState.update { it.copy(message = R.string.level_closed) }
     }
+
+    fun dismissLockedRequirement() { mutableState.update { it.copy(lockedRequirement = null) } }
 
     fun onGameOpened() { mutableState.update { it.copy(openLevel = null) } }
 }

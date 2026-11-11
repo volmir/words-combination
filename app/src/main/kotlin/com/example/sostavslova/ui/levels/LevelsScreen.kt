@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -29,11 +31,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -45,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.R
 import com.example.sostavslova.WordsApplication
 import com.example.sostavslova.ui.components.AlertBanner
@@ -70,12 +75,30 @@ fun LevelsRoute(notice: Int = 0, onOpenGame: (Int) -> Unit) {
             onOpenGame(index)
         }
     }
-    LevelsScreen(state.copy(message = if (notice != 0) notice else state.message), model::onSelectLevel, model::load)
+    LevelsScreen(state.copy(message = if (notice != 0) notice else state.message), model::onSelectLevel, model::load, model::dismissLockedRequirement)
 }
 
 @Composable
-fun LevelsScreen(state: LevelsUiState, onSelectLevel: (String) -> Unit, onRetry: () -> Unit) {
+fun LevelsScreen(state: LevelsUiState, onSelectLevel: (String) -> Unit, onRetry: () -> Unit, onDismissLocked: () -> Unit = {}) {
     val scroll = rememberLazyGridState()
+    var positioned by rememberSaveable { mutableStateOf(false) }
+    // Only the first loaded snapshot positions the map. Progress emissions keep the user's scroll.
+    LaunchedEffect(state.loading) {
+        if (!state.loading && !state.loadError && state.levels.isNotEmpty() && !positioned) {
+            positioned = true
+            val target = state.levels.firstOrNull { it.index == state.recommendedLevel }
+            if (target != null && target.index != state.levels.first().index) {
+                val position = 1 + state.levels.indexOf(target) + state.stages.count { it.firstLevel <= target.index }
+                scroll.scrollToItem(position)
+            }
+        }
+    }
+    state.lockedRequirement?.let { (previous, required) ->
+        AlertDialog(onDismissRequest = onDismissLocked,
+            title = { Text(stringResource(R.string.level_locked)) },
+            text = { Text(stringResource(R.string.level_unlock_requirement, previous, required, starForm(required))) },
+            confirmButton = { TextButton(onDismissLocked) { Text(stringResource(R.string.close_dialog)) } })
+    }
     BoxWithConstraints(Modifier.fillMaxSize().testTag("levels_screen"), contentAlignment = Alignment.TopCenter) {
         // До загрузки данных не измеряем пустую сетку: она сбросила бы восстановленную позицию прокрутки.
         if (state.loading && state.levels.isEmpty()) {
@@ -93,60 +116,94 @@ fun LevelsScreen(state: LevelsUiState, onSelectLevel: (String) -> Unit, onRetry:
         LazyVerticalGrid(columns, Modifier.widthIn(max = 600.dp).fillMaxSize().testTag("levels_grid"),
             state = scroll, contentPadding = PaddingValues(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            item(key = "levels.title", span = { GridItemSpan(maxLineSpan) }) {
-                Text(stringResource(R.string.levels_title), Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
-            }
-            item(key = "levels.prompt", span = { GridItemSpan(maxLineSpan) }) {
-                Well { Text(stringResource(R.string.choose_level), style = MaterialTheme.typography.bodyLarge) }
-            }
-            if (state.loading) item(key = "levels.loading", span = { GridItemSpan(maxLineSpan) }) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                    Text(stringResource(if (state.loading) R.string.levels_loading else R.string.levels_loading))
+            item(key = "levels.header", span = { GridItemSpan(maxLineSpan) }) {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.levels_title), Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
+                    state.summary?.let { summary ->
+                        Text(stringResource(R.string.levels_campaign_progress, summary.stars, summary.maxStars,
+                            summary.passedLevels, summary.totalLevels), Modifier.testTag("levels_progress"))
+                        OutlinedButton(onClick = {
+                            state.levels.firstOrNull { it.index == state.recommendedLevel }?.let { onSelectLevel(it.word) }
+                        }, enabled = state.canSelect, modifier = Modifier.testTag("levels_continue").heightIn(min = 48.dp)) {
+                            Text(stringResource(R.string.levels_continue))
+                        }
+                    }
+                    if (state.finaleReached) {
+                        Well {
+                            Text(stringResource(if (state.summary?.isMaster == true) R.string.levels_master else R.string.levels_finale),
+                                Modifier.testTag("levels_finale_banner").semantics { heading() })
+                        }
+                    }
+                    if (state.loadError) {
+                        AlertBanner(AlertType.Danger, stringResource(R.string.levels_load_error))
+                        OutlinedButton(onRetry, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.retry)) }
+                    }
+                    if (state.message != 0) AlertBanner(AlertType.Warning, stringResource(state.message))
                 }
             }
-            if (state.loadError) item(key = "levels.error", span = { GridItemSpan(maxLineSpan) }) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AlertBanner(AlertType.Danger, stringResource(R.string.levels_load_error))
-                    OutlinedButton(onRetry, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.retry)) }
+            if (state.stages.isEmpty()) {
+                items(state.levels, key = { it.word }) { item ->
+                    LevelButton(item, state.canSelect && item.unlocked) { onSelectLevel(item.word) }
                 }
-            }
-            if (state.message != 0) item(key = "levels.message", span = { GridItemSpan(maxLineSpan) }) {
-                AlertBanner(if (state.message == R.string.no_combinations) AlertType.Warning else AlertType.Danger,
-                    stringResource(state.message))
-            }
-            items(state.levels, key = { it.word }) { item ->
-                LevelButton(item, enabled = item.unlocked && state.canSelect, onClick = { onSelectLevel(item.word) })
+            } else {
+                state.stages.forEach { stage ->
+                    item(key = "stage_${stage.number}", span = { GridItemSpan(maxLineSpan) }) {
+                        Text(stringResource(R.string.levels_stage, stageName(stage.number), stage.firstLevel, stage.lastLevel),
+                            Modifier.testTag("levels_stage_${stage.number}").semantics { heading() },
+                            style = MaterialTheme.typography.titleMedium)
+                    }
+                    items(state.levels.filter { it.stage == stage.number }, key = { it.word }) { item ->
+                        LevelButton(item, state.canSelect) { onSelectLevel(item.word) }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
+private fun starForm(count: Int): String = RussianPlural.form(count,
+    stringResource(R.string.star_one), stringResource(R.string.star_few), stringResource(R.string.star_many))
+
+@Composable
+private fun stageName(number: Int): String = stringResource(when (number) {
+    1 -> R.string.stage_warmup
+    2 -> R.string.stage_initial
+    3 -> R.string.stage_long
+    4 -> R.string.stage_riddles
+    5 -> R.string.stage_endings
+    else -> R.string.stage_master
+})
+
+@Composable
 private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Unit) {
     val stars = stringResource(R.string.level_stars_progress, item.stars, item.maxStars)
-    OutlinedButton(onClick, Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("level_${item.index}")
+    val status = stringResource(when {
+        !item.unlocked -> R.string.level_locked
+        item.stars == item.maxStars -> R.string.level_all_stars
+        item.stars >= item.requiredStars -> R.string.level_passed
+        else -> R.string.level_open
+    })
+    OutlinedButton(onClick, Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("level_card_${item.index}")
         .semantics { stateDescription = stars },
-        enabled = enabled, shape = RoundedCornerShape(4.dp), border = BorderStroke(1.dp, WordsColors.defaultButtonBorder),
+        enabled = enabled, shape = RoundedCornerShape(4.dp),
+        border = BorderStroke(if (item.recommended) 3.dp else 1.dp, WordsColors.defaultButtonBorder),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = WordsColors.background, contentColor = WordsColors.text),
         contentPadding = PaddingValues(12.dp)) {
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val label = stringResource(R.string.level_button, item.index, item.word.uppercase(Locale.ROOT))
-            if (maxWidth < 280.dp || LocalDensity.current.fontScale > 1.3f) {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                        if (!item.unlocked) LockIcon()
-                    }
-                    if (item.campaignStars == null) StarsRow(item.progress, Modifier.align(Alignment.End))
-                    else Text(stars, Modifier.align(Alignment.End))
-                }
-            } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                    if (!item.unlocked) LockIcon()
-                    if (item.campaignStars == null) StarsRow(item.progress) else Text(stars)
-                }
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.level_button, item.index, item.word.uppercase(Locale.ROOT)),
+                    Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                if (!item.unlocked) LockIcon()
+                if (item.crowned) Icon(painterResource(R.drawable.ic_crown), stringResource(R.string.level_crown), Modifier.size(24.dp))
+            }
+            if (item.campaignStars == null) StarsRow(item.progress) else StarsRow(item.stars, item.maxStars)
+            if (item.campaignStars != null) {
+                Text(status)
+                Text(stringResource(R.string.level_threshold, item.requiredStars, starForm(item.requiredStars)))
+                val remaining = item.maxStars - item.stars
+                if (remaining > 0) Text(stringResource(R.string.level_available_stars, remaining, starForm(remaining)))
+                if (item.recommended) Text(stringResource(R.string.level_recommended))
             }
         }
     }

@@ -30,7 +30,7 @@ class MainScenariosUiTest {
         container.random = Random(42)
         container.progressRepository.clearAll()
         container.wordRepository.ensureLoaded()
-        compose.waitUntil(10_000) { compose.onNodeWithTag("level_1").isEnabled() }
+        compose.waitUntil(10_000) { compose.onNodeWithTag("level_card_1").isEnabled() }
     }
 
     @After
@@ -49,7 +49,7 @@ class MainScenariosUiTest {
     }
 
     private fun startLevel() {
-        compose.onNodeWithTag("level_1").performClick()
+        compose.onNodeWithTag("level_card_1").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_screen").fetchSemanticsNodes().isNotEmpty() &&
             compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
     }
@@ -155,10 +155,10 @@ class MainScenariosUiTest {
         compose.onNodeWithText("Прохождение").performClick()
 
         compose.waitUntil(10_000) {
-            compose.onAllNodesWithTag("level_1").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithTag("level_card_1").fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onNodeWithTag("level_1").assertIsEnabled()
-        compose.onNodeWithTag("level_2").assertIsNotEnabled()
+        compose.onNodeWithTag("level_card_1").assertIsEnabled()
+        compose.onNodeWithTag("level_card_2").assertIsNotEnabled()
     }
 
 }

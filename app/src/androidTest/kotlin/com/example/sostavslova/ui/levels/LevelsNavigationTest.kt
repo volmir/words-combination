@@ -23,28 +23,28 @@ class LevelsNavigationTest {
     @After fun tearDown() = runTest { container.progressRepository.clearAll() }
 
     @Test fun drawerOpensLevelsScrollSurvivesRecreationAndSelectionOpensRealGame() = runTest {
-        compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_1").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithTag("level_1").assertIsEnabled()
-        compose.onNodeWithTag("level_2").assertIsNotEnabled()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_card_1").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("level_card_1").assertIsEnabled()
+        compose.onNodeWithTag("level_card_2").assertIsNotEnabled()
         val all = container.levelsRepository.getLevels()
         compose.onNodeWithTag("levels_grid").performScrollToKey(all.last().word)
-        compose.onNodeWithTag("level_30").assertIsDisplayed()
+        compose.onNodeWithTag("level_card_30").assertIsDisplayed()
         compose.activityRule.scenario.recreate()
-        compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_30").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithTag("level_30").assertIsDisplayed()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_card_30").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("level_card_30").assertIsDisplayed()
         compose.onNodeWithTag("levels_grid").performScrollToKey(all.first().word)
-        compose.onNodeWithTag("level_1").performClick()
+        compose.onNodeWithTag("level_card_1").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("вы отгадали 0", substring = true).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("game_screen").assertIsDisplayed()
         compose.onNodeWithContentDescription("К карте уровней").assertExists()
         repeat(2) {
             compose.onNodeWithTag("game_back").performClick()
             compose.onNodeWithTag("levels_screen").assertIsDisplayed()
-            compose.onNodeWithTag("level_1").performClick()
+            compose.onNodeWithTag("level_card_1").performClick()
             compose.waitUntil(10_000) { compose.onAllNodesWithText("вы отгадали 0", substring = true).fetchSemanticsNodes().isNotEmpty() }
         }
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
         compose.onNodeWithTag("levels_screen").assertIsDisplayed()
-        compose.onNodeWithTag("level_1").assertIsEnabled()
+        compose.onNodeWithTag("level_card_1").assertIsEnabled()
     }
 }

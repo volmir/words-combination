@@ -102,4 +102,26 @@
     <string name="hint_budget_exhausted">Подсказки закончились. Находите слова, чтобы пополнить запас.</string>
     <string name="hint_ladder_complete">Все шаги этой подсказки уже показаны.</string>
     <string name="word_input_invalid">Введите корректное слово</string>
+    <string name="levels_campaign_progress">Звёзд %1$d из %2$d · пройдено %3$d из %4$d</string>
+    <string name="levels_continue">Продолжить</string>
+    <string name="levels_stage">%1$s · уровни %2$d–%3$d</string>
+    <string name="stage_warmup">Разминка</string>
+    <string name="stage_initial">Первая буква</string>
+    <string name="stage_long">Длинные слова</string>
+    <string name="stage_riddles">Загадки</string>
+    <string name="stage_endings">Окончания</string>
+    <string name="stage_master">Мастер</string>
+    <string name="levels_finale">Финал кампании достигнут! Можно вернуться за оставшимися звёздами.</string>
+    <string name="levels_master">Мастер — все звёзды собраны!</string>
+    <string name="level_crown">Корона: финал кампании достигнут</string>
+    <string name="level_open">Открыт</string>
+    <string name="level_passed">Порог достигнут</string>
+    <string name="level_all_stars">Все звёзды собраны</string>
+    <string name="level_threshold">Для прохождения: %1$d %2$s</string>
+    <string name="level_available_stars">Можно добрать ещё %1$d %2$s</string>
+    <string name="level_recommended">Рекомендуемый уровень</string>
+    <string name="level_unlock_requirement">Для открытия наберите на уровне %1$d %2$d %3$s.</string>
+    <string name="star_one">звезду</string>
+    <string name="star_few">звезды</string>
+    <string name="star_many">звёзд</string>
 </resources>

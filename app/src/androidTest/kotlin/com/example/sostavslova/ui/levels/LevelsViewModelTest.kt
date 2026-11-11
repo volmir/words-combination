@@ -98,4 +98,48 @@ class LevelsViewModelTest {
         val updated = model.await { it.levels.getOrNull(1)?.unlocked == true }
         assertEquals(2, updated.levels.first().stars)
     }
+    @Test fun miniV2ContinueBackfillFinaleAndFullCollection() = runTest {
+        val source = LevelsRepository({ error("v1 must not load") }, readCampaign = { miniCampaignJson })
+        val dictionary = WordRepository({ "карта\nкрот\nкот\nторт\nрот\nрека" })
+        val campaign = requireNotNull(source.getCampaign())
+        val index = dictionary.requireIndex()
+        val model = model(source = source, dictionary = dictionary)
+        val initial = model.ready()
+        assertEquals(7, initial.summary?.maxStars)
+        assertEquals(2, initial.summary?.totalLevels)
+        assertEquals(1, initial.recommendedLevel)
+        val beforeLockedClick = store.data.first()
+        withContext(Dispatchers.Main) { model.onSelectLevel("трактор") }
+        assertEquals(beforeLockedClick, store.data.first())
+        assertNull(model.uiState.value.openLevel)
+        assertEquals(1 to 2, model.uiState.value.lockedRequirement)
+        assertFalse(progress.observeCampaignProgress().first().finaleReached)
+        progress.submitCampaignAnswer(campaign, 1, "карта", index)
+        val passed = model.await { it.recommendedLevel == 2 }
+        assertEquals(2, passed.levels[0].stars)
+        assertEquals(1, passed.summary?.passedLevels)
+        // An optional star before the finale must not send Continue backwards.
+        progress.submitCampaignAnswer(campaign, 1, "кот", index)
+        val beforeFinale = model.await { it.levels[0].stars == 3 }
+        assertEquals(2, beforeFinale.recommendedLevel)
+        withContext(Dispatchers.Main) { model.onSelectLevel("картотека"); model.onGameOpened() }
+        progress.submitCampaignAnswer(campaign, 2, "крот", index)
+        val finale = model.await { it.finaleReached }
+        assertEquals(1, finale.recommendedLevel)
+        assertTrue(finale.levels.last().crowned)
+        assertFalse(requireNotNull(finale.summary).isMaster)
+        progress.submitCampaignAnswer(campaign, 1, "крот", index)
+        progress.submitCampaignAnswer(campaign, 1, "река", index)
+        val fullFirst = model.await { it.levels[0].stars == 5 }
+        assertEquals(2, fullFirst.recommendedLevel)
+        assertTrue(fullFirst.levels[0].unlocked)
+        withContext(Dispatchers.Main) { model.onSelectLevel("картотека") }
+        assertEquals(1, model.uiState.value.openLevel)
+        withContext(Dispatchers.Main) { model.onGameOpened() }
+        progress.submitCampaignAnswer(campaign, 2, "торт", index)
+        val master = model.await { it.summary?.isMaster == true }
+        assertEquals(7, master.summary?.stars)
+        assertTrue(master.levels.all { it.unlocked })
+    }
+
 }

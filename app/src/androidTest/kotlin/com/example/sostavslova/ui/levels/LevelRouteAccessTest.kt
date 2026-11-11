@@ -37,7 +37,7 @@ class LevelRouteAccessTest {
             SideEffect { nav = controller; back = dispatcher }
             WordsTheme { WordsNavHost(controller) }
         }
-        compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_1").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_card_1").fetchSemanticsNodes().isNotEmpty() }
     }
     @After fun tearDown() = runTest { progress.clearAll() }
 
@@ -51,7 +51,7 @@ class LevelRouteAccessTest {
     @Test fun closedDeepLinkReturnsToMapAndAvailableLinkOpensGame() {
         compose.runOnIdle { nav.navigate(Uri.parse("sostavslova://level/2")) }
         awaitMapMessage("Этот уровень ещё закрыт. Пройдите предыдущий уровень.")
-        compose.onNodeWithTag("level_2").assertIsNotEnabled()
+        compose.onNodeWithTag("level_card_2").assertIsNotEnabled()
         compose.runOnIdle { nav.navigate(Uri.parse("sostavslova://level/1")) }
         compose.waitUntil(10_000) { compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("game_screen").assertIsDisplayed()

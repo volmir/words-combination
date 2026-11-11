@@ -50,25 +50,25 @@ class LevelsLayoutTest(private val width: Int, private val fontScale: Float) {
                 }
             }
         }
-        compose.onNodeWithTag("level_1").assertIsEnabled()
-        compose.onNodeWithTag("level_2").assertIsNotEnabled()
-        val first = compose.onNodeWithTag("level_1").fetchSemanticsNode().boundsInRoot
-        val second = compose.onNodeWithTag("level_2").fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithTag("level_card_1").assertIsEnabled()
+        compose.onNodeWithTag("level_card_2").assertIsNotEnabled()
+        val first = compose.onNodeWithTag("level_card_1").fetchSemanticsNode().boundsInRoot
+        val second = compose.onNodeWithTag("level_card_2").fetchSemanticsNode().boundsInRoot
         if (width < 600) assertTrue(second.top > first.top)
         else { assertEquals(first.top, second.top, 1f); assertTrue(second.left > first.left) }
         checkLayout()
         if (width < 600) {
-            compose.onNodeWithTag("level_1").performClick()
+            compose.onNodeWithTag("level_card_1").performClick()
             compose.runOnIdle { assertEquals("рекуперация", selected) }
         }
         compose.runOnIdle { state.value = state.value.copy(levels = items.mapIndexed { i, item ->
             if (i == 0) item.copy(progress = LevelProgress(true, true, true))
             else if (i == 1) item.copy(unlocked = true) else item
         }) }
-        compose.onNodeWithTag("level_1").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Звёзды: 3 из 3"))
-        compose.onNodeWithTag("level_2").assertIsEnabled()
+        compose.onNodeWithTag("level_card_1").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Звёзды: 3 из 3"))
+        compose.onNodeWithTag("level_card_2").assertIsEnabled()
         compose.onNodeWithTag("levels_grid").performScrollToKey(items.last().word)
-        compose.onNodeWithTag("level_30").assertExists().assertIsNotEnabled()
+        compose.onNodeWithTag("level_card_30").assertExists().assertIsNotEnabled()
         checkLayout()
     }
 
