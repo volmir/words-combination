@@ -18,6 +18,9 @@ import com.example.sostavslova.data.*
 import java.io.File
 import java.io.IOException
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.CoroutineContext
 import kotlin.random.Random
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -60,9 +63,10 @@ class GameViewModelTest {
 
     private suspend fun model(handle: SavedStateHandle = SavedStateHandle(mapOf("index" to route)),
         repository: ProgressRepository = progress, meanings: DefinitionsRepository = noDefinitions,
-        wordRepository: WordRepository = words, levelRepository: LevelsRepository = levels): GameViewModel = withContext(Dispatchers.Main) {
-        val owner = object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
-        owners.add(owner)
+        wordRepository: WordRepository = words, levelRepository: LevelsRepository = levels,
+        retainedOwner: ViewModelStoreOwner? = null): GameViewModel = withContext(Dispatchers.Main) {
+        val owner = retainedOwner ?: object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
+        if (owner !in owners) owners.add(owner)
         ViewModelProvider(owner, viewModelFactory { initializer {
             GameViewModel(handle, wordRepository, levelRepository, repository, meanings, Random(42))
         } })[GameViewModel::class.java]
@@ -323,6 +327,154 @@ class GameViewModelTest {
             levelRepository = LevelsRepository({ error("No v1 fallback") }, readCampaign = { "broken" }))
         assertTrue(corrupt.await { it.loadError }.loadError)
         assertNull(corrupt.uiState.value.game)
+    }
+
+    @Test fun repeatedOpenDuringLoadAndRetainedOwnerDoNotSearchAgainAndObserveFreshV1() = runTest {
+        seed("торт")
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val reads = AtomicInteger()
+        val computations = AtomicInteger()
+        val countingDispatcher = object : CoroutineDispatcher() {
+            override fun dispatch(context: CoroutineContext, block: Runnable) {
+                computations.incrementAndGet()
+                Dispatchers.Default.dispatch(context, block)
+            }
+        }
+        val countedWords = WordRepository({
+            reads.incrementAndGet()
+            entered.complete(Unit)
+            release.await()
+            "рот\nтор\nтот\nторт"
+        }, computationDispatcher = countingDispatcher)
+        val handle = SavedStateHandle(mapOf("index" to "1"))
+        val first = model(handle, wordRepository = countedWords)
+        val owner = owners.last()
+        entered.await()
+        withContext(Dispatchers.Main) { repeat(5) { first.onGameOpened() } }
+        release.complete(Unit)
+        val initial = first.ready()
+        val count = computations.get()
+        withContext(Dispatchers.Main) {
+            first.onInputChanged("черновик")
+            repeat(5) { first.onGameOpened() }
+        }
+        // Смена конфигурации сохраняет NavBackStackEntry и его ViewModelStore.
+        val retained = model(handle, wordRepository = countedWords, retainedOwner = owner)
+        assertSame(first, retained)
+        progress.saveLevelResult(level, listOf("рот", "тор"))
+        val updated = first.await { it.game?.foundCount == 2 }
+        assertSame(initial.game?.allWords, updated.game?.allWords)
+        assertEquals(LevelProgress(completed = true), updated.levelProgress)
+        assertEquals(2, updated.statistics.totalFound)
+        assertEquals("черновик", updated.input)
+        assertEquals(1, reads.get())
+        assertEquals(count, computations.get())
+    }
+
+    @Test fun lateHintResultCannotOverwriteNewerCampaignAnswerOrSpendOnResume() = runTest {
+        val pauseNext = AtomicBoolean(false)
+        val committed = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val wrapped = object : DataStore<Preferences> {
+            override val data = store.data
+            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                val result = store.updateData(transform)
+                if (pauseNext.compareAndSet(true, false)) {
+                    committed.complete(Unit)
+                    release.await()
+                }
+                return result
+            }
+        }
+        val campaignLevels = LevelsRepository({ error("No v1 fallback") }, readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val campaign = checkNotNull(campaignLevels.getCampaign())
+        val model = model(repository = ProgressRepository(wrapped), wordRepository = campaignWords,
+            levelRepository = campaignLevels)
+        val initial = model.ready()
+        pauseNext.set(true)
+        withContext(Dispatchers.Main) { model.onHint() }
+        committed.await()
+        progress.submitCampaignAnswer(campaign, 1, "карта", campaignWords.requireIndex())
+        val newer = model.await { "карта" in it.game?.found.orEmpty() }
+        val snapshot = progress.observeCampaignProgress().first()
+        withContext(Dispatchers.Main) {
+            model.onInputChanged("новый ввод")
+            repeat(5) { model.onGameOpened() }
+        }
+        release.complete(Unit)
+        val state = model.await { !it.hintLoading }
+        assertEquals(newer.campaignLevel, state.campaignLevel)
+        assertEquals("новый ввод", state.input)
+        assertSame(initial.game?.allWords, state.game?.allWords)
+        assertEquals(snapshot, progress.observeCampaignProgress().first())
+        assertEquals(1, snapshot.levels.getValue("картотека").hints.shownSteps)
+    }
+
+    @Test fun delayedLoadFromRemovedRouteCannotChangeNextLevelOrReturn() = runTest {
+        seed("портал")
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val readFinished = CompletableDeferred<Unit>()
+        val delayedWords = WordRepository({
+            withContext(NonCancellable) {
+                entered.complete(Unit)
+                release.await()
+                readFinished.complete(Unit)
+                "рот\nтор\nтот\nторт"
+            }
+        })
+        val first = model(SavedStateHandle(mapOf("index" to "1")), wordRepository = delayedWords)
+        val firstOwner = owners.last()
+        entered.await()
+        withContext(Dispatchers.Main) { firstOwner.viewModelStore.clear() }
+        val second = model(SavedStateHandle(mapOf("index" to "2")))
+        second.ready()
+        withContext(Dispatchers.Main) { second.onInputChanged("пар") }
+        val before = second.uiState.value
+        release.complete(Unit)
+        readFinished.await()
+        withContext(Dispatchers.Main) { first.onGameOpened() }
+        assertEquals(before, second.uiState.value)
+        assertEquals("портал", second.uiState.value.game?.word)
+        val returned = model(SavedStateHandle(mapOf("index" to "1")))
+        assertEquals(listOf("тор", "рот").toSet(), returned.ready().game?.found?.toSet())
+        assertEquals("", returned.uiState.value.input)
+    }
+
+    @Test fun answerInFlightWhenNavigatingSavesOnlyItsLevelAndPreservesNewDraft() = runTest {
+        seed("портал")
+        val pauseNext = AtomicBoolean(false)
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val committed = CompletableDeferred<Unit>()
+        val wrapped = object : DataStore<Preferences> {
+            override val data = store.data
+            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                val paused = pauseNext.compareAndSet(true, false)
+                if (paused) { entered.complete(Unit); release.await() }
+                return store.updateData(transform).also { if (paused) committed.complete(Unit) }
+            }
+        }
+        val first = model(SavedStateHandle(mapOf("index" to "1")), repository = ProgressRepository(wrapped))
+        val owner = owners.last()
+        first.ready()
+        pauseNext.set(true)
+        withContext(Dispatchers.Main) { first.onInputChanged("тот"); first.onSubmit() }
+        entered.await()
+        withContext(Dispatchers.Main) { owner.viewModelStore.clear() }
+        val second = model(SavedStateHandle(mapOf("index" to "2")))
+        second.ready()
+        withContext(Dispatchers.Main) { second.onInputChanged("тот") }
+        release.complete(Unit)
+        committed.await()
+        val returned = model(SavedStateHandle(mapOf("index" to "1")))
+        assertTrue("тот" in returned.ready().game?.found.orEmpty())
+        assertEquals("тот", second.uiState.value.input)
+        assertEquals("портал", second.uiState.value.game?.word)
+        assertTrue(second.uiState.value.game?.found.orEmpty().isEmpty())
+        assertNull(second.uiState.value.message)
     }
 
 }

@@ -74,6 +74,10 @@ data class GameState(
     /** Для исходных слов, из которых нельзя составить ни одного слова. */
     val hasNoWords: Boolean get() = allWords.isEmpty()
 
+    /** Восстановление нового снимка без повторного поиска по словарю. */
+    fun restoreFound(restoredFound: List<String>): GameState =
+        copy(found = restoredFound.filter { it in allSet }.distinct())
+
     /** Справочники объясняют отказ, но только [allWords] разрешает зачёт. */
     fun submit(raw: String, index: WordIndex? = null, knownWords: KnownWords? = null): Submission {
         val answer = Alphabet.normalize(raw)
@@ -135,9 +139,7 @@ data class GameState(
         fun start(word: String, index: WordIndex, restoredFound: List<String> = emptyList()): GameState {
             val all = SearchResult(word, index.findBuildable(word)).words
                 .filter { it.length >= Alphabet.MIN_WORD_LENGTH }
-            val allSet = all.toHashSet()
-            val valid = restoredFound.filter { it in allSet }.distinct()
-            return GameState(word, all, valid)
+            return GameState(word, all).restoreFound(restoredFound)
         }
     }
 }

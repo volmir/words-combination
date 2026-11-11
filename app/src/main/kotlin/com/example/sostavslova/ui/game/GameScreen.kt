@@ -95,7 +95,7 @@ fun GameRoute(onReturnLevels: (Int) -> Unit) {
     }
     LaunchedEffect(state.returnLevels) { if (state.returnLevels) onReturnLevels(state.levelsMessage) }
     GameScreen(state, model::onInputChanged, model::onSubmit, model::onHint, model::onDefinition,
-        model::onDialog, model::onDismissDialog, model::onGameOpened, notice)
+        model::onDialog, model::onDismissDialog, model::onRetry, notice)
 }
 
 @Composable

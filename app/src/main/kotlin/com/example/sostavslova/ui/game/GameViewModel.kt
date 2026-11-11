@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.R
 import com.example.sostavslova.core.Campaign
+import com.example.sostavslova.core.CampaignLevelProgress
 import com.example.sostavslova.core.HintStep
 import com.example.sostavslova.core.HintRules
 import com.example.sostavslova.core.HintStatus
@@ -31,10 +32,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -85,6 +90,9 @@ class GameViewModel(
     // Одноразовые уведомления не выводятся из isFinished при каждой перерисовке.
     private val notices = Channel<GameMessage>(Channel.UNLIMITED)
     val events = notices.receiveAsFlow()
+    // Ключ неизменяем: каждый level/{index} владеет своей ViewModel в NavBackStackEntry.
+    private val levelNumber = savedState.get<String>("index")?.toIntOrNull()
+    private var sessionJob: Job? = null
     private var operation: Job? = null
     private var hintJob: Job? = null
     private var definitionJob: Job? = null
@@ -94,12 +102,15 @@ class GameViewModel(
 
     init { onGameOpened() }
 
+    fun onRetry() { if (uiState.value.loadError) onGameOpened() }
+
     fun onGameOpened() {
-        if (operation?.isActive == true || uiState.value.returnLevels || uiState.value.game != null) return
+        if (sessionJob?.isActive == true || uiState.value.returnLevels ||
+            (uiState.value.game != null && !uiState.value.loadError)) return
         mutableState.update { it.copy(loading = true, loadError = false) }
-        operation = viewModelScope.launch {
+        sessionJob = viewModelScope.launch {
             try {
-                val number = savedState.get<String>("index")?.toIntOrNull()
+                val number = levelNumber
                 val loadedCampaign = levels.getCampaign()
                 val legacy = if (loadedCampaign == null) levels.getLevels() else emptyList()
                 if (!LevelRouteRules.exists(number, loadedCampaign, legacy)) {
@@ -125,18 +136,51 @@ class GameViewModel(
                     return@launch
                 }
                 if (loadedCampaign != null) progress.visitCampaignLevel(loadedCampaign, requireNotNull(number))
-                val stats = withContext(computationDispatcher) { game.statistics() }
+                currentCoroutineContext().ensureActive()
                 val previousWord = savedState.get<String>(SOURCE)
                 if (previousWord != null && previousWord != game.word) onInputChanged("")
                 savedState[SOURCE] = game.word
-                mutableState.update { it.copy(loading = false, game = game, level = level,
-                    campaignLevel = current, campaignHint = current?.let(HintRules::currentStep), levelProgress = stars[level?.word] ?: LevelProgress(), statistics = stats) }
+                // Поток — единственный источник игрового снимка. Результат записи не
+                // публикуется отдельно: он мог уже уступить место более свежей транзакции.
+                if (current != null) {
+                    progress.observeCampaignProgress()
+                        .map { it.levels[game.word] ?: CampaignLevelProgress() }
+                        .distinctUntilChanged()
+                        .collect { snapshot ->
+                            val restored = withContext(computationDispatcher) {
+                                current.copy(game = game.restoreFound(snapshot.found.map(Alphabet::normalize)),
+                                    completedTaskIds = snapshot.completedTaskIds.intersect(current.level.tasks.map { it.id }.toSet()),
+                                    hints = snapshot.hints)
+                            }
+                            publishSession(restored.game, level, restored, LevelProgress())
+                        }
+                } else {
+                    progress.observeLevelSession(game.word).collect { snapshot ->
+                        val restored = withContext(computationDispatcher) { game.restoreFound(snapshot.found) }
+                        publishSession(restored, level, null, snapshot.progress)
+                    }
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
                 mutableState.update { it.copy(loading = false, loadError = true) }
             }
         }
+    }
+
+    private suspend fun publishSession(game: GameState, level: Level?, current: CurrentCampaignLevel?, stars: LevelProgress) {
+        val stats = withContext(computationDispatcher) { game.statistics() }
+        currentCoroutineContext().ensureActive()
+        val changed = uiState.value.game?.found != game.found
+        if (changed && campaign == null) {
+            hintJob?.cancel()
+            hintSequence++
+        }
+        mutableState.update { it.copy(loading = false, loadError = false, game = game, level = level,
+            campaignLevel = current, campaignHint = current?.let(HintRules::currentStep),
+            levelProgress = stars, statistics = stats,
+            hint = if (changed) null else it.hint,
+            hintLoading = if (changed && campaign == null) false else it.hintLoading) }
     }
 
     fun onInputChanged(raw: String) {
@@ -167,7 +211,11 @@ class GameViewModel(
                         stars = progress.observeLevelProgress().first()[level.word] ?: stars
                     }
                 }
-                val stats = withContext(computationDispatcher) { next.statistics() }
+                currentCoroutineContext().ensureActive()
+                // Дождаться подтверждённого снимка перед следующим вводом.
+                if (submission.result == AnswerResult.CORRECT) uiState.first { state ->
+                    next.found.all { it in state.game?.found.orEmpty() }
+                }
                 val answer = Alphabet.normalize(raw)
                 val message = when (submission.result) {
                     AnswerResult.CORRECT -> GameMessage(R.string.correct_answer, type = AlertType.Success)
@@ -182,7 +230,7 @@ class GameViewModel(
                     savedState[INPUT] = ""
                     mutableState.update { it.copy(input = "") }
                 }
-                mutableState.update { it.copy(game = next, campaignLevel = submitted?.evaluation?.state ?: it.campaignLevel, levelProgress = stars, statistics = stats, message = message) }
+                mutableState.update { it.copy(message = message) }
                 if (stars.stars > before.levelProgress.stars ||
                     (submitted?.evaluation?.state?.completedTaskIds?.size ?: 0) >
                     (before.campaignLevel?.completedTaskIds?.size ?: 0)) notices.send(GameMessage(R.string.star_received, type = AlertType.Success))
@@ -191,7 +239,7 @@ class GameViewModel(
                     // Подсказка не должна продолжать показывать уже отгаданный ответ.
                     hintJob?.cancel()
                     hintSequence++
-                    mutableState.update { it.copy(hint = null, campaignHint = null, hintLoading = false) }
+                    mutableState.update { it.copy(hint = null, hintLoading = false) }
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -216,14 +264,16 @@ class GameViewModel(
                     val current = requireNotNull(state.campaignLevel)
                     val result = progress.requestCampaignHint(activeCampaign, current.level.number,
                         current.hints.shownSteps, words.requireIndex())
-                    if (result != null) mutableState.update { it.copy(campaignLevel = result.state,
-                        campaignHint = HintRules.currentStep(result.state),
-                        message = when (result.status) {
+                    currentCoroutineContext().ensureActive()
+                    if (result != null) {
+                        uiState.first { (it.campaignLevel?.hints?.shownSteps ?: 0) >= result.state.hints.shownSteps }
+                        mutableState.update { it.copy(message = when (result.status) {
                             HintStatus.BUDGET_EXHAUSTED -> GameMessage(R.string.hint_budget_exhausted)
                             HintStatus.NO_TARGET -> GameMessage(R.string.hint_all_found)
                             HintStatus.LADDER_COMPLETE -> GameMessage(R.string.hint_ladder_complete)
                             HintStatus.SHOWN -> null
                         }) }
+                    }
                     return@launch
                 }
                 val candidates = withContext(computationDispatcher) { game.hintCandidates(random) }

@@ -51,6 +51,8 @@ import kotlinx.serialization.json.jsonPrimitive
 @Serializable
 private data class CurrentGame(val word: String, val found: List<String> = emptyList(), val version: Int = 1)
 
+data class LevelSessionSnapshot(val found: List<String>, val progress: LevelProgress)
+
 class ProgressRepository(
     private val dataStore: DataStore<Preferences>,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
@@ -273,6 +275,15 @@ class ProgressRepository(
     fun observeLevelProgress(): Flow<Map<String, LevelProgress>> = dataStore.data
         .map { readLegacyLevels(it).progress.mapValues { entry -> entry.value.toCore() } }
         .distinctUntilChanged().flowOn(computationDispatcher)
+
+    /** Ответы и звёзды одного уровня из одной подтверждённой транзакции v1. */
+    fun observeLevelSession(word: String): Flow<LevelSessionSnapshot> = dataStore.data
+        .map { preferences ->
+            val saved = readLegacyLevels(preferences)
+            val source = Alphabet.normalize(word)
+            LevelSessionSnapshot(saved.answers[source].orEmpty(),
+                saved.progress[source]?.toCore() ?: LevelProgress())
+        }.distinctUntilChanged().flowOn(computationDispatcher)
 
     suspend fun clearAll() = withContext(NonCancellable + computationDispatcher) {
         dataStore.edit { preferences ->

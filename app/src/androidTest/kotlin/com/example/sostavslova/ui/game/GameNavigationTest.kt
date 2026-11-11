@@ -2,6 +2,9 @@ package com.example.sostavslova.ui.game
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.lifecycle.Lifecycle
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.MainActivity
@@ -82,5 +85,27 @@ class GameNavigationTest {
         compose.onNodeWithTag("level_1").performClick()
         awaitText("вы отгадали 1")
         assertEquals(listOf("пар"), container.progressRepository.levelAnswers(source()))
+    }
+
+    @Test fun repeatedResumeAndRotationKeepHintAnswersAndDraft() = runTest {
+        start(); answer("пар"); awaitText("Правильно!")
+        compose.onNodeWithText("Показать подсказку").performScrollTo().performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_hint").fetchSemanticsNodes().isNotEmpty() }
+        fun hintText() = compose.onAllNodes(hasAnyAncestor(hasTestTag("game_hint")), useUnmergedTree = true)
+            .fetchSemanticsNodes().flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }
+        val hint = hintText()
+        compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("ЧеРнОвИк")
+        val saved = container.progressRepository.levelAnswers(source())
+        repeat(3) {
+            compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+            compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+            compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("ЧеРнОвИк")
+            assertEquals(hint, hintText())
+        }
+        compose.activityRule.scenario.recreate()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_hint").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("ЧеРнОвИк")
+        assertEquals(hint, hintText())
+        assertEquals(saved, container.progressRepository.levelAnswers(source()))
     }
 }

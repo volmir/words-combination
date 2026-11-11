@@ -63,6 +63,16 @@ class GameStateTest {
     }
 
     @Test
+    fun restoringSnapshotReusesAnswersAndReplacesFoundWithValidDistinctWords() {
+        val original = start().submit("рот").state
+        val restored = original.restoreFound(listOf("тор", "нос", "тор", "торт"))
+        assertEquals(listOf("тор"), restored.found)
+        assertTrue(original.allWords === restored.allWords)
+        assertEquals(listOf("рот"), original.found)
+        assertEquals(emptyList(), restored.restoreFound(emptyList()).found)
+    }
+
+    @Test
     fun wordWithNoBuildableWordsIsNotFinished() {
         val s = GameState.start("ааа", index)
         assertTrue(s.hasNoWords)
