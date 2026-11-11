@@ -47,7 +47,12 @@
     <string name="about_code_sources">Игра основана на проектах volmir/words-combination и volmir/words-api. Автор исходных проектов — Владимир Прохненко. Лицензия MIT; полные уведомления сохранены в приложении.\nhttps://github.com/volmir/words-combination\nhttps://github.com/volmir/words-api</string>
     <string name="game_counts">всего найдено %1$d %2$s, вы отгадали %3$d</string>
     <string name="answer_already_found">Вы уже разгадали слово %1$s</string>
-    <string name="answer_not_found">Слово %1$s не найдено!</string>
+    <string name="answer_unknown">Слово «%1$s» не распознано словарём</string>
+    <string name="answer_not_counted">Слово «%1$s» есть в словаре, но не входит в игровой набор</string>
+    <string name="answer_letters_missing">В слове «%1$s» не хватает буквы «%2$s»: доступно %3$d %4$s, требуется %5$d %6$s</string>
+    <string name="answer_count_one">буква</string>
+    <string name="answer_count_few">буквы</string>
+    <string name="answer_count_many">букв</string>
     <string name="answer_same_as_source">Это и есть исходное слово</string>
     <string name="all_words_found">Вы отгадали все слова!</string>
     <string name="star_received">Получена звезда!</string>

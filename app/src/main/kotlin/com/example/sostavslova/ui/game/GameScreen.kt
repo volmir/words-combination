@@ -293,7 +293,17 @@ fun GameScreen(
 
 @Composable
 private fun GameBanner(message: GameMessage) {
-    AlertBanner(message.type, if (message.word == null) stringResource(message.text) else stringResource(message.text, message.word))
+    val missing = message.missingLetter
+    val text = if (missing == null) {
+        if (message.word == null) stringResource(message.text) else stringResource(message.text, message.word)
+    } else {
+        stringResource(message.text, message.word.orEmpty(), missing.letter, missing.available,
+            RussianPlural.form(missing.available, stringResource(R.string.answer_count_one),
+                stringResource(R.string.answer_count_few), stringResource(R.string.answer_count_many)),
+            missing.required, RussianPlural.form(missing.required, stringResource(R.string.answer_count_one),
+                stringResource(R.string.answer_count_few), stringResource(R.string.answer_count_many)))
+    }
+    AlertBanner(message.type, text)
 }
 
 @Composable

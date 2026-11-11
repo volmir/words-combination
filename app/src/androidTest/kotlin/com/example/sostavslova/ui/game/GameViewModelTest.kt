@@ -101,7 +101,7 @@ class GameViewModelTest {
         assertEquals(R.string.answer_already_found, model.answer("ПАР").message?.text)
         assertEquals("пар", model.uiState.value.message?.word)
         assertEquals(R.string.word_too_short, model.answer("пaр").message?.text)
-        assertEquals(R.string.answer_not_found, model.answer("нос").message?.text)
+        assertEquals(R.string.answer_unknown, model.answer("нос").message?.text)
         assertEquals(R.string.answer_same_as_source, model.answer("ПОРТАЛ").message?.text)
         assertEquals(1, model.uiState.value.game?.foundCount)
         assertEquals("", model.uiState.value.input)

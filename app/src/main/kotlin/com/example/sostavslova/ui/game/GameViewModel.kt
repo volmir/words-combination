@@ -53,7 +53,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-data class GameMessage(@param:StringRes val text: Int, val word: String? = null, val type: AlertType = AlertType.Info)
+data class GameMessage(@param:StringRes val text: Int, val word: String? = null,
+    val missingLetter: com.example.sostavslova.core.MissingLetter? = null,
+    val type: AlertType = AlertType.Info)
 
 enum class GameDialog { Statistics, Tasks, Definition }
 
@@ -278,8 +280,12 @@ class GameViewModel(
                     AnswerResult.CORRECT -> GameMessage(if (activeCampaign != null && Alphabet.normalize(raw).length == 3)
                         R.string.correct_three_letter_answer else R.string.correct_answer, type = AlertType.Success)
                     AnswerResult.ALREADY_FOUND -> GameMessage(R.string.answer_already_found, answer)
-                    AnswerResult.NOT_FOUND, AnswerResult.LETTERS_MISSING, AnswerResult.NOT_COUNTED ->
-                        GameMessage(R.string.answer_not_found, answer, AlertType.Danger)
+                    AnswerResult.NOT_FOUND -> GameMessage(R.string.answer_unknown, answer, type = AlertType.Danger)
+                    AnswerResult.NOT_COUNTED -> GameMessage(R.string.answer_not_counted, answer, type = AlertType.Danger)
+                    AnswerResult.LETTERS_MISSING -> {
+                        val missing = submission.missingLetter ?: return@launch
+                        GameMessage(R.string.answer_letters_missing, answer, missing, AlertType.Danger)
+                    }
                     AnswerResult.TOO_SHORT -> GameMessage(R.string.word_too_short, type = AlertType.Danger)
                     AnswerResult.SAME_AS_SOURCE -> GameMessage(R.string.answer_same_as_source)
                     AnswerResult.EMPTY -> null
