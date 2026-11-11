@@ -13,6 +13,12 @@ enum class AnswerResult {
     /** Слова нет среди возможных («Слово ... не найдено!»). */
     NOT_FOUND,
 
+    /** Известное слово требует больше экземпляров буквы, чем есть в исходном. */
+    LETTERS_MISSING,
+
+    /** Известное и составимое слово не входит в точное множество игровых ответов. */
+    NOT_COUNTED,
+
     /** Пользователь ввёл само исходное слово. */
     SAME_AS_SOURCE,
 
@@ -23,7 +29,16 @@ enum class AnswerResult {
     TOO_SHORT,
 }
 
-data class Submission(val state: GameState, val result: AnswerResult)
+/** Первая нехватка в порядке [Alphabet.LETTERS]; количества относятся ко всему слову. */
+data class MissingLetter(val letter: Char, val available: Int, val required: Int)
+
+data class Submission(
+    val state: GameState,
+    val result: AnswerResult,
+    val missingLetter: MissingLetter? = null,
+    /** Слово распознано только Bloom-фильтром; влияет лишь на формулировку отказа. */
+    val probabilistic: Boolean = false,
+)
 
 data class LengthStat(val length: Int, val found: Int, val total: Int) {
     val percent: Int get() = if (total == 0) 0 else (found * 100.0 / total).roundToInt()
@@ -59,7 +74,8 @@ data class GameState(
     /** Для исходных слов, из которых нельзя составить ни одного слова. */
     val hasNoWords: Boolean get() = allWords.isEmpty()
 
-    fun submit(raw: String): Submission {
+    /** Справочники объясняют отказ, но только [allWords] разрешает зачёт. */
+    fun submit(raw: String, index: WordIndex? = null, knownWords: KnownWords? = null): Submission {
         val answer = Alphabet.normalize(raw)
         val result = when {
             answer.isEmpty() -> AnswerResult.EMPTY
@@ -67,10 +83,31 @@ data class GameState(
             answer == word -> AnswerResult.SAME_AS_SOURCE
             foundSet.contains(answer) -> AnswerResult.ALREADY_FOUND
             allSet.contains(answer) -> AnswerResult.CORRECT
-            else -> AnswerResult.NOT_FOUND
+            else -> return explainRejection(answer, index, knownWords)
         }
         val next = if (result == AnswerResult.CORRECT) copy(found = found + answer) else this
         return Submission(next, result)
+    }
+
+    private fun explainRejection(answer: String, index: WordIndex?, knownWords: KnownWords?): Submission {
+        val exact = index?.contains(answer) == true
+        if (!exact && knownWords?.mightContain(answer) != true) {
+            return Submission(this, AnswerResult.NOT_FOUND)
+        }
+        val available = IntArray(Alphabet.SIZE)
+        val required = IntArray(Alphabet.SIZE)
+        for (letter in word) available[Alphabet.indexOf(letter)]++
+        for (letter in answer) required[Alphabet.indexOf(letter)]++
+        for (i in Alphabet.LETTERS.indices) {
+            if (required[i] > available[i]) {
+                return Submission(
+                    this, AnswerResult.LETTERS_MISSING,
+                    MissingLetter(Alphabet.LETTERS[i], available[i], required[i]),
+                    probabilistic = !exact,
+                )
+            }
+        }
+        return Submission(this, AnswerResult.NOT_COUNTED, probabilistic = !exact)
     }
 
     /** Случайное ещё не найденное слово для подсказки (или null, если всё найдено). */

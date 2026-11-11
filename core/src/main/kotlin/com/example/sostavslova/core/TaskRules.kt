@@ -12,7 +12,12 @@ data class TaskEvaluation(
     val stars: Int get() = state.completedTaskIds.size
 }
 
-data class TaskSubmission(val result: AnswerResult, val evaluation: TaskEvaluation)
+data class TaskSubmission(
+    val result: AnswerResult,
+    val evaluation: TaskEvaluation,
+    val missingLetter: MissingLetter? = null,
+    val probabilistic: Boolean = false,
+)
 
 /**
  * Правила заданий для проверенных данных кампании. Игра и сохранённые ID относятся
@@ -21,11 +26,21 @@ data class TaskSubmission(val result: AnswerResult, val evaluation: TaskEvaluati
  */
 object TaskRules {
     /** Проверка ответа остаётся в GameState; задания используют его итоговое состояние. */
-    fun submit(current: CurrentCampaignLevel, raw: String, countMinLength: Int): TaskSubmission {
-        val submission = current.game.submit(raw)
+    fun submit(
+        current: CurrentCampaignLevel,
+        raw: String,
+        countMinLength: Int,
+        index: WordIndex? = null,
+        knownWords: KnownWords? = null,
+    ): TaskSubmission {
+        val submission = current.game.submit(raw, index, knownWords)
+        val evaluation = evaluate(current.copy(game = submission.state), countMinLength)
         return TaskSubmission(
             submission.result,
-            evaluate(current.copy(game = submission.state), countMinLength),
+            if (submission.result == AnswerResult.CORRECT) evaluation
+            else evaluation.copy(state = current, newlyCompletedTaskIds = emptySet()),
+            submission.missingLetter,
+            submission.probabilistic,
         )
     }
 

@@ -158,7 +158,8 @@ class GameViewModel(
                 val message = when (submission.result) {
                     AnswerResult.CORRECT -> GameMessage(R.string.correct_answer, type = AlertType.Success)
                     AnswerResult.ALREADY_FOUND -> GameMessage(R.string.answer_already_found, answer)
-                    AnswerResult.NOT_FOUND -> GameMessage(R.string.answer_not_found, answer, AlertType.Danger)
+                    AnswerResult.NOT_FOUND, AnswerResult.LETTERS_MISSING, AnswerResult.NOT_COUNTED ->
+                        GameMessage(R.string.answer_not_found, answer, AlertType.Danger)
                     AnswerResult.TOO_SHORT -> GameMessage(R.string.word_too_short, type = AlertType.Danger)
                     AnswerResult.SAME_AS_SOURCE -> GameMessage(R.string.answer_same_as_source)
                     AnswerResult.EMPTY -> null
