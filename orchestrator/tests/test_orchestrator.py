@@ -223,7 +223,7 @@ class OrchestratorTests(unittest.TestCase):
 
     def test_configured_models_and_default_push(self):
         configured = json.loads((self.repo / 'orchestrator/config.json').read_text())
-        expected = {'light': 'gpt-5.6-luna', 'standard': 'gpt-6.1-sol', 'heavy': 'gpt-6-astra'}
+        expected = {'light': 'gpt-5.6-luna', 'standard': 'gpt-6.1-sol', 'heavy': 'gpt-6.1-sol'}
         self.assertEqual(configured['models'], expected)
         self.assertTrue(configured['push'])
         self.assertTrue(module.DEFAULTS['push'])
@@ -237,6 +237,11 @@ class OrchestratorTests(unittest.TestCase):
         self.g('remote', 'add', 'origin', str(remote))
         self.env.pop('NO_PUSH')
         self.run_cli()
+        for call, tier, effort in zip(self.calls(), ('light', 'standard', 'heavy'), ('low', 'medium', 'high')):
+            with self.subTest(tier=tier):
+                args = call['args']
+                self.assertEqual(args[args.index('--model') + 1], expected[tier])
+                self.assertIn(f'model_reasoning_effort="{effort}"', args)
         self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/auto/tasks'))
 
     def test_default_push_without_config(self):
