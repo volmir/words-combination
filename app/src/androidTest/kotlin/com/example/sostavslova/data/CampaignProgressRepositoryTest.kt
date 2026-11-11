@@ -144,6 +144,34 @@ class CampaignProgressRepositoryTest {
         assertEquals(before, snapshot())
     }
 
+    @Test fun pendingFinaleSurvivesStoreRestartAndFailedAcknowledgementUntilClosed() = runTest {
+        assertFalse(repository.consumeCampaignFinaleDialog())
+        answer("крот")
+        assertFalse(snapshot().finaleReached)
+        answer("крот", 2)
+        val pending = snapshot()
+        assertTrue(pending.finaleReached)
+        assertFalse(pending.finaleShown)
+        restart()
+        assertEquals(pending, snapshot())
+        store.failNext.set(true)
+        assertTrue(runCatching { repository.consumeCampaignFinaleDialog() }.exceptionOrNull() is IOException)
+        assertEquals(pending, snapshot())
+        assertTrue(repository.consumeCampaignFinaleDialog())
+        restart()
+        assertTrue(snapshot().finaleShown)
+        repository.visitCampaignLevel(campaign, 1)
+        answer("кот")
+        answer("торт")
+        answer("кот", 2)
+        answer("торт", 2)
+        val summary = CampaignRules.summary(campaign, snapshot())
+        assertTrue(summary.isMaster)
+        assertEquals(6, summary.foundWords)
+        assertFalse(repository.consumeCampaignFinaleDialog())
+        assertTrue(snapshot().finaleReached)
+    }
+
     @Test fun sameAnswerOnTwoLevelsIsIndependentAndReplacedSourceHasNoStars() = runTest {
         answer("крот")
         answer("крот", 2)

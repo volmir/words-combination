@@ -96,7 +96,7 @@ fun GameRoute(onReturnLevels: (Int) -> Unit) {
     }
     LaunchedEffect(state.returnLevels) { if (state.returnLevels) onReturnLevels(state.levelsMessage) }
     GameScreen(state, model::onInputChanged, model::onSubmit, model::onHint, model::onDefinition,
-        model::onDialog, model::onDismissDialog, model::onRetry, notice, model::onDismissExplanations)
+        model::onDialog, model::onDismissDialog, model::onRetry, notice, model::onDismissExplanations, model::onCloseFinale)
 }
 
 @Composable
@@ -111,6 +111,7 @@ fun GameScreen(
     onRetry: () -> Unit,
     notice: GameMessage? = null,
     onDismissExplanations: () -> Unit = {},
+    onCloseFinale: (Boolean) -> Unit = {},
 ) {
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -202,13 +203,30 @@ fun GameScreen(
             }
         }
     }
-    if (state.explanations.isNotEmpty() && !state.loading) {
+    state.finaleSummary?.let { summary ->
+        WordsDialog(stringResource(R.string.game_finale_title), { onCloseFinale(false) }) {
+            Column(Modifier.testTag("level_finale_dialog"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.game_finale_stars, summary.stars, summary.maxStars))
+                Text(stringResource(R.string.game_finale_words, summary.foundWords, RussianPlural.words(summary.foundWords)))
+                Text(stringResource(R.string.game_finale_hints, summary.shownHintSteps))
+                TextButton({ onCloseFinale(false) }, enabled = !state.finaleClosing) {
+                    Text(stringResource(R.string.game_finale_continue))
+                }
+                TextButton({ onCloseFinale(true) }, enabled = !state.finaleClosing) {
+                    Text(stringResource(R.string.game_finale_levels))
+                }
+                if (state.finaleClosing) GameLoading(stringResource(R.string.game_saving))
+                state.message?.takeIf { it.text == R.string.game_save_error }?.let { GameBanner(it) }
+            }
+        }
+    }
+    if (state.explanations.isNotEmpty() && !state.loading && state.finaleSummary == null) {
         WordsDialog(stringResource(R.string.game_explanations), onDismissExplanations) {
             state.explanations.forEach { Text(stringResource(explanationText(it))) }
             CloseDialogButton(onDismissExplanations)
         }
     }
-    when (state.dialog) {
+    when (state.dialog.takeIf { state.finaleSummary == null }) {
         GameDialog.Statistics -> {
             val word = state.game?.word.orEmpty().uppercase(Locale.ROOT)
             val title = stringResource(R.string.game_statistics_title, word)

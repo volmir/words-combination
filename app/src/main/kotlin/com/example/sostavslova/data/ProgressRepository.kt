@@ -208,6 +208,7 @@ class ProgressRepository(
         saved.copy(seenExplanations = saved.seenExplanations + type) to (type !in saved.seenExplanations)
     }
 
+    /** Подтверждение закрытого диалога. При открытии экрана этот метод не вызывается. */
     suspend fun consumeCampaignFinaleDialog(): Boolean = editCampaign { saved ->
         val presentation = CampaignRules.consumeFinaleDialog(saved)
         presentation.state to presentation.showDialog

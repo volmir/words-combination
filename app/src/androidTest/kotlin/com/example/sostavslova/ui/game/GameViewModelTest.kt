@@ -3,6 +3,7 @@ package com.example.sostavslova.ui.game
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -315,6 +316,96 @@ class GameViewModelTest {
             wordRepository = campaignWords, levelRepository = campaignLevels)
         assertEquals("трактор", second.ready().game?.word)
         assertNull(store.data.first()[androidx.datastore.preferences.core.stringPreferencesKey("currentGame")])
+    }
+
+    /** 30 синтетических уровней, суммарно 100 звёзд; последний имеет порог 4/5. */
+    private fun finaleCampaignJson(): String {
+        val levels = (1..30).joinToString(",") { number ->
+            val suffix = "а" + ('а' + number)
+            val source = if (number == 30) "картотека" else "картотека$suffix"
+            val count = minOf((number - 1) / 5 + 1, 5)
+            val tasks = listOf(
+                """{"id":"count$number","type":"T1","n":2}""",
+                """{"id":"initial$number","type":"T2","letter":"к","n":1}""",
+                """{"id":"ending$number","type":"T5","ending":"${if (number == 30) "от" else suffix}","minLength":3}""",
+                """{"id":"theme$number","type":"T6","category":"test$number","n":1,"words":["кот"]}""",
+                """{"id":"contains$number","type":"T7","letter":"р","n":1}""",
+            ).take(count).joinToString(",")
+            """{"number":$number,"word":"$source","stage":1,"requiredStars":${if (number == 30) 4 else 1},"tasks":[$tasks]}"""
+        }
+        return """{"version":2,"countMinLength":4,"stages":[{"number":1,"firstLevel":1,"lastLevel":30}],"levels":[$levels]}"""
+    }
+
+    @Test fun finaleAtFourOfFiveSurvivesRecreationUntilClosedAndNeverRepeatsAtHundred() = runTest {
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { finaleCampaignJson() })
+        val campaign = requireNotNull(campaignLevels.getCampaign())
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт" })
+        val seeded = org.json.JSONObject().put("version", 2).put("highestUnlockedLevel", 30)
+        val savedLevels = org.json.JSONObject()
+        campaign.levels.dropLast(1).forEach { level ->
+            savedLevels.put(level.word, org.json.JSONObject().put("completedTaskIds",
+                org.json.JSONArray(level.tasks.map { it.id })))
+        }
+        seeded.put("levels", savedLevels)
+        store.edit { it[androidx.datastore.preferences.core.stringPreferencesKey("campaignProgressV2")] = seeded.toString() }
+        suspend fun open(number: String = "30", repository: ProgressRepository = progress) = model(
+            SavedStateHandle(mapOf("index" to number)), repository = repository,
+            wordRepository = campaignWords, levelRepository = campaignLevels)
+        val model = open(); model.ready()
+        assertNull(model.uiState.value.finaleSummary)
+        model.answer("крот") // T2, T5, T7: ровно 3/5, финала ещё нет.
+        assertEquals(3, model.uiState.value.campaignLevel?.completedTaskIds?.size)
+        assertNull(model.uiState.value.finaleSummary)
+        withContext(Dispatchers.Main) { model.onHint() }
+        model.await { !it.hintLoading }
+        model.answer("кот") // T6: ровно 4/5.
+        val finale = requireNotNull(model.await { it.finaleSummary != null }.finaleSummary)
+        assertEquals(99, finale.stars)
+        assertEquals(100, finale.maxStars)
+        assertEquals(2, finale.foundWords)
+        assertEquals(1, finale.shownHintSteps)
+        assertFalse(progress.observeCampaignProgress().first().finaleShown)
+        withContext(Dispatchers.Main) { model.onGameOpened() }
+        assertEquals(finale, model.uiState.value.finaleSummary)
+        // Новая ViewModel и новый репозиторий читают только сохранённое событие.
+        val restored = open(repository = ProgressRepository(store))
+        assertEquals(finale, restored.await { it.finaleSummary != null }.finaleSummary)
+        withContext(Dispatchers.Main) { restored.onCloseFinale(false) }
+        restored.await { it.canPlay && !it.finaleClosing }
+        assertFalse(restored.uiState.value.returnLevels)
+        assertTrue(progress.observeCampaignProgress().first().finaleShown)
+        val restarted = open(); restarted.ready()
+        assertNull(restarted.uiState.value.finaleSummary)
+        val previous = open("1"); previous.ready()
+        previous.answer("кот")
+        assertNull(previous.uiState.value.finaleSummary)
+        assertEquals(3, com.example.sostavslova.core.CampaignRules.summary(campaign,
+            progress.observeCampaignProgress().first()).foundWords)
+        restarted.answer("карта") // T1: последняя звезда всей кампании.
+        val summary = com.example.sostavslova.core.CampaignRules.summary(campaign, progress.observeCampaignProgress().first())
+        assertEquals(100, summary.stars)
+        assertEquals(4, summary.foundWords)
+        assertTrue(summary.isMaster)
+        assertNull(restarted.uiState.value.finaleSummary)
+        assertNull(open().ready().finaleSummary)
+    }
+
+    @Test fun finaleLevelsActionAcknowledgesBeforeNavigationAndDoesNotRepeat() = runTest {
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val campaign = requireNotNull(campaignLevels.getCampaign())
+        val index = campaignWords.requireIndex()
+        progress.submitCampaignAnswer(campaign, 1, "карта", index)
+        progress.submitCampaignAnswer(campaign, 2, "торт", index)
+        val model = model(SavedStateHandle(mapOf("index" to "2")),
+            wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.await { it.finaleSummary != null }
+        withContext(Dispatchers.Main) { model.onCloseFinale(true) }
+        model.await { it.returnLevels }
+        assertTrue(progress.observeCampaignProgress().first().finaleShown)
+        val reopened = model(SavedStateHandle(mapOf("index" to "1")),
+            wordRepository = campaignWords, levelRepository = campaignLevels)
+        assertNull(reopened.ready().finaleSummary)
     }
 
     @Test fun v2ClosedRouteIsRejectedAndCorruptCampaignNeverFallsBack() = runTest {

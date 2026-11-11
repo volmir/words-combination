@@ -146,7 +146,12 @@
     <string name="game_stats_remaining">Осталось</string>
     <string name="correct_three_letter_answer">Слово записано в найденные. Для заданий «набери N» и «на букву» нужны слова от 4 букв.</string>
     <string name="game_next_opened">Открыт следующий уровень!</string>
-    <string name="game_finale_reached">Достигнут финал кампании!</string>
+    <string name="game_finale_title">Игра пройдена</string>
+    <string name="game_finale_stars">Звёзды: %1$d из %2$d</string>
+    <string name="game_finale_words">Найдено: %1$d %2$s</string>
+    <string name="game_finale_hints">Использовано шагов подсказок: %1$d</string>
+    <string name="game_finale_continue">Продолжить собирать звёзды</string>
+    <string name="game_finale_levels">К уровням</string>
     <string name="game_explanations">Новые задания этапа</string>
     <string name="game_explain_t1">Набирайте слова от четырёх букв. Каждое задание даёт одну звезду; для прохождения подходят любые задания до порога.</string>
     <string name="game_explain_t2">В задании «на букву» учитываются слова от четырёх букв с заданной первой буквой.</string>

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.R
 import com.example.sostavslova.core.Campaign
+import com.example.sostavslova.core.CampaignSummary
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.TaskRules
 import com.example.sostavslova.core.TaskProgress
@@ -43,8 +44,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -67,6 +66,8 @@ data class GameUiState(
     val level: Level? = null,
     val campaignLevel: CurrentCampaignLevel? = null,
     val totalLevels: Int = 0,
+    val finaleSummary: CampaignSummary? = null,
+    val finaleClosing: Boolean = false,
     val taskProgress: List<TaskProgress> = emptyList(),
     val riddles: Map<String, List<RiddleUiState>> = emptyMap(),
     val explanations: List<TaskType> = emptyList(),
@@ -86,7 +87,7 @@ data class GameUiState(
     val returnLevels: Boolean = false,
     @param:StringRes val levelsMessage: Int = 0,
 ) {
-    val canPlay: Boolean get() = game != null && !loading && !loadError && !busy && !hintLoading && !returnLevels
+    val canPlay: Boolean get() = game != null && !loading && !loadError && !busy && !hintLoading && !returnLevels && finaleSummary == null
 }
 
 class GameViewModel(
@@ -172,15 +173,17 @@ class GameViewModel(
                 // публикуется отдельно: он мог уже уступить место более свежей транзакции.
                 if (current != null) {
                     progress.observeCampaignProgress()
-                        .map { it.levels[game.word] ?: CampaignLevelProgress() }
-                        .distinctUntilChanged()
-                        .collect { snapshot ->
+                        .collect { savedCampaign ->
+                            val snapshot = savedCampaign.levels[game.word] ?: CampaignLevelProgress()
                             val restored = withContext(computationDispatcher) {
                                 current.copy(game = game.restoreFound(snapshot.found.map(Alphabet::normalize)),
                                     completedTaskIds = snapshot.completedTaskIds.intersect(current.level.tasks.map { it.id }.toSet()),
                                     hints = snapshot.hints)
                             }
-                            publishSession(restored.game, level, restored, LevelProgress())
+                            publishSession(restored.game, level, restored, LevelProgress(),
+                                if (savedCampaign.finaleReached && !savedCampaign.finaleShown) {
+                                    CampaignRules.summary(requireNotNull(loadedCampaign), savedCampaign)
+                                } else null)
                         }
                 } else {
                     progress.observeLevelSession(game.word).collect { snapshot ->
@@ -196,7 +199,8 @@ class GameViewModel(
         }
     }
 
-    private suspend fun publishSession(game: GameState, level: Level?, current: CurrentCampaignLevel?, stars: LevelProgress) {
+    private suspend fun publishSession(game: GameState, level: Level?, current: CurrentCampaignLevel?, stars: LevelProgress,
+        finaleSummary: CampaignSummary? = null) {
         val (stats, tasks) = withContext(computationDispatcher) {
             game.statistics() to current?.let { TaskRules.evaluate(it, campaign?.countMinLength ?: 4).progress }.orEmpty()
         }
@@ -210,6 +214,7 @@ class GameViewModel(
             hintSequence++
         }
         mutableState.update { it.copy(loading = false, loadError = false, game = game, level = level,
+            finaleSummary = finaleSummary,
             campaignLevel = current, campaignHint = current?.let(HintRules::currentStep),
             levelProgress = stars, statistics = stats, taskProgress = tasks,
             riddles = it.riddles.mapValues { (id, items) -> items.mapIndexed { index, riddle ->
@@ -275,7 +280,6 @@ class GameViewModel(
                         notices.send(GameMessage(R.string.star_received, type = AlertType.Success))
                     }
                     if (campaignAnswer?.openedNextLevel == true) notices.send(GameMessage(R.string.game_next_opened, type = AlertType.Success))
-                    if (campaignAnswer?.reachedFinale == true) notices.send(GameMessage(R.string.game_finale_reached, type = AlertType.Success))
                 } else if (stars.stars > before.levelProgress.stars) {
                     notices.send(GameMessage(R.string.star_received, type = AlertType.Success))
                 }
@@ -382,6 +386,25 @@ class GameViewModel(
                 }
                 RiddleUiState(safe?.first, answer.length, answer.first().uppercaseChar().toString(),
                     wiktionary = safe?.second == true)
+            }
+        }
+    }
+
+    // Подтверждаем только закрытие: до него событие восстанавливается из DataStore.
+    fun onCloseFinale(toLevels: Boolean) {
+        if (uiState.value.finaleSummary == null || uiState.value.finaleClosing) return
+        mutableState.update { it.copy(finaleClosing = true) }
+        viewModelScope.launch {
+            try {
+                progress.consumeCampaignFinaleDialog()
+                uiState.first { it.finaleSummary == null }
+                if (toLevels) leave()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                mutableState.update { it.copy(message = GameMessage(R.string.game_save_error, type = AlertType.Danger)) }
+            } finally {
+                mutableState.update { it.copy(finaleClosing = false) }
             }
         }
     }

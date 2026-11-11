@@ -85,6 +85,43 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         assertTextFits()
     }
 
+    @Test fun finaleSurvivesScreenRestorationAndBothActionsFit() {
+        val summary = CampaignSummary(99, 100, 30, 30, 321, 12, 8)
+        val state = mutableStateOf(initial.copy(finaleSummary = summary))
+        val actions = mutableListOf<Boolean>()
+        val restoration = androidx.compose.ui.test.junit4.StateRestorationTester(compose)
+        restoration.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+                WordsTheme {
+                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
+                        GameScreen(state.value, {}, {}, {}, {}, {}, {}, {}, onCloseFinale = { toLevels ->
+                            actions.add(toLevels)
+                            state.value = state.value.copy(finaleSummary = null)
+                        })
+                    }
+                }
+            }
+        }
+        compose.onNodeWithTag("level_finale_dialog").assertExists()
+        compose.onNodeWithText("Игра пройдена").assertIsDisplayed()
+        compose.onNodeWithText("Звёзды: 99 из 100").assertExists()
+        compose.onNodeWithText("Найдено: 321 слово").assertExists()
+        compose.onNodeWithText("Использовано шагов подсказок: 12").assertExists()
+        restoration.emulateSavedInstanceStateRestore()
+        compose.onNodeWithTag("level_finale_dialog").assertExists()
+        compose.onNodeWithText("Продолжить собирать звёзды").performScrollTo().assertIsDisplayed()
+        assertTextFits()
+        compose.onNodeWithText("Продолжить собирать звёзды").performClick()
+        compose.onNodeWithTag("level_finale_dialog").assertDoesNotExist()
+        restoration.emulateSavedInstanceStateRestore()
+        compose.onNodeWithTag("level_finale_dialog").assertDoesNotExist()
+        assertEquals(listOf(false), actions)
+        compose.runOnIdle { state.value = state.value.copy(finaleSummary = summary) }
+        compose.onNodeWithText("К уровням").performScrollTo().performClick()
+        assertEquals(listOf(false, true), actions)
+        compose.onNodeWithTag("level_finale_dialog").assertDoesNotExist()
+    }
+
     private fun flatten(node: androidx.compose.ui.semantics.SemanticsNode): List<androidx.compose.ui.semantics.SemanticsNode> =
         listOf(node) + node.children.flatMap(::flatten)
 
