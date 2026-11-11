@@ -40,10 +40,11 @@ def classification_items(index, taxonomy):
 
 
 def export_snapshot(path, provider, index, items, answers, threshold=0.8):
-    body = {"schema": SNAPSHOT_SCHEMA, "context": provider.context, "taxonomy": provider.taxonomy,
+    body = {"schema": getattr(provider, "snapshot_schema", SNAPSHOT_SCHEMA), "context": provider.context, "taxonomy": provider.taxonomy,
             "input_sha256": json_digest(index), "items": items,
             "results": [answers[item["id"]] for item in items if item["id"] in answers],
-            "complete": len(answers) == len(items), "policy": {"min_confidence": threshold}}
+            "complete": len(answers) == len(items),
+            "policy": getattr(provider, "snapshot_policy", {"min_confidence": threshold})}
     snapshot = dict(body, sha256=json_digest(body))
     atomic_json(path, snapshot)
     return snapshot
@@ -54,17 +55,18 @@ def import_snapshot(snapshot, provider, index, items):
         raise ValueError("Некорректный снимок решений")
     fields = {"schema", "context", "taxonomy", "input_sha256", "items", "results", "complete", "policy", "sha256"}
     body = {key: value for key, value in snapshot.items() if key != "sha256"}
-    if (set(snapshot) != fields or snapshot["schema"] != SNAPSHOT_SCHEMA or
+    if (set(snapshot) != fields or snapshot["schema"] != getattr(provider, "snapshot_schema", SNAPSHOT_SCHEMA) or
             snapshot["sha256"] != json_digest(body) or snapshot["context"] != provider.context or
             snapshot["taxonomy"] != provider.taxonomy or snapshot["input_sha256"] != json_digest(index) or
-            snapshot["items"] != items or type(snapshot["complete"]) is not bool):
+            snapshot["items"] != items or type(snapshot["complete"]) is not bool or
+            (hasattr(provider, "snapshot_policy") and snapshot["policy"] != provider.snapshot_policy)):
         raise ValueError("Снимок несовместим: версия, вход, таксономия, промпт, провайдер, модель или SHA-256")
     results = snapshot["results"]
     if not isinstance(results, list) or any(not isinstance(result, dict) for result in results):
         raise ValueError("Некорректный список решений снимка")
     identities = {result.get("id") for result in results if isinstance(result.get("id"), str)}
     selected = [item for item in items if item["id"] in identities]
-    validate_category_results({"results": results}, selected, provider.taxonomy)
+    provider.validate_results({"results": results}, selected, provider.taxonomy)
     if snapshot["complete"] != (len(results) == len(items)):
         raise ValueError("Некорректный признак полноты снимка")
     # Validate all results and conflicts before importing any of them.

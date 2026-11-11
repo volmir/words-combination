@@ -338,6 +338,12 @@ class CategoryProvider:
     Offline construction and cache reads never inspect credentials or start CLI.
     `executor` is an injectable structured transport for deterministic offline tests.
     """
+    task = CATEGORY_TASK
+    prompt = CATEGORY_PROMPT
+    schema_builder = staticmethod(category_schema)
+    validate_item = staticmethod(validate_category_item)
+    validate_results = staticmethod(validate_category_results)
+
     def __init__(self, cache, model, taxonomy, *, provider="codex", allow_network=False,
                  batch_size=20, timeout=120, retries=2, executor=None):
         if not isinstance(model, str) or not model.strip() or len(model) > 200:
@@ -351,8 +357,8 @@ class CategoryProvider:
         self.cache, self.taxonomy = Path(cache), taxonomy
         self.allow_network, self.batch_size, self.timeout, self.retries = allow_network, batch_size, timeout, retries
         self.executor = executor or self.codex_complete
-        self.context = {"task": CATEGORY_TASK, "prompt_sha256": prompt_hash(CATEGORY_PROMPT),
-                        "taxonomy_sha256": json_digest(taxonomy), "schema_sha256": json_digest(category_schema(taxonomy)),
+        self.context = {"task": self.task, "prompt_sha256": prompt_hash(self.prompt),
+                        "taxonomy_sha256": json_digest(taxonomy), "schema_sha256": json_digest(self.schema_builder(taxonomy)),
                         "provider": provider, "model": model}
 
     def key(self, item):
@@ -372,12 +378,12 @@ class CategoryProvider:
         if (set(body) != {"context", "item", "result"} or envelope.get("sha256") != json_digest(body) or
                 body["context"] != self.context or body["item"] != item):
             raise ValueError("Категории: повреждён кэш " + path.name)
-        validate_category_results({"results": [body["result"]]}, [item], self.taxonomy)
+        self.validate_results({"results": [body["result"]]}, [item], self.taxonomy)
         return body["result"]
 
     def store(self, item, result):
-        validate_category_item(item, self.taxonomy)
-        validate_category_results({"results": [result]}, [item], self.taxonomy)
+        self.validate_item(item, self.taxonomy)
+        self.validate_results({"results": [result]}, [item], self.taxonomy)
         previous = self.read(item)
         if previous is not None and previous != result:
             raise ValueError("Категории: конфликт валидированных решений")
@@ -386,7 +392,7 @@ class CategoryProvider:
 
     def exchange(self, items):
         for item in items:
-            validate_category_item(item, self.taxonomy)
+            self.validate_item(item, self.taxonomy)
         if len({item["id"] for item in items}) != len(items):
             raise ValueError("Категории: повторный входной ID")
         answers = {item["id"]: result for item in items if (result := self.read(item)) is not None}
@@ -395,12 +401,11 @@ class CategoryProvider:
             return answers, len(missing), "--allow-network не задан" if missing else None
         for offset in range(0, len(missing), self.batch_size):
             batch = missing[offset:offset + self.batch_size]
-            request = {"task": CATEGORY_TASK, "prompt": CATEGORY_PROMPT, "taxonomy": self.taxonomy,
-                       "items": batch}
+            request = self.request_payload(batch)
             for attempt in range(self.retries + 1):
                 try:
-                    payload = self.executor(request, category_schema(self.taxonomy))
-                    results = validate_category_results(payload, batch, self.taxonomy)
+                    payload = self.executor(request, self.schema_builder(self.taxonomy))
+                    results = self.validate_results(payload, batch, self.taxonomy)
                     break
                 except (ValueError, OSError, subprocess.SubprocessError):
                     if attempt == self.retries:
@@ -411,6 +416,9 @@ class CategoryProvider:
                 self.store(item, by_id[item["id"]])
                 answers[item["id"]] = by_id[item["id"]]
         return answers, 0, None
+
+    def request_payload(self, items):
+        return {"task": self.task, "prompt": self.prompt, "taxonomy": self.taxonomy, "items": items}
 
     def codex_complete(self, request, schema):
         # Empty working directory and ignored config prevent project instructions,
