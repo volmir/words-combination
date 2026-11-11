@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Офлайн-отбор по значениям, морфологии и частоте; прежние overrides не используются."""
 import argparse
+import datetime
 import gzip
 import hashlib
 import json
@@ -389,7 +390,10 @@ def run(args):
         raise ValueError("Указанный --frequency-list отсутствует; скачивания нет")
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     dump_sha = dictionary.sha256_file(args.dump)
-    if dump_sha != manifest["source"]["sha256_input"] or manifest["source"]["dump_date"] != "2026-11-01":
+    campaign_v2 = getattr(args, "campaign_v2", False)
+    dump_date = manifest["source"]["dump_date"]
+    datetime.date.fromisoformat(dump_date)
+    if dump_sha != manifest["source"]["sha256_input"] or (not campaign_v2 and dump_date != "2026-11-01"):
         raise ValueError("SHA-256 или дата дампа не совпадает с манифестом 2026-11-01")
     args.frequency_list = resolve_frequency_list(explicit_frequency, args.manifest)
     config = load_config(args.config)
@@ -432,7 +436,7 @@ def run(args):
         atomic_json(frequency_file, frequency)
     replacements = config["level_replacements"]
     original = dictionary.LEVELS
-    protected = set() if audit_only else {replacements.get(level[0], {}).get("word", level[0]) for level in original}
+    protected = set() if audit_only or campaign_v2 else {replacements.get(level[0], {}).get("word", level[0]) for level in original}
     if protected - universe:
         raise ValueError("Слова уровней отсутствуют в исходном наборе: " + ", ".join(sorted(protected - universe)))
     decisions = decide(records, frequency["words"], config, protected)
@@ -446,7 +450,7 @@ def run(args):
                    "semantic_assessment": None, "ai_used": False, "published": False, "package_built": False}
         atomic_json(args.reports / "summary.json", summary)
         return summary
-    key = json_digest([stage_key, frequency_source, original, sorted(selected)])
+    key = json_digest([stage_key, frequency_source, original, sorted(selected), campaign_v2])
     candidate = args.cache / "builds" / key
     candidate.mkdir(parents=True, exist_ok=True)
     # Одинаковый порядок полей до и после JSON-кэша нужен для стабильного gzip.
@@ -463,12 +467,12 @@ def run(args):
                "candidate": str(candidate), "published": False, "ai_used": False, "manual_audit_passed": False,
                "definitions_used_for_selection": False, "frequency_sha256": frequency_sha, "input_words_sha256": base_sha}
     try:
-        levels, changes = prepare_levels(selected, original, replacements)
+        levels, changes = ([], []) if campaign_v2 else prepare_levels(selected, original, replacements)
     except ValueError as error:
         summary.update(status="blocked_levels", error=str(error))
         atomic_json(args.reports / "summary.json", summary)
         raise
-    dictionary.write_game_data(candidate, sources, "2026-11-01", dump_sha, levels_spec=levels)
+    dictionary.write_game_data(candidate, sources, dump_date, dump_sha, levels_spec=levels)
     generated = json.loads((candidate / "manifest.json").read_text())
     generated["source"]["selection"] = "Modern game nouns selected by structured fields, leading sense labels and wordform usage; level exceptions recorded"
     generated["selection"] = {"mode": "game-cleanup-v1", "parameters": config, "sha256": json_digest(config),
@@ -477,6 +481,8 @@ def run(args):
                               "frequency_source": frequency_source,
                               "old_overrides_used": False, "definitions_required": False, "candidate_limit": None,
                               "reference_checks": references, "audit": {"passed": False, "method": "automated-first-pass"}}
+    if campaign_v2:
+        generated["selection"]["mode"] = "game-cleanup-v2"
     generated["levels_source"]["changes"] += "; owner-authorized replacements: " + ", ".join(change["old_word"] for change in changes) + "; numerical thresholds preserved"
     generated["levels_source"]["replacements"] = changes
     atomic_json(candidate / "manifest.json", generated)
@@ -505,6 +511,7 @@ def main():
     parser.add_argument("--golden", type=Path, default=ROOT / "core/src/test/resources/frequent_nouns_golden.txt")
     parser.add_argument("--audit-only", action="store_true", help="Проверить широкий словарь и роли v2; только отчёты, без сборки пакета и исключений v1")
     parser.add_argument("--prepare-only", action="store_true", help="Собрать и проверить в кэше, сохранив рабочие данные")
+    parser.add_argument("--campaign-v2", action="store_true", help="Без принудительного сохранения исходников и проверки порогов v1")
     args = parser.parse_args()
     try:
         print(json.dumps(run(args), ensure_ascii=False, indent=2))

@@ -12,7 +12,7 @@ object CampaignDatasetAudit {
     private fun JSONArray.strings() = (0 until length()).map { getString(it) }
     private fun JSONArray.objects() = (0 until length()).map { getJSONObject(it) }
 
-    private fun decode(json: JSONObject): Campaign = Campaign(
+    internal fun decode(json: JSONObject): Campaign = Campaign(
         version = json.getInt("version"), countMinLength = json.getInt("countMinLength"),
         stages = json.getJSONArray("stages").objects().map {
             Stage(it.getInt("number"), it.getInt("firstLevel"), it.getInt("lastLevel"))

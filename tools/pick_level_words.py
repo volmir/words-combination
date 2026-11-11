@@ -201,15 +201,16 @@ def labels_for(word, record, cleanup):
     return sorted(labels)
 
 
-def measurement_inputs(words, records, ranks, lexical, categories, cleanup):
+def measurement_inputs(words, records, ranks, lexical, categories, cleanup, source_candidates=(), source_only=()):
     """No article text in the semantic boundary; only preliminary reachability."""
     index = MultisetIndex(words)
-    source_answers = {w: index.search(w) for w in sorted(words | semantic.PREFERRED_SOURCES)
+    measured = words | semantic.PREFERRED_SOURCES | set(source_candidates)
+    source_answers = {w: index.search(w) for w in sorted(measured)
                       if 8 <= len(w) <= 13 and w not in thematic.ROLE_EXCLUSIONS
                       and records.get(w, {}).get('sources')}
     reachable_targets = {answer for answers in source_answers.values() for answer in answers}
     metadata, candidates = {}, []
-    for word in sorted(words | semantic.PREFERRED_SOURCES):
+    for word in sorted(measured):
         if word not in records:
             continue
         record = records[word]
@@ -225,6 +226,15 @@ def measurement_inputs(words, records, ranks, lexical, categories, cleanup):
             roles.append('source')
         for role in roles:
             role_decision = lexical[word]['roles'][role]['decision']
+            if role == 'target' and word in source_only:
+                role_decision = 'exclude'
+            if (role == 'source' and word in source_candidates and noun and
+                    lexical[word]['reasons'] and set(lexical[word]['reasons']) <= {
+                        'usage_unconfirmed', 'low_frequency', 'narrow_term', 'restricted_usage_frequency',
+                        'compound_candidate', 'compound_abbreviation_candidate', 'abbreviation', 'obsolete',
+                        'rare', 'restricted_usage'}):
+                # A candidate, not a keep decision: LEX-04 must justify it.
+                role_decision = 'review'
             # Owner permits the source's historical/low-frequency exception only.
             if (role == 'source' and word in semantic.PREFERRED_SOURCES and noun and
                     set(labels) <= semantic.PREFERRED_SOURCE_LABELS):
@@ -378,7 +388,10 @@ def prepare(args, paths, words):
                     (row['category'] == 'other') != row['category_source'].startswith('unknown:')):
                 raise ValueError('Невалидная категория')
         categories = index['word_metadata']
-    metadata, document = measurement_inputs(words, records, ranks, lexical, categories, cleanup)
+    manifest = json.loads(args.manifest.read_text())
+    candidates = manifest.get('selection', {}).get('source_candidates', [])
+    source_only = manifest.get('selection', {}).get('source_only', [])
+    metadata, document = measurement_inputs(words, records, ranks, lexical, categories, cleanup, candidates, source_only)
     payload = {'metadata': metadata, 'semantic_input': document}
     write_cache(stage, dict(schema=SCHEMA, inputs=stage_inputs, payload=payload, payload_sha256=json_digest(payload)))
     return payload

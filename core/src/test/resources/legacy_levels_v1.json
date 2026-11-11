@@ -1,0 +1,272 @@
+[
+  {
+    "index": 1,
+    "word": "рекуперация",
+    "answers": 8,
+    "words": 14,
+    "letter": "п",
+    "letterCount": 6,
+    "available": 94
+  },
+  {
+    "index": 2,
+    "word": "опровержение",
+    "answers": 8,
+    "words": 14,
+    "letter": "р",
+    "letterCount": 3,
+    "available": 58
+  },
+  {
+    "index": 3,
+    "word": "хлопкопункт",
+    "answers": 10,
+    "words": 20,
+    "letter": "к",
+    "letterCount": 8,
+    "available": 95
+  },
+  {
+    "index": 4,
+    "word": "аспирантура",
+    "answers": 10,
+    "words": 15,
+    "letter": "а",
+    "letterCount": 7,
+    "available": 171
+  },
+  {
+    "index": 5,
+    "word": "ратификация",
+    "answers": 8,
+    "words": 14,
+    "letter": "ф",
+    "letterCount": 7,
+    "available": 81
+  },
+  {
+    "index": 6,
+    "word": "чемпионство",
+    "answers": 12,
+    "words": 24,
+    "letter": "о",
+    "letterCount": 6,
+    "available": 137
+  },
+  {
+    "index": 7,
+    "word": "велосипед",
+    "answers": 10,
+    "words": 16,
+    "letter": "с",
+    "letterCount": 6,
+    "available": 63
+  },
+  {
+    "index": 8,
+    "word": "субъективизм",
+    "answers": 10,
+    "words": 15,
+    "letter": "б",
+    "letterCount": 6,
+    "available": 105
+  },
+  {
+    "index": 9,
+    "word": "взвешивание",
+    "answers": 7,
+    "words": 14,
+    "letter": "в",
+    "letterCount": 5,
+    "available": 29
+  },
+  {
+    "index": 10,
+    "word": "окаменелость",
+    "answers": 14,
+    "words": 30,
+    "letter": "м",
+    "letterCount": 8,
+    "available": 344
+  },
+  {
+    "index": 11,
+    "word": "демонстрация",
+    "answers": 18,
+    "words": 45,
+    "letter": "н",
+    "letterCount": 7,
+    "available": 455
+  },
+  {
+    "index": 12,
+    "word": "артикуляция",
+    "answers": 9,
+    "words": 20,
+    "letter": "р",
+    "letterCount": 5,
+    "available": 108
+  },
+  {
+    "index": 13,
+    "word": "фисгармоника",
+    "answers": 15,
+    "words": 40,
+    "letter": "г",
+    "letterCount": 10,
+    "available": 384
+  },
+  {
+    "index": 14,
+    "word": "переливание",
+    "answers": 10,
+    "words": 15,
+    "letter": "п",
+    "letterCount": 6,
+    "available": 97
+  },
+  {
+    "index": 15,
+    "word": "сурдоперевод",
+    "answers": 10,
+    "words": 14,
+    "letter": "о",
+    "letterCount": 4,
+    "available": 81
+  },
+  {
+    "index": 16,
+    "word": "колядование",
+    "answers": 10,
+    "words": 20,
+    "letter": "в",
+    "letterCount": 10,
+    "available": 213
+  },
+  {
+    "index": 17,
+    "word": "селитроварня",
+    "answers": 15,
+    "words": 40,
+    "letter": "т",
+    "letterCount": 15,
+    "available": 363
+  },
+  {
+    "index": 18,
+    "word": "субординация",
+    "answers": 12,
+    "words": 25,
+    "letter": "б",
+    "letterCount": 8,
+    "available": 224
+  },
+  {
+    "index": 19,
+    "word": "реввоенсовет",
+    "answers": 8,
+    "words": 14,
+    "letter": "с",
+    "letterCount": 5,
+    "available": 75
+  },
+  {
+    "index": 20,
+    "word": "правоведение",
+    "answers": 9,
+    "words": 14,
+    "letter": "о",
+    "letterCount": 5,
+    "available": 180
+  },
+  {
+    "index": 21,
+    "word": "одноколейка",
+    "answers": 10,
+    "words": 14,
+    "letter": "д",
+    "letterCount": 5,
+    "available": 118
+  },
+  {
+    "index": 22,
+    "word": "аккумулятор",
+    "answers": 12,
+    "words": 20,
+    "letter": "к",
+    "letterCount": 10,
+    "available": 168
+  },
+  {
+    "index": 23,
+    "word": "магнитофон",
+    "answers": 12,
+    "words": 18,
+    "letter": "г",
+    "letterCount": 5,
+    "available": 92
+  },
+  {
+    "index": 24,
+    "word": "переводчица",
+    "answers": 10,
+    "words": 15,
+    "letter": "ч",
+    "letterCount": 6,
+    "available": 119
+  },
+  {
+    "index": 25,
+    "word": "питекантроп",
+    "answers": 20,
+    "words": 40,
+    "letter": "т",
+    "letterCount": 10,
+    "available": 337
+  },
+  {
+    "index": 26,
+    "word": "вегетарианец",
+    "answers": 12,
+    "words": 24,
+    "letter": "а",
+    "letterCount": 6,
+    "available": 167
+  },
+  {
+    "index": 27,
+    "word": "регулировщик",
+    "answers": 10,
+    "words": 16,
+    "letter": "л",
+    "letterCount": 6,
+    "available": 113
+  },
+  {
+    "index": 28,
+    "word": "видеотехника",
+    "answers": 12,
+    "words": 24,
+    "letter": "в",
+    "letterCount": 8,
+    "available": 214
+  },
+  {
+    "index": 29,
+    "word": "мелодичность",
+    "answers": 14,
+    "words": 26,
+    "letter": "с",
+    "letterCount": 10,
+    "available": 210
+  },
+  {
+    "index": 30,
+    "word": "пудлинговка",
+    "answers": 16,
+    "words": 30,
+    "letter": "п",
+    "letterCount": 10,
+    "available": 320
+  }
+]

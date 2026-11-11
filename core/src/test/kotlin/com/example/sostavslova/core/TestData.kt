@@ -12,9 +12,15 @@ object TestData {
     val index: WordIndex by lazy { WordIndex.fromText(wordsText) }
     val manifest: JSONObject by lazy { JSONObject(text("manifest.json")) }
     val golden: JSONObject by lazy { JSONObject(text("golden_search.json")) }
+    val campaign: Campaign? by lazy {
+        if (manifest.has("campaign_source")) CampaignDatasetAudit.decode(JSONObject(text("campaign.json"))) else null
+    }
+    val currentSourceWords: Set<String> get() = campaign?.levels?.map { it.word }?.toSet()
+        ?: levels.map { it.word }.toSet()
 
     val levels: List<Level> by lazy {
-        val arr = JSONArray(text("levels.json"))
+        // Immutable v1 fixture tests legacy rules; v2 may replace its sources.
+        val arr = JSONArray(text("legacy_levels_v1.json"))
         (0 until arr.length()).map { i ->
             val o = arr.getJSONObject(i)
             Level(

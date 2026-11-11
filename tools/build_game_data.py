@@ -12,6 +12,8 @@ import re
 import shutil
 import sqlite3
 import tempfile
+from contextlib import contextmanager
+import fcntl
 from collections import Counter
 from pathlib import Path
 from urllib.parse import quote
@@ -501,31 +503,97 @@ def audit_sample(candidate, output, reports, seed):
     return path
 
 
-def publish(candidate, output, artifacts=ARTIFACTS):
+def sync_directory(path):
+    directory_fd = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+
+
+@contextmanager
+def exclusive_lock(path):
+    """A persistent lock inode: deleting it could let a third writer bypass a waiter."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        yield
+
+
+def durable_copy(source, target):
+    shutil.copyfile(source, target)
+    with target.open("rb") as copied:
+        os.fsync(copied.fileno())
+
+
+def recover_publication(output, stage):
+    """Idempotent rollback, including a kill during an earlier rollback."""
+    state_file = stage / "transaction.json"
+    if state_file.exists():
+        state = json.loads(state_file.read_text())
+        if not state["committed"]:
+            for name in state["artifacts"]:  # manifest was ordered last
+                target = output / name
+                if name in state["backups"]:
+                    temporary = stage / "restore.tmp"
+                    durable_copy(stage / (name + ".backup"), temporary)
+                    os.replace(temporary, target)
+                else:
+                    target.unlink(missing_ok=True)
+            sync_directory(output)
+    shutil.rmtree(stage)
+    sync_directory(output.parent)
+
+
+def publish(candidate, output, artifacts=ARTIFACTS, *, expected_manifest_sha256=None):
+    """Durable all-or-rollback installation; readers must verify manifest hashes.
+
+    The journal/backups live beside output, never in disposable build/. A later
+    invocation recovers a killed transaction before looking at its new candidate.
+    """
+    candidate, output = Path(candidate).resolve(), Path(output).resolve()
+    artifacts = tuple(n for n in artifacts if n != "manifest.json") + ("manifest.json",)
+    if len(set(artifacts)) != len(artifacts) or any(Path(n).name != n for n in artifacts):
+        raise ValueError("Некорректные имена артефактов")
     output.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="game-data-", dir=output.parent) as temporary:
-        stage = Path(temporary)
-        for name in artifacts:
-            shutil.copyfile(candidate / name, stage / name)
-            if dictionary.sha256_file(candidate / name) != dictionary.sha256_file(stage / name):
-                raise ValueError("Ошибка копирования артефакта: " + name)
-        # Манифест заменяется последним; до этого проверка хэшей блокирует смешанную сборку.
-        backups = {}
+    with exclusive_lock(output.parent / ("." + output.name + ".publish.lock")):
+        stage = output.parent / ("." + output.name + ".publish-transaction")
+        if stage.exists():
+            recover_publication(output, stage)
+        if expected_manifest_sha256 is not None:
+            current = output / "manifest.json"
+            empty_target = not any((output / n).exists() for n in artifacts)
+            if not empty_target and (not current.exists() or dictionary.sha256_file(current) != expected_manifest_sha256):
+                if all((output / n).exists() and dictionary.sha256_file(output / n) ==
+                       dictionary.sha256_file(candidate / n) for n in artifacts):
+                    return  # idempotent repeat of the same complete installation
+                raise ValueError("Рабочий пакет изменился после подготовки; повторите подготовку")
+        stage.mkdir()
+        state = dict(artifacts=artifacts, backups=[], committed=False)
         try:
             for name in artifacts:
-                target = output / name
-                if target.exists():
-                    backup = stage / (name + ".backup")
-                    shutil.copyfile(target, backup)
-                    backups[name] = backup
-                os.replace(stage / name, target)
-        except OSError:
+                durable_copy(candidate / name, stage / name)
+                if dictionary.sha256_file(candidate / name) != dictionary.sha256_file(stage / name):
+                    raise ValueError("Ошибка копирования артефакта: " + name)
+                if (output / name).exists():
+                    durable_copy(output / name, stage / (name + ".backup"))
+                    state["backups"].append(name)
+            atomic_json(stage / "transaction.json", state)
+            with (stage / "transaction.json").open("rb") as journal:
+                os.fsync(journal.fileno())
+            sync_directory(stage)
+            sync_directory(output.parent)
             for name in artifacts:
-                if name in backups:
-                    os.replace(backups[name], output / name)
-                elif not (stage / name).exists():
-                    (output / name).unlink(missing_ok=True)
+                os.replace(stage / name, output / name)
+                sync_directory(output)
+            atomic_json(stage / "transaction.json", dict(state, committed=True))
+            with (stage / "transaction.json").open("rb") as journal:
+                os.fsync(journal.fileno())
+            sync_directory(stage)
+        except BaseException:
+            recover_publication(output, stage)
             raise
+        recover_publication(output, stage)
 
 
 def verify_selection_inputs(manifest, overrides, config):

@@ -211,7 +211,10 @@ def run(args):
         raise ValueError("Нужен существующий локальный --dump; загрузок нет")
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     dump_sha = dictionary.sha256_file(args.dump)
-    if dump_sha != manifest["source"]["sha256_input"] or manifest["source"]["dump_date"] != "2026-11-01":
+    campaign_v2 = manifest.get("selection", {}).get("mode") == "game-cleanup-v2"
+    dump_date = manifest["source"]["dump_date"]
+    datetime.date.fromisoformat(dump_date)
+    if dump_sha != manifest["source"]["sha256_input"] or (not campaign_v2 and dump_date != "2026-11-01"):
         raise ValueError("SHA-256 или дата дампа не совпадает с манифестом")
     source = args.manifest.parent
     for name, checksum in zip(WORD_ARTIFACTS, CHECKSUMS):
@@ -245,11 +248,32 @@ def run(args):
                "candidate_categories": sorted({row["category"] for row in by_category.get(word, [])
                                                 if row["category"] != "other"})}
         for word, value in word_metadata.items() if value["category"] == "other"}
+    category_path = getattr(args, "category_index", None)
+    if category_path:
+        classified = json.loads(category_path.read_text(encoding="utf-8"))
+        if (classified.get("words_sha256") != manifest["sha256_words_txt"] or
+                set(classified["word_metadata"]) != words):
+            raise ValueError("Категории относятся к другому словарю")
+        for word, value in classified["word_metadata"].items():
+            if (value["category"] not in taxonomy or
+                    (value["category"] == "other") != value["category_source"].startswith("unknown:") or
+                    any(value.get(k, []) != word_metadata[word].get(k, []) for k in ("forms", "related"))):
+                raise ValueError("Несогласованные категории/формы: " + word)
+        word_metadata = classified["word_metadata"]
+        index = dict(classified)
     masker_sha = dictionary.sha256_file(ROOT / "core/src/main/kotlin/com/example/sostavslova/core/DefinitionHint.kt")
-    content = json_digest([extraction_key, manifest["sha256_words_txt"], settings, sorted(removed), masker_sha,
-                           dictionary.sha256_file(TOOLS / "build_game_data.py"),
-                           dictionary.sha256_file(TOOLS / "word_categories.py"), taxonomy])
-    candidate = args.cache / "builds" / content
+    # Version tracks data/schema only. A changed processor/config that produces
+    # identical rows must not force Android to reopen an unchanged data version.
+    stored_rows = [{k: row[k] for k in ("word", "display", "text", "source", "origin", "category", "guessable")}
+                   for row in rows]
+    stored_words = {word: {"category": info["category"], "category_source": info["category_source"],
+                           "forms": sorted(set(info.get("forms", []))), "related": sorted(set(info.get("related", [])))}
+                    for word, info in word_metadata.items()}
+    content = json_digest([settings["schema_version"], stored_rows, stored_words])
+    inputs = json_digest([extraction_key, manifest["sha256_words_txt"], settings, sorted(removed), masker_sha,
+                          dictionary.sha256_file(Path(__file__)),
+                          dictionary.sha256_file(TOOLS / "build_game_data.py"), taxonomy, content])
+    candidate = args.cache / "builds" / inputs
     candidate.mkdir(parents=True, exist_ok=True)
     previous_version, previous_content = settings["schema_version"] - 1, None
     installed = args.out / "definitions.db"
@@ -258,8 +282,7 @@ def run(args):
             previous_version = db.execute("PRAGMA user_version").fetchone()[0]
             previous_content = dict(db.execute("SELECT key,value FROM build_metadata")).get("content_sha256")
     state_file = candidate / "state.json"
-    state = json.loads(state_file.read_text()) if state_file.exists() else {"version": settings["schema_version"]}
-    state["version"] = max(state["version"], settings["schema_version"], previous_version + int(previous_content != content))
+    state = {"version": max(settings["schema_version"], previous_version + int(previous_content != content))}
     atomic_json(state_file, state)
     database = candidate / "definitions.db"
     rebuild = not database.exists()
@@ -324,6 +347,7 @@ def main():
     parser.add_argument("--out", type=Path, default=ROOT / "data")
     parser.add_argument("--remove-definitions", type=Path, default=TOOLS / "overrides/remove_definitions.txt")
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--category-index", type=Path, help="Актуальные категории LEX-03 для точного словаря")
     args = parser.parse_args()
     try:
         print(json.dumps(run(args), ensure_ascii=False, indent=2))

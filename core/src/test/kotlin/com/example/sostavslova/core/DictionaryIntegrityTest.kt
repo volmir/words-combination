@@ -47,13 +47,13 @@ class DictionaryIntegrityTest {
     @Test
     fun cleanupPolicyAndCampaignExceptionsAreRecorded() {
         val selection = TestData.manifest.getJSONObject("selection")
-        assertEquals("game-cleanup-v1", selection.getString("mode"))
+        assertTrue(selection.getString("mode") in setOf("game-cleanup-v1", "game-cleanup-v2"))
         assertEquals(113413, selection.getInt("input_words"))
         assertFalse(selection.getBoolean("old_overrides_used"))
         assertFalse(selection.getBoolean("definitions_required"))
         assertTrue(selection.isNull("candidate_limit"))
         val exceptions = selection.getJSONObject("reference_checks").getJSONObject("level_exceptions")
-        val levelWords = TestData.levels.map { it.word }.toSet()
+        val levelWords = TestData.currentSourceWords
         for (word in exceptions.keys()) {
             assertTrue(word in levelWords, "Исключение не относится к кампании: $word")
             assertTrue(TestData.index.contains(word), "Утрачено исключение кампании: $word")
@@ -74,16 +74,21 @@ class DictionaryIntegrityTest {
     }
 
     @Test
-    fun containsAllFrequentNounsFromGoldenList() {
+    fun frequentNounsGoldenHaveWordsOrRecordedRejections() {
         val resource = checkNotNull(javaClass.classLoader.getResourceAsStream("frequent_nouns_golden.txt"))
         val golden = resource.bufferedReader(Charsets.UTF_8).use { it.readLines() }.filter { it.isNotBlank() }
         val missing = golden.filterNot { TestData.index.contains(it) }
-        assertTrue(missing.isEmpty(), "В словаре отсутствуют: ${missing.joinToString(", ")}")
+        val excluded = TestData.manifest.getJSONObject("selection").getJSONObject("reference_checks")
+            .getJSONObject("golden_excluded")
+        for (word in missing) {
+            assertTrue(excluded.has(word) && excluded.getJSONArray(word).length() > 0,
+                "Отказ контрольного слова не объяснён: $word")
+        }
     }
 
     @Test
     fun containsAllLevelWords() {
-        val missing = TestData.levels.map { it.word }.filterNot { TestData.index.contains(it) }
+        val missing = TestData.currentSourceWords.filterNot { TestData.index.contains(it) }
         assertTrue(missing.isEmpty(), "В словаре отсутствуют слова уровней: ${missing.joinToString(", ")}")
     }
 

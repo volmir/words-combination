@@ -183,6 +183,42 @@ class LocalDefinitionsTest(unittest.TestCase):
         self.assertEqual(snapshot, (self.args.out / "definitions.db").read_bytes())
         self.assertEqual(index, (self.args.reports / "category_index.json").read_bytes())
 
+    def test_changed_config_without_changed_rows_keeps_version_even_with_fresh_cache(self):
+        self.write_source([article('портал', 'Синтетический предмет для опытной проверки.')])
+        local.run(self.args)
+        before = (self.args.out / 'definitions.db').read_bytes()
+        settings = dict(self.settings, max_chars=self.settings['max_chars'] + 1, generation_date='2026-11-07')
+        config = self.root / 'new-config.json'
+        config.write_text(json.dumps(settings))
+        self.args.config = config
+        self.args.cache = self.root / 'fresh-cache'
+        local.run(self.args)
+        self.assertEqual(before, (self.args.out / 'definitions.db').read_bytes())
+
+    def test_classified_categories_match_database_and_wrong_dictionary_is_rejected(self):
+        self.write_source([article('портал', 'Синтетический предмет для опытной проверки.')])
+        local.run(self.args)
+        index = json.loads((self.args.reports / 'category_index.json').read_text())
+        index['word_metadata']['портал'].update(category='birds', category_source='ai:codex:fixture',
+                                               category_confidence=0.9)
+        path = self.root / 'classified.json'
+        path.write_text(json.dumps(index))
+        self.args.category_index = path
+        local.run(self.args)
+        with sqlite3.connect(self.args.out / 'definitions.db') as db:
+            self.assertEqual(('birds', 'ai:codex:fixture'), db.execute(
+                "SELECT category,category_source FROM word_metadata WHERE word='портал'").fetchone())
+        before = (self.args.out / 'definitions.db').read_bytes()
+        index['word_metadata']['портал']['category_confidence'] = 0.95
+        path.write_text(json.dumps(index))
+        self.args.cache = self.root / 'fresh-cache'
+        local.run(self.args)
+        self.assertEqual(before, (self.args.out / 'definitions.db').read_bytes())
+        index['words_sha256'] = 'wrong'
+        path.write_text(json.dumps(index))
+        with self.assertRaisesRegex(ValueError, 'другому словарю'):
+            local.run(self.args)
+
     def test_bad_dump_or_dictionary_hash_stops_before_publication(self):
         self.write_source([article('портал','Синтетический предмет для опытной проверки.')])
         self.dump.write_text('{}')

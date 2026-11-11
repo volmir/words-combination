@@ -16,6 +16,19 @@ class LevelRulesTest {
 
     @Test
     fun everyLevelIsReachable() {
+        val campaign = TestData.campaign
+        if (campaign != null) {
+            val errors = ProductionCampaignValidator.validate(campaign)
+            assertTrue(errors.isEmpty(), errors.joinToString())
+            for (level in campaign.levels) {
+                assertTrue(TestData.index.contains(level.word), "нет исходника v2 ${level.word}")
+                val game = GameState.start(level.word, TestData.index)
+                val all = CurrentCampaignLevel(level, game.copy(found = game.allWords))
+                val evaluated = TaskRules.evaluate(all, campaign.countMinLength)
+                assertEquals(level.maxStars, evaluated.stars, "Недостижимые задания v2 ${level.word}")
+            }
+            return
+        }
         for (l in levels) {
             val all = TestData.index.findBuildable(l.word).filter { it.length >= 3 }
             assertTrue(TestData.index.contains(l.word), "нет слова уровня ${l.word}")
