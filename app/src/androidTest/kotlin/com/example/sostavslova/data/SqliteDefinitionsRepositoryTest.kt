@@ -122,6 +122,39 @@ class SqliteDefinitionsRepositoryTest {
     }
 
     @Test
+    fun categorySchemaV8ReplacesInstalledV7AndPreservesDefinitionMetadata() = runTest {
+        val installed = context.getDatabasePath(databaseName)
+        createDatabase(installed, 7, "Синтетическое прежнее значение.")
+        SQLiteDatabase.openDatabase(installed.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
+            db.execSQL("CREATE TABLE word_metadata(word TEXT PRIMARY KEY, category TEXT, forms TEXT, related TEXT)")
+            db.execSQL("INSERT INTO word_metadata VALUES('портал','other','[]','[]')")
+        }
+        val asset = File(directory, "v8.db")
+        val source = "https://ru.wiktionary.org/wiki/портал"
+        createDatabase(asset, 8, "Птица для синтетического опыта.", source = source)
+        SQLiteDatabase.openDatabase(asset.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
+            db.execSQL("ALTER TABLE definitions ADD COLUMN origin TEXT NOT NULL DEFAULT 'wiktionary'")
+            db.execSQL("CREATE TABLE word_metadata(word TEXT PRIMARY KEY, category TEXT, category_source TEXT, forms TEXT, related TEXT)")
+            db.execSQL("INSERT INTO word_metadata VALUES(?,?,?,?,?)",
+                arrayOf("портал", "birds", "gloss_head:birds", "[\"портала\"]", "[\"портальный\"]"))
+        }
+        val definition = repository(asset).definitionsFor("портал").single()
+        assertEquals("Птица для синтетического опыта.", definition.text)
+        assertEquals(source, definition.source)
+        assertEquals("wiktionary", definition.origin)
+        assertEquals(listOf("портала"), definition.forms)
+        assertEquals(listOf("портальный"), definition.related)
+        SQLiteDatabase.openDatabase(installed.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+            assertEquals(8, db.version)
+            db.rawQuery("SELECT category,category_source FROM word_metadata WHERE word='портал'", null).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("birds", cursor.getString(0))
+                assertEquals("gloss_head:birds", cursor.getString(1))
+            }
+        }
+    }
+
+    @Test
     fun olderBundledUserVersionDoesNotDowngradeInstalledDatabase() = runTest {
         createDatabase(context.getDatabasePath(databaseName), 2, "установленная версия")
         val asset = File(directory, "asset.db")

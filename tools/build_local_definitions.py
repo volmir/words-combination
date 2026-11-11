@@ -14,6 +14,7 @@ from urllib.parse import quote
 
 import build_dictionary as dictionary
 import clean_dictionary as clean
+import word_categories as thematic
 from build_game_data import build_database, publish, write_csv
 from game_data_providers import atomic_json, json_digest
 from game_data_quality import normalize_form
@@ -60,7 +61,7 @@ def load_settings(path):
     for key in ("schema_version", "min_chars", "max_chars", "max_meanings", "reference_depth"):
         if type(settings[key]) is not int or settings[key] <= 0:
             raise ValueError("Некорректная настройка определений: " + key)
-    if settings["schema_version"] < 5 or settings["min_chars"] > settings["max_chars"] or settings["reference_depth"] > 5:
+    if settings["schema_version"] < 8 or settings["min_chars"] > settings["max_chars"] or settings["reference_depth"] > 5:
         raise ValueError("Некорректная схема или границы определений")
     datetime.date.fromisoformat(settings["generation_date"])
     return settings
@@ -101,7 +102,11 @@ def extract_articles(path, cleanup):
                     found, _, _ = clean.gloss_labels(text, cleanup)
                     flags = sorted((common | reasons | found) - {"abbreviation"})
                     reference = REFERENCE.fullmatch(normalize_form(text))
-                    record["senses"].append({"text": text, "source": url, "flags": flags,
+                    # Entry-wide themes are safe only for a single sense. An entry
+                    # with multiple meanings must not lend its zoological tag to a tool.
+                    themes = {field: sense.get(field, entry.get(field, []) if len(entry.get("senses", [])) == 1 else [])
+                              for field in ("categories", "topics", "raw_tags", "tags")}
+                    record["senses"].append({"text": text, "source": url, "flags": flags, **themes,
                                               "reference": reference.group(1) if reference else None})
     # Обратная связь не добавляет синонимы: только явно помеченное ближайшее родство.
     reverse = [(word, relative) for word, record in articles.items() for relative in record["related"] if relative in articles]
@@ -115,7 +120,8 @@ def extract_articles(path, cleanup):
     return articles
 
 
-def select_definitions(words, articles, settings, removed):
+def select_definitions(words, articles, settings, removed, taxonomy=None, deduplicate=True):
+    taxonomy = taxonomy if taxonomy is not None else thematic.load_taxonomy()
     rows, failures, resolutions = [], {}, []
 
     def resolve(sense, trail, depth):
@@ -132,6 +138,16 @@ def select_definitions(words, articles, settings, removed):
                 return resolved
         return None
 
+    def category(sense, trail, depth):
+        # A reference to a homonym is not evidence for the first meaning alone.
+        target = sense["reference"]
+        if not target:
+            return thematic.classify_sense(sense, taxonomy)
+        if depth >= settings["reference_depth"] or target in trail or target not in articles:
+            return thematic.word_category([])
+        return thematic.word_category([category(candidate, trail | {target}, depth + 1)
+                                       for candidate in articles[target]["senses"]])
+
     for word in sorted(words):
         if word in removed:
             failures[word] = ["complaint"]
@@ -143,11 +159,11 @@ def select_definitions(words, articles, settings, removed):
         seen, count = set(), 0
         for sense in record["senses"]:
             resolved = resolve(sense, {word}, 0)
-            if resolved is None or resolved["text"].casefold() in seen:
+            if resolved is None or (deduplicate and resolved["text"].casefold() in seen):
                 continue
             seen.add(resolved["text"].casefold())
             rows.append({"word": word, "display": record["display"], "text": resolved["text"], "source": resolved["source"],
-                         "origin": "wiktionary", "category": "other", "guessable": 0})
+                         "origin": "wiktionary", **category(sense, {word}, 0), "guessable": 0})
             if resolved is not sense:
                 resolutions.append({"word": word, "target": sense["reference"], "source": resolved["source"]})
             count += 1
@@ -160,10 +176,14 @@ def select_definitions(words, articles, settings, removed):
 
 def validate_database(path, words, settings):
     with sqlite3.connect(path) as db:
-        if db.execute("PRAGMA integrity_check").fetchone()[0] != "ok" or db.execute("PRAGMA user_version").fetchone()[0] < 5:
+        if db.execute("PRAGMA integrity_check").fetchone()[0] != "ok" or db.execute("PRAGMA user_version").fetchone()[0] < 8:
             raise ValueError("Повреждённая или устаревшая база определений")
         if {row[0] for row in db.execute("SELECT word FROM word_metadata")} != words:
             raise ValueError("Метаданные не соответствуют игровому словарю")
+        taxonomy = thematic.load_taxonomy()
+        for category, source in db.execute("SELECT category,category_source FROM word_metadata"):
+            if category not in taxonomy or not source or (category == "other") != source.startswith("unknown:"):
+                raise ValueError("Некорректная категория или её происхождение")
         for word, text, source, origin, example in db.execute("SELECT word,text,source,origin,example FROM definitions"):
             if (word not in words or origin != "wiktionary" or not source.startswith("https://ru.wiktionary.org/wiki/") or example or
                     not settings["min_chars"] <= len(text) <= settings["max_chars"] or re.search(r"[<>\r\n]", text)):
@@ -204,10 +224,23 @@ def run(args):
     cleanup = clean.load_config(args.selection_config)
     removed = set(dictionary.read_list(args.remove_definitions))
     articles, extraction_key = cached_articles(args.dump, dump_sha, cleanup, args.cache)
-    rows, failures, resolutions = select_definitions(words, articles, settings, removed)
+    taxonomy = thematic.load_taxonomy()
+    rows, failures, resolutions = select_definitions(words, articles, settings, removed, taxonomy)
+    # Check every usable meaning, including those beyond the display limit. A
+    # hidden homonym must not silently become a confident T6 target.
+    all_rows, _, _ = select_definitions(words, articles, dict(settings, max_meanings=10**9), removed,
+                                       taxonomy, deduplicate=False)
+    by_category = {}
+    for row in all_rows:
+        by_category.setdefault(row["word"], []).append(row)
+    word_metadata = {word: {**thematic.word_category(by_category.get(word, [])),
+                           "forms": articles.get(word, {}).get("forms", [word]),
+                           "related": articles.get(word, {}).get("related", [])} for word in sorted(words)}
+    index = thematic.category_index(word_metadata, taxonomy)
     masker_sha = dictionary.sha256_file(ROOT / "core/src/main/kotlin/com/example/sostavslova/core/DefinitionHint.kt")
     content = json_digest([extraction_key, manifest["sha256_words_txt"], settings, sorted(removed), masker_sha,
-                           dictionary.sha256_file(TOOLS / "build_game_data.py")])
+                           dictionary.sha256_file(TOOLS / "build_game_data.py"),
+                           dictionary.sha256_file(TOOLS / "word_categories.py"), taxonomy])
     candidate = args.cache / "builds" / content
     candidate.mkdir(parents=True, exist_ok=True)
     previous_version, previous_content = settings["schema_version"] - 1, None
@@ -229,15 +262,7 @@ def run(args):
                 "dictionary_words_sha256": manifest["sha256_words_txt"], "masker_version": settings["masker_version"],
                 "masker_sha256": masker_sha, "generator": "build_local_definitions.py"}
     if rebuild:
-        build_database(database, rows, dict.fromkeys(words, "other"), metadata, state["version"])
-        with sqlite3.connect(database) as db:
-            db.execute("ALTER TABLE word_metadata ADD COLUMN forms TEXT NOT NULL DEFAULT '[]'")
-            db.execute("ALTER TABLE word_metadata ADD COLUMN related TEXT NOT NULL DEFAULT '[]'")
-            db.executemany("UPDATE word_metadata SET forms=?,related=? WHERE word=?", [
-                (json.dumps(articles.get(word, {}).get("forms", [word]), ensure_ascii=False),
-                 json.dumps(articles.get(word, {}).get("related", []), ensure_ascii=False), word) for word in sorted(words)])
-            db.commit()
-            db.execute("VACUUM")
+        build_database(database, rows, word_metadata, metadata, state["version"])
     validate_database(database, words, settings)
     defined = {row["word"] for row in rows}
     block = {"rights_policy": "wiktionary-provisional-v1", "sha256": dictionary.sha256_file(database),
@@ -259,6 +284,8 @@ def run(args):
                "database": str(database), "database_bytes": database.stat().st_size, "user_version": state["version"],
                "published": not args.prepare_only, "ai_used": False, "audit_passed": False, "dictionary_changed": False}
     args.reports.mkdir(parents=True, exist_ok=True)
+    atomic_json(args.reports / "category_index.json", dict(index, database_sha256=block["sha256"],
+                                                          words_sha256=manifest["sha256_words_txt"]))
     write_csv(args.reports / "missing_definitions.csv", ["word", "reason"],
               [{"word": word, "reason": ";".join(reasons)} for word, reasons in sorted(failures.items())])
     write_csv(args.reports / "resolved_references.csv", ["word", "target", "source"], resolutions)

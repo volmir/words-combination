@@ -112,6 +112,72 @@ class LocalDefinitionsTest(unittest.TestCase):
             self.assertEqual(0,db.execute('SELECT count(*) FROM definitions').fetchone()[0])
         self.assertIn('портал',dictionary.read_list(self.args.out/'words.txt'))
 
+    def test_categories_use_matching_sense_and_keep_hidden_homonyms_out_of_t6(self):
+        bird = {"glosses": ["Синтетический летающий образец."], "topics": ["ornithology"]}
+        tool = {"glosses": ["Синтетический рабочий образец."], "raw_tags": ["инструменты"]}
+        self.write_source([
+            article("портал", "", categories=["ru:Животные"], senses=[bird, dict(bird), tool]),
+            article("рот", "Птица для синтетического опыта.", topics=["ornithology"]),
+        ])
+        local.run(self.args)
+        with sqlite3.connect(self.args.out / "definitions.db") as db:
+            self.assertEqual(("other", "unknown:ambiguous_senses"), db.execute(
+                "SELECT category,category_source FROM word_metadata WHERE word='портал'").fetchone())
+            self.assertEqual(("other", "unknown:no_usable_sense"), db.execute(
+                "SELECT category,category_source FROM word_metadata WHERE word='тор'").fetchone())
+            self.assertEqual([("birds",), ("tools",)], db.execute(
+                "SELECT category FROM definitions WHERE word='портал' ORDER BY ord").fetchall())
+        index = json.loads((self.args.reports / "category_index.json").read_text())
+        self.assertEqual(["рот"], index["categories"]["birds"])
+        self.assertNotIn("other", index["categories"])
+        self.assertEqual(dictionary.sha256_file(self.args.out / "definitions.db"), index["database_sha256"])
+        # Repeated gloss text must not hide differently labelled meanings.
+        self.write_source([article("портал", "", senses=[bird, dict(tool, glosses=bird["glosses"])])])
+        local.run(self.args)
+        with sqlite3.connect(self.args.out / "definitions.db") as db:
+            self.assertEqual("other", db.execute("SELECT category FROM word_metadata WHERE word='портал'").fetchone()[0])
+
+    def test_meaning_beyond_display_limit_and_uncertain_reference_are_not_t6_targets(self):
+        birds = [{"glosses": [f"Птица для синтетического опыта номер {i}."]} for i in range(3)]
+        self.write_source([article("портал", "", senses=birds + [{"glosses": ["Инструмент для опыта."]}]),
+                           article("рот", "то же, что портал")])
+        local.run(self.args)
+        with sqlite3.connect(self.args.out / "definitions.db") as db:
+            self.assertEqual(2, db.execute("SELECT count(*) FROM definitions WHERE word='портал'").fetchone()[0])
+            self.assertEqual([("other",), ("other",)], db.execute(
+                "SELECT category FROM word_metadata WHERE word IN ('портал','рот') ORDER BY word").fetchall())
+        index = json.loads((self.args.reports / "category_index.json").read_text())
+        self.assertFalse(any(index["categories"].values()))
+
+    def test_v7_upgrade_and_fresh_cache_rebuild_have_stable_v8_bytes(self):
+        self.write_source([article("портал", "Птица для синтетического опыта.", forms=[{"form": "портала"}],
+                                   related=[{"word": "портальный", "raw_tags": ["Ближайшее родство"]}])])
+        self.args.out.mkdir()
+        with sqlite3.connect(self.args.out / "definitions.db") as db:
+            db.executescript("""
+                PRAGMA user_version=7;
+                CREATE TABLE word_metadata(word TEXT PRIMARY KEY, category TEXT, forms TEXT, related TEXT);
+                CREATE TABLE build_metadata(key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                INSERT INTO build_metadata VALUES('content_sha256','previous-v7-content');
+            """)
+        local.run(self.args)
+        with sqlite3.connect(self.args.out / "definitions.db") as db:
+            self.assertEqual(8, db.execute("PRAGMA user_version").fetchone()[0])
+            category, source, forms, related = db.execute(
+                "SELECT category,category_source,forms,related FROM word_metadata WHERE word='портал'").fetchone()
+            self.assertEqual(("birds", "gloss_head:birds"), (category, source))
+            self.assertIn("портала", json.loads(forms))
+            self.assertEqual(["портальный"], json.loads(related))
+        snapshot = (self.args.out / "definitions.db").read_bytes()
+        index = (self.args.reports / "category_index.json").read_bytes()
+        local.run(self.args)
+        self.assertEqual(snapshot, (self.args.out / "definitions.db").read_bytes())
+        self.assertEqual(index, (self.args.reports / "category_index.json").read_bytes())
+        self.args.cache = self.root / "fresh-cache"
+        local.run(self.args)
+        self.assertEqual(snapshot, (self.args.out / "definitions.db").read_bytes())
+        self.assertEqual(index, (self.args.reports / "category_index.json").read_bytes())
+
     def test_bad_dump_or_dictionary_hash_stops_before_publication(self):
         self.write_source([article('портал','Синтетический предмет для опытной проверки.')])
         self.dump.write_text('{}')

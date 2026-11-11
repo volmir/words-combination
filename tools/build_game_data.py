@@ -424,7 +424,9 @@ def build_database(path, rows, categories, metadata, version):
                 ord INTEGER NOT NULL, text TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '',
                 antonym TEXT NOT NULL DEFAULT '', example TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '',
                 origin TEXT NOT NULL, category TEXT NOT NULL, guessable INTEGER NOT NULL CHECK(guessable IN (0,1)));
-            CREATE TABLE word_metadata(word TEXT PRIMARY KEY, category TEXT NOT NULL);
+            CREATE TABLE word_metadata(word TEXT PRIMARY KEY, category TEXT NOT NULL,
+                category_source TEXT NOT NULL DEFAULT 'unknown:legacy_input',
+                forms TEXT NOT NULL DEFAULT '[]', related TEXT NOT NULL DEFAULT '[]');
             CREATE TABLE build_metadata(key TEXT PRIMARY KEY, value TEXT NOT NULL);
             CREATE INDEX idx_definitions_word ON definitions(word);
         """)
@@ -434,7 +436,12 @@ def build_database(path, rows, categories, metadata, version):
             db.execute("INSERT INTO definitions(word,display,ord,text,source,origin,category,guessable) VALUES(?,?,?,?,?,?,?,?)",
                        (row["word"], row["display"], order[row["word"]], row["text"], row["source"],
                         row["origin"], row["category"], row["guessable"]))
-        db.executemany("INSERT INTO word_metadata VALUES(?,?)", sorted(categories.items()))
+        for word, value in sorted(categories.items()):
+            info = value if isinstance(value, dict) else {"category": value}
+            db.execute("INSERT INTO word_metadata(word,category,category_source,forms,related) VALUES(?,?,?,?,?)",
+                       (word, info["category"], info.get("category_source", "unknown:legacy_input"),
+                        json.dumps(sorted(set(info.get("forms", []))), ensure_ascii=False),
+                        json.dumps(sorted(set(info.get("related", []))), ensure_ascii=False)))
         db.executemany("INSERT INTO build_metadata VALUES(?,?)", sorted((key, str(value)) for key, value in metadata.items()))
         db.execute("PRAGMA user_version = %d" % version)
         db.commit()
