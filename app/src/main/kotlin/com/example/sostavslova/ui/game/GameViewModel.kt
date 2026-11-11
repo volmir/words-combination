@@ -6,6 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.R
 import com.example.sostavslova.core.Campaign
+import com.example.sostavslova.core.CampaignTask
+import com.example.sostavslova.core.TaskRules
+import com.example.sostavslova.core.TaskProgress
+import com.example.sostavslova.core.TaskType
+import com.example.sostavslova.core.HintText
 import com.example.sostavslova.core.CampaignLevelProgress
 import com.example.sostavslova.core.HintStep
 import com.example.sostavslova.core.HintRules
@@ -51,12 +56,20 @@ enum class GameDialog { Statistics, Tasks, Definition }
 
 data class GameHint(val length: Int, val firstLetter: String, val definitions: List<Definition>)
 
+// Только безопасный текст и открытая часть слова; полного ответа в UI-модели загадки нет.
+data class RiddleUiState(val text: String?, val length: Int, val firstLetter: String, val solved: Boolean = false,
+    val wiktionary: Boolean = false)
+
 data class GameUiState(
     val loading: Boolean = true,
     val loadError: Boolean = false,
     val game: GameState? = null,
     val level: Level? = null,
     val campaignLevel: CurrentCampaignLevel? = null,
+    val totalLevels: Int = 0,
+    val taskProgress: List<TaskProgress> = emptyList(),
+    val riddles: Map<String, List<RiddleUiState>> = emptyMap(),
+    val explanations: List<TaskType> = emptyList(),
     val levelProgress: LevelProgress = LevelProgress(),
     val statistics: Statistics = Statistics(emptyList()),
     val input: String = "",
@@ -135,7 +148,22 @@ class GameViewModel(
                     leave(R.string.no_combinations)
                     return@launch
                 }
-                if (loadedCampaign != null) progress.visitCampaignLevel(loadedCampaign, requireNotNull(number))
+                if (loadedCampaign != null) {
+                    progress.visitCampaignLevel(loadedCampaign, requireNotNull(number))
+                    val active = requireNotNull(current)
+                    val stage = loadedCampaign.stages.first { it.number == active.level.stage }
+                    // На входе в этап 6 знакомим с обоими новыми типами, независимо от ротации.
+                    val introduced = if (active.level.number == stage.firstLevel) {
+                        loadedCampaign.levels.filter { it.stage == stage.number }.flatMap { it.tasks }
+                            .map { it.type }.distinct().filter { type ->
+                                loadedCampaign.levels.none { it.stage < stage.number && it.tasks.any { task -> task.type == type } }
+                            }
+                    } else emptyList()
+                    val explanations = introduced.filter { progress.markCampaignExplanationSeen(it) }
+                    val riddles = loadRiddles(active)
+                    mutableState.update { it.copy(totalLevels = loadedCampaign.levels.size,
+                        riddles = riddles, explanations = explanations) }
+                } else mutableState.update { it.copy(totalLevels = legacy.size) }
                 currentCoroutineContext().ensureActive()
                 val previousWord = savedState.get<String>(SOURCE)
                 if (previousWord != null && previousWord != game.word) onInputChanged("")
@@ -169,7 +197,12 @@ class GameViewModel(
     }
 
     private suspend fun publishSession(game: GameState, level: Level?, current: CurrentCampaignLevel?, stars: LevelProgress) {
-        val stats = withContext(computationDispatcher) { game.statistics() }
+        val (stats, tasks) = withContext(computationDispatcher) {
+            game.statistics() to current?.let { TaskRules.evaluate(it, campaign?.countMinLength ?: 4).progress }.orEmpty()
+        }
+        val solved = current?.level?.tasks?.filterIsInstance<CampaignTask.T4>()?.associate { task ->
+            task.id to task.targets.map { it in game.found }
+        }.orEmpty()
         currentCoroutineContext().ensureActive()
         val changed = uiState.value.game?.found != game.found
         if (changed && campaign == null) {
@@ -178,7 +211,10 @@ class GameViewModel(
         }
         mutableState.update { it.copy(loading = false, loadError = false, game = game, level = level,
             campaignLevel = current, campaignHint = current?.let(HintRules::currentStep),
-            levelProgress = stars, statistics = stats,
+            levelProgress = stars, statistics = stats, taskProgress = tasks,
+            riddles = it.riddles.mapValues { (id, items) -> items.mapIndexed { index, riddle ->
+                riddle.copy(solved = solved[id]?.getOrNull(index) == true)
+            } },
             hint = if (changed) null else it.hint,
             hintLoading = if (changed && campaign == null) false else it.hintLoading) }
     }
@@ -198,8 +234,9 @@ class GameViewModel(
         operation = viewModelScope.launch {
             try {
                 val activeCampaign = campaign
-                val submitted = if (activeCampaign == null) null else progress.submitCampaignAnswer(
+                val campaignAnswer = if (activeCampaign == null) null else progress.submitCampaignAnswerWithTransitions(
                     activeCampaign, requireNotNull(before.campaignLevel).level.number, raw, words.requireIndex())
+                val submitted = campaignAnswer?.submission
                 val submission = submitted?.let { com.example.sostavslova.core.Submission(it.evaluation.state.game, it.result) }
                     ?: withContext(computationDispatcher) { game.submit(raw, words.requireIndex()) }
                 if (submission.result == AnswerResult.EMPTY) return@launch
@@ -218,7 +255,8 @@ class GameViewModel(
                 }
                 val answer = Alphabet.normalize(raw)
                 val message = when (submission.result) {
-                    AnswerResult.CORRECT -> GameMessage(R.string.correct_answer, type = AlertType.Success)
+                    AnswerResult.CORRECT -> GameMessage(if (activeCampaign != null && Alphabet.normalize(raw).length == 3)
+                        R.string.correct_three_letter_answer else R.string.correct_answer, type = AlertType.Success)
                     AnswerResult.ALREADY_FOUND -> GameMessage(R.string.answer_already_found, answer)
                     AnswerResult.NOT_FOUND, AnswerResult.LETTERS_MISSING, AnswerResult.NOT_COUNTED ->
                         GameMessage(R.string.answer_not_found, answer, AlertType.Danger)
@@ -231,9 +269,16 @@ class GameViewModel(
                     mutableState.update { it.copy(input = "") }
                 }
                 mutableState.update { it.copy(message = message) }
-                if (stars.stars > before.levelProgress.stars ||
-                    (submitted?.evaluation?.state?.completedTaskIds?.size ?: 0) >
-                    (before.campaignLevel?.completedTaskIds?.size ?: 0)) notices.send(GameMessage(R.string.star_received, type = AlertType.Success))
+                if (submitted != null) {
+                    val evaluation = submitted.evaluation
+                    repeat(evaluation.newlyCompletedTaskIds.size) {
+                        notices.send(GameMessage(R.string.star_received, type = AlertType.Success))
+                    }
+                    if (campaignAnswer?.openedNextLevel == true) notices.send(GameMessage(R.string.game_next_opened, type = AlertType.Success))
+                    if (campaignAnswer?.reachedFinale == true) notices.send(GameMessage(R.string.game_finale_reached, type = AlertType.Success))
+                } else if (stars.stars > before.levelProgress.stars) {
+                    notices.send(GameMessage(R.string.star_received, type = AlertType.Success))
+                }
                 if (!game.isFinished && next.isFinished) notices.send(GameMessage(R.string.all_words_found, type = AlertType.Success))
                 if (next != game) {
                     // Подсказка не должна продолжать показывать уже отгаданный ответ.
@@ -316,6 +361,32 @@ class GameViewModel(
             }
         }
     }
+
+    private suspend fun loadRiddles(current: CurrentCampaignLevel): Map<String, List<RiddleUiState>> {
+        val tasks = current.level.tasks.filterIsInstance<CampaignTask.T4>()
+        if (tasks.isEmpty()) return emptyMap()
+        val available = try { definitions.isAvailable() }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { false }
+        return tasks.associate { task ->
+            task.id to task.targets.map { answer ->
+                val meanings = if (available) try { definitions.definitionsFor(answer) }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { emptyList() } else emptyList()
+                val safe = withContext(computationDispatcher) {
+                    meanings.firstNotNullOfOrNull { meaning ->
+                        HintText.clean(meaning.text)?.let { text ->
+                            DefinitionHint.prepare(answer, text, meaning.forms, meaning.related)
+                        }?.let { it to (meaning.origin == "wiktionary") }
+                    }
+                }
+                RiddleUiState(safe?.first, answer.length, answer.first().uppercaseChar().toString(),
+                    wiktionary = safe?.second == true)
+            }
+        }
+    }
+
+    fun onDismissExplanations() { mutableState.update { it.copy(explanations = emptyList()) } }
 
     fun onDefinition(selected: String) {
         if (selected !in uiState.value.game?.found.orEmpty()) return

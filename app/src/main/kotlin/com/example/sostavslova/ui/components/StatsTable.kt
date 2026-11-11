@@ -19,23 +19,23 @@ import com.example.sostavslova.core.Statistics
 import com.example.sostavslova.ui.theme.WordsColors
 
 @Composable
-fun StatsTable(statistics: Statistics, modifier: Modifier = Modifier) {
+fun StatsTable(statistics: Statistics, modifier: Modifier = Modifier, showRemaining: Boolean = false) {
     Column(modifier.fillMaxWidth()) {
         StatsRow(
             stringResource(R.string.stats_letters), stringResource(R.string.stats_found_total),
-            stringResource(R.string.stats_percent), WordsColors.tableHead, bold = true,
+            stringResource(if (showRemaining) R.string.game_stats_remaining else R.string.stats_percent), WordsColors.tableHead, bold = true,
         )
         for (row in statistics.rows) {
             StatsRow(
                 stringResource(R.string.stats_number, row.length),
                 stringResource(R.string.stats_pair, row.found, row.total),
-                stringResource(R.string.stats_number, row.percent),
+                stringResource(R.string.stats_number, if (showRemaining) row.total - row.found else row.percent),
             )
         }
         StatsRow(
             stringResource(R.string.stats_total),
             stringResource(R.string.stats_pair, statistics.totalFound, statistics.totalWords),
-            stringResource(R.string.stats_number, statistics.totalPercent),
+            stringResource(R.string.stats_number, if (showRemaining) statistics.totalWords - statistics.totalFound else statistics.totalPercent),
             WordsColors.tableFoot, bold = true,
         )
     }

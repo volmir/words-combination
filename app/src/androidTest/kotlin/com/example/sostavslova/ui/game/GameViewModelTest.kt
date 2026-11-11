@@ -477,4 +477,101 @@ class GameViewModelTest {
         assertNull(second.uiState.value.message)
     }
 
+    @Test fun campaignRiddlesKeepAssignedAnswersWithMissingCorruptAndUnusableDefinitions() = runTest {
+        val repositories = listOf(noDefinitions,
+            object : DefinitionsRepository {
+                override suspend fun isAvailable(): Boolean = throw IOException("Broken database")
+                override suspend fun definitionsFor(word: String): List<Definition> = error("Must not read")
+            },
+            object : DefinitionsRepository {
+                override suspend fun isAvailable() = true
+                override suspend fun definitionsFor(word: String): List<Definition> = throw IOException("Broken table")
+            },
+            object : DefinitionsRepository {
+                override suspend fun isAvailable() = true
+                override suspend fun definitionsFor(word: String) = listOf(Definition(word, word, source = "https://example.org/$word"))
+            })
+        val json = miniCampaignJson.replace("[\"кот\"]", "[\"кот\", \"крот\"]")
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { json })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        for (meanings in repositories) {
+            progress.clearAll()
+            val model = model(meanings = meanings, wordRepository = campaignWords, levelRepository = campaignLevels)
+            val initial = model.ready()
+            val riddles = initial.riddles.getValue("riddle")
+            assertEquals(listOf(3, 4), riddles.map { it.length })
+            assertTrue(riddles.all { it.text == null && it.firstLetter == "К" && !it.solved })
+            val first = model.answer("кот")
+            assertEquals(R.string.correct_three_letter_answer, first.message?.text)
+            assertEquals(listOf(true, false), first.riddles.getValue("riddle").map { it.solved })
+            assertFalse("riddle" in first.campaignLevel?.completedTaskIds.orEmpty())
+            assertTrue(first.taskProgress.filter { it.id == "count" || it.id == "initial" }.all { it.current == 0 })
+            val second = model.answer("крот")
+            assertTrue(second.riddles.getValue("riddle").all { it.solved })
+            assertTrue("riddle" in second.campaignLevel?.completedTaskIds.orEmpty())
+            assertEquals(setOf("кот", "крот"), second.game?.found?.toSet())
+            withContext(Dispatchers.Main) { owners.last().viewModelStore.clear() }
+        }
+    }
+
+    @Test fun campaignSafeRiddleTextHasNoMetadataAndProgressSurvivesRecreation() = runTest {
+        val meanings = object : DefinitionsRepository {
+            override suspend fun isAvailable() = true
+            override suspend fun definitionsFor(word: String) = listOf(Definition(word,
+                "Условное безопасное описание для синтетического теста", source = "https://example.org/$word", origin = "wiktionary"))
+        }
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(meanings = meanings, wordRepository = campaignWords, levelRepository = campaignLevels)
+        val riddle = model.ready().riddles.getValue("riddle").single()
+        assertNotNull(riddle.text)
+        assertTrue(riddle.wiktionary)
+        assertFalse(riddle.toString().contains("кот"))
+        assertFalse(riddle.toString().contains("https"))
+        model.answer("кот")
+        val restored = model(meanings = meanings, wordRepository = campaignWords, levelRepository = campaignLevels).ready()
+        assertTrue(restored.riddles.getValue("riddle").single().solved)
+    }
+
+    @Test fun oneCampaignAnswerWritesOnceAndEmitsEveryNewStarAndUnlockOnlyOnce() = runTest {
+        val writes = AtomicInteger()
+        val counted = object : DataStore<Preferences> {
+            override val data = store.data
+            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                writes.incrementAndGet()
+                return store.updateData(transform)
+            }
+        }
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(repository = ProgressRepository(counted), wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.ready()
+        writes.set(0)
+        val answered = model.answer("карта")
+        assertEquals(1, writes.get())
+        assertEquals(2, answered.campaignLevel?.completedTaskIds?.size)
+        assertEquals(R.string.star_received, model.event().text)
+        assertEquals(R.string.star_received, model.event().text)
+        assertEquals(R.string.game_next_opened, model.event().text)
+        assertEquals(2, progress.observeCampaignProgress().first().highestUnlockedLevel)
+        model.answer("КАРТА")
+        withContext(Dispatchers.Main) { repeat(3) { model.onGameOpened() } }
+        assertNull(withTimeoutOrNull(200) { model.events.first() })
+    }
+
+    @Test fun firstLevelOfMasterStageExplainsBothRotatingNewTypesOnce() = runTest {
+        val json = miniCampaignJson.replace("\"number\": 1, \"firstLevel\"", "\"number\": 6, \"firstLevel\"")
+            .replace("\"stage\": 1", "\"stage\": 6")
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { json })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val first = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        val state = first.ready()
+        assertTrue(com.example.sostavslova.core.TaskType.T6 in state.explanations)
+        assertTrue(com.example.sostavslova.core.TaskType.T7 in state.explanations)
+        withContext(Dispatchers.Main) { first.onDismissExplanations() }
+        assertTrue(first.uiState.value.explanations.isEmpty())
+        val recreated = model(wordRepository = campaignWords, levelRepository = campaignLevels).ready()
+        assertTrue(recreated.explanations.isEmpty())
+    }
+
 }

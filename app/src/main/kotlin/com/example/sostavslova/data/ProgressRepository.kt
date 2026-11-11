@@ -53,6 +53,13 @@ private data class CurrentGame(val word: String, val found: List<String> = empty
 
 data class LevelSessionSnapshot(val found: List<String>, val progress: LevelProgress)
 
+/** Переходы из той же транзакции, что и ответ; восстановление UI их не повторяет. */
+data class CampaignAnswerUpdate(
+    val submission: TaskSubmission,
+    val openedNextLevel: Boolean,
+    val reachedFinale: Boolean,
+)
+
 class ProgressRepository(
     private val dataStore: DataStore<Preferences>,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
@@ -151,13 +158,23 @@ class ProgressRepository(
         raw: String,
         index: WordIndex,
         knownWords: KnownWords? = null,
-    ): TaskSubmission = editCampaign { saved ->
+    ): TaskSubmission = submitCampaignAnswerWithTransitions(campaign, levelNumber, raw, index, knownWords).submission
+
+    suspend fun submitCampaignAnswerWithTransitions(
+        campaign: Campaign,
+        levelNumber: Int,
+        raw: String,
+        index: WordIndex,
+        knownWords: KnownWords? = null,
+    ): CampaignAnswerUpdate = editCampaign { saved ->
         val current = openCampaignLevel(campaign, saved, levelNumber, index)
         val submitted = TaskRules.submit(current, raw, campaign.countMinLength, index, knownWords)
         val next = if (submitted.result == AnswerResult.CORRECT) {
             CampaignRules.recordLevel(campaign, saved, submitted.evaluation.state)
         } else saved
-        next to submitted
+        next to CampaignAnswerUpdate(submitted,
+            openedNextLevel = next.highestUnlockedLevel > saved.highestUnlockedLevel,
+            reachedFinale = next.finaleReached && !saved.finaleReached)
     }
 
     /**

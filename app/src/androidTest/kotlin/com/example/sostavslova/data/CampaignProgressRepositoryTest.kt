@@ -372,6 +372,29 @@ class CampaignProgressRepositoryTest {
         assertEquals(HintStatus.SHOWN, repository.requestCampaignHint(campaign, 1, 0, index)?.status)
     }
 
+    @Test fun answerTransitionsComeFromCommittedFrontierAndFinaleRatherThanStarThresholdAlone() = runTest {
+        val before = store.calls.get()
+        val first = repository.submitCampaignAnswerWithTransitions(campaign, 1, "крот", index)
+        assertEquals(before + 1, store.calls.get())
+        assertEquals(2, first.submission.evaluation.newlyCompletedTaskIds.size)
+        assertTrue(first.openedNextLevel)
+        assertFalse(first.reachedFinale)
+        val repeated = repository.submitCampaignAnswerWithTransitions(campaign, 1, "КРОТ", index)
+        assertTrue(repeated.submission.evaluation.newlyCompletedTaskIds.isEmpty())
+        assertFalse(repeated.openedNextLevel)
+        assertFalse(repeated.reachedFinale)
+        val last = repository.submitCampaignAnswerWithTransitions(campaign, 2, "крот", index)
+        assertFalse(last.openedNextLevel)
+        assertTrue(last.reachedFinale)
+        assertFalse(repository.submitCampaignAnswerWithTransitions(campaign, 2, "КРОТ", index).reachedFinale)
+        // Например, доступ сохранён миграцией, а новые задания ещё не выполнены.
+        store.edit { it[key] = """{"version":2,"highestUnlockedLevel":2}""" }
+        val alreadyOpen = repository.submitCampaignAnswerWithTransitions(campaign, 1, "крот", index)
+        assertEquals(2, alreadyOpen.submission.evaluation.newlyCompletedTaskIds.size)
+        assertFalse(alreadyOpen.openedNextLevel)
+        assertFalse(alreadyOpen.reachedFinale)
+    }
+
     /** Сбой и барьер расположены после transform, но до реального коммита DataStore. */
     private class ControlledStore(private val delegate: DataStore<Preferences>) : DataStore<Preferences> {
         val calls = AtomicInteger()

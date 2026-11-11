@@ -59,6 +59,7 @@ class GameNavigationTest {
         val total = container.wordRepository.startGame(source()).total
         compose.onNodeWithText("1 / $total").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Закрыть").performScrollTo().performClick()
+        compose.onNodeWithTag("level_found_group_3").performScrollTo().performClick()
         compose.onNodeWithText("пар").performScrollTo().performClick()
         val meaning = container.definitionsRepository.definitionsFor("пар").first().text
         compose.waitUntil(10_000) { compose.onAllNodesWithText(meaning, substring = true).fetchSemanticsNodes().isNotEmpty() }

@@ -28,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,7 +96,7 @@ fun GameRoute(onReturnLevels: (Int) -> Unit) {
     }
     LaunchedEffect(state.returnLevels) { if (state.returnLevels) onReturnLevels(state.levelsMessage) }
     GameScreen(state, model::onInputChanged, model::onSubmit, model::onHint, model::onDefinition,
-        model::onDialog, model::onDismissDialog, model::onRetry, notice)
+        model::onDialog, model::onDismissDialog, model::onRetry, notice, model::onDismissExplanations)
 }
 
 @Composable
@@ -109,6 +110,7 @@ fun GameScreen(
     onDismissDialog: () -> Unit,
     onRetry: () -> Unit,
     notice: GameMessage? = null,
+    onDismissExplanations: () -> Unit = {},
 ) {
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -124,14 +126,21 @@ fun GameScreen(
             }
             val game = state.game
             if (game != null) {
+                state.campaignLevel?.let { current ->
+                    Text(stringResource(R.string.game_level_header, gameStageName(current.level.stage),
+                        current.level.number, state.totalLevels), Modifier.testTag("level_header"),
+                        style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(if (current.level.number == state.totalLevels) R.string.game_level_final_threshold
+                        else R.string.game_level_threshold, current.level.requiredStars, current.level.maxStars),
+                        Modifier.testTag("level_difficulty"))
+                    Text(stringResource(R.string.level_stars_progress, current.completedTaskIds.size, current.level.maxStars))
+                    CampaignTasks(state)
+                }
                 LetterTiles(game.word)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.game_counts, game.total, RussianPlural.words(game.total), game.foundCount),
                         style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic))
                     if (state.level != null) StarsRow(state.levelProgress, onClick = { onDialog(GameDialog.Tasks) })
-                    state.campaignLevel?.let { current ->
-                        Text(stringResource(R.string.level_stars_progress, current.completedTaskIds.size, current.level.maxStars))
-                    }
                 }
                 state.message?.let { GameBanner(it) }
                 notice?.let { GameBanner(it) }
@@ -146,7 +155,18 @@ fun GameScreen(
                     if (state.busy) GameLoading(stringResource(R.string.game_saving))
                 }
                 Text(stringResource(R.string.found_words), style = MaterialTheme.typography.titleMedium)
-                WordLinks(game.found, onDefinition)
+                for ((length, found) in game.found.groupBy { it.length }.toSortedMap()) {
+                    var expanded by rememberSaveable(game.word, length) { mutableStateOf(false) }
+                    Column {
+                        TextButton({ expanded = !expanded }, Modifier.testTag("level_found_group_$length").heightIn(min = 48.dp)) {
+                            Text(stringResource(R.string.game_found_group, length,
+                                RussianPlural.form(length, stringResource(R.string.game_letter_one),
+                                    stringResource(R.string.game_letter_few), stringResource(R.string.hint_letter_genitive_many)),
+                                found.size, stringResource(if (expanded) R.string.game_group_close else R.string.game_group_open)))
+                        }
+                        if (expanded) WordLinks(found, onDefinition)
+                    }
+                }
                 if (state.hintLoading) GameLoading(stringResource(R.string.hint_loading))
                 state.hint?.let { hint ->
                     Column(Modifier.testTag("game_hint"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -176,10 +196,16 @@ fun GameScreen(
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     GameAction(stringResource(R.string.show_hint), state.canPlay && !state.hintLoading, onHint, R.drawable.ic_help)
                     GameAction(stringResource(R.string.statistics), state.canPlay, { onDialog(GameDialog.Statistics) }, R.drawable.ic_statistics)
-                    if (state.level != null) GameAction(stringResource(R.string.tasks), state.canPlay,
+                    if (state.level != null || state.campaignLevel != null) GameAction(stringResource(R.string.tasks), state.canPlay,
                         { onDialog(GameDialog.Tasks) }, R.drawable.ic_star_outline)
                 }
             }
+        }
+    }
+    if (state.explanations.isNotEmpty() && !state.loading) {
+        WordsDialog(stringResource(R.string.game_explanations), onDismissExplanations) {
+            state.explanations.forEach { Text(stringResource(explanationText(it))) }
+            CloseDialogButton(onDismissExplanations)
         }
     }
     when (state.dialog) {
@@ -192,11 +218,21 @@ fun GameScreen(
                 if (word.isNotEmpty() && start >= 0) addStyle(SpanStyle(fontWeight = FontWeight.Bold), start, start + word.length)
             }
             WordsDialog(title, onDismissDialog, titleText = styled) {
-                StatsTable(state.statistics)
+                Column(Modifier.testTag("level_stats")) {
+                    StatsTable(state.statistics, showRemaining = true)
+                    state.campaignLevel?.hints?.let { hints ->
+                        Text(stringResource(R.string.game_stats_hints, hints.shownSteps, hints.paidUnits))
+                    }
+                }
                 CloseDialogButton(onDismissDialog)
             }
         }
-        GameDialog.Tasks -> state.level?.let { level ->
+        GameDialog.Tasks -> if (state.campaignLevel != null) {
+            WordsDialog(stringResource(R.string.tasks), onDismissDialog) {
+                CampaignTasks(state)
+                CloseDialogButton(onDismissDialog)
+            }
+        } else state.level?.let { level ->
             val found = state.game?.found.orEmpty()
             WordsDialog(stringResource(R.string.tasks), onDismissDialog) {
                 val remaining = LevelRules.remainingToComplete(level, found)
@@ -224,7 +260,7 @@ private fun GameBanner(message: GameMessage) {
 }
 
 @Composable
-private fun TaskRow(text: String, done: Boolean) {
+internal fun TaskRow(text: String, done: Boolean) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
         Icon(painterResource(if (done) R.drawable.ic_star_filled else R.drawable.ic_star_outline),
             stringResource(if (done) R.string.task_done else R.string.task_pending), Modifier.size(24.dp),
