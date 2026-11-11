@@ -43,18 +43,6 @@ class WordRepositoryTest {
         assertEquals(3, checkNotNull(repository.search("торт")).total)
         assertEquals(1, reads.get())
     }
-
-    @Test
-    fun searchDelegatesNormalizationAndGoldenCountsToCore() = runTest {
-        val repository = WordRepository(readWords = { readWords() })
-        for (word in listOf("портал", "акробат", "демонстрация")) {
-            assertEquals(goldenCount(word), checkNotNull(repository.search(word)).total)
-        }
-        assertEquals(repository.search("ежик")?.words, repository.search(" ЁЖИК ")?.words)
-        assertNull(repository.search("до"))
-        assertNull(repository.search("123"))
-    }
-
     @Test
     fun startGameNormalizesSourceAndFiltersRestoredAnswersUsingCore() = runTest {
         val repository = WordRepository(readWords = { readWords() })

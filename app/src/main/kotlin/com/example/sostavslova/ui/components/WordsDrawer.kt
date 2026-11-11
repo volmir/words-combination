@@ -38,7 +38,6 @@ fun WordsDrawer(
             )
             DrawerItem(Destination.Levels, currentRoute, onNavigate)
             DrawerSection(R.string.nav_services)
-            DrawerItem(Destination.WordSearch, currentRoute, onNavigate)
             if (BuildConfig.HAS_DEFINITIONS) {
                 DrawerItem(Destination.WordMeaning, currentRoute, onNavigate)
             }

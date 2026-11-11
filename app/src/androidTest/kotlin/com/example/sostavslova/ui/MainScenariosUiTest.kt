@@ -16,7 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** Основные сценарии кампании: выбор уровня, ответы, подсказка, возврат и поиск. */
+/** Основные сценарии кампании: выбор уровня, ответы, подсказка и возврат. */
 @RunWith(AndroidJUnit4::class)
 class MainScenariosUiTest {
     @get:Rule
@@ -161,23 +161,4 @@ class MainScenariosUiTest {
         compose.onNodeWithTag("level_2").assertIsNotEnabled()
     }
 
-    /**
-     * Сценарий 6: Поиск слов: «акробат» → 100 слов.
-     */
-    @Test
-    fun scenario6_wordSearchAkrobatReturns100Words() = runTest {
-        compose.onNodeWithContentDescription("Открыть меню").performClick()
-        compose.onNodeWithText("Поиск слов").performClick()
-
-        compose.waitUntil(10_000) {
-            compose.onAllNodesWithTag("word_search_screen").fetchSemanticsNodes().isNotEmpty()
-        }
-
-        compose.onNode(hasSetTextAction()).performTextReplacement("акробат")
-        compose.onNode(hasSetTextAction()).performImeAction()
-
-        awaitText("Все слова, которые можно составить из \"акробат\"")
-        val result = requireNotNull(container.wordRepository.search("акробат"))
-        awaitText("${result.total} ${com.example.sostavslova.core.RussianPlural.words(result.total)}", substring = true)
-    }
 }

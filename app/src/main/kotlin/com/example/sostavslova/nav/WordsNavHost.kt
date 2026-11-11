@@ -40,7 +40,6 @@ fun WordsNavHost(navController: NavHostController, modifier: Modifier = Modifier
         ) {
             GameRoute { message -> navController.returnToLevels(message) }
         }
-        composable(Destination.WordSearch.route) { WordSearchScreen() }
         composable(Destination.WordMeaning.route) { WordMeaningScreen() }
         composable(Destination.Rules.route) { RulesScreen() }
         composable(Destination.About.route) { AboutScreen() }

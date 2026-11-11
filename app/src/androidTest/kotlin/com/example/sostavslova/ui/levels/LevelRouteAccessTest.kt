@@ -57,9 +57,8 @@ class LevelRouteAccessTest {
         compose.onNodeWithTag("game_screen").assertIsDisplayed()
     }
 
-    @Test fun backFromLinkedLevelReturnsToMapEvenWhenLinkOpenedOverSearch() {
+    @Test fun backFromLinkedLevelReturnsToMap() {
         compose.runOnIdle {
-            nav.navigate(com.example.sostavslova.nav.Destination.WordSearch.route)
             nav.navigate(Uri.parse("sostavslova://level/1"))
         }
         compose.waitUntil(10_000) { compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() &&
@@ -67,7 +66,6 @@ class LevelRouteAccessTest {
         compose.runOnIdle { back.onBackPressed() }
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("levels_screen").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("levels_screen").assertIsDisplayed()
-        compose.onNodeWithTag("word_search_screen").assertDoesNotExist()
     }
 
     private fun awaitMapMessage(text: String) {

@@ -5,7 +5,6 @@
     <string name="open_menu">Открыть меню</string>
     <string name="nav_levels">Прохождение</string>
     <string name="nav_services">Сервисы</string>
-    <string name="nav_word_search">Поиск слов</string>
     <string name="nav_word_meaning">Значение слова</string>
     <string name="nav_rules">Правила</string>
     <string name="nav_about">Об игре</string>
@@ -76,9 +75,6 @@
     <string name="game_save_error">Не удалось сохранить прогресс. Попробуйте ещё раз.</string>
     <string name="search_button">Поиск</string>
     <string name="nothing_found">Ничего не найдено</string>
-    <string name="word_search_result_title">Все слова, которые можно составить из \"%1$s\"</string>
-    <string name="word_search_summary">Из \"%1$s\" можно составить %2$d %3$s из %4$s букв</string>
-    <string name="word_search_group_header">Слова из %1$d %2$s, составленные из комбинации \"%3$s\" (%4$d %5$s):</string>
 
     <!-- Правила -->
     <string name="rules_title">Правила игры</string>

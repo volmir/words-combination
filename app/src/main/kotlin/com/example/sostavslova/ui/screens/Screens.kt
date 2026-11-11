@@ -40,9 +40,6 @@ import com.example.sostavslova.ui.components.Well
 import com.example.sostavslova.ui.theme.WordsColors
 
 @Composable
-fun WordSearchScreen() = com.example.sostavslova.ui.search.WordSearchRoute()
-
-@Composable
 fun WordMeaningScreen() = com.example.sostavslova.ui.meaning.WordMeaningRoute()
 
 @Composable
