@@ -7,6 +7,7 @@
 инъекционным `executor` провайдеров, чтобы считать фактические батчи модели без
 сети и платных вызовов.
 """
+import copy
 import json
 import os
 import signal
@@ -39,10 +40,25 @@ ANSWERS = ["рана", "дар", "арка", "изба", "губа", "мили",
 ANSWERS_NO_SOFT_SIGN = ["рана", "дар", "арка", "изба", "губа", "мили", "лета", "эфыю",
                         "часик", "поча", "ражка", "жарая", "шерблю", "плыл", "слово", "пара",
                         "пункт", "толк", "свет", "совет", "роли", "травя"]
+DEFAULT_PLAN_BANDS = [
+    {"first": 1, "last": 5, "min": 1, "max": 3},
+    {"first": 6, "last": 10, "min": 1, "max": 3},
+    {"first": 11, "last": 15, "min": 1, "max": 3},
+    {"first": 16, "last": 20, "min": 1, "max": 3},
+    {"first": 21, "last": 25, "min": 1, "max": 3},
+    {"first": 26, "last": 30, "min": 9, "max": 12},
+]
+THEME_SOURCE = "хлопкопункт"
+THEME_ANSWERS = ["хлоп", "клоп", "лук", "ток", "кот", "пот", "полк", "клок", "толк", "пункт"]
 
 
 class SelectivePatchSetup:
     """Общая установка синтетического конвейера; тесты живут в подклассах."""
+
+    # Сценарии SEL-06 меняют только синтетический вход, не пороги кампании.
+    fixture_sources = None
+    fixture_answers = None
+    planning_bands = DEFAULT_PLAN_BANDS
 
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
@@ -50,8 +66,10 @@ class SelectivePatchSetup:
         self.root = Path(temporary.name)
         if not hasattr(self, "soft_sign"):
             self.soft_sign = True
-        self.sources = LEGACY_SOURCES if self.soft_sign else LEGACY_SOURCES_NO_SOFT_SIGN
-        self.answers = ANSWERS if self.soft_sign else ANSWERS_NO_SOFT_SIGN
+        self.sources = self.fixture_sources or (LEGACY_SOURCES if self.soft_sign
+                                                else LEGACY_SOURCES_NO_SOFT_SIGN)
+        self.answers = self.fixture_answers or (ANSWERS if self.soft_sign
+                                                else ANSWERS_NO_SOFT_SIGN)
         self.words = sorted(set(self.sources) | set(self.answers) | pipe.suitability.PREFERRED_SOURCES)
         self.installed = self.root / "installed"
         self.installed.mkdir()
@@ -74,6 +92,7 @@ class SelectivePatchSetup:
                             total_time_budget=None)
         self.gen_valid = True
         self.executor_calls = []
+        self.executor_requests = []
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
         self.stack.enter_context(patch.object(pipe, "LEGACY", self.legacy))
@@ -129,21 +148,14 @@ class SelectivePatchSetup:
                          {"first": 26, "last": 30, "min": 1, "max": 10}]
         return base
 
-    @staticmethod
-    def write_plan_configs(root):
-        """Этапы 1–5 с малыми окнами; Мастер (9–12) недостижим — без запросов T6."""
+    def write_plan_configs(self, root):
+        """Этапы 1–5 с малыми окнами; сценарий T6 расширяет только окно Мастера."""
         config = {"schema": "semantic-request-plan-config-v1", "seed": 20261113,
                   "carriers_per_letter": 3, "stage_candidates_per_band": 12,
                   "iterations": 4, "new_decisions_per_iteration": 200,
-                  "planning_bands": [
-                      {"first": 1, "last": 5, "min": 1, "max": 3},
-                      {"first": 6, "last": 10, "min": 1, "max": 3},
-                      {"first": 11, "last": 15, "min": 1, "max": 3},
-                      {"first": 16, "last": 20, "min": 1, "max": 3},
-                      {"first": 21, "last": 25, "min": 1, "max": 3},
-                      {"first": 26, "last": 30, "min": 9, "max": 12}],
+                  "planning_bands": copy.deepcopy(self.planning_bands),
                   "planning_bands_override": True,
-                  "rationale": {"planning_bands": "синтетические окна SEL-05"}}
+                  "rationale": {"planning_bands": "синтетические окна SEL-05/SEL-06"}}
         path = root / "plan-config.json"
         atomic_json(path, config)
         return path
@@ -189,6 +201,10 @@ class SelectivePatchSetup:
             if isinstance(taxonomy, dict) and taxonomy.get("version") == "word-suitability-v1":
                 def suitability_executor(request, schema):
                     self.executor_calls.append(request["task"])
+                    self.executor_requests.append(dict(
+                        task=request["task"],
+                        roles=sorted({item["role"] for item in request["items"]}),
+                        items=[dict(item) for item in request["items"]]))
                     return {"results": [dict(id=item["id"], status="suitable",
                                              reason="Синтетическая оценка",
                                              assessment_version="word-suitability-v1")
@@ -197,6 +213,10 @@ class SelectivePatchSetup:
             else:
                 def category_executor(request, schema):
                     self.executor_calls.append(request["task"])
+                    self.executor_requests.append(dict(
+                        task=request["task"],
+                        roles=[],
+                        items=[dict(item) for item in request["items"]]))
                     return {"results": [dict(id=item["id"], category="other", confidence=0.95)
                                         for item in request["items"]]}
                 kwargs["executor"] = category_executor
@@ -212,6 +232,30 @@ class SelectivePatchSetup:
     def report(self):
         workspace = next((self.args.cache / "runs").iterdir())
         return pipe.read_json(workspace / "selective_report.json")
+
+    def installed_bytes(self):
+        return {str(path.relative_to(self.installed)): path.read_bytes()
+                for path in sorted(self.installed.rglob("*")) if path.is_file()}
+
+    @staticmethod
+    def report_outcome(report):
+        """Стабильная часть отчёта: решения, проверки и хэши, без часов и счётчиков кэша."""
+        return {
+            "schema": report["schema"],
+            "status": report["status"],
+            "inputs": report["inputs"],
+            "budget": report["budget"],
+            "rounds": report["rounds"],
+            "checks": report["checks"],
+            "failures": report["failures"],
+            "deficits": report["deficits"],
+            "hashes": report["hashes"],
+            "accuracy": report["accuracy"],
+            "iterations": report["totals"]["iterations"],
+        }
+
+    def workspace(self):
+        return next((self.args.cache / "runs").iterdir())
 
 
 class SelectivePipelineTest(SelectivePatchSetup, unittest.TestCase):
@@ -234,10 +278,13 @@ class SelectivePipelineTest(SelectivePatchSetup, unittest.TestCase):
         self.assertTrue(report["checks"]["verify_package"])
         self.assertTrue(report["hashes"])
         self.assertGreater(self.validation.call_count, 0)
-        # Готовый пакет воспроизводится повторным прогоном без новых вызовов.
-        first = self.package_bytes()
+        # (а) Готовый пакет воспроизводится повторным прогоном без новых вызовов.
+        first, first_report = self.package_bytes(), self.report_outcome(report)
+        calls = len(self.executor_calls)
         pipe.prepare(self.args)
+        self.assertEqual(calls, len(self.executor_calls))
         self.assertEqual(first, self.package_bytes())
+        self.assertEqual(first_report, self.report_outcome(self.report()))
 
     def test_unready_campaign_requests_one_limited_batch_and_reports(self):
         self.frequencies["рана"] = 50
@@ -384,6 +431,19 @@ class SelectivePipelineTest(SelectivePatchSetup, unittest.TestCase):
         self.assertEqual("prepared", result["status"])
         self.assertFalse(any((self.args.cache / "selective-runs").rglob("journal.json")))
 
+    def test_gen_contracts_and_production_bands_are_not_relaxed(self):
+        # В setUp полосы подменены синтетикой; здесь читаем закреплённые файлы.
+        selection = pipe.read_json(pipe.selection.CONFIG)
+        campaign = pipe.read_json(pipe.campaign.CONFIG)
+        planner = pipe.planner.load_config(pipe.planner.CONFIG)
+        self.assertEqual(30, selection["levels"])
+        self.assertEqual((8, 15), (selection["retain_min"], selection["retain_max"]))
+        self.assertEqual((0.03, 0.15), (selection["mean_jaccard_max"], selection["max_jaccard_max"]))
+        self.assertEqual(40, campaign["category_global_min"])
+        self.assertEqual(32, len(pipe.selection.read_alphabet()))
+        self.assertEqual(selection["bands"], planner["planning_bands"])
+        self.assertFalse(planner["planning_bands_override"])
+
     def test_config_budget_and_journal_machinery(self):
         document = pipe.load_selective_config()
         self.assertEqual("selective-mode-config-v1", document["schema"])
@@ -428,6 +488,200 @@ class SelectivePipelineTest(SelectivePatchSetup, unittest.TestCase):
                                                arguments, False)
             self.assertEqual(1, len(seen))
             self.assertEqual(0, outcome["pending"])
+
+
+class ThemeRequestTest(SelectivePatchSetup, unittest.TestCase):
+    """(б) T6: только неизвестные ответы выбранного исходника Мастера."""
+
+    fixture_sources = LEGACY_SOURCES + [THEME_SOURCE]
+    fixture_answers = ANSWERS + [word for word in THEME_ANSWERS if word not in ANSWERS]
+    planning_bands = [
+        {"first": 1, "last": 5, "min": 1, "max": 3},
+        {"first": 6, "last": 10, "min": 1, "max": 3},
+        {"first": 11, "last": 15, "min": 1, "max": 3},
+        {"first": 16, "last": 20, "min": 1, "max": 3},
+        {"first": 21, "last": 25, "min": 1, "max": 3},
+        {"first": 26, "last": 30, "min": 10, "max": 10},
+    ]
+
+    def test_theme_requests_only_master_answers_and_repeat_is_cached(self):
+        self.install_fake_executors()
+        self.args.iterations = 1
+        result = pipe.prepare(self.args)
+        self.assertEqual("prepared", result["status"])
+        self.assertEqual(1, len(self.executor_calls))
+        request = self.executor_requests[0]
+        self.assertEqual("word-category-v1", request["task"])
+        self.assertEqual(sorted(THEME_ANSWERS), sorted(item["word"] for item in request["items"]))
+        self.assertEqual([], [row for row in self.executor_requests if row["task"] != "word-category-v1"])
+        plan = pipe.read_json(self.workspace() / "round-01/plan-01/request_plan.json")
+        self.assertEqual(sorted(THEME_ANSWERS), sorted(row["word"] for row in plan["category"]["requests"]))
+        self.assertEqual([], plan["suitability"]["requests"])
+        report = self.report()
+        self.assertEqual(len(THEME_ANSWERS), report["totals"]["new_ai_categories"])
+        self.assertEqual(0, report["totals"]["pending_categories"])
+        self.assertEqual(0, report["totals"]["new_ai_suitability"])
+        first, first_report = self.package_bytes(), self.report_outcome(report)
+        calls = len(self.executor_calls)
+        pipe.prepare(self.args)
+        self.assertEqual(calls, len(self.executor_calls))
+        self.assertEqual(first, self.package_bytes())
+        self.assertEqual(first_report, self.report_outcome(self.report()))
+        self.assertEqual(len(THEME_ANSWERS), self.report()["totals"]["cached_categories"])
+
+    def test_theme_without_network_stays_unknown_and_never_other(self):
+        self.args.iterations = 1
+        self.gen_valid = False
+        result = pipe.prepare(self.args)
+        self.assertEqual("NEEDS_MORE_EVIDENCE", result["status"])
+        self.assertEqual([], self.executor_calls)
+        plan = pipe.read_json(self.workspace() / "round-01/plan-01/request_plan.json")
+        self.assertEqual(sorted(THEME_ANSWERS), sorted(row["word"] for row in plan["category"]["requests"]))
+        index = pipe.read_json(self.workspace() / "round-01/categories/category_index.json")
+        report = pipe.read_json(result["report"])
+        self.assertEqual(len(THEME_ANSWERS), report["totals"]["pending_categories"])
+        self.assertEqual(0, report["totals"]["new_ai_categories"])
+        for word in THEME_ANSWERS:
+            metadata = index["word_metadata"][word]
+            self.assertEqual("other", metadata["category"])
+            self.assertTrue(metadata["category_source"].startswith("unknown:"), metadata)
+            self.assertNotEqual("unknown:ai_other", metadata["category_source"])
+
+    def test_changed_prompt_does_not_reuse_old_snapshot_or_cache(self):
+        result, calls, bundle = self.first_theme_run()
+        self.assertEqual("prepared", result["status"])
+        self.gen_valid = False
+        replay = self.changed_replay("prompt", bundle)
+        with patch.object(game_data_providers.CategoryProvider, "prompt",
+                          "SEL-06: изменённая версия промпта"):
+            outcome = pipe.prepare(replay)
+        self.assertEqual("NEEDS_MORE_EVIDENCE", outcome["status"])
+        self.assertEqual(calls, len(self.executor_calls))
+        report = pipe.read_json(outcome["report"])
+        self.assertEqual(0, report["totals"]["new_ai_categories"])
+        self.assertGreater(report["totals"]["pending_categories"], 0)
+
+    def test_changed_taxonomy_does_not_reuse_old_snapshot_or_cache(self):
+        result, calls, bundle = self.first_theme_run()
+        self.assertEqual("prepared", result["status"])
+        self.gen_valid = False
+        replay = self.changed_replay("taxonomy", bundle)
+        original = pipe.classification.thematic.load_taxonomy
+
+        def extended(path=pipe.classification.thematic.TAXONOMY_PATH):
+            taxonomy = original(path)
+            taxonomy["sel06_synthetic"] = "Синтетическая рубрика SEL-06"
+            return taxonomy
+
+        with patch.object(pipe.classification.thematic, "load_taxonomy", side_effect=extended):
+            outcome = pipe.prepare(replay)
+        self.assertEqual("NEEDS_MORE_EVIDENCE", outcome["status"])
+        self.assertEqual(calls, len(self.executor_calls))
+        report = pipe.read_json(outcome["report"])
+        self.assertEqual(0, report["totals"]["new_ai_categories"])
+        self.assertGreater(report["totals"]["pending_categories"], 0)
+
+    def first_theme_run(self):
+        self.install_fake_executors()
+        self.args.iterations = 1
+        result = pipe.prepare(self.args)
+        bundle = (self.args.package / "category_decisions.json").read_bytes()
+        return result, len(self.executor_calls), bundle
+
+    def changed_replay(self, label, bundle):
+        replay = pipe.NS(**vars(self.args))
+        replay.cache = self.root / ("changed-" + label + "-cache")
+        replay.package = self.root / ("changed-" + label + "-package")
+        replay.allow_network = False
+        replay.category_snapshot = self.root / ("old-" + label + "-category.json")
+        replay.category_snapshot.write_bytes(bundle)
+        return replay
+
+
+class TargetRoleTest(SelectivePatchSetup, unittest.TestCase):
+    """(в) и (г): новые цели T3/T4 и исчерпанный бюджет."""
+
+    def setUp(self):
+        super().setUp()
+        self.frequencies["рана"] = 50
+        self.frequencies["часик"] = 50
+        self.write_freq()
+        self.pin_frequency()
+
+    def test_new_targets_request_only_target_roles_and_repeat_is_cached(self):
+        self.install_fake_executors()
+        self.args.iterations = 1
+        result = pipe.prepare(self.args)
+        self.assertEqual("prepared", result["status"])
+        self.assertEqual(1, len(self.executor_calls))
+        request = self.executor_requests[0]
+        self.assertEqual("word-suitability-v1", request["task"])
+        self.assertEqual(["target"], request["roles"])
+        self.assertEqual(["рана", "часик"], sorted(item["word"] for item in request["items"]))
+        self.assertEqual([], [row for row in self.executor_requests if row["task"] != "word-suitability-v1"])
+        plan = pipe.read_json(self.workspace() / "round-01/plan-01/request_plan.json")
+        self.assertEqual([], plan["category"]["requests"])
+        rows = {(row["word"], row["role"]): row for row in plan["suitability"]["requests"]}
+        self.assertEqual({("рана", "target"), ("часик", "target")}, set(rows))
+        self.assertTrue(all(row["role"] == "target" for row in rows.values()))
+        self.assertTrue(all(any(reason["code"] == "assignment" for reason in row["reasons"])
+                            for row in rows.values()))
+        self.assertEqual(0, self.report()["totals"]["new_ai_suitability_source"])
+        first, first_report = self.package_bytes(), self.report_outcome(self.report())
+        calls = len(self.executor_calls)
+        pipe.prepare(self.args)
+        self.assertEqual(calls, len(self.executor_calls))
+        self.assertEqual(first, self.package_bytes())
+        self.assertEqual(first_report, self.report_outcome(self.report()))
+
+    def test_exhausted_budget_keeps_needs_more_evidence_and_data_untouched(self):
+        self.install_fake_executors()
+        self.args.iterations = 1
+        self.args.total_new_decisions = 1
+        self.gen_valid = False
+        before = self.installed_bytes()
+        result = pipe.prepare(self.args)
+        self.assertEqual("NEEDS_MORE_EVIDENCE", result["status"])
+        self.assertEqual(1, len(self.executor_calls))
+        self.assertEqual(1, len(self.executor_requests[0]["items"]))
+        self.assertEqual(before, self.installed_bytes())
+        self.assertFalse((self.args.package / "manifest.json").exists())
+        first = self.report()
+        self.assertEqual(1, first["totals"]["new_ai_suitability"])
+        self.assertGreater(first["totals"]["pending_suitability"], 0)
+        first_report = self.report_outcome(first)
+        calls = len(self.executor_calls)
+        # Повтор с тем же кэшем/журналом: совокупный лимит уже израсходован.
+        pipe.prepare(self.args)
+        self.assertEqual(calls, len(self.executor_calls))
+        self.assertEqual(before, self.installed_bytes())
+        second = self.report()
+        self.assertEqual(0, second["totals"]["new_ai_suitability"])
+        self.assertEqual(first["totals"]["pending_suitability"],
+                         second["totals"]["pending_suitability"])
+        # Повтор лишь добавляет диагностику исчерпанного бюджета; решения,
+        # проверки, дефициты GEN и хэши остаются прежними.
+        repeated = self.report_outcome(second)
+        repeated["deficits"] = [row for row in repeated["deficits"]
+                                if row["reason_code"] != "no_progress"]
+        self.assertEqual(first_report, repeated)
+        self.assertTrue(any(row["reason_code"] == "no_progress" for row in second["deficits"]))
+
+    def test_gen04_gen05_rejection_never_publishes(self):
+        self.install_fake_executors()
+        self.args.iterations = 1
+        self.gen_valid = True
+        before = self.installed_bytes()
+        with patch.object(pipe.rebalance, "run",
+                          side_effect=lambda args: {"installable": False, "campaign": {}}):
+            result = pipe.prepare(self.args)
+        self.assertEqual("NEEDS_MORE_EVIDENCE", result["status"])
+        self.assertEqual(before, self.installed_bytes())
+        self.assertFalse((self.args.package / "manifest.json").exists())
+        report = pipe.read_json(result["report"])
+        self.assertTrue(any("GEN-04/GEN-05" in failure for failure in report["failures"]))
+        self.assertFalse(report["checks"]["verify_package"])
+        self.assertEqual(0, self.validation.call_count)
 
 
 class InfeasibleFixtureTest(SelectivePatchSetup, unittest.TestCase):
