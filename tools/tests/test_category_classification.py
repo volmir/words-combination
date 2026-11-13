@@ -43,8 +43,8 @@ class CategoryClassificationTest(unittest.TestCase):
         atomic_json(self.root / "input.json", self.index)
         values = dict(input=self.root / "input.json", taxonomy=thematic.TAXONOMY_PATH,
                       cache=self.root / "cache", reports=self.root / "reports", model="configured-model",
-                      allow_network=False, batch_size=2, timeout=30, retries=0, min_confidence=None,
-                      snapshot=None, gold=None)
+                      provider="codex", allow_network=False, batch_size=2, timeout=30, retries=0,
+                      min_confidence=None, snapshot=None, gold=None)
         values.update(kwargs)
         return argparse.Namespace(**values)
 
@@ -189,13 +189,58 @@ class CategoryClassificationTest(unittest.TestCase):
         self.assertEqual((3, 0), (len(answers), pending))
         self.assertEqual(2, run.call_count)
 
+    def test_opencode_cli_transport_selects_default_executor(self):
+        provider = self.provider(provider="opencode", executor=None)
+        self.assertEqual(CategoryProvider.opencode_complete, provider.executor.__func__)
+
+    def test_opencode_cli_transport_denies_tools_and_parses_last_text(self):
+        provider = self.provider(provider="opencode", executor=None)
+        request = provider.request_payload(self.items[:2])
+        schema = provider.schema_builder(self.taxonomy)
+        answer = json.dumps(reply(request, schema), ensure_ascii=False)
+        events = "\n".join([
+            json.dumps({"type": "step_start", "part": {"type": "step-start"}}),
+            json.dumps({"type": "text", "part": {"type": "text", "text": "рассуждение"}}),
+            json.dumps({"type": "text", "part": {"type": "text", "text": "```json\n" + answer + "\n```"}}),
+        ]) + "\n"
+
+        def execute(command, **kwargs):
+            self.assertEqual("opencode", command[0])
+            self.assertIn("--agent", command)
+            self.assertIn("--format", command)
+            self.assertIn("json", command)
+            self.assertEqual("configured-model", command[command.index("--model") + 1])
+            self.assertNotEqual(classify.ROOT, kwargs["cwd"])
+            body = json.loads((Path(kwargs["cwd"]) / "opencode.json").read_text(encoding="utf-8"))
+            denied = {(rule["action"], rule["effect"]) for rule in body["permissions"]}
+            self.assertIn(("bash", "deny"), denied)
+            self.assertIn(("edit", "deny"), denied)
+            self.assertIn(("webfetch", "deny"), denied)
+            self.assertIn("Схема ответа", kwargs["input"])
+            return subprocess.CompletedProcess(command, 0, stdout=events, stderr="")
+
+        with patch("game_data_providers.subprocess.run", side_effect=execute) as run:
+            payload = provider.opencode_complete(request, schema)
+        self.assertEqual(reply(request, schema), payload)
+        self.assertEqual(1, run.call_count)
+
+    def test_resume_command_pins_provider(self):
+        args = self.args()
+        self.assertIn("--provider codex", classify.resume_command(args, "configured-model", "codex"))
+        self.assertIn("--provider opencode", classify.resume_command(args, "configured-model", "opencode"))
+
     def test_cli_garbage_timeout_and_missing_executable_are_clean_failures(self):
-        for error in (subprocess.TimeoutExpired("codex", 1), FileNotFoundError("secret"),
-                      ValueError("garbage")):
+        for error, message in (
+                (subprocess.TimeoutExpired("secret", 1), "таймаут 120 с"),
+                (FileNotFoundError("secret"), "не найден исполняемый файл или файл ответа"),
+                (subprocess.CalledProcessError(7, "secret", stderr="secret"), "код завершения 7"),
+                (ValueError("secret"), "невалидный JSON"),
+                (PermissionError("secret"), "ошибка запуска или чтения ответа")):
             with self.subTest(error=error):
                 executor = Mock(side_effect=error)
                 answers, pending, reason = self.provider(executor=executor).exchange(self.items)
                 self.assertEqual((0, 3), (len(answers), pending))
+                self.assertIn(message, reason)
                 self.assertNotIn("secret", reason)
 
     def test_snapshot_roundtrip_without_any_provider_or_credentials(self):

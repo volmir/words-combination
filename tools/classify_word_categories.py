@@ -182,10 +182,10 @@ def write_report(path, output, taxonomy, snapshot, pending, accuracy=None, resum
             "pending": pending, "snapshot_sha256": snapshot["sha256"]}
 
 
-def resume_command(args, model):
+def resume_command(args, model, provider):
     command = ["python3", str(ROOT / "tools/classify_word_categories.py"), "--input", str(args.input.resolve()),
                "--taxonomy", str(args.taxonomy.resolve()), "--cache", str(args.cache.resolve()),
-               "--reports", str(args.reports.resolve()), "--model", model,
+               "--reports", str(args.reports.resolve()), "--model", model, "--provider", provider,
                "--batch-size", str(args.batch_size), "--timeout", str(args.timeout), "--retries", str(args.retries),
                "--min-confidence", str(args.min_confidence), "--allow-network"]
     command += ["--snapshot", str((args.reports / "category_decisions.json").resolve())]
@@ -211,7 +211,8 @@ def run(args):
         raise ValueError("Снимок несовместим: изменён порог уверенности")
     model = args.model or (snapshot["context"].get("model") if snapshot is not None else None)
     provider = CategoryProvider(args.cache, model, taxonomy, allow_network=args.allow_network,
-                                batch_size=args.batch_size, timeout=args.timeout, retries=args.retries)
+                                batch_size=args.batch_size, timeout=args.timeout, retries=args.retries,
+                                provider=args.provider)
     if snapshot is not None:
         import_snapshot(snapshot, provider, index, items)
     answers, pending, error = provider.exchange(items)
@@ -220,7 +221,7 @@ def run(args):
     output["classification"]["snapshot_sha256"] = snapshot["sha256"]
     atomic_json(args.reports / "category_index.json", output)
     accuracy = independent_accuracy(args.gold, output["word_metadata"], taxonomy)
-    resume = resume_command(args, model) if pending else None
+    resume = resume_command(args, model, args.provider) if pending else None
     summary = write_report(args.reports / "CATEGORIES.md", output, taxonomy, snapshot, pending, accuracy, resume)
     summary.update(error=error, resume=resume)
     atomic_json(args.reports / "summary.json", summary)
@@ -235,6 +236,7 @@ def main():
     parser.add_argument("--reports", type=Path, default=ROOT / "build/reports/categories")
     parser.add_argument("--snapshot", type=Path)
     parser.add_argument("--model", default=os.environ.get("CATEGORY_MODEL"))
+    parser.add_argument("--provider", choices=("codex", "opencode"), default="codex")
     parser.add_argument("--allow-network", action="store_true")
     parser.add_argument("--batch-size", type=int, default=20)
     parser.add_argument("--timeout", type=int, default=120)

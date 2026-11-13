@@ -184,7 +184,8 @@ def run(args):
         raise ValueError("Некорректный снимок пригодности")
     model = args.model or (snapshot["context"].get("model") if snapshot is not None else None)
     provider = SuitabilityProvider(args.cache, model, allow_network=args.allow_network,
-                                   batch_size=args.batch_size, timeout=args.timeout, retries=args.retries)
+                                   batch_size=args.batch_size, timeout=args.timeout, retries=args.retries,
+                                   provider=args.provider)
     if snapshot is not None:
         import_snapshot(snapshot, provider, document, disputed)
     answers, pending, error = provider.exchange(disputed)
@@ -206,6 +207,7 @@ def main():
     parser.add_argument("--reports", type=Path, default=ROOT / "build/reports/suitability")
     parser.add_argument("--snapshot", type=Path)
     parser.add_argument("--model", default=os.environ.get("CATEGORY_MODEL"))
+    parser.add_argument("--provider", choices=("codex", "opencode"), default="codex")
     parser.add_argument("--allow-network", action="store_true")
     parser.add_argument("--batch-size", type=int, default=20)
     parser.add_argument("--timeout", type=int, default=120)

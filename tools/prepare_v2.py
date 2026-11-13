@@ -117,7 +117,8 @@ def jvm_hints(args, database, words, directory):
 
 def ai_args(args, input_path, reports, cache, snapshot):
     return NS(input=input_path, reports=reports, cache=cache, snapshot=snapshot,
-              model=args.model, allow_network=args.allow_network, batch_size=20, timeout=120, retries=2,
+              model=args.model, provider=getattr(args, 'provider', 'codex'),
+              allow_network=args.allow_network, batch_size=20, timeout=120, retries=2,
               taxonomy=TOOLS / 'categories.json', min_confidence=0.8, gold=None)
 
 
@@ -157,8 +158,9 @@ def automatic_decisions(run, arguments):
             raise ValueError('Пустой пакет замороженных решений')
         model = arguments.model or snapshots[-1].get('context', {}).get('model')
         semantic = incoming.get('schema') == 'word-suitability-input-v1'
-        provider = (suitability.SuitabilityProvider(arguments.cache, model) if semantic else
-                    classification.CategoryProvider(arguments.cache, model, classification.thematic.load_taxonomy(arguments.taxonomy)))
+        provider = (suitability.SuitabilityProvider(arguments.cache, model, provider=getattr(arguments, 'provider', 'codex')) if semantic else
+                    classification.CategoryProvider(arguments.cache, model, classification.thematic.load_taxonomy(arguments.taxonomy),
+                                                    provider=getattr(arguments, 'provider', 'codex')))
         policy = getattr(provider, 'snapshot_policy', {'min_confidence': arguments.min_confidence})
         items = ([i for i in suitability.input_items(incoming) if suitability.rule_decision(i) is None]
                  if semantic else classification.classification_items(incoming, provider.taxonomy))
@@ -402,7 +404,7 @@ def prepare(args):
             args.frequency_list = frequency.prepare(allow_network=args.allow_network, manifest=input_manifest)
         build_args.frequency_list = args.frequency_list
         inputs = dict(dump=sha(args.dump), frequency=sha(args.frequency_list), processors=processor_inputs(),
-                      manifest=manifest_sha, model=args.model)
+                      manifest=manifest_sha, model=args.model, provider=getattr(args, 'provider', 'codex'))
         # Persistent workspace and per-item caches survive failure; never depend
         # on a previous build/ directory. Successful package remains untouched.
         workspace = args.cache / 'runs' / json_digest(inputs)
@@ -498,6 +500,8 @@ def main():
     preparing.add_argument('--cache', type=Path, default=ROOT / '.local/v2-cache')
     preparing.add_argument('--installed', type=Path, default=ROOT / 'data', help='База версии БД, только чтение')
     preparing.add_argument('--model', default=os.environ.get('CATEGORY_MODEL'))
+    preparing.add_argument('--provider', choices=('codex', 'opencode'), default='codex',
+                           help='CLI исполнения ИИ-оценок LEX (Codex или OpenCode)')
     preparing.add_argument('--category-snapshot', type=Path)
     preparing.add_argument('--suitability-snapshot', type=Path)
     preparing.add_argument('--allow-network', action='store_true', help='Только FrequencyWords и модель LEX')

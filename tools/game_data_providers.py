@@ -332,6 +332,23 @@ def validate_category_results(payload, items, taxonomy):
     return payload["results"]
 
 
+def opencode_last_text(stdout):
+    """Финальный text-событие потока `openCode run --format json`."""
+    reply = None
+    for line in (stdout or "").splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("{"):
+            continue
+        try:
+            event = json.loads(stripped)
+        except ValueError:
+            continue
+        part = event.get("part") if isinstance(event, dict) else None
+        if isinstance(part, dict) and part.get("type") == "text" and isinstance(part.get("text"), str):
+            reply = part["text"]
+    return reply
+
+
 class CategoryProvider:
     """Per-word validated cache; only missing inputs are sent, bounded retries.
 
@@ -348,15 +365,15 @@ class CategoryProvider:
                  batch_size=20, timeout=120, retries=2, executor=None):
         if not isinstance(model, str) or not model.strip() or len(model) > 200:
             raise ValueError("Категории: задайте --model или CATEGORY_MODEL")
-        if provider != "codex":
-            raise ValueError("Категории: поддерживается уже авторизованный Codex CLI")
+        if provider not in ("codex", "opencode"):
+            raise ValueError("Категории: поддерживаются авторизованные CLI Codex и OpenCode")
         if (type(batch_size) is not int or not 1 <= batch_size <= 40 or
                 type(timeout) is not int or not 1 <= timeout <= 600 or
                 type(retries) is not int or not 0 <= retries <= 3):
             raise ValueError("Категории: batch-size 1–40, timeout 1–600, retries 0–3")
         self.cache, self.taxonomy = Path(cache), taxonomy
         self.allow_network, self.batch_size, self.timeout, self.retries = allow_network, batch_size, timeout, retries
-        self.executor = executor or self.codex_complete
+        self.executor = executor or (self.codex_complete if provider == "codex" else self.opencode_complete)
         self.context = {"task": self.task, "prompt_sha256": prompt_hash(self.prompt),
                         "taxonomy_sha256": json_digest(taxonomy), "schema_sha256": json_digest(self.schema_builder(taxonomy)),
                         "provider": provider, "model": model}
@@ -407,10 +424,21 @@ class CategoryProvider:
                     payload = self.executor(request, self.schema_builder(self.taxonomy))
                     results = self.validate_results(payload, batch, self.taxonomy)
                     break
-                except (ValueError, OSError, subprocess.SubprocessError):
+                except (ValueError, OSError, subprocess.SubprocessError) as error:
                     if attempt == self.retries:
                         # Do not leak CLI stderr, credentials, or raw remote output.
-                        return answers, len(items) - len(answers), "Codex CLI недоступен или вернул невалидный ответ"
+                        cli = "OpenCode CLI" if self.context["provider"] == "opencode" else "Codex CLI"
+                        if isinstance(error, subprocess.TimeoutExpired):
+                            reason = f"{cli}: таймаут {self.timeout} с"
+                        elif isinstance(error, FileNotFoundError):
+                            reason = f"{cli}: не найден исполняемый файл или файл ответа"
+                        elif isinstance(error, subprocess.CalledProcessError):
+                            reason = f"{cli}: код завершения {error.returncode}; проверьте доступ к модели и сеть в окружении запуска"
+                        elif isinstance(error, ValueError):
+                            reason = f"{cli}: невалидный JSON или ответ не соответствует схеме"
+                        else:
+                            reason = f"{cli}: ошибка запуска или чтения ответа"
+                        return answers, len(items) - len(answers), reason
             by_id = {result["id"]: result for result in results}
             for item in batch:
                 self.store(item, by_id[item["id"]])
@@ -440,3 +468,43 @@ class CategoryProvider:
             if output.stat().st_size > 100000:
                 raise ValueError("Категории: превышен размер ответа")
             return json.loads(output.read_text(encoding="utf-8"))
+
+    def opencode_complete(self, request, schema):
+        # Изолированный каталог + отключённые инструменты не пропускают файлы проекта,
+        # настроенные MCP-серверы, hooks и поиск в интернете во вход модели.
+        with tempfile.TemporaryDirectory(prefix="word-categories-") as directory:
+            root = Path(directory)
+            atomic_json(root / "opencode.json", {"permissions": [
+                {"action": "bash", "resource": "*", "effect": "deny"},
+                {"action": "edit", "resource": "*", "effect": "deny"},
+                {"action": "webfetch", "resource": "*", "effect": "deny"},
+                {"action": "websearch", "resource": "*", "effect": "deny"},
+                {"action": "browser", "resource": "*", "effect": "deny"},
+                {"action": "task", "resource": "*", "effect": "deny"},
+                {"action": "skill", "resource": "*", "effect": "deny"},
+                {"action": "question", "resource": "*", "effect": "deny"},
+            ]})
+            message = (request["prompt"] + "\n\n"
+                       "Верни строго один JSON-объект по схеме ответа, без пояснений, "
+                       "без Markdown и без обращений к инструментам.\n\n"
+                       "Схема ответа:\n" + json.dumps(schema, ensure_ascii=False) + "\n\n"
+                       "Вход:\n" + json.dumps(request, ensure_ascii=False))
+            command = ["opencode", "run", "--agent", "build", "--format", "json",
+                       "--model", self.context["model"]]
+            process = subprocess.run(command, input=message, text=True, cwd=root,
+                                     stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                     check=True, timeout=self.timeout)
+            text = opencode_last_text(process.stdout)
+            if text is None:
+                raise ValueError("Категории: OpenCode не вернул текстового ответа")
+            text = text.strip()
+            start, end = text.find("{"), text.rfind("}")
+            if start == -1 or end == -1 or end < start:
+                raise ValueError("Категории: OpenCode вернул невалидный JSON")
+            try:
+                payload = json.loads(text[start:end + 1])
+            except ValueError:
+                raise ValueError("Категории: OpenCode вернул невалидный JSON")
+            if not isinstance(payload, dict) or set(payload) != {"results"}:
+                raise ValueError("Категории: OpenCode вернул ответ не по схеме")
+            return payload
