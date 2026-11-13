@@ -428,6 +428,21 @@ class RequestPlanTest(unittest.TestCase):
         self.assertFalse(document["planning_bands_override"])
         self.assertEqual(document["planning_bands"], REAL_BANDS)
 
+    def test_read_hints_accepts_real_jvm_audit_rows(self):
+        path = self.root / "hints.jvm.jsonl"
+        path.write_text("\n".join([
+            json.dumps({"schema": "definition-hint-audit-v1"}),
+            json.dumps({"word": "аал", "hint": "Поселение сельского типа",
+                        "hint_before": "поселение сельского типа", "has_definition": True},
+                       ensure_ascii=False),
+            json.dumps({"word": "аба", "hint": None,
+                        "hint_before": None, "has_definition": False},
+                       ensure_ascii=False)]) + "\n", encoding="utf-8")
+        hints = plan.read_hints(path, {"аал", "аба"})
+        self.assertTrue(hints["аал"]["useful"])
+        self.assertFalse(hints["аба"]["useful"])
+        self.assertEqual(json_digest("Поселение сельского типа"), hints["аал"]["sha256"])
+
 
 if __name__ == "__main__":
     unittest.main()

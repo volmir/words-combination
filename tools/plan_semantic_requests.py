@@ -92,7 +92,8 @@ def read_hints(path, words):
         if not line.strip():
             continue
         row = json.loads(line)
-        if set(row) != {"word", "hint"}:
+        if (not isinstance(row, dict) or not {"word", "hint"} <= set(row) or
+                set(row) - {"word", "hint", "hint_before", "has_definition"}):
             raise ValueError(f"Невалидная строка подсказок {number}")
         word = normalize_form(row["word"])
         hint = row["hint"]

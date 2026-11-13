@@ -2,7 +2,8 @@
 
 Статус: **выборочный режим реализован и покрыт сквозными фикстурами**
 (`prepare_v2 prepare --selective`, SEL-05, команды и параметры — §11.6,
-проверки SEL-06 — §11.7) поверх подготовительных шагов SEL-02
+проверки SEL-06 — §11.7; первый реальный прогон SEL-R01 —
+`NEEDS_MORE_EVIDENCE`, §11.8) поверх подготовительных шагов SEL-02
 (выборочный проход LEX-03), SEL-03 (выборочный проход LEX-04) и SEL-04
 (детерминированный план запросов). Полный режим `prepare_v2 prepare` без
 `--selective` сохранён как прежнее строгое поведение и остаётся умолчанием.
@@ -997,8 +998,9 @@ python3 tools/plan_semantic_requests.py \
 | `tools/cache/word_categories/` | поштучные LEX-03 Codex | 5 262 решения `gpt-6.1-sol`; старый вход, не автоматически совместим с v2 |
 | `tools/cache/word_suitability/` | поштучные LEX-04 Codex | 16 588 решений `gpt-6.1-sol` |
 | `.local/data01-cache/categories/` | LEX-03 Codex для staging | 361 решение |
-| `.local/data01-oc-cache/categories/` | LEX-03 OpenCode `opencode/deepseek-v4.1-flash#max` | 300 решений; отдельный контекст, не смешивать с Codex |
-| `.local/data01-oc-cache/suitability/` | LEX-04 OpenCode | каталога нет; suitability-кэш OpenCode отсутствует |
+| `.local/data01-oc-cache/categories/` | LEX-03 OpenCode `opencode/deepseek-v4.1-flash#max` | 420 решений: 300 до SEL-R01 + 120 новых; отдельный контекст, не смешивать с Codex |
+| `.local/data01-oc-cache/suitability/` | LEX-04 OpenCode | 100 решений SEL-R01 (98 target, 2 source) |
+| `.local/data01-oc-cache/selective-runs/` | journal и last-report выборочных прогонов | journal SEL-R01: 1 завершённая итерация, статус `running` из-за внешнего timeout |
 | `tools/cache/level_profiles/` | gzip-кэш GEN-01 (`inputs/` и итоговые ключи) | ключ = SHA-256 входов; `mtime=0` |
 | `tools/cache/local_definitions/` | статьи/сборки определений | локальный кэш, не ИИ |
 | `.local/v2-cache/` | кэш `prepare_v2`: `categories`, `suitability`, `profiles`, `definitions`, `articles`, `cleanup`, `runs` | рабочие каталоги и `runs/<inputs sha>/round-XX` |
@@ -1217,9 +1219,84 @@ Jaccard, частоты, модельные шансы, T4/T6 и запрещё�
 `campaign_simulation_config.json`; CLI-флаги бюджета меняют только ресурсы
 LEX, не пороги отбора.
 
-Без реального дампа и Android не проверялись: фактический расход на корпусе,
-полнота реальных T6-тем, точность модели, байтовая воспроизводимость реального
-пакета и UI. Статус ручного аудита определений и прав не изменён.
+Реальный прогон на закреплённом дампе впервые выполнен в SEL-R01 (§11.8):
+он остановился на `NEEDS_MORE_EVIDENCE`, поэтому полнота реальных T6-тем,
+точность модели, байтовая воспроизводимость реального VALID-пакета и UI
+по-прежнему не проверены. Статус ручного аудита определений и прав не изменён.
+
+### 11.8. SEL-R01 — первый реальный выборочный прогон (2026-11-13)
+
+Статус стадии: **`NEEDS_MORE_EVIDENCE`**. Это не статус DATA-01, не `VALID`
+и не разрешение устанавливать `data/`. Кампания не сгенерирована; `install`
+не выполнялся. Машиночитаемый отчёт — `build/reports/selective/stage-1.json`,
+логи — `build/reports/selective/stage-1-prepare*.log`.
+
+Проверенные входы (SHA-256 совпали с `data/manifest.json`):
+
+- дамп Kaikki: `98bebfb8013064d23bc6f0981b64cd097f64e098c9e434ebb97684c9606cc2da`;
+- частотный список: `32dfd94138aea2667ec455dcc8512029e39bd4b8ea70b09410d569b69d511a30`;
+- `data/manifest.json`: `06d8d824d75a9a1f6665a80e11d42cb187b0ebeaeaf634cc438ad035f7cc8491`;
+- staging-словарь: 20 106 слов, `3b8a1339df5485ae2c5493cec3b5297e84173b94e57cf253c3543a8c85efc997`;
+- `definitions.db`: `71a9efd8dca65e435354bc285b950bd1331d57881fdc5fc462217d78fd9358bf`, `user_version=8`.
+
+Провайдер и модель взяты из окружения, без подмены:
+`CATEGORY_PROVIDER=opencode`, `CATEGORY_MODEL=opencode/deepseek-v4.1-flash#max`,
+кэш `SEMANTIC_CACHE=/var/www/words-combination/.local/data01-oc-cache`.
+Первый план использовал 47 совместимых кэш-попаданий категорий; suitability-кэша
+не было.
+
+Фактическая команда (сокращённо; полная строка — в `stage-1.json`):
+
+```sh
+python3 tools/prepare_v2.py prepare --selective \
+  --dump .local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz \
+  --manifest data/manifest.json \
+  --frequency-list .local/frequency/frequencywords-2018-ru/ru_full.txt \
+  --provider "$CATEGORY_PROVIDER" --model "$CATEGORY_MODEL" \
+  --cache "$SEMANTIC_CACHE" --package .local/data01-oc-package \
+  --iterations 3 --max-new-decisions 200 --max-batches 10 \
+  --time-budget 600 --total-new-decisions 400 --total-time-budget 1500 \
+  --allow-network --jvm-classpath "$(cat .local/data01-jvm/classpath.txt)"
+```
+
+Что произошло:
+
+| Показатель | Значение |
+|---|---:|
+| Новых решений ИИ всего | **220** |
+| — категории | 120 (84 не-`other`, 36 `other`) |
+| — пригодность | 100 (98 target, 2 source) |
+| Кэш-попадания категорий | 47 (1,85% запрошенных) |
+| Кэш-попадания пригодности | 0 |
+| План категорий / пригодности | 2 839 / 2 785 запросов |
+| Локальные правила пригодности | 915 пар |
+| Завершённых итераций | 1 из 3 |
+| Время завершённой итерации | 1 135,74 с |
+| Общее время до внешнего timeout | 2 601 с |
+| GEN-02 | `infeasible`: 21/30 слотов, 3 старых исходника вместо 8, нет `ъ` |
+| GEN-03 / GEN-04 / GEN-05 | не запускались |
+| `data/` | не изменялась |
+
+Узкие места и отклонённые варианты:
+
+- реальный `hints.jvm.jsonl` содержит `hint_before`/`has_definition`, а SEL-04
+  ожидал только `word`/`hint`; первый запуск упал до ИИ. Чтение исправлено и
+  покрыто тестом `test_read_hints_accepts_real_jvm_audit_rows`;
+- один батч из 20 решений занимал примерно 100–156 с, поэтому 400 решений не
+  помещаются в окно вместе с локальными стадиями;
+- 36 новых категорий получили `other`; 32 target-пары — `unsuitable`, 11 —
+  `insufficient_data`; эти решения не считаются пригодными;
+- план расширения требовал глобальный резерв ≥40 для 28 тем; при частичном
+  пуле GEN-02 не может заполнить 30 слотов. Это дефицит доказательств, а не
+  доказанная математическая невозможность.
+
+Остановка была внешним `timeout` (код 124), а не сетевым отказом. Поштучные
+кэши и journal завершённой итерации сохранены; итоговый
+`selective_report.json` не записан, потому что процесс не дошёл до штатного
+завершения. Продолжение возможно только с поправкой на уже оплаченные 220
+решений: при журнале, где учтены 120, для жёсткого потолка 400 нужно передать
+`--total-new-decisions 300` (120 журнальных + 180 новых; 220 фактических +
+180 = 400). Без этой поправки журнал занизит расход.
 
 ## 12. Показатели
 
@@ -1232,7 +1309,10 @@ LEX, не пороги отбора.
 GEN-04/GEN-05, независимая проверка, публикация), `hashes` пакета, `resume`
 (команда продолжения), `accuracy` (`null` без независимой разметки). Формат
 эволюционировал из предложенной схемы ниже; строки, которые модель/CLI не
-может измерить (токены, стоимость), не выдумываются.
+может измерить (токены, стоимость), не выдумываются. Для стадий SEL-R01…R04
+дополнительно ведётся `build/reports/selective/stage-N.json`; SEL-R01 уже
+заполнил `stage-1.json` со статусом `NEEDS_MORE_EVIDENCE`, не смешивая новые
+решения с независимой проверкой.
 
 ```json
 {
@@ -1326,8 +1406,9 @@ GEN-04/GEN-05, независимая проверка, публикация), `
 4. **T3-подсказка.** SEL-03 требует полезную подсказку для назначенной
    T3-цели в GEN-03 и GEN-04; звезда за ответ этим не сужается.
 5. **Точность.** Независимой разметки нет; отчёты не должны заявлять точность
-   по уверенности модели. Реальный выборочный прогон, Android и release в
-   SEL-01…SEL-06 не проверялись.
+   по уверенности модели. Реальный выборочный прогон SEL-R01 дал
+   `NEEDS_MORE_EVIDENCE` (не `VALID`); Android, release и воспроизводимость
+   реального VALID-пакета по-прежнему не проверялись.
 
 ## 14. Приёмка SEL-01…SEL-06
 
