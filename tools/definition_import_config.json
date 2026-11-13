@@ -5,5 +5,5 @@
   "max_chars": 1200,
   "max_meanings": 2,
   "reference_depth": 3,
-  "masker_version": "core-definition-hint-v1"
+  "masker_version": "core-definition-hint-v2"
 }

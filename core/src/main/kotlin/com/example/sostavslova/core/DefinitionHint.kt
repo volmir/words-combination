@@ -5,12 +5,14 @@ import java.util.Locale
 
 /** Подготовка подсказки; полное толкование для экрана значения не изменяется. */
 object DefinitionHint {
-    const val VERSION = "core-definition-hint-v1"
+    const val VERSION = "core-definition-hint-v2"
     const val MASK = "***"
     private val russianToken = Regex("[А-Яа-яЁё]+(?:[\u0300\u0301][А-Яа-яЁё]*)*")
     private val relativePronoun = Regex("котор(?:ый|ая|ое|ые|ого|ой|ых|ому|ым|ыми|ую)")
     private val labelPrefix = Regex("^(?:(?:разг|перен|книжн|устар|спец|собир|истор|поэт|прост)\\.\\s*[,;]?\\s*)+")
-    private val reference = Regex("^(?:то же,? что\\b|см\\.|(?:уменьш|ласк|увелич)\\.|форма\\b|действие по значению|женск\\.)")
+    // Явная Unicode-граница: обычная \b на JVM 21 не учитывает кириллицу.
+    private val wordEnd = "(?![\\p{L}\\p{N}_])"
+    private val reference = Regex("^(?:то же,? что$wordEnd|см\\.|(?:уменьш|ласк|увелич)\\.|форма$wordEnd|действие по значению|женск\\.)")
     private val link = Regex("(?:https?://|www\\.)\\S+", RegexOption.IGNORE_CASE)
     private val stopWords = setOf("для", "при", "или", "это", "его", "еще", "как", "что", "так", "тот", "эта", "эти",
         "тем", "чем", "под", "над", "без", "между", "около", "возле", "через", "после", "перед", "также", "обычно",
