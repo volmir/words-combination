@@ -45,18 +45,19 @@ FrequencyWords / OpenSubtitles 2018. SHA-256 входов и выходов со
 | `:app:syncDictionaryAssets` | Прошла, копии данных совпадают с исходниками |
 | SQLite и происхождение | Проверены целостность, схема, словарь, формы, категории, источники и хэши |
 | `strings.xml` | Корректный XML; Android lint не выполнен |
-| Android-компиляция, instrumented-тесты, lint, APK/AAB | Не проверены: отсутствует настроенный полный SDK |
+| Android-компиляция, instrumented-тесты, lint, APK/AAB | Не проверены: SDK установлен (platform android-36, build-tools 36.0.0), реальный прогон не выполнялся |
 | `:app:verifyDefinitionsAudit` | Ожидаемый отказ: ручной аудит не пройден, временная политика прав |
 
-Последняя Android-команда включала `compileDebugKotlin`,
-`compileDebugAndroidTestKotlin`, `lintDebug`, `assembleDebug`,
-`assembleRelease`. Она остановилась при определении зависимостей задач:
-`SDK location not found`. В рабочем окружении `local.properties` указывает
-на отсутствующий `/tmp/words-combination-tools/android-sdk`, а системный
-`/usr/lib/android-sdk` содержит только часть инструментов, без платформ.
-APK этой версии не собран; работа интерфейса и SQLite на устройстве
-не подтверждена. Для проверок JVM использовался JDK 21 и Gradle Wrapper
-9.3.1, запускаемый через `bash`.
+Последние Android-команды (`compileDebugKotlin`, `compileDebugAndroidTestKotlin`,
+`lintDebug`, `assembleDebug`, `assembleRelease`) исторически останавливались при
+определении зависимостей задач с ошибкой `SDK location not found`: прежний
+`local.properties` указывал на отсутствующий каталог. Сейчас SDK установлен —
+`local.properties` указывает на `~/.local/share/words-combination/android-sdk`
+с платформами android-36/android-36.1 и build-tools 36.0.0, а также заданы
+`ANDROID_HOME` и `ANDROID_SDK_ROOT`. Успешная Android-сборка этой версии всё
+ещё не подтверждена прогоном; работа интерфейса и SQLite на устройстве не
+подтверждена. Для проверок JVM использовался JDK 21 и Gradle Wrapper 9.3.1,
+запускаемый через `bash`.
 
 Толкования имеют временную политику **wiktionary-provisional-v1**;
 `audit.passed=false`, индивидуальная проверка прав не проведена.
@@ -116,8 +117,10 @@ APK этой версии не собран; работа интерфейса �
 
 ## Как продолжать работу
 
-1. Для Android-проверок настроить SDK под compileSdk 36, затем выполнить
-   команды из [README](../README.md) и [AGENTS.md](../AGENTS.md).
+1. Для Android-проверок SDK уже настроен под compileSdk 36
+   (`~/.local/share/words-combination/android-sdk`, build-tools 36.0.0);
+   выполнить команды из [README](../README.md) и [AGENTS.md](../AGENTS.md),
+   чтобы подтвердить компиляцию, lint, APK/AAB и инструментальные тесты.
 2. Для обновления словаря следовать [DICTIONARY_CLEANUP.md](DICTIONARY_CLEANUP.md):
    сначала подготовить словарь, затем импортировать определения из
    согласованного локального дампа единым пакетом с новыми хэшами.
