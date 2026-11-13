@@ -681,6 +681,28 @@ words.txt + dump
 
 Никаких пользовательских подтверждений списков; формат — машинный JSON.
 
+**SEL-04 реализовал эту фазу:** `tools/plan_semantic_requests.py` (конфиг
+`tools/request_plan_config.json`, тесты `tools/tests/test_request_plan.py`).
+Планировщик — чистая детерминированная функция от структурных артефактов:
+ИИ не вызывается, кэш только читается. Пул исходников строится без полного
+перебора: исторические и три предпочтительных исходника, носители каждой
+буквы алфавита (`carriers_per_letter`) и ближайшие к диапазону кандидаты
+каждого этапа (`stage_candidates_per_band`). Запросы привязываются к
+конкретным недостающим ограничениям (коды `legacy`, `preferred`, `letter`,
+`stage`, `assignment` для T3/T4, `rescue:range` для диапазона/запаса,
+`theme` для T6) и упорядочиваются по пользе ограничения, затем по
+`-частота`, затем по слову. Категории запрашиваются только для ответов
+кандидатов этапа Мастер (полный локальный набор T6); пригодность T3/T4 —
+только для потенциально назначаемых целей с полезной подсказкой; ответы,
+спасающие диапазон/запас, — отдельным кодом. Повтор слова и роли в разных
+кандидатах сворачивается в один запрос с перечнем контекстов. Аудит плана
+сохраняет неизменяемые ограничения: 32 буквы, полосы
+`level_selection_config.json`, уникальные цели/окончания из расписания
+GEN-03, Jaccard ≤3%/≤15%, глобальный резерв темы ≥40 и подсказки T4;
+структурная невыполнимость формулируется точной причиной. Переопределение
+полос планирования (`planning_bands_override`) не меняет кампанийных
+порогов GEN-02/GEN-04.
+
 ### 9.3. Фаза 2 — кэш, затем ограниченный ИИ
 
 - Сначала читается совместимый поштучный кэш LEX-03/LEX-04. Ключ включает
@@ -922,6 +944,33 @@ GEN-04/GEN-05 — отказ, а не повод ослабить проверк
 `data/definitions.db`. Для staging-кандидата передавайте `--words`,
 `--database`, `--manifest`, `--previous-levels` и `--hints` из его каталога;
 каноническая воспроизводимость пакета — только `tools/prepare_v2.py`.
+
+**SEL-04: план недостающих ИИ-оценок** (между `pick_level_words --prepare-only`
+и LEX-03/LEX-04; ИИ не запускает, кэш читает):
+
+```sh
+python3 tools/plan_semantic_requests.py \
+  --words data/words.txt \
+  --suitability-input build/reports/level_profiles/suitability_input.json \
+  --categories build/reports/local_definitions/category_index.json \
+  --hints build/reports/level_profiles/hints.jvm.jsonl \
+  --previous-levels data/levels.json \
+  --output build/reports/selective/request_plan.json
+# учёт готовых выборочных решений и поштучных кэшей (необязательно):
+python3 tools/plan_semantic_requests.py \
+  --suitability-decisions build/reports/suitability-selective/word_suitability.json \
+  --cache-suitability tools/cache/word_suitability \
+  --cache-categories tools/cache/word_categories \
+  --model "$CATEGORY_MODEL" --provider codex \
+  --output build/reports/selective/request_plan.json
+```
+
+Выход: `request_plan.json` (машинный план), `requested_pairs.txt` для
+`--pairs-file` LEX-04, `requested_words.txt` для `--words-file` LEX-03,
+`REQUEST_PLAN.md`. Дефолтный `tools/request_plan_config.json` обязан совпадать
+по полосам с `level_selection_config.json`; переопределение полос — только
+явным служебным конфигом с `planning_bands_override: true`, кампанийные
+пороги не меняются.
 
 ### 11.4. Кэши и снимки (снимок дерева на 2026-11-13)
 
