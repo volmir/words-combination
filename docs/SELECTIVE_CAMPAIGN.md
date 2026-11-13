@@ -836,8 +836,12 @@ python3 tools/prepare_v2.py prepare \
 
 Сеть разрешается только явным `--allow-network`; без него нужен полный
 совместимый кэш/снимок. Провайдер выбирается `--provider codex|opencode`
-(по умолчанию `codex`); контекст кэша включает провайдера и модель, поэтому
-кэши разных провайдеров не смешиваются. Для офлайн-повтора:
+(по умолчанию `CATEGORY_PROVIDER`, затем `codex`); контекст кэша включает
+провайдера и модель, поэтому кэши разных провайдеров не смешиваются.
+В автономной очереди провайдера, модель и кэш задаёт оркестратор через
+`CATEGORY_PROVIDER`, `CATEGORY_MODEL` и `SEMANTIC_CACHE` — см.
+[orchestrator/README.md, «Два варианта запуска ИИ-обработки»](../orchestrator/README.md).
+Для офлайн-повтора:
 
 ```sh
 python3 tools/prepare_v2.py prepare \
@@ -1046,7 +1050,7 @@ python3 tools/prepare_v2.py install --help
 python3 tools/prepare_v2.py prepare --selective \
   --dump .local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz \
   --frequency-list .local/frequency/frequencywords-2018-ru/ru_full.txt \
-  --provider opencode --model "$CATEGORY_MODEL" \
+  --provider "$CATEGORY_PROVIDER" --model "$CATEGORY_MODEL" \
   --cache .local/v2-cache --package .local/v2-package \
   --max-new-decisions 300 --time-budget 600 \
   --total-new-decisions 2000 --total-time-budget 3300
@@ -1126,7 +1130,7 @@ python3 tools/prepare_v2.py prepare --selective \
   --manifest data/manifest.json \
   --frequency-list /path/to/ru_full.txt \
   --cache .local/v2-cache --package .local/v2-package \
-  --provider opencode --model "$CATEGORY_MODEL" \
+  --provider "$CATEGORY_PROVIDER" --model "$CATEGORY_MODEL" \
   --iterations 3 --max-new-decisions 300 --max-batches 16 \
   --time-budget 600 --total-new-decisions 2000 --total-time-budget 3300 \
   --allow-network

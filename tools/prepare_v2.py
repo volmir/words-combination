@@ -388,6 +388,26 @@ def selective_decisions(run, arguments, semantic):
     return run(arguments)
 
 
+def stage_request_files(plan, directory):
+    """LEX files include cache-resolved items so a repeat rehydrates their decisions.
+
+    Planner artifacts (`requested_pairs.txt`/`requested_words.txt`) still list only
+    missing evidence. The stage additionally receives compatible cache hits: they
+    cost no budget, but without them a repeated VALID pass would silently drop
+    already paid decisions from the rebuilt index/profile snapshot.
+    """
+    pairs = [f'{row["word"]} {row["role"]}' for row in plan['suitability']['requests']]
+    pairs += [hit.replace(':', ' ', 1) for hit in plan['suitability']['cache_hits']]
+    words = [row['word'] for row in plan['category']['requests']]
+    words += list(plan['category']['cache_hits'])
+    result = []
+    for name, rows in (('stage_pairs.txt', pairs), ('stage_words.txt', words)):
+        path = directory / name
+        path.write_text('\n'.join(sorted(set(rows))) + ('\n' if rows else ''), encoding='utf-8')
+        result.append(path)
+    return result
+
+
 def selective_ai_args(args, kind, input_path, reports, cache, snapshot, request_file, budget):
     """Bounded LEX invocation: network only under --allow-network, per-call limits."""
     common = dict(input=input_path, reports=reports, cache=cache, snapshot=snapshot,
@@ -524,10 +544,7 @@ def selective_round(args, config, journal, journal_path, workspace, number, word
             iterations.append(record)
             return dict(kind='incomplete', iterations=iterations,
                         status='IMPOSSIBLE_UNDER_CONSTRAINTS', last_infeasible=True)
-        pairs_file, words_file = plan_dir / 'requested_pairs.txt', plan_dir / 'requested_words.txt'
-        for request_file in (pairs_file, words_file):
-            if not request_file.exists():
-                request_file.write_text('', encoding='utf-8')
+        pairs_file, words_file = stage_request_files(plan, plan_dir)
         category_args = selective_ai_args(args, 'categories', carry_index, directory / 'categories',
                                           args.cache / 'categories', args.category_snapshot,
                                           words_file, budget)
@@ -1059,7 +1076,7 @@ def install(args):
     return dict(status='installed', out=str(output))
 
 
-def main():
+def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_subparsers(dest='mode', required=True)
     preparing = modes.add_parser('prepare', help='Подготовка вне data/, без ручного утверждения')
@@ -1067,11 +1084,15 @@ def main():
     preparing.add_argument('--manifest', type=Path, default=ROOT / 'data/manifest.json')
     preparing.add_argument('--source-words', type=Path)
     preparing.add_argument('--frequency-list', type=Path)
-    preparing.add_argument('--cache', type=Path, default=ROOT / '.local/v2-cache')
+    preparing.add_argument('--cache', type=Path,
+                           default=Path(os.environ['SEMANTIC_CACHE']).expanduser()
+                           if os.environ.get('SEMANTIC_CACHE') else ROOT / '.local/v2-cache')
     preparing.add_argument('--installed', type=Path, default=ROOT / 'data', help='База версии БД, только чтение')
     preparing.add_argument('--model', default=os.environ.get('CATEGORY_MODEL'))
-    preparing.add_argument('--provider', choices=('codex', 'opencode'), default='codex',
-                           help='CLI исполнения ИИ-оценок LEX (Codex или OpenCode)')
+    preparing.add_argument('--provider', choices=('codex', 'opencode'),
+                           default=os.environ.get('CATEGORY_PROVIDER', 'codex'),
+                           help='CLI исполнения ИИ-оценок LEX (Codex или OpenCode); '
+                                'по умолчанию CATEGORY_PROVIDER, затем codex')
     preparing.add_argument('--category-snapshot', type=Path)
     preparing.add_argument('--suitability-snapshot', type=Path)
     preparing.add_argument('--allow-network', action='store_true', help='Только FrequencyWords и модель LEX')
@@ -1102,6 +1123,11 @@ def main():
         mode.add_argument('--package', type=Path, default=ROOT / '.local/v2-package')
         mode.add_argument('--jvm-classpath', help='Свежесобранный core+audit classpath; иначе offline Gradle')
         mode.add_argument('--java', default='java')
+    return parser
+
+
+def main():
+    parser = build_parser()
     args = parser.parse_args()
     selective_only = ('selective_config', 'plan_config', 'plan_selection_config', 'iterations',
                       'max_new_decisions', 'max_batches', 'time_budget', 'total_new_decisions',

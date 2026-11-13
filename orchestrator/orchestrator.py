@@ -126,6 +126,7 @@ DEFAULTS = {
     "restart_retries": 3, "retry_delay": 30,
     "models": {"codex": dict(CODEX_MODEL_DEFAULTS), "opencode": dict(OPENCODE_MODEL_DEFAULTS)},
     "model_sets": {},
+    "semantic": {},
     "efforts": {"light": "low", "standard": "medium", "heavy": "high"},
 }
 
@@ -139,6 +140,7 @@ def load_config(path, backend=None, models_set=None):
     config = dict(DEFAULTS)
     config["models"] = {name: dict(tiers) for name, tiers in DEFAULTS["models"].items()}
     config["model_sets"] = {}
+    config["semantic"] = {}
     config["efforts"] = dict(DEFAULTS["efforts"])
     if path.exists():
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -146,6 +148,7 @@ def load_config(path, backend=None, models_set=None):
             raise Error("config.json: неизвестные ключи или неверный JSON-объект")
         models = data.pop("models", None)
         model_sets = data.pop("model_sets", None)
+        semantic = data.pop("semantic", None)
         efforts = data.pop("efforts", None)
         config.update(data)
         # Перекрытие применяется до разбора models: от него зависят и запрет
@@ -169,15 +172,29 @@ def load_config(path, backend=None, models_set=None):
                     raise Error(f"config.json: неверная секция models.{name}")
                 config["models"][name].update(tiers)
         if model_sets is not None:
-            if not isinstance(model_sets, dict) or set(model_sets) - {"opencode"}:
-                raise Error("config.json: неверная секция model_sets; допустима только секция opencode")
-            for name, tiers in model_sets.get("opencode", {}).items():
-                if not isinstance(name, str) or not name or not isinstance(tiers, dict) \
-                        or set(tiers) != set(TIERS) \
-                        or not all(isinstance(value, str) and value for value in tiers.values()):
-                    raise Error("config.json: неверная секция model_sets.opencode: нужны наборы "
-                                "с непустыми моделями light, standard и heavy")
+            if not isinstance(model_sets, dict) or set(model_sets) - set(BACKENDS):
+                raise Error("config.json: неверная секция model_sets; допустимы codex и opencode")
+            for backend_name, sets in model_sets.items():
+                if not isinstance(sets, dict):
+                    raise Error(f"config.json: неверная секция model_sets.{backend_name}")
+                for name, tiers in sets.items():
+                    if not isinstance(name, str) or not name or not isinstance(tiers, dict) \
+                            or set(tiers) != set(TIERS) \
+                            or not all(isinstance(value, str) and value for value in tiers.values()):
+                        raise Error(f"config.json: неверная секция model_sets.{backend_name}: нужны наборы "
+                                    "с непустыми моделями light, standard и heavy")
             config["model_sets"] = model_sets
+        if semantic is not None:
+            if not isinstance(semantic, dict) or set(semantic) - set(BACKENDS):
+                raise Error("config.json: неверная секция semantic; допустимы ключи codex и opencode")
+            for name, profile in semantic.items():
+                if (not isinstance(profile, dict) or set(profile) - {"provider", "model", "cache"}
+                        or profile.get("provider") not in BACKENDS
+                        or not all(isinstance(profile.get(key), str) and profile[key].strip()
+                                   for key in ("provider", "model", "cache"))):
+                    raise Error(f"config.json: неверная секция semantic.{name}: "
+                                "нужны provider (codex|opencode), model и cache")
+            config["semantic"] = semantic
         if efforts is not None:
             if not isinstance(efforts, dict) or set(efforts) - set(TIERS) \
                     or not all(isinstance(value, str) for value in efforts.values()):
@@ -213,17 +230,17 @@ def load_config(path, backend=None, models_set=None):
     if "orchestrator" in config["checks"]:
         raise Error("checks: профиль orchestrator встроен в модуль и не переопределяется")
     if models_set is not None:
-        if config["backend"] != "opencode":
-            raise Error('--models доступен только при backend="opencode"')
-        sets = config["model_sets"].get("opencode", {})
+        sets = config["model_sets"].get(config["backend"], {})
         if models_set not in sets:
-            if not sets:
-                raise Error("--models: в config.json не заданы наборы model_sets.opencode")
-            raise Error(f"--models: нет набора {models_set}; доступны: {', '.join(sorted(sets))}")
-        config["models"]["opencode"].update(sets[models_set])
+            available = ", ".join(sorted(sets)) or f"нет (добавьте model_sets.{config['backend']})"
+            raise Error(f"--models: нет набора {models_set} для backend {config['backend']}; "
+                        f"доступны: {available}")
+        config["models"][config["backend"]].update(sets[models_set])
     tiers = config["models"][config["backend"]]
-    # Дальше по коду models — плоский словарь tier→модель активного бэкенда.
+    # Дальше по коду models — плоский словарь tier→модель активного бэкенда,
+    # semantic — профиль ИИ-оценок LEX для того же бэкенда.
     config["models"] = dict(tiers)
+    config["semantic"] = config["semantic"].get(config["backend"])
     return config
 
 
@@ -299,14 +316,14 @@ def stop_group(process):
     process.wait()
 
 
-def run_logged(command, log, timeout, prompt=None, lock_fd=None):
+def run_logged(command, log, timeout, prompt=None, lock_fd=None, env=None):
     # Prompt через stdin: нет ограничения длины аргументов и shell-интерполяции.
     with log.open("wb") as output, tempfile.TemporaryFile() as input_file:
         if prompt is not None:
             input_file.write(prompt.encode())
             input_file.seek(0)
         process = subprocess.Popen(command, stdin=input_file, stdout=output,
-                                   stderr=subprocess.STDOUT, start_new_session=True,
+                                   stderr=subprocess.STDOUT, start_new_session=True, env=env,
                                    pass_fds=() if lock_fd is None else (lock_fd,))
         try:
             code = process.wait(timeout=timeout)
@@ -346,6 +363,22 @@ def agent_start_command(config, model, effort, last):
     if model:
         command += ["--model", model]
     return command
+
+
+def semantic_env(config, root):
+    """Окружение агента: провайдер, модель и кэш ИИ-оценок активного бэкенда.
+
+    Значения берутся из секции semantic конфига, поэтому выбранный бэкенд
+    определяет и исполнителя LEX-оценок, и каталог кэша. Задачи не выбирают
+    провайдера сами и не смешивают кэши разных моделей.
+    """
+    env = dict(os.environ)
+    profile = config.get("semantic")
+    if profile:
+        env["CATEGORY_PROVIDER"] = profile["provider"]
+        env["CATEGORY_MODEL"] = profile["model"]
+        env["SEMANTIC_CACHE"] = str((root / profile["cache"]).resolve())
+    return env
 
 
 def extract_opencode_reply(log):
@@ -431,6 +464,7 @@ def read_checkpoint(path, root):
                 or state["phase"] not in ("agent", "gate", "commit", "push")
                 or any(not isinstance(state[key], str) for key in
                        ("task", "branch", "logs", "summary", "model", "effort"))
+                or ("backend" in state and state["backend"] not in BACKENDS)
                 or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", state["task"])
                 or type(state["manual"]) is not bool
                 or not isinstance(state["baseline"], dict)
@@ -501,6 +535,9 @@ def execute(args):
         selected = [task for task in tasks if task.id == (args.only or args.mark_done)]
     if args.list or args.dry_run:
         print("ID | TIER | STATUS | MODEL/EFFORT | TITLE")
+        profile = config.get("semantic")
+        print("ИИ-оценки LEX: " + (f"{profile['provider']} / {profile['model']}; кэш {profile['cache']}"
+                                    if profile else "не заданы (секция semantic пуста)"))
         for task in selected:
             status = "done" if task.id in records else "pending"
             print(f"{task.id} | {task.tier} | {status} | {config['models'][task.tier] or 'default'}/{config['efforts'][task.tier]} | {task.title}")
@@ -602,6 +639,10 @@ def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_
     pending = [task for task in selected if task.id not in records and task != active]
     if active:
         pending.insert(0, active)
+    profile = config.get("semantic")
+    if profile:
+        print(f"ИИ-оценки LEX: {profile['provider']} / {profile['model']}; кэш {profile['cache']}", flush=True)
+    agent_environment = semantic_env(config, root)
     for task in pending:
         print(f"[{task.id}] {task.title}", flush=True)
         resumed = state is not None
@@ -613,8 +654,8 @@ def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_
                      "baseline": snapshot(protected, excluded=[work]), "phase": "gate" if args.mark_done else "agent",
                      "attempt": 0, "exec_runs": 0, "gate_runs": 0, "commit_runs": 0, "push_runs": 0,
                      "logs": str(logs.relative_to(root)), "summary": "Выполнено вручную; проверка запущена оркестратором.",
-                     "manual": bool(args.mark_done), "model": config["models"][task.tier],
-                     "effort": config["efforts"][task.tier]}
+                     "manual": bool(args.mark_done), "backend": config["backend"],
+                     "model": config["models"][task.tier], "effort": config["efforts"][task.tier]}
         logs = local_path(root, state["logs"])
         if not logs.is_relative_to(work / "logs") or not logs.is_dir():
             raise Error("контрольная точка ссылается на недопустимый каталог логов")
@@ -654,6 +695,14 @@ def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_
         if args.mark_done and state["phase"] in ("agent", "gate"):
             state.update(phase="gate", manual=True, blocked=None)
         save()
+        if state.get("backend") != config["backend"]:
+            previous = state["model"]
+            state.update(backend=config["backend"], model=config["models"][task.tier],
+                         effort=config["efforts"][task.tier])
+            save()
+            if resumed:
+                print(f"  модель пересчитана под backend {config['backend']} (tier {task.tier}): "
+                      f"{previous or 'из настроек CLI'} → {state['model'] or 'из настроек CLI'}", flush=True)
         model, effort = state["model"], state["effort"]
         if resumed and args.models and not args.mark_done and model != config["models"][task.tier]:
             print(f"ПРЕДУПРЕЖДЕНИЕ: {task.id} продолжается с сохранённой моделью "
@@ -663,7 +712,7 @@ def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_
         base_prompt = prompt_for(task, context, display_paths)
         last = logs / f"{task.id}.last.md"
 
-        def run_step(kind, command_for, timeout, prompt_for_run=None, failure_on_exit=False):
+        def run_step(kind, command_for, timeout, prompt_for_run=None, failure_on_exit=False, env=None):
             for restart in range(config["restart_retries"] + 1):
                 number = state[kind + "_runs"]
                 state[kind + "_runs"] += 1
@@ -673,7 +722,7 @@ def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_
                 save()  # Всегда до запуска дочернего процесса.
                 try:
                     try:
-                        code = run_logged(command_for(), log, timeout, prompt, lock_fd)
+                        code = run_logged(command_for(), log, timeout, prompt, lock_fd, env=env)
                     finally:
                         verify()
                     if kind == "exec" and config["backend"] == "opencode":
@@ -726,7 +775,8 @@ def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_
 
                 # Отсутствие last.md равнозначно пустому ответу, но не старому успеху.
                 last.touch(exist_ok=True)
-                run_step("exec", agent_command, config["task_timeout"], agent_prompt, failure_on_exit=True)
+                run_step("exec", agent_command, config["task_timeout"], agent_prompt, failure_on_exit=True,
+                         env=agent_environment)
                 reply = last.read_text(encoding="utf-8") if last.exists() else ""
                 state["summary"] = " ".join(next((line for line in reply.splitlines() if line.startswith("ИТОГ:")),
                                                  reply.splitlines()[0]).split())[:300]
@@ -796,8 +846,8 @@ def main():
     parser.add_argument("--backend", choices=BACKENDS,
                         help="бэкенд агента (codex или opencode); перекрывает config.json")
     parser.add_argument("--models", metavar="SET",
-                        help="набор моделей OpenCode из config.json (например, paid); "
-                             'только при backend="opencode"')
+                        help="набор моделей из config.json по ключу backend "
+                             "(model_sets.codex|opencode, например cheap); действует один запуск")
     view = parser.add_mutually_exclusive_group()
     view.add_argument("--list", action="store_true", help="список без запусков и изменений")
     view.add_argument("--dry-run", action="store_true", help="план с gate, без запусков и изменений")

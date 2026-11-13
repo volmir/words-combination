@@ -34,7 +34,9 @@ task = re.search(r'одно задание: ([A-Za-z0-9_-]+):', prompt)[1]
 work = Path('orchestrator/.runtime'); work.mkdir(exist_ok=True)
 (work / 'worker.pid').write_text(str(os.getpid()))
 with (work / 'calls.jsonl').open('a') as stream:
-    stream.write(json.dumps({'id': task, 'args': args, 'prompt': prompt}) + '\n')
+    stream.write(json.dumps({'id': task, 'args': args, 'prompt': prompt,
+                            'env': {key: os.environ.get(key) for key in
+                                    ('CATEGORY_PROVIDER', 'CATEGORY_MODEL', 'SEMANTIC_CACHE')}}) + '\n')
 count_file = work / ('count-' + task)
 count = int(count_file.read_text()) + 1 if count_file.exists() else 1
 count_file.write_text(str(count))
@@ -84,7 +86,9 @@ prompt = sys.stdin.read()
 task = re.search(r'одно задание: ([A-Za-z0-9_-]+):', prompt)[1]
 work = Path('orchestrator/.runtime'); work.mkdir(exist_ok=True)
 with (work / 'calls.jsonl').open('a') as stream:
-    stream.write(json.dumps({'id': task, 'args': args, 'prompt': prompt}) + '\n')
+    stream.write(json.dumps({'id': task, 'args': args, 'prompt': prompt,
+                            'env': {key: os.environ.get(key) for key in
+                                    ('CATEGORY_PROVIDER', 'CATEGORY_MODEL', 'SEMANTIC_CACHE')}}) + '\n')
 mode = os.environ.get('MOCK_MODE', 'normal')
 marker = work / ('interrupted-' + task)
 if mode == 'interrupt-once' and os.environ.get('MOCK_INTERRUPT_TASK') == task and not marker.exists():
@@ -223,7 +227,7 @@ class FixtureTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             config = Path(directory) / 'config.json'
             for body in ({'model_sets': []},
-                         {'model_sets': {'codex': {'paid': {'light': 'a', 'standard': 'b', 'heavy': 'c'}}}},
+                         {'model_sets': {'other': {'paid': {'light': 'a', 'standard': 'b', 'heavy': 'c'}}}},
                          {'model_sets': {'opencode': {'paid': {'light': 'a', 'standard': 'b'}}}},
                          {'model_sets': {'opencode': {'paid': {'light': 'a', 'standard': 'b', 'heavy': ''}}}},
                          {'model_sets': {'opencode': {'paid': {'light': 'a', 'standard': 5, 'heavy': 'c'}}}},
@@ -236,21 +240,44 @@ class FixtureTests(unittest.TestCase):
                     with self.assertRaises(module.Error):
                         module.load_config(config)
 
-    def test_models_option_requires_opencode_and_known_set(self):
+    def test_models_option_uses_sets_of_the_active_backend(self):
         with tempfile.TemporaryDirectory() as directory:
             config = Path(directory) / 'config.json'
-            config.write_text(json.dumps({'model_sets': {'opencode': {'paid': {
-                'light': 'paid-l', 'standard': 'paid-s', 'heavy': 'paid-h'}}}}))
+            config.write_text(json.dumps({'model_sets': {
+                'opencode': {'paid': {'light': 'paid-l', 'standard': 'paid-s', 'heavy': 'paid-h'}},
+                'codex': {'cheap': {'light': 'cheap-l', 'standard': 'cheap-s', 'heavy': 'cheap-h'}}}}))
             with self.assertRaises(module.Error):
                 module.load_config(config, models_set='paid')  # backend по умолчанию codex
             self.assertEqual(module.load_config(config, backend='opencode', models_set='paid')['models']['heavy'],
                              'paid-h')
+            self.assertEqual(module.load_config(config, backend='codex', models_set='cheap')['models']['heavy'],
+                             'cheap-h')
             with self.assertRaises(module.Error) as caught:
                 module.load_config(config, backend='opencode', models_set='free')
             self.assertIn('paid', str(caught.exception))
             config.write_text('{}')
             with self.assertRaises(module.Error):
                 module.load_config(config, backend='opencode', models_set='paid')
+
+    def test_semantic_profile_is_validated_and_selected_by_backend(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / 'config.json'
+            config.write_text(json.dumps({'semantic': {
+                'codex': {'provider': 'codex', 'model': 'gpt-6.1-sol', 'cache': '.local/data01-cache'},
+                'opencode': {'provider': 'opencode', 'model': 'opencode/flash#max',
+                             'cache': '.local/data01-oc-cache'}}}))
+            self.assertEqual(module.load_config(config, backend='codex')['semantic']['model'], 'gpt-6.1-sol')
+            self.assertEqual(module.load_config(config, backend='opencode')['semantic']['cache'],
+                             '.local/data01-oc-cache')
+            for body in ({'semantic': []},
+                         {'semantic': {'other': {'provider': 'codex', 'model': 'm', 'cache': 'c'}}},
+                         {'semantic': {'codex': {'provider': 'other', 'model': 'm', 'cache': 'c'}}},
+                         {'semantic': {'codex': {'provider': 'codex', 'model': '', 'cache': 'c'}}},
+                         {'semantic': {'codex': {'provider': 'codex', 'model': 'm'}}}):
+                with self.subTest(body=body):
+                    config.write_text(json.dumps(body))
+                    with self.assertRaises(module.Error):
+                        module.load_config(config, backend='codex')
 
     def test_load_config_ignores_environment_variables(self):
         with tempfile.TemporaryDirectory() as directory, \
@@ -1066,11 +1093,60 @@ class OpenCodeTests(QueueHelpers, unittest.TestCase):
         self.assertEqual(self.progress()['A-1']['model'], 'opencode/paid-l')
         self.assertEqual(self.g('status', '--porcelain'), '')
 
-    def test_models_flag_is_rejected_for_codex(self):
-        self.set_config(backend='codex', codex_bin=str(self.mock), model_sets=self.paid_set())
+    def codex_cheap_set(self):
+        return {'codex': {'cheap': {'light': 'codex-cheap-l', 'standard': 'codex-cheap-s',
+                                    'heavy': 'codex-cheap-h'}}}
+
+    def codex_mock(self):
+        path = self.base / 'mock codex'
+        path.write_text(MOCK)
+        path.chmod(0o755)
+        return path
+
+    def test_models_flag_requires_a_set_for_the_active_backend(self):
+        self.set_config(backend='codex', codex_bin=str(self.codex_mock()), model_sets=self.paid_set())
         output = self.run_cli('--backend', 'codex', '--models', 'paid', ok=False)
-        self.assertIn('opencode', output)
+        self.assertIn('для backend codex', output)
+        self.assertIn('model_sets.codex', output)
         self.assertFalse(self.calls())
+
+    def test_models_flag_selects_named_set_for_codex(self):
+        self.set_config(backend='codex', codex_bin=str(self.codex_mock()),
+                        model_sets=self.codex_cheap_set())
+        self.run_cli('--models', 'cheap')
+        args = self.calls()[0]['args']
+        self.assertEqual(args[args.index('--model') + 1], 'codex-cheap-l')
+        self.assertEqual(self.progress()['A-1']['model'], 'codex-cheap-l')
+        self.assertEqual(self.g('status', '--porcelain'), '')
+
+    def test_semantic_profile_is_exported_to_agent(self):
+        self.set_config(backend='codex', codex_bin=str(self.codex_mock()),
+                        semantic={'codex': {'provider': 'codex', 'model': 'gpt-6.1-sol',
+                                            'cache': '.local/lex-cache'}})
+        output = self.run_cli('--dry-run')
+        self.assertIn('ИИ-оценки LEX: codex / gpt-6.1-sol; кэш .local/lex-cache', output)
+        self.assertFalse(self.calls())
+        self.run_cli()
+        env = self.calls()[0]['env']
+        self.assertEqual(env['CATEGORY_PROVIDER'], 'codex')
+        self.assertEqual(env['CATEGORY_MODEL'], 'gpt-6.1-sol')
+        self.assertEqual(Path(env['SEMANTIC_CACHE']), self.repo / '.local/lex-cache')
+
+    def test_backend_switch_rebinds_unfinished_task_model(self):
+        self.set_config(backend='opencode', opencode_bin=str(self.mock),
+                        codex_bin=str(self.codex_mock()),
+                        push=False, restart_retries=2, retry_delay=0,
+                        models={'codex': {'light': 'gpt-5.6-luna', 'standard': 'gpt-6.1-sol',
+                                          'heavy': 'gpt-6.1-sol'},
+                                'opencode': {'light': 'opencode/light', 'standard': 'opencode/standard',
+                                             'heavy': 'opencode/heavy'}})
+        self.save_tasks(task() + '\n' + task('B', 'test -f result-B.txt'))
+        self.commit()
+        self.run_cli(ok=False, MOCK_MODE='interrupt-once', MOCK_INTERRUPT_TASK='A-1')
+        output = self.run_cli('--backend', 'codex')
+        self.assertIn('модель пересчитана под backend codex', output)
+        self.assertEqual(self.progress()['A-1']['model'], 'gpt-6.1-sol')
+        self.assertEqual(self.g('status', '--porcelain'), '')
 
     def test_resume_with_models_flag_keeps_saved_models_and_warns(self):
         self.set_config(models={'opencode': {'light': 'free-l', 'standard': 'free-s', 'heavy': 'free-h'}},

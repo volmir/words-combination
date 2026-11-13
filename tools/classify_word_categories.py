@@ -353,7 +353,7 @@ def run(args):
     return summary
 
 
-def main():
+def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=ROOT / "build/reports/local_definitions/category_index.json")
     parser.add_argument("--taxonomy", type=Path, default=thematic.TAXONOMY_PATH)
@@ -366,13 +366,19 @@ def main():
     parser.add_argument("--max-batches", type=int, help="Максимум батчей модели за вызов")
     parser.add_argument("--time-budget", type=float, help="Лимит времени на ИИ-батчи, секунды")
     parser.add_argument("--model", default=os.environ.get("CATEGORY_MODEL"))
-    parser.add_argument("--provider", choices=("codex", "opencode"), default="codex")
+    parser.add_argument("--provider", choices=("codex", "opencode"),
+                        default=os.environ.get("CATEGORY_PROVIDER", "codex"))
     parser.add_argument("--allow-network", action="store_true")
     parser.add_argument("--batch-size", type=int, default=20)
     parser.add_argument("--timeout", type=int, default=120)
     parser.add_argument("--retries", type=int, default=2)
     parser.add_argument("--min-confidence", type=float, help="По умолчанию из снимка, иначе 0.8")
     parser.add_argument("--gold", type=Path)
+    return parser
+
+
+def main():
+    parser = build_parser()
     args = parser.parse_args()
     termination.become_group_leader()
     termination.install_termination_handler()

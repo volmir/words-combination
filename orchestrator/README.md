@@ -68,7 +68,7 @@ bash orchestrator/run.sh
 | Команда | `codex exec [--model …] -c model_reasoning_effort=… --sandbox … -` | `opencode run --agent build --format json [--model …]` |
 | Финальный ответ | `--output-last-message` | Поле `part.text` последнего text-event потока `--format json` |
 | Права на файлы | `sandbox` из конфига (`read-only`/`workspace-write`/`danger-full-access`) | `permissions` в `opencode.json` целевого проекта; оркестратор не передаёт ни песочницу, ни `--auto` |
-| Модели | секция `models.codex` | секция `models.opencode`; наборы `model_sets.opencode` выбираются флагом `--models` |
+| Модели | секция `models.codex`; наборы `model_sets.codex` | секция `models.opencode`; наборы `model_sets.opencode` |
 | Настройка reasoning | ключи `efforts` | суффикс `#variant` в строке модели; ключ `efforts` игнорируется с предупреждением |
 
 Имя/путь CLI переопределяются ключами `codex_bin` / `opencode_bin`.
@@ -114,39 +114,124 @@ opencode --version   # для OpenCode
 bash orchestrator/run.sh --config orchestrator/opencode.config.json
 ```
 
-### Платные модели OpenCode (`--models`)
+### Наборы моделей (`--models`)
 
-Для OpenCode в конфиге можно описать именованные наборы моделей (секция
-`model_sets.opencode`) и выбирать их флагом `--models` на один запуск:
+Для обоих бэкендов в конфиге можно описать именованные наборы моделей
+(секция `model_sets.<backend>`) и выбирать их флагом `--models` на один запуск:
 
 ```json
 "model_sets": {
+  "codex": {
+    "cheap": { "light": "…", "standard": "…", "heavy": "…" }
+  },
   "opencode": {
-    "paid": {
-      "light": "provider/light-model",
-      "standard": "provider/standard-model",
-      "heavy": "provider/heavy-model"
-    }
+    "paid": { "light": "…", "standard": "…", "heavy": "…" }
   }
 }
 ```
 
 ```bash
-bash orchestrator/run.sh --backend opencode --models paid
+bash orchestrator/run.sh --backend codex --models cheap
 bash orchestrator/run.sh --backend opencode --models paid --dry-run
 ```
 
 Набор обязан содержать все три tier — `light`, `standard` и `heavy` — с
-непустыми моделями и полностью заменяет `models.opencode` на текущий запуск;
-без флага используются модели по умолчанию. Секция `model_sets` поддерживает
-только `opencode`: с бэкендом Codex флаг `--models` отклоняется ошибкой,
-секция `codex` в конфиге — тоже. Неизвестное имя набора — ошибка со списком
-доступных наборов.
+непустыми моделями и полностью заменяет модели активного бэкенда на текущий
+запуск; без флага используются модели по умолчанию. Флаг берёт набор из
+секции своего бэкенда: `--backend codex` ищет `model_sets.codex`, `--backend
+opencode` — `model_sets.opencode`. Неизвестное имя набора — ошибка со списком
+доступных наборов этого бэкенда.
 
 Незавершённая задача продолжается с моделями, сохранёнными в контрольной
 точке: `--models` применяется к следующим задачам, а о расхождении
 печатается предупреждение. Чтобы сменить набор и для неё, завершите задачу
 или удалите контрольную точку.
+
+### Два варианта запуска ИИ-обработки (LEX)
+
+Задачи SEL-R01…SEL-R04 и DATA-01 не только правят код, но и запрашивают
+ИИ-решения по словам. Исполнитель этих запросов задаётся отдельной секцией
+`semantic` — он привязан к бэкенду агента, а не к модели конкретной задачи:
+
+```json
+"semantic": {
+  "codex":    { "provider": "codex",    "model": "gpt-6.1-sol",                     "cache": ".local/data01-cache" },
+  "opencode": { "provider": "opencode", "model": "opencode/deepseek-v4.1-flash#max",  "cache": ".local/data01-oc-cache" }
+}
+```
+
+| Вариант | Команда запуска | Агент | ИИ-оценки LEX | Кэш решений |
+|---|---|---|---|---|
+| 1. Codex (дешёвый) | `bash orchestrator/run.sh --backend codex --models cheap` | `gpt-5.6-luna` | `codex` / `gpt-6.1-sol` | `.local/data01-cache` |
+| 2. OpenCode (дешёвый) | `bash orchestrator/run.sh --backend opencode --models cheap` | `deepseek-v4.1-flash#max` | `opencode` / `opencode/deepseek-v4.1-flash#max` | `.local/data01-oc-cache` |
+
+Перед запуском агента оркестратор выставляет ему переменные окружения и
+печатает выбранный профиль в `--dry-run` и в начале очереди:
+
+| Переменная | Значение |
+|---|---|
+| `CATEGORY_PROVIDER` | `semantic.<backend>.provider` |
+| `CATEGORY_MODEL` | `semantic.<backend>.model` |
+| `SEMANTIC_CACHE` | абсолютный путь к `semantic.<backend>.cache` |
+
+Задачи не выбирают провайдера сами: агент подставляет эти значения в вызовы
+обработчиков, поэтому кэш решений не смешивается между моделями. Проверить
+выбор без запусков:
+
+```bash
+bash orchestrator/run.sh --backend codex --models cheap --dry-run
+# ИИ-оценки LEX: codex / gpt-6.1-sol; кэш .local/data01-cache
+bash orchestrator/run.sh --backend opencode --models cheap --dry-run
+# ИИ-оценки LEX: opencode / opencode/deepseek-v4.1-flash#max; кэш .local/data01-oc-cache
+```
+
+Значения `semantic` можно переопределить только в `config.json`; флаг
+`--models` на них не влияет. Прямой вызов обработчика вне очереди (например,
+продолжение SEL-R01…SEL-R04 или DATA-01 после остановки) — вариант 1 (Codex):
+
+```bash
+CATEGORY_PROVIDER=codex CATEGORY_MODEL=gpt-6.1-sol SEMANTIC_CACHE="$PWD/.local/data01-cache" \
+python3 tools/prepare_v2.py prepare --selective \
+  --dump .local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz \
+  --frequency-list .local/frequency/frequencywords-2018-ru/ru_full.txt \
+  --provider codex --model gpt-6.1-sol --cache .local/data01-cache \
+  --package .local/v2-package \
+  --max-new-decisions 400 --max-batches 20 --time-budget 900 \
+  --total-new-decisions 400 --total-time-budget 2700 \
+  --allow-network
+```
+
+Вариант 2 (OpenCode):
+
+```bash
+CATEGORY_PROVIDER=opencode CATEGORY_MODEL='opencode/deepseek-v4.1-flash#max' \
+SEMANTIC_CACHE="$PWD/.local/data01-oc-cache" \
+python3 tools/prepare_v2.py prepare --selective \
+  --dump .local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz \
+  --frequency-list .local/frequency/frequencywords-2018-ru/ru_full.txt \
+  --provider opencode --model 'opencode/deepseek-v4.1-flash#max' \
+  --cache .local/data01-oc-cache \
+  --package .local/v2-package \
+  --max-new-decisions 400 --max-batches 20 --time-budget 900 \
+  --total-new-decisions 400 --total-time-budget 2700 \
+  --allow-network
+```
+
+Без сети уберите `--allow-network` и передайте снимок решений
+(`--category-snapshot`, `--suitability-snapshot`), сохранив те же
+`--provider`, `--model` и `--cache`. Границы ресурсов по умолчанию задаёт
+`tools/selective_config.json`; флаги бюджета выше — разовые перекрытия.
+Отдельные стадии LEX вызываются так же:
+
+```bash
+CATEGORY_PROVIDER=codex CATEGORY_MODEL=gpt-6.1-sol \
+python3 tools/classify_word_categories.py --provider codex --model gpt-6.1-sol \
+  --cache .local/data01-cache/categories --allow-network
+CATEGORY_PROVIDER=opencode CATEGORY_MODEL='opencode/deepseek-v4.1-flash#max' \
+python3 tools/assess_word_suitability.py --provider opencode \
+  --model 'opencode/deepseek-v4.1-flash#max' \
+  --cache .local/data01-oc-cache/suitability --allow-network
+```
 
 ### Подготовить права агента
 
@@ -179,13 +264,19 @@ bash orchestrator/run.sh --dry-run
 
 В колонке MODEL/EFFORT видно модель активного бэкенда для каждого tier
 (например, `opencode/glm-5.3-flash-free/medium`), а также команды gate
-и число повторов. Запусков, изменений и Git-операций при этом нет.
+и число повторов. Строка `ИИ-оценки LEX` показывает провайдера, модель и
+каталог кэша, которые получат задачи SEL-R01…SEL-R04 и DATA-01. Запусков,
+изменений и Git-операций при этом нет.
 
 ### Продолжить очередь другим бэкендом
 
 Fingerprint задачи не зависит от конфига, поэтому сменить бэкенд можно
 в любой момент: выполненные задачи остаются пропущенными, очередь
-продолжается с первой невыполненной.
+продолжается с первой невыполненной. У незавершённой задачи модель
+хранится в контрольной точке вместе с бэкендом: если бэкенд сменился,
+оркестратор пересчитывает модель по tier из конфига нового бэкенда и
+печатает, что именно заменил. ИИ-оценки LEX при этом переключаются на
+профиль `semantic` нового бэкенда со своим каталогом кэша.
 
 ## Повседневная работа
 
@@ -362,7 +453,8 @@ gate: bash orchestrator/run.sh --check full && bash orchestrator/run.sh --check 
 | `restart_retries` | `3` | Дополнительные запуски после сбоя агента, пустого ответа, таймаута или сбоя push; 0–20 |
 | `retry_delay` | `30` | Пауза между перезапусками, секунд |
 | `models` | см. ниже | Модели по tier, вложенно: секции `codex` и `opencode` |
-| `model_sets` | `{}` | Именованные наборы моделей `opencode` для флага `--models` |
+| `model_sets` | `{}` | Именованные наборы моделей `codex`/`opencode` для флага `--models` |
+| `semantic` | `{}` | Профиль ИИ-оценок LEX по бэкенду: `provider`, `model`, `cache` |
 | `efforts` | `low` / `medium` / `high` | Усилие Codex для light / standard / heavy |
 
 В `models` используйте ключи `light`, `standard`, `heavy` внутри секции
