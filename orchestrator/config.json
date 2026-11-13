@@ -4,18 +4,48 @@
   "branch": "auto/tasks",
   "remote": "origin",
   "push": true,
+  "backend": "opencode",
   "codex_bin": "codex",
+  "opencode_bin": "opencode",
   "sandbox": "workspace-write",
   "gate_base": [],
+  "checks": {
+    "tools": ["python3 -m unittest discover -s tools/tests"],
+    "core": ["bash ./gradlew :core:test --console=plain"],
+    "data": ["bash ./gradlew :app:verifyDictionaryLicenses :core:test --console=plain"],
+    "android": ["bash ./gradlew :app:compileDebugKotlin :app:lintDebug :app:compileDebugAndroidTestKotlin --console=plain"],
+    "full": [
+      "python3 -m unittest discover -s tools/tests",
+      "python3 -m unittest discover -s orchestrator/tests",
+      "bash ./gradlew :core:test :app:assembleDebug --console=plain"
+    ],
+    "release": ["bash ./gradlew :app:assembleRelease --console=plain"]
+  },
   "task_timeout": 3600,
-  "gate_timeout": 1800,
+  "gate_timeout": 3600,
   "git_timeout": 120,
   "restart_retries": 3,
   "retry_delay": 30,
   "models": {
-    "light": "gpt-5.6-luna",
-    "standard": "gpt-6.1-sol",
-    "heavy": "gpt-6.1-sol"
+    "codex": {
+      "light": "gpt-5.6-luna",
+      "standard": "gpt-6.1-sol",
+      "heavy": "gpt-6.1-sol"
+    },
+    "opencode": {
+      "light": "opencode/glm-5.3-flash-free",
+      "standard": "opencode/glm-5.3-flash-free#max",
+      "heavy": "opencode/beam-free#max"
+    }
+  },
+  "model_sets": {
+    "opencode": {
+      "paid": {
+        "light": "opencode/muse-ember-1.0#low",
+        "standard": "opencode/deepseek-v4.1-flash#max",
+        "heavy": "opencode/deepseek-v4-pro#max"
+      }
+    }
   },
   "efforts": {
     "light": "low",

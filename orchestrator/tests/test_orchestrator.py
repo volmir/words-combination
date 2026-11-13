@@ -1,6 +1,8 @@
-"""Интеграционные проверки с временными Git-репозиториями и заглушкой Codex."""
+"""Интеграционные проверки с временными Git-репозиториями и заглушками Codex/OpenCode."""
+import contextlib
 import fcntl
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -70,6 +72,41 @@ if mode != 'empty' and not (mode == 'empty-once' and count == 1):
 if mode == 'blocked-error': sys.exit(7)
 '''
 
+MOCK_OPENCODE = r'''#!/usr/bin/env python3
+import json, os, re, signal, sys, time
+from pathlib import Path
+args = sys.argv[1:]
+assert args[:5] == ['run', '--agent', 'build', '--format', 'json'], args
+if '--model' in args:
+    assert args[args.index('--model') + 1], 'пустая модель не должна передаваться'
+assert '--auto' not in args, 'оркестратор не передаёт --auto'
+prompt = sys.stdin.read()
+task = re.search(r'одно задание: ([A-Za-z0-9_-]+):', prompt)[1]
+work = Path('orchestrator/.runtime'); work.mkdir(exist_ok=True)
+with (work / 'calls.jsonl').open('a') as stream:
+    stream.write(json.dumps({'id': task, 'args': args, 'prompt': prompt}) + '\n')
+mode = os.environ.get('MOCK_MODE', 'normal')
+marker = work / ('interrupted-' + task)
+if mode == 'interrupt-once' and os.environ.get('MOCK_INTERRUPT_TASK') == task and not marker.exists():
+    marker.write_text('1')
+    os.kill(os.getppid(), signal.SIGTERM)
+    time.sleep(30)
+if mode not in ('blocked', 'empty', 'fail'):
+    Path('result-' + task + '.txt').write_text('good')
+def event(kind, part):
+    print(json.dumps({'type': kind, 'part': part}), flush=True)
+event('step_start', {'id': 'p1', 'type': 'step-start'})
+event('tool_use', {'id': 'p2', 'type': 'tool', 'tool': 'read'})
+event('step_finish', {'id': 'p3', 'type': 'step-finish'})
+if mode == 'fail':
+    print('provider error', flush=True)
+    sys.exit(7)
+if mode != 'empty':
+    event('text', {'id': 'p4', 'type': 'text', 'text': 'промежуточное сообщение'})
+    reply = 'BLOCKED: нет данных' if mode == 'blocked' else 'ИТОГ: ' + 'Привет 🛠 ' * 80 + '\nПРОВЕРЕНО: заглушка\n'
+    event('text', {'id': 'p5', 'type': 'text', 'text': reply})
+'''
+
 
 def task(task_id="A-1", gate="test -f result-A-1.txt", retries=1, tier="standard", prompt="Сделай задачу."):
     return f"## {task_id}: Название {task_id}\ntier: {tier}\ngate: {gate}\nretries: {retries}\n```prompt\n{prompt}\n```\n"
@@ -102,6 +139,179 @@ class FixtureTests(unittest.TestCase):
                     with self.assertRaises(module.Error):
                         module.load_config(config)
 
+    def test_load_config_validates_checks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / 'config.json'
+            for body in ({'checks': {'probe': []}},
+                         {'checks': {'probe': 'true'}},
+                         {'checks': {'probe': [42]}},
+                         {'checks': {'probe': ['   ']}},
+                         {'checks': {'': ['true']}},
+                         {'checks': {'orchestrator': ['true']}}):
+                with self.subTest(body=body):
+                    config.write_text(json.dumps(body))
+                    with self.assertRaises(module.Error):
+                        module.load_config(config)
+            config.write_text(json.dumps({'checks': {'probe': ['true', 'false']}}))
+            loaded = module.load_config(config)
+            self.assertEqual(loaded['checks'], {'probe': ['true', 'false']})
+            self.assertEqual(module.load_config(Path(directory) / 'missing.json')['checks'], {})
+
+    def test_load_config_selects_backend_section_of_nested_models(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / 'config.json'
+            config.write_text(json.dumps({
+                'backend': 'opencode',
+                'models': {'opencode': {'light': 'prov/m-free'}, 'codex': {'light': 'c-only'}},
+            }))
+            loaded = module.load_config(config)
+            self.assertEqual(loaded['models'],
+                             {'light': 'prov/m-free',
+                              'standard': module.OPENCODE_MODEL_DEFAULTS['standard'],
+                              'heavy': module.OPENCODE_MODEL_DEFAULTS['heavy']})
+            config.write_text(json.dumps({'models': {'light': 'flat-codex'}}))
+            loaded = module.load_config(config)
+            self.assertEqual(loaded['models']['light'], 'flat-codex')
+            self.assertEqual(loaded['models']['standard'], module.CODEX_MODEL_DEFAULTS['standard'])
+
+    def test_load_config_rejects_invalid_models_and_backend(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / 'config.json'
+            for body in ({'backend': 'opencode', 'models': {'light': 'x'}},
+                         {'models': {'unknown': {}}},
+                         {'models': {'codex': {'tiny': 'x'}}},
+                         {'models': {'codex': {'light': 5}}},
+                         {'backend': 'claude'},
+                         {'efforts': {'light': 5}}):
+                with self.subTest(body=body):
+                    config.write_text(json.dumps(body))
+                    with self.assertRaises(module.Error):
+                        module.load_config(config)
+
+    def test_load_config_backend_override_selects_models_section(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / 'config.json'
+            config.write_text(json.dumps({
+                'backend': 'codex',
+                'models': {'codex': {'light': 'c-only'}, 'opencode': {'light': 'o-only'}},
+            }))
+            self.assertEqual(module.load_config(config, backend='opencode')['models']['light'], 'o-only')
+            self.assertEqual(module.load_config(config, backend='codex')['models']['light'], 'c-only')
+            config.write_text(json.dumps({'models': {'light': 'flat-codex'}}))
+            with self.assertRaises(module.Error):
+                module.load_config(config, backend='opencode')
+            self.assertEqual(module.load_config(config, backend='codex')['models']['light'], 'flat-codex')
+            with self.assertRaises(module.Error):
+                module.load_config(config, backend='claude')
+
+    def test_load_config_selects_named_model_set(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / 'config.json'
+            config.write_text(json.dumps({
+                'backend': 'opencode',
+                'models': {'opencode': {'light': 'free-l', 'standard': 'free-s', 'heavy': 'free-h'}},
+                'model_sets': {'opencode': {'paid': {
+                    'light': 'paid-l', 'standard': 'paid-s', 'heavy': 'paid-h'}}},
+            }))
+            self.assertEqual(module.load_config(config)['models'],
+                             {'light': 'free-l', 'standard': 'free-s', 'heavy': 'free-h'})
+            self.assertEqual(module.load_config(config, models_set='paid')['models'],
+                             {'light': 'paid-l', 'standard': 'paid-s', 'heavy': 'paid-h'})
+            self.assertEqual(module.load_config(Path(directory) / 'missing.json')['model_sets'], {})
+
+    def test_load_config_rejects_invalid_model_sets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / 'config.json'
+            for body in ({'model_sets': []},
+                         {'model_sets': {'codex': {'paid': {'light': 'a', 'standard': 'b', 'heavy': 'c'}}}},
+                         {'model_sets': {'opencode': {'paid': {'light': 'a', 'standard': 'b'}}}},
+                         {'model_sets': {'opencode': {'paid': {'light': 'a', 'standard': 'b', 'heavy': ''}}}},
+                         {'model_sets': {'opencode': {'paid': {'light': 'a', 'standard': 5, 'heavy': 'c'}}}},
+                         {'model_sets': {'opencode': {'': {'light': 'a', 'standard': 'b', 'heavy': 'c'}}}},
+                         {'model_sets': {'opencode': {'paid': {'light': 'a', 'standard': 'b', 'heavy': 'c',
+                                                               'tiny': 'x'}}}},
+                         {'model_sets': {'opencode': {'paid': 'x'}}}):
+                with self.subTest(body=body):
+                    config.write_text(json.dumps(body))
+                    with self.assertRaises(module.Error):
+                        module.load_config(config)
+
+    def test_models_option_requires_opencode_and_known_set(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / 'config.json'
+            config.write_text(json.dumps({'model_sets': {'opencode': {'paid': {
+                'light': 'paid-l', 'standard': 'paid-s', 'heavy': 'paid-h'}}}}))
+            with self.assertRaises(module.Error):
+                module.load_config(config, models_set='paid')  # backend по умолчанию codex
+            self.assertEqual(module.load_config(config, backend='opencode', models_set='paid')['models']['heavy'],
+                             'paid-h')
+            with self.assertRaises(module.Error) as caught:
+                module.load_config(config, backend='opencode', models_set='free')
+            self.assertIn('paid', str(caught.exception))
+            config.write_text('{}')
+            with self.assertRaises(module.Error):
+                module.load_config(config, backend='opencode', models_set='paid')
+
+    def test_load_config_ignores_environment_variables(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.dict(os.environ, {'MODEL_LIGHT': 'from-env', 'CODEX_BIN': '/env/codex',
+                                        'TASK_TIMEOUT': '99', 'NO_PUSH': '1', 'BRANCH': 'env-branch',
+                                        'GATE_BASE': 'env arg'}):
+            config = Path(directory) / 'config.json'
+            config.write_text('{}')
+            loaded = module.load_config(config)
+            self.assertEqual(loaded['models']['light'], module.CODEX_MODEL_DEFAULTS['light'])
+            self.assertEqual(loaded['codex_bin'], 'codex')
+            self.assertEqual(loaded['task_timeout'], module.DEFAULTS['task_timeout'])
+            self.assertTrue(loaded['push'])
+            self.assertEqual(loaded['branch'], module.DEFAULTS['branch'])
+            self.assertEqual(loaded['gate_base'], [])
+
+    def test_load_config_warns_efforts_ignored_for_opencode(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / 'config.json'
+            config.write_text(json.dumps({'backend': 'opencode', 'efforts': {'light': 'high'}}))
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                module.load_config(config)
+            self.assertIn('efforts игнорируются', stderr.getvalue())
+            config.write_text(json.dumps({'backend': 'opencode'}))
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                module.load_config(config)
+            self.assertNotIn('efforts', stderr.getvalue())
+
+    def test_codex_command_is_byte_identical_to_previous_version(self):
+        config = {'backend': 'codex', 'codex_bin': 'codex', 'sandbox': 'workspace-write'}
+        command = module.agent_start_command(config, 'm-1', 'high', Path('last.md'))
+        self.assertEqual(command, ['codex', 'exec', '--model', 'm-1', '-c', 'model_reasoning_effort="high"',
+                                   '--sandbox', 'workspace-write', '--output-last-message', 'last.md', '-'])
+        command = module.agent_start_command(config, '', 'low', Path('last.md'))
+        self.assertEqual(command, ['codex', 'exec', '-c', 'model_reasoning_effort="low"',
+                                   '--sandbox', 'workspace-write', '--output-last-message', 'last.md', '-'])
+
+    def test_opencode_command_shape(self):
+        config = {'backend': 'opencode', 'opencode_bin': 'opencode'}
+        self.assertEqual(module.agent_start_command(config, 'prov/m#max', 'high', Path('last.md')),
+                         ['opencode', 'run', '--agent', 'build', '--format', 'json', '--model', 'prov/m#max'])
+        self.assertEqual(module.agent_start_command(config, '', 'high', Path('last.md')),
+                         ['opencode', 'run', '--agent', 'build', '--format', 'json'])
+
+    def test_extract_opencode_reply_takes_last_text_event(self):
+        self.assertEqual(module.extract_opencode_reply(PACKAGE / 'tests/fixtures/opencode_run_sample.jsonl'),
+                         'ИТОГ: ок')
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / 'log'
+            log.write_text('\n'.join([
+                'служебная не-JSON строка',
+                json.dumps({'type': 'step_start', 'part': {'type': 'step-start'}}),
+                json.dumps({'type': 'text', 'part': {'type': 'text', 'text': 'промежуточное'}}),
+                json.dumps({'type': 'text', 'part': {'type': 'text', 'text': 'ИТОГ: последний'}}),
+            ]) + '\n')
+            self.assertEqual(module.extract_opencode_reply(log), 'ИТОГ: последний')
+            log.write_text(json.dumps({'type': 'step_finish', 'part': {'type': 'step-finish'}}) + '\n')
+            self.assertIsNone(module.extract_opencode_reply(log))
+
     def test_copy_starts_without_existing_run_state_and_preserves_source(self):
         with tempfile.TemporaryDirectory(prefix='orchestrator fixture ') as temp:
             source = Path(temp) / 'source'
@@ -124,31 +334,8 @@ class FixtureTests(unittest.TestCase):
                 {p.relative_to(source): p.read_bytes() for p in source.rglob('*') if p.is_file()}, before)
 
 
-class OrchestratorTests(unittest.TestCase):
-    def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="orchestrator space ")
-        self.base = Path(self.temp.name)
-        self.repo = self.base / "project space"
-        self.repo.mkdir()
-        copy_test_package(PACKAGE, self.repo / 'orchestrator')
-        self.mock = self.base / "mock codex"
-        self.mock.write_text(MOCK)
-        self.mock.chmod(0o755)
-        self.env = dict(os.environ)
-        for key in [*map(str.upper, module.DEFAULTS), 'GATE_BASE', 'NO_PUSH', 'MOCK_MODE',
-                    'GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR']:
-            self.env.pop(key, None)
-        for tier in ('LIGHT', 'STANDARD', 'HEAVY'):
-            self.env.pop('MODEL_' + tier, None)
-            self.env.pop('EFFORT_' + tier, None)
-        self.env.update(NO_PUSH='1', CODEX_BIN=str(self.mock), GIT_CONFIG_GLOBAL='/dev/null', GIT_CONFIG_NOSYSTEM='1',
-                        RESTART_RETRIES='0', RETRY_DELAY='0')
-        self.g('init', '-q', '-b', 'main')
-        self.g('config', 'user.name', 'Test')
-        self.g('config', 'user.email', 'test@example.invalid')
-        self.g('config', 'core.hooksPath', '/dev/null')
-        self.save_tasks(task())
-        self.commit()
+class QueueHelpers:
+    """Общие помощники интеграционных тестов очереди для обоих бэкендов."""
 
     def tearDown(self):
         self.temp.cleanup()
@@ -162,6 +349,15 @@ class OrchestratorTests(unittest.TestCase):
 
     def save_tasks(self, text):
         (self.repo / 'orchestrator/TASKS.md').write_text(text, encoding='utf-8')
+
+    def set_config(self, commit=True, **overrides):
+        path = self.repo / 'orchestrator/config.json'
+        data = json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
+        data.update(overrides)
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding='utf-8')
+        if commit:
+            self.g('add', '-A')
+            self.g('commit', '-qm', 'config')
 
     def run_cli(self, *args, ok=True, **env):
         result = subprocess.run(['bash', 'orchestrator/run.sh', *args], cwd=self.repo,
@@ -178,6 +374,34 @@ class OrchestratorTests(unittest.TestCase):
 
     def progress(self):
         return module.read_progress(self.repo / 'orchestrator/PROGRESS.md')
+
+
+class OrchestratorTests(QueueHelpers, unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="orchestrator space ")
+        self.base = Path(self.temp.name)
+        self.repo = self.base / "project space"
+        self.repo.mkdir()
+        copy_test_package(PACKAGE, self.repo / 'orchestrator')
+        self.mock = self.base / "mock codex"
+        self.mock.write_text(MOCK)
+        self.mock.chmod(0o755)
+        self.env = dict(os.environ)
+        for key in ('MOCK_MODE', 'MOCK_INTERRUPT_TASK', 'GIT_DIR', 'GIT_WORK_TREE',
+                    'GIT_INDEX_FILE', 'GIT_COMMON_DIR'):
+            self.env.pop(key, None)
+        self.env.update(GIT_CONFIG_GLOBAL='/dev/null', GIT_CONFIG_NOSYSTEM='1')
+        self.g('init', '-q', '-b', 'main')
+        self.g('config', 'user.name', 'Test')
+        self.g('config', 'user.email', 'test@example.invalid')
+        self.g('config', 'core.hooksPath', '/dev/null')
+        # Слой окружения удалён: все настройки оркестратора — только через config.json.
+        # Фикстура кодексового бэкенда фиксирует backend=codex независимо от
+        # значения по умолчанию в конфиге целевого проекта.
+        self.set_config(backend='codex', push=False, codex_bin=str(self.mock),
+                        restart_retries=0, retry_delay=0)
+        self.save_tasks(task())
+        self.commit()
 
     def test_order_skip_and_incremental_queue(self):
         self.save_tasks(task() + '\n' + task('B', 'test -f result-B.txt'))
@@ -224,8 +448,7 @@ class OrchestratorTests(unittest.TestCase):
     def test_configured_models_and_default_push(self):
         configured = json.loads((self.repo / 'orchestrator/config.json').read_text())
         expected = {'light': 'gpt-5.6-luna', 'standard': 'gpt-6.1-sol', 'heavy': 'gpt-6.1-sol'}
-        self.assertEqual(configured['models'], expected)
-        self.assertTrue(configured['push'])
+        self.assertEqual(configured['models']['codex'], expected)
         self.assertTrue(module.DEFAULTS['push'])
         self.save_tasks(task(tier='light') + '\n' + task('B', 'true') + '\n' + task('C', 'true', tier='heavy'))
         self.commit()
@@ -235,8 +458,7 @@ class OrchestratorTests(unittest.TestCase):
         remote = self.base / 'default-push.git'
         subprocess.run(['git', 'init', '--bare', '-q', str(remote)], check=True, env=self.env)
         self.g('remote', 'add', 'origin', str(remote))
-        self.env.pop('NO_PUSH')
-        self.run_cli()
+        self.run_cli('--push')
         for call, tier, effort in zip(self.calls(), ('light', 'standard', 'heavy'), ('low', 'medium', 'high')):
             with self.subTest(tier=tier):
                 args = call['args']
@@ -244,25 +466,24 @@ class OrchestratorTests(unittest.TestCase):
                 self.assertIn(f'model_reasoning_effort="{effort}"', args)
         self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/auto/tasks'))
 
-    def test_default_push_without_config(self):
-        (self.repo / 'orchestrator/config.json').unlink()
+    def test_push_by_default_with_minimal_config(self):
+        (self.repo / 'orchestrator/config.json').write_text(json.dumps({'codex_bin': str(self.mock)}))
         self.commit()
         remote = self.base / 'fallback-push.git'
         subprocess.run(['git', 'init', '--bare', '-q', str(remote)], check=True, env=self.env)
         self.g('remote', 'add', 'origin', str(remote))
-        self.env.pop('NO_PUSH')
         self.run_cli()
         self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/auto/tasks'))
 
     def test_no_push_works_without_remote_and_keeps_commit_local(self):
-        self.env.pop('NO_PUSH')
         self.run_cli('--no-push')
         self.assertIn('A-1', self.progress())
         self.assertEqual(self.g('remote'), '')
         self.assertEqual(self.g('status', '--porcelain'), '')
 
     def test_state_paths_cannot_point_into_runtime(self):
-        self.run_cli('--list', ok=False, TASKS_FILE='orchestrator/.runtime/TASKS.md')
+        self.set_config(commit=False, tasks_file='orchestrator/.runtime/TASKS.md')
+        self.run_cli('--list', ok=False)
 
     def test_retry_uses_fresh_exec_and_retains_logs(self):
         self.save_tasks(task(gate="test \"$(cat result-A-1.txt)\" = good"))
@@ -274,10 +495,10 @@ class OrchestratorTests(unittest.TestCase):
         self.assertEqual(self.progress()['A-1']['gate'], 'passed')
 
     def test_check_mode_runs_inside_queue_and_retries_failed_check(self):
-        self.save_tasks(task(gate='bash orchestrator/run.sh --check core'))
+        self.save_tasks(task(gate='bash orchestrator/run.sh --check android'))
         (self.repo / 'gradlew').write_text(
             '#!/usr/bin/env bash\n'
-            'test "$*" = ":core:test --console=plain" && '
+            'test "$*" = ":app:compileDebugKotlin :app:lintDebug :app:compileDebugAndroidTestKotlin --console=plain" && '
             'test "$(cat result-A-1.txt)" = good\n')
         self.commit()
         self.run_cli(MOCK_MODE='retry')
@@ -287,17 +508,16 @@ class OrchestratorTests(unittest.TestCase):
         self.assertEqual(self.progress()['A-1']['gate'], 'passed')
         self.assertEqual(self.g('status', '--porcelain'), '')
 
-    def test_check_mode_ignores_queue_config_dirty_tree_and_queue_lock(self):
+    def test_check_mode_ignores_dirty_tree_and_queue_lock(self):
         (self.repo / 'gradlew').write_text('#!/usr/bin/env bash\nexit 0\n')
-        self.commit()
-        (self.repo / 'orchestrator/config.json').write_text('invalid JSON')
+        self.set_config(checks={'probe': ['exit 0']})
         self.save_tasks('invalid queue')
         head = self.g('rev-parse', 'HEAD')
         status = self.g('status', '--porcelain')
         common = self.repo / self.g('rev-parse', '--git-common-dir')
         with (common / 'universal-orchestrator.lock').open('a') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            self.run_cli('--check', 'core', CODEX_BIN=str(self.base / 'missing-codex'))
+            self.run_cli('--check', 'probe')
         self.assertEqual(self.g('rev-parse', 'HEAD'), head)
         self.assertEqual(self.g('branch', '--show-current'), 'main')
         self.assertEqual(self.g('status', '--porcelain'), status)
@@ -345,7 +565,8 @@ class OrchestratorTests(unittest.TestCase):
     def test_resume_interrupted_task_preserves_changes_and_skips_completed_tasks(self):
         self.save_tasks(task() + '\n' + task('B', 'test -f result-B.txt') + '\n' + task('C', 'true'))
         self.commit()
-        self.run_cli(ok=False, MOCK_MODE='interrupt-once', MOCK_INTERRUPT_TASK='B', RESTART_RETRIES='2')
+        self.set_config(restart_retries=2)
+        self.run_cli(ok=False, MOCK_MODE='interrupt-once', MOCK_INTERRUPT_TASK='B')
         self.assertEqual(set(self.progress()), {'A-1'})
         self.assertEqual((self.repo / 'result-B.txt').read_text(), 'good')
         self.run_cli()
@@ -356,20 +577,23 @@ class OrchestratorTests(unittest.TestCase):
         self.assertFalse((self.repo / 'orchestrator/.runtime/checkpoint.json').exists())
 
     def test_transient_agent_error_restarts_without_losing_partial_work(self):
-        self.run_cli(MOCK_MODE='transient', RESTART_RETRIES='1')
+        self.set_config(restart_retries=1)
+        self.run_cli(MOCK_MODE='transient')
         self.assertEqual(len(self.calls()), 2)
         self.assertEqual(self.progress()['A-1']['gate'], 'passed')
         self.assertEqual(len(list((self.repo / 'orchestrator/.runtime/logs').rglob('*.exec.*.log'))), 2)
 
     def test_empty_agent_reply_can_restart(self):
-        self.run_cli(MOCK_MODE='empty-once', RESTART_RETRIES='1')
+        self.set_config(restart_retries=1)
+        self.run_cli(MOCK_MODE='empty-once')
         self.assertEqual(len(self.calls()), 2)
         self.assertEqual(self.progress()['A-1']['gate'], 'passed')
 
     def test_agent_timeout_can_restart_without_spending_gate_retries(self):
         self.save_tasks(task(retries=0))
         self.commit()
-        self.run_cli(MOCK_MODE='timeout-once', TASK_TIMEOUT='1', RESTART_RETRIES='1')
+        self.set_config(task_timeout=1, restart_retries=1)
+        self.run_cli(MOCK_MODE='timeout-once')
         self.assertEqual(len(self.calls()), 2)
         self.assertEqual(self.progress()['A-1']['gate'], 'passed')
 
@@ -377,7 +601,8 @@ class OrchestratorTests(unittest.TestCase):
         self.save_tasks(task(retries=0, gate='if test ! -f orchestrator/.runtime/gate-started; then '
                              'touch orchestrator/.runtime/gate-started; sleep 30; fi'))
         self.commit()
-        self.run_cli(GATE_TIMEOUT='1', RESTART_RETRIES='1')
+        self.set_config(gate_timeout=1, restart_retries=1)
+        self.run_cli()
         self.assertEqual(len(self.calls()), 1)
         self.assertEqual(self.progress()['A-1']['gate'], 'passed')
 
@@ -583,11 +808,12 @@ class OrchestratorTests(unittest.TestCase):
         config_file = self.repo / 'orchestrator/config.json'
         config = json.loads(config_file.read_text())
         config.update(tasks_file='plans/work.md', progress_file='notes/progress.md',
-                      gate_base=['env'], branch='work/queue')
-        config['models']['standard'] = 'test-model'
+                      gate_base=['env'], branch='work/queue',
+                      efforts={**config['efforts'], 'standard': 'high'})
+        config['models']['codex']['standard'] = 'test-model'
         config_file.write_text(json.dumps(config))
         self.commit()
-        self.run_cli(EFFORT_STANDARD='high')
+        self.run_cli()
         self.assertTrue((self.repo / 'notes/progress.md').exists())
         call = self.calls()[0]
         self.assertIn('test-model', call['args'])
@@ -675,7 +901,8 @@ class OrchestratorTests(unittest.TestCase):
             self.assertEqual(self.progress()['A-1']['gate'], 'passed')
 
     def test_timeout_stops_child_group(self):
-        self.assertIn('таймаут', self.run_cli(ok=False, MOCK_MODE='timeout', TASK_TIMEOUT='1'))
+        self.set_config(task_timeout=1)
+        self.assertIn('таймаут', self.run_cli(ok=False, MOCK_MODE='timeout'))
         pid = int((self.repo / 'orchestrator/.runtime/child.pid').read_text())
         status = Path(f'/proc/{pid}/stat')
         if status.exists():
@@ -705,7 +932,8 @@ class OrchestratorTests(unittest.TestCase):
     def test_gate_timeout(self):
         self.save_tasks(task(gate='sleep 30'))
         self.commit()
-        self.assertIn('таймаут', self.run_cli(ok=False, GATE_TIMEOUT='1'))
+        self.set_config(gate_timeout=1)
+        self.assertIn('таймаут', self.run_cli(ok=False))
         self.assertEqual(len(self.calls()), 1)
         self.assertFalse(self.progress())
 
@@ -730,7 +958,8 @@ class OrchestratorTests(unittest.TestCase):
         self.assertEqual(module.parse_tasks(self.repo / 'orchestrator/TASKS.md')[0].id, 'A-1')
 
     def test_path_escape_and_bad_config_are_rejected(self):
-        self.run_cli('--list', ok=False, TASKS_FILE='../outside.md')
+        self.set_config(commit=False, tasks_file='../outside.md')
+        self.run_cli('--list', ok=False)
         path = self.repo / 'orchestrator/config.json'
         path.write_text('{"unknown": true}')
         self.run_cli('--list', ok=False)
@@ -739,8 +968,120 @@ class OrchestratorTests(unittest.TestCase):
         linked = self.base / 'linked project'
         self.g('worktree', 'add', '-qb', 'linked-base', str(linked))
         self.repo = linked
-        self.run_cli(BRANCH='linked-tasks')
+        self.set_config(branch='linked-tasks')
+        self.run_cli()
         self.assertEqual(self.g('status', '--porcelain'), '')
+
+
+class OpenCodeTests(QueueHelpers, unittest.TestCase):
+    """Полный цикл очереди на бэкенде OpenCode: команда, извлечение ответа, сбои."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="orchestrator opencode ")
+        self.base = Path(self.temp.name)
+        self.repo = self.base / "project space"
+        self.repo.mkdir()
+        copy_test_package(PACKAGE, self.repo / 'orchestrator')
+        self.mock = self.base / "mock opencode"
+        self.mock.write_text(MOCK_OPENCODE)
+        self.mock.chmod(0o755)
+        self.env = dict(os.environ)
+        for key in ('MOCK_MODE', 'GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR'):
+            self.env.pop(key, None)
+        self.env.update(GIT_CONFIG_GLOBAL='/dev/null', GIT_CONFIG_NOSYSTEM='1')
+        self.g('init', '-q', '-b', 'main')
+        self.g('config', 'user.name', 'Test')
+        self.g('config', 'user.email', 'test@example.invalid')
+        self.g('config', 'core.hooksPath', '/dev/null')
+        self.set_config(backend='opencode', opencode_bin=str(self.mock), push=False,
+                        restart_retries=0, retry_delay=0,
+                        models={'opencode': {'light': 'opencode/test-m', 'standard': 'opencode/test-s',
+                                             'heavy': 'opencode/test-h'}})
+        self.save_tasks(task(tier='light'))
+        self.commit()
+
+    def test_full_cycle_uses_run_command_and_extracts_last_text(self):
+        self.run_cli()
+        call = self.calls()[0]
+        self.assertEqual(call['args'], ['run', '--agent', 'build', '--format', 'json',
+                                        '--model', 'opencode/test-m'])
+        self.assertIn('ЗАДАНИЕ A-1', call['prompt'])
+        record = self.progress()['A-1']
+        self.assertEqual(record['model'], 'opencode/test-m')
+        self.assertEqual(record['summary'][:6], 'ИТОГ: ')
+        # Финальный ответ — последний text-event, а не промежуточное сообщение заглушки.
+        self.assertIn('Привет 🛠', record['summary'])
+        self.assertIn('A-1:', self.g('log', '-1', '--format=%s'))
+        self.assertEqual(self.g('status', '--porcelain'), '')
+
+    def test_empty_model_is_taken_from_cli_settings(self):
+        self.set_config(models={'opencode': {'light': ''}})
+        self.run_cli()
+        self.assertEqual(self.calls()[0]['args'], ['run', '--agent', 'build', '--format', 'json'])
+
+    def test_blocked_reply_is_not_retried(self):
+        self.run_cli(ok=False, MOCK_MODE='blocked')
+        self.assertEqual(len(self.calls()), 1)
+        self.assertIn('BLOCKED', self.run_cli(ok=False))
+        self.assertEqual(len(self.calls()), 1)
+
+    def test_empty_stream_stops_without_completion(self):
+        self.run_cli(ok=False, MOCK_MODE='empty')
+        self.assertFalse(self.progress())
+        self.assertEqual(len(self.calls()), 1)
+
+    def test_provider_exit_code_fails_the_task(self):
+        self.run_cli(ok=False, MOCK_MODE='fail')
+        self.assertFalse(self.progress())
+        self.assertEqual(len(self.calls()), 1)
+
+    def test_flat_models_are_rejected_for_opencode(self):
+        self.set_config(commit=False, models={'light': 'x'})
+        self.assertIn('плоский формат', self.run_cli(ok=False))
+        self.assertFalse(self.calls())
+
+    def test_backend_flag_overrides_config(self):
+        self.set_config(backend='codex', models={'codex': {'light': 'codex-only'},
+                                                 'opencode': {'light': 'opencode/flag-m',
+                                                              'standard': 'opencode/flag-s',
+                                                              'heavy': 'opencode/flag-h'}})
+        self.run_cli('--backend', 'opencode')
+        self.assertEqual(self.calls()[0]['args'],
+                         ['run', '--agent', 'build', '--format', 'json', '--model', 'opencode/flag-m'])
+        self.assertEqual(self.progress()['A-1']['model'], 'opencode/flag-m')
+
+    def paid_set(self):
+        return {'opencode': {'paid': {'light': 'opencode/paid-l',
+                                      'standard': 'opencode/paid-s',
+                                      'heavy': 'opencode/paid-h'}}}
+
+    def test_models_flag_selects_named_set(self):
+        self.set_config(models={'opencode': {'light': 'free-l', 'standard': 'free-s', 'heavy': 'free-h'}},
+                        model_sets=self.paid_set())
+        self.assertIn('opencode/paid-l', self.run_cli('--models', 'paid', '--dry-run'))
+        self.assertFalse(self.calls())
+        self.run_cli('--models', 'paid')
+        self.assertEqual(self.calls()[0]['args'],
+                         ['run', '--agent', 'build', '--format', 'json', '--model', 'opencode/paid-l'])
+        self.assertEqual(self.progress()['A-1']['model'], 'opencode/paid-l')
+        self.assertEqual(self.g('status', '--porcelain'), '')
+
+    def test_models_flag_is_rejected_for_codex(self):
+        self.set_config(backend='codex', codex_bin=str(self.mock), model_sets=self.paid_set())
+        output = self.run_cli('--backend', 'codex', '--models', 'paid', ok=False)
+        self.assertIn('opencode', output)
+        self.assertFalse(self.calls())
+
+    def test_resume_with_models_flag_keeps_saved_models_and_warns(self):
+        self.set_config(models={'opencode': {'light': 'free-l', 'standard': 'free-s', 'heavy': 'free-h'}},
+                        model_sets=self.paid_set(), restart_retries=2)
+        self.save_tasks(task(tier='light') + '\n' + task('B', 'test -f result-B.txt', tier='light'))
+        self.commit()
+        self.run_cli(ok=False, MOCK_MODE='interrupt-once', MOCK_INTERRUPT_TASK='B')
+        output = self.run_cli('--models', 'paid')
+        self.assertIn('продолжается с сохранённой моделью', output)
+        self.assertEqual(self.calls()[2]['args'][-1], 'free-l')
+        self.assertEqual(self.progress()['B']['model'], 'free-l')
 
 
 if __name__ == '__main__':

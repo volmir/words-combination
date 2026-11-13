@@ -157,22 +157,27 @@ Release-команды сейчас должны завершаться отка
 
 ### Оркестратор задач разработки
 
-В `orchestrator/` подключён последовательный запуск задач через Codex CLI:
+В `orchestrator/` подключён последовательный запуск задач через CLI-агента
+(Codex CLI или OpenCode):
 задача → проверки проекта → запись результата → локальный Git-коммит.
-Нужны Bash, Python 3.10+, Git и авторизованный Codex CLI; для сборок — JDK 21
-и Android SDK из требований выше. Зависимости Android-приложения не меняются.
+Нужны Bash, Python 3.10+, Git и один авторизованный CLI-агент (`codex` или
+`opencode`); для сборок — JDK 21 и Android SDK из требований выше.
+Зависимости Android-приложения не меняются.
 
 ```bash
-bash orchestrator/run.sh --dry-run     # план без запуска моделей и изменений
-bash orchestrator/run.sh --check full  # Python-тесты, :core:test, :app:assembleDebug
-bash orchestrator/run.sh              # выполнение сохранённой в Git очереди
+bash orchestrator/run.sh --dry-run                      # план без запуска моделей и изменений
+bash orchestrator/run.sh --check full                   # Python-тесты, :core:test, :app:assembleDebug
+bash orchestrator/run.sh                                # выполнение сохранённой в Git очереди
+bash orchestrator/run.sh --backend opencode --models paid  # платный набор моделей OpenCode
 ```
 
 Рабочая очередь [orchestrator/TASKS.md](orchestrator/TASKS.md) изначально пуста.
 Добавьте согласованные задачи и сохраните изменения коммитом перед запуском.
-По умолчанию используется ветка `auto/tasks`, push отключён. Модели и таймауты —
-в [config.json](orchestrator/config.json), формат задач, дополнительные проверки
-и продолжение после ошибки — в [инструкции оркестратора](orchestrator/README.md).
+По умолчанию используется ветка `auto/tasks`, push включён (`--no-push` отключает
+его на один запуск). Бэкенд (`codex`/`opencode`), модели (бесплатный набор по
+умолчанию и платный `--models paid`) и таймауты — в [config.json](orchestrator/config.json),
+формат задач, дополнительные проверки и продолжение после ошибки — в
+[инструкции оркестратора](orchestrator/README.md).
 Отсутствующий SDK останавливает полный гейт; проверка release по-прежнему требует
 ручного аудита определений.
 

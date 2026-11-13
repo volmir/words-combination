@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Последовательный Codex → gate → журнал → Git. Без внешних Python-пакетов."""
+"""Последовательный агент (Codex или OpenCode) → gate → журнал → Git. Без внешних Python-пакетов."""
 import argparse
 import fcntl
 import hashlib
@@ -7,7 +7,6 @@ import json
 import os
 from pathlib import Path
 import re
-import shlex
 import shutil
 import signal
 import subprocess
@@ -112,66 +111,119 @@ def parse_tasks(path):
     return tasks
 
 
+CODEX_MODEL_DEFAULTS = {"light": "gpt-5.6-luna", "standard": "gpt-6.1-sol", "heavy": "gpt-6-astra"}
+OPENCODE_MODEL_DEFAULTS = {"light": "opencode/glm-5.3-flash-free",
+                           "standard": "opencode/glm-5.3-flash-free#max",
+                           "heavy": "opencode/beam-free#max"}
+TIERS = ("light", "standard", "heavy")
+BACKENDS = ("codex", "opencode")
 DEFAULTS = {
     "tasks_file": "orchestrator/TASKS.md", "progress_file": "orchestrator/PROGRESS.md",
     "branch": "auto/tasks", "remote": "origin", "push": True,
-    "codex_bin": "codex", "sandbox": "workspace-write", "gate_base": [],
+    "backend": "codex", "codex_bin": "codex", "opencode_bin": "opencode",
+    "sandbox": "workspace-write", "gate_base": [], "checks": {},
     "task_timeout": 3600, "gate_timeout": 1800, "git_timeout": 120,
     "restart_retries": 3, "retry_delay": 30,
-    "models": {"light": "gpt-5.6-luna", "standard": "gpt-6.1-sol", "heavy": "gpt-6-astra"},
+    "models": {"codex": dict(CODEX_MODEL_DEFAULTS), "opencode": dict(OPENCODE_MODEL_DEFAULTS)},
+    "model_sets": {},
     "efforts": {"light": "low", "standard": "medium", "heavy": "high"},
 }
 
 
-def load_config(path):
+def load_config(path, backend=None, models_set=None):
+    """backend и models_set — необязательные перекрытия от CLI (--backend, --models).
+
+    backend валидируется как ключ конфига; models_set выбирает именованный набор
+    из model_sets.opencode и заменяет им модели активного бэкенда на один запуск.
+    """
     config = dict(DEFAULTS)
-    config["models"], config["efforts"] = dict(DEFAULTS["models"]), dict(DEFAULTS["efforts"])
+    config["models"] = {name: dict(tiers) for name, tiers in DEFAULTS["models"].items()}
+    config["model_sets"] = {}
+    config["efforts"] = dict(DEFAULTS["efforts"])
     if path.exists():
         data = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(data, dict) or set(data) - set(DEFAULTS):
             raise Error("config.json: неизвестные ключи или неверный JSON-объект")
-        for key, value in data.items():
-            if key in ("models", "efforts"):
-                if not isinstance(value, dict) or set(value) - set(config[key]):
-                    raise Error(f"config.json: неверная секция {key}")
-                config[key].update(value)
-            else:
-                config[key] = value
-    # Прежние переменные окружения сохранены; окружение имеет приоритет над JSON.
-    for key in ("tasks_file", "progress_file", "branch", "remote", "codex_bin", "sandbox"):
-        config[key] = os.environ.get(key.upper(), config[key])
+        models = data.pop("models", None)
+        model_sets = data.pop("model_sets", None)
+        efforts = data.pop("efforts", None)
+        config.update(data)
+        # Перекрытие применяется до разбора models: от него зависят и запрет
+        # плоского формата, и выбор секции моделей активного бэкенда.
+        if backend is not None:
+            config["backend"] = backend
+        if models is not None:
+            if not isinstance(models, dict):
+                raise Error("config.json: неверная секция models")
+            if set(models) <= set(TIERS):
+                # Плоский формат сохранён для совместимости старых конфигов Codex.
+                if config["backend"] != "codex":
+                    raise Error('config.json: плоский формат models допустим только при backend="codex"; '
+                                'для opencode используйте вложенный формат {"codex"|"opencode": {...}}')
+                models = {"codex": models}
+            if set(models) - set(BACKENDS):
+                raise Error("config.json: неверная секция models")
+            for name, tiers in models.items():
+                if not isinstance(tiers, dict) or set(tiers) - set(TIERS) \
+                        or not all(isinstance(value, str) for value in tiers.values()):
+                    raise Error(f"config.json: неверная секция models.{name}")
+                config["models"][name].update(tiers)
+        if model_sets is not None:
+            if not isinstance(model_sets, dict) or set(model_sets) - {"opencode"}:
+                raise Error("config.json: неверная секция model_sets; допустима только секция opencode")
+            for name, tiers in model_sets.get("opencode", {}).items():
+                if not isinstance(name, str) or not name or not isinstance(tiers, dict) \
+                        or set(tiers) != set(TIERS) \
+                        or not all(isinstance(value, str) and value for value in tiers.values()):
+                    raise Error("config.json: неверная секция model_sets.opencode: нужны наборы "
+                                "с непустыми моделями light, standard и heavy")
+            config["model_sets"] = model_sets
+        if efforts is not None:
+            if not isinstance(efforts, dict) or set(efforts) - set(TIERS) \
+                    or not all(isinstance(value, str) for value in efforts.values()):
+                raise Error("config.json: неверная секция efforts")
+            config["efforts"].update(efforts)
+            if config["backend"] == "opencode":
+                print('ПРЕДУПРЕЖДЕНИЕ: efforts игнорируются при backend="opencode"; '
+                      "вариант reasoning задаётся суффиксом #variant в строке модели", file=sys.stderr)
+    if config["backend"] not in BACKENDS:
+        raise Error('backend: допустимы "codex" и "opencode"')
     for key in ("task_timeout", "gate_timeout", "git_timeout"):
-        if key.upper() in os.environ:
-            config[key] = int(os.environ[key.upper()])
         if type(config[key]) is not int or config[key] <= 0:
             raise Error(f"{key}: нужно положительное число секунд")
     for key in ("restart_retries", "retry_delay"):
-        if key.upper() in os.environ:
-            config[key] = int(os.environ[key.upper()])
         if type(config[key]) is not int or config[key] < 0:
             raise Error(f"{key}: нужно неотрицательное целое число")
     if config["restart_retries"] > 20:
         raise Error("restart_retries: допустимы значения 0–20")
-    for tier in config["models"]:
-        config["models"][tier] = os.environ.get("MODEL_" + tier.upper(), config["models"][tier])
-        config["efforts"][tier] = os.environ.get("EFFORT_" + tier.upper(), config["efforts"][tier])
-        if not isinstance(config["models"][tier], str) or not isinstance(config["efforts"][tier], str):
-            raise Error("models/efforts: значения должны быть строками")
-    if "GATE_BASE" in os.environ:
-        config["gate_base"] = shlex.split(os.environ["GATE_BASE"])
-    if not isinstance(config["gate_base"], list) or not all(isinstance(v, str) and v for v in config["gate_base"]):
-        raise Error("gate_base: нужен массив аргументов, например [\"docker\", \"compose\", \"run\", \"--rm\", \"app\"]")
     if type(config["push"]) is not bool:
         raise Error("push: нужно true или false")
-    if "NO_PUSH" in os.environ:
-        if os.environ["NO_PUSH"] not in ("0", "1"):
-            raise Error("NO_PUSH: допустимы 0 или 1")
-        config["push"] = os.environ["NO_PUSH"] == "0"
-    for key in ("tasks_file", "progress_file", "branch", "remote", "codex_bin", "sandbox"):
+    for key in ("tasks_file", "progress_file", "branch", "remote", "codex_bin", "opencode_bin", "sandbox"):
         if not isinstance(config[key], str) or not config[key]:
             raise Error(f"{key}: нужна непустая строка")
     if config["sandbox"] not in ("read-only", "workspace-write", "danger-full-access"):
         raise Error("неверный sandbox")
+    if not isinstance(config["gate_base"], list) or not all(isinstance(v, str) and v for v in config["gate_base"]):
+        raise Error("gate_base: нужен массив аргументов, например [\"docker\", \"compose\", \"run\", \"--rm\", \"app\"]")
+    if not isinstance(config["checks"], dict) or any(
+            not isinstance(name, str) or not name or not isinstance(commands, list) or not commands
+            or not all(isinstance(command, str) and command.strip() for command in commands)
+            for name, commands in config["checks"].items()):
+        raise Error("checks: нужен словарь «профиль → массив непустых shell-команд»")
+    if "orchestrator" in config["checks"]:
+        raise Error("checks: профиль orchestrator встроен в модуль и не переопределяется")
+    if models_set is not None:
+        if config["backend"] != "opencode":
+            raise Error('--models доступен только при backend="opencode"')
+        sets = config["model_sets"].get("opencode", {})
+        if models_set not in sets:
+            if not sets:
+                raise Error("--models: в config.json не заданы наборы model_sets.opencode")
+            raise Error(f"--models: нет набора {models_set}; доступны: {', '.join(sorted(sets))}")
+        config["models"]["opencode"].update(sets[models_set])
+    tiers = config["models"][config["backend"]]
+    # Дальше по коду models — плоский словарь tier→модель активного бэкенда.
+    config["models"] = dict(tiers)
     return config
 
 
@@ -275,6 +327,42 @@ def tail(path, limit=12000):
     with path.open("rb") as stream:
         stream.seek(max(0, path.stat().st_size - limit))
         return stream.read().decode("utf-8", "replace")
+
+
+def agent_start_command(config, model, effort, last):
+    """Команда запуска агента; промпт для обоих бэкендов подаётся через stdin (run_logged).
+
+    Для codex команда байт-в-байт прежняя. Для opencode права задаёт `permissions`
+    в opencode.json целевого проекта: оркестратор не передаёт ни песочницу, ни --auto.
+    Пустая строка модели = модель из настроек CLI.
+    """
+    if config["backend"] == "codex":
+        command = [config["codex_bin"], "exec"]
+        if model:
+            command += ["--model", model]
+        return [*command, "-c", "model_reasoning_effort=" + json.dumps(effort),
+                "--sandbox", config["sandbox"], "--output-last-message", str(last), "-"]
+    command = [config["opencode_bin"], "run", "--agent", "build", "--format", "json"]
+    if model:
+        command += ["--model", model]
+    return command
+
+
+def extract_opencode_reply(log):
+    """Финальный ответ OpenCode: поле part.text последнего text-event потока --format json."""
+    reply = None
+    for line in log.read_text(encoding="utf-8", errors="replace").splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("{"):
+            continue
+        try:
+            event = json.loads(stripped)
+        except ValueError:
+            continue
+        part = event.get("part") if isinstance(event, dict) else None
+        if isinstance(part, dict) and part.get("type") == "text" and isinstance(part.get("text"), str):
+            reply = part["text"]
+    return reply
 
 
 def prompt_for(task, context, protected):
@@ -386,7 +474,7 @@ def wait_for_retry(delay):
 def execute(args):
     script_dir = Path(__file__).resolve().parent
     config_path = (Path.cwd() / args.config).absolute() if args.config else script_dir / "config.json"
-    config = load_config(config_path)
+    config = load_config(config_path, backend=args.backend, models_set=args.models)
     if args.push is not None:
         config["push"] = args.push
     # Список/план работают даже до git init и не создают каталогов или логов.
@@ -500,7 +588,8 @@ def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_
         raise Error("настройте git user.name и user.email")
     if config["push"]:
         git("remote", "get-url", config["remote"])
-    for path in (tasks_path, config_path, script_dir / "orchestrator.py", script_dir / "run.sh"):
+    for path in (tasks_path, config_path, script_dir / "orchestrator.py",
+                 script_dir / "run.sh", script_dir / "checks.py"):
         if path.exists() and not git("ls-files", "--", str(path.relative_to(root))):
             raise Error(f"добавьте в Git: {path.relative_to(root)}")
     if not args.mark_done and current_branch != config["branch"]:
@@ -566,6 +655,10 @@ def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_
             state.update(phase="gate", manual=True, blocked=None)
         save()
         model, effort = state["model"], state["effort"]
+        if resumed and args.models and not args.mark_done and model != config["models"][task.tier]:
+            print(f"ПРЕДУПРЕЖДЕНИЕ: {task.id} продолжается с сохранённой моделью "
+                  f"{model or 'из настроек CLI'}; --models {args.models} применится к следующим задачам",
+                  file=sys.stderr, flush=True)
         context = "\n".join(f"{r['id']}: {r.get('summary', '')}" for r in list(records.values())[-15:])
         base_prompt = prompt_for(task, context, display_paths)
         last = logs / f"{task.id}.last.md"
@@ -583,6 +676,13 @@ def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_
                         code = run_logged(command_for(), log, timeout, prompt, lock_fd)
                     finally:
                         verify()
+                    if kind == "exec" and config["backend"] == "opencode":
+                        # Codex пишет финальный ответ сама (--output-last-message);
+                        # для OpenCode ответ извлекается из лога --format json.
+                        # Пустой поток не затирает предыдущий ответ: он нужен контекстом повтора.
+                        reply = extract_opencode_reply(log)
+                        if reply is not None or not last.exists():
+                            last.write_text(reply or "", encoding="utf-8")
                     if kind == "exec" and last.exists():
                         blocked = re.search(r"^BLOCKED:.*", last.read_text(encoding="utf-8"), re.MULTILINE)
                         if blocked:
@@ -605,8 +705,9 @@ def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_
 
         while state["phase"] in ("agent", "gate", "commit"):
             if state["phase"] == "agent":
-                if shutil.which(config["codex_bin"]) is None:
-                    raise Error(f"не найден CODEX_BIN: {config['codex_bin']}")
+                agent_bin = config["codex_bin"] if config["backend"] == "codex" else config["opencode_bin"]
+                if shutil.which(agent_bin) is None:
+                    raise Error(f"не найден исполняемый файл агента: {agent_bin}")
                 def agent_prompt():
                     previous = tail(last)
                     last.unlink(missing_ok=True)
@@ -621,11 +722,7 @@ def run_queue(args, config, root, script_dir, config_path, tasks_path, progress_
                     return prompt
 
                 def agent_command():
-                    command = [config["codex_bin"], "exec"]
-                    if model:
-                        command += ["--model", model]
-                    return [*command, "-c", "model_reasoning_effort=" + json.dumps(effort),
-                            "--sandbox", config["sandbox"], "--output-last-message", str(last), "-"]
+                    return agent_start_command(config, model, effort, last)
 
                 # Отсутствие last.md равнозначно пустому ответу, но не старому успеху.
                 last.touch(exist_ok=True)
@@ -696,6 +793,11 @@ def main():
     signal.signal(signal.SIGTERM, interrupted)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", help="JSON-конфигурация; по умолчанию orchestrator/config.json")
+    parser.add_argument("--backend", choices=BACKENDS,
+                        help="бэкенд агента (codex или opencode); перекрывает config.json")
+    parser.add_argument("--models", metavar="SET",
+                        help="набор моделей OpenCode из config.json (например, paid); "
+                             'только при backend="opencode"')
     view = parser.add_mutually_exclusive_group()
     view.add_argument("--list", action="store_true", help="список без запусков и изменений")
     view.add_argument("--dry-run", action="store_true", help="план с gate, без запусков и изменений")
