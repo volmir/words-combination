@@ -403,7 +403,10 @@ def stage_request_files(plan, directory):
     result = []
     for name, rows in (('stage_pairs.txt', pairs), ('stage_words.txt', words)):
         path = directory / name
-        path.write_text('\n'.join(sorted(set(rows))) + ('\n' if rows else ''), encoding='utf-8')
+        # Preserve the SEL-04 priority order; sorting here would spend a limited
+        # budget alphabetically instead of on the constraints the plan ranked.
+        ordered = list(dict.fromkeys(rows))
+        path.write_text('\n'.join(ordered) + ('\n' if ordered else ''), encoding='utf-8')
         result.append(path)
     return result
 

@@ -216,6 +216,7 @@ class WordSuitabilityTest(unittest.TestCase):
         atomic_json(self.root / "input.json", document)
         command = [sys.executable, str(assess.ROOT / "tools/assess_word_suitability.py"),
                    "--input", str(self.root / "input.json"), "--snapshot", str(path),
+                   "--provider", "codex",
                    "--cache", str(self.root / "offline-cache"), "--reports", str(self.root / "reports")]
         environment = dict(os.environ, CATEGORY_MODEL="", CODEX_HOME=str(self.root / "no-auth"), PATH="")
         for key in ("OPENAI_API_KEY", "CODEX_API_KEY"):

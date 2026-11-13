@@ -423,6 +423,24 @@ class RequestPlanTest(unittest.TestCase):
         wanted = classify.read_words_file(words_file)
         self.assertEqual([row["word"] for row in plan_doc["category"]["requests"]], wanted)
 
+    def test_request_lists_keep_planner_priority_order(self):
+        fixture = PlanFixtures()
+        plan_doc = self.run_plan(fixture)
+        pairs = assess.read_pairs_file(self.root / "reports" / "requested_pairs.txt")
+        self.assertEqual([(row["word"], row["role"]) for row in plan_doc["suitability"]["requests"]],
+                         pairs)
+        words = classify.read_words_file(self.root / "reports" / "requested_words.txt")
+        items = classify.classification_items(fixture.index, TAXONOMY, words)
+        self.assertEqual(words, [item["word"] for item in items])
+
+    def test_category_requests_prioritize_local_candidate_evidence(self):
+        fixture = TinyFixture()
+        fixture.index["classification_features"] = {
+            "рана": {"reason": "uncertain_sense", "sense_count": 2,
+                     "candidate_categories": ["plants"]}}
+        plan_doc = self.run_plan(fixture)
+        self.assertEqual("рана", plan_doc["category"]["requests"][0]["word"])
+
     def test_default_planner_config_matches_selection_bands(self):
         document = json.loads(Path(plan.CONFIG).read_text(encoding="utf-8"))
         self.assertFalse(document["planning_bands_override"])

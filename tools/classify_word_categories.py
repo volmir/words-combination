@@ -55,7 +55,9 @@ def classification_items(index, taxonomy, words=None):
     if not isinstance(features_by_word, dict):
         raise ValueError("Некорректные признаки классификации")
     metadata = index["word_metadata"]
-    candidates = sorted(metadata) if words is None else sorted(set(words))
+    # An explicit selective request keeps the SEL-04 order; the full pass stays
+    # sorted so its historic output is unchanged.
+    candidates = sorted(metadata) if words is None else list(dict.fromkeys(words))
     items = []
     for word in candidates:
         if word not in metadata:

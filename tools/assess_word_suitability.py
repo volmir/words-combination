@@ -148,7 +148,9 @@ def read_pairs_file(path):
         if (word, role) not in seen:
             seen.add((word, role))
             pairs.append((word, role))
-    return sorted(pairs)
+    # Keep the caller's (SEL-04 plan) order: a limited budget must reach the
+    # highest-priority source/assignment/rescue pairs first.
+    return pairs
 
 
 def selected_items(items, pairs):

@@ -262,6 +262,24 @@ class SelectivePipelineTest(SelectivePatchSetup, unittest.TestCase):
     def setUp(self):
         super().setUp()
 
+    def test_stage_request_files_keep_plan_priority_and_dedupe(self):
+        directory = self.root / "stage-order"
+        directory.mkdir()
+        plan = {
+            "suitability": {
+                "requests": [
+                    {"word": "велосипед", "role": "source"},
+                    {"word": "рана", "role": "target"},
+                    {"word": "дар", "role": "target"}],
+                "cache_hits": ["город:target", "дар:target"]},
+            "category": {
+                "requests": [{"word": "работа"}, {"word": "дом"}],
+                "cache_hits": ["мир", "дом"]}}
+        pairs, words = pipe.stage_request_files(plan, directory)
+        self.assertEqual("велосипед source\nрана target\nдар target\nгород target\n",
+                         pairs.read_text(encoding="utf-8"))
+        self.assertEqual("работа\nдом\nмир\n", words.read_text(encoding="utf-8"))
+
     def test_valid_mini_campaign_finishes_without_ai(self):
         result = pipe.prepare(self.args)
         self.assertEqual("prepared", result["status"])

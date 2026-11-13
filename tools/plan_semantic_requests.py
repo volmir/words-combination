@@ -332,7 +332,17 @@ class Planner:
                            "reasons": [{"code": "theme", "detail": sorted(request[word]["codes"]["theme"])}],
                            "contexts": sorted(request[word]["contexts"]),
                            "frequency": self._state["frequencies"][word]})
-        output.sort(key=lambda row: (-row["frequency"], row["word"]))
+        # With a limited budget, local candidate evidence is the strongest T6
+        # signal; frequency alone mostly selects pronouns and prepositions.
+        features = self._state["category_index"].get("classification_features", {})
+        features = features if isinstance(features, dict) else {}
+
+        def priority(row):
+            value = features.get(row["word"]) or {}
+            evidence = value.get("candidate_categories") if isinstance(value, dict) else None
+            return (0 if evidence else 1, -row["frequency"], row["word"])
+
+        output.sort(key=priority)
         return output
 
     def category_scope(self, pool):
