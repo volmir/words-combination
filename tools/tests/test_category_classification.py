@@ -294,9 +294,11 @@ class CategoryClassificationTest(unittest.TestCase):
         args = self.args()
         command = [sys.executable, str(classify.ROOT / "tools/classify_word_categories.py"),
                    "--input", str(args.input), "--snapshot", str(path),
-                   "--cache", str(self.root / "offline-cache"), "--reports", str(self.root / "offline-report")]
+                   "--cache", str(self.root / "offline-cache"), "--reports", str(self.root / "offline-report"),
+                   "--provider", "codex"]
         environment = {key: value for key, value in os.environ.items()
-                       if key not in {"CATEGORY_MODEL", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CODEX_API_KEY"}}
+                       if key not in {"CATEGORY_MODEL", "CATEGORY_PROVIDER", "OPENAI_API_KEY",
+                                      "ANTHROPIC_API_KEY", "CODEX_API_KEY"}}
         environment["CODEX_HOME"] = str(self.root / "no-auth")
         result = subprocess.run(command, capture_output=True, text=True, timeout=10, env=environment)
         self.assertEqual(0, result.returncode, result.stderr)

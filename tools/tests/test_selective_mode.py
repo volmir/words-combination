@@ -546,6 +546,9 @@ class ThemeRequestTest(SelectivePatchSetup, unittest.TestCase):
             self.assertEqual("other", metadata["category"])
             self.assertTrue(metadata["category_source"].startswith("unknown:"), metadata)
             self.assertNotEqual("unknown:ai_other", metadata["category_source"])
+        # Неподтверждённая категория не попадает в T6-каталог: unknown != other.
+        targeted = {word for words in index["categories"].values() for word in words}
+        self.assertFalse(targeted & set(THEME_ANSWERS))
 
     def test_changed_prompt_does_not_reuse_old_snapshot_or_cache(self):
         result, calls, bundle = self.first_theme_run()

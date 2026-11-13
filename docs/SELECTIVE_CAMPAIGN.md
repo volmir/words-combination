@@ -1182,8 +1182,13 @@ CLI моделей не переживают управляемое заверш
 ```sh
 python3 -m unittest tools.tests.test_selective_mode
 python3 -m unittest tools.tests.test_request_plan \
-  tools.tests.test_campaign_validation tools.tests.test_campaign_simulation
+  tools.tests.test_campaign_validation tools.tests.test_campaign_simulation \
+  tools.tests.test_level_selection
+python3 -m unittest discover tools/tests
 ```
+
+Тесты не зависят от `CATEGORY_PROVIDER`/`CATEGORY_MODEL`: проверка снимка
+явно фиксирует `--provider codex`, а фикстурный исполнитель не запускает CLI.
 
 - **(а) Вся информация структурная.** План SEL-04 пуст, `executor` не
   вызывается, кампания `VALID`; повтор на тех же входах/кэше/пакете не тратит
