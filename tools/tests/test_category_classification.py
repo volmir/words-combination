@@ -44,9 +44,25 @@ class CategoryClassificationTest(unittest.TestCase):
         values = dict(input=self.root / "input.json", taxonomy=thematic.TAXONOMY_PATH,
                       cache=self.root / "cache", reports=self.root / "reports", model="configured-model",
                       provider="codex", allow_network=False, batch_size=2, timeout=30, retries=0,
-                      min_confidence=None, snapshot=None, gold=None)
+                      min_confidence=None, snapshot=None, gold=None, words_file=None,
+                      max_new_decisions=None, max_batches=None, time_budget=None)
         values.update(kwargs)
         return argparse.Namespace(**values)
+
+    def words_file(self, words, name="words.txt"):
+        path = self.root / name
+        path.write_text("\n".join(words) + ("\n" if words else ""), encoding="utf-8")
+        return path
+
+    def selective_fixture(self, total=200, residual=20):
+        metadata = {}
+        for number in range(total):
+            word = "тест" + "а" * (number // 26) + chr(ord("а") + number % 26)
+            if number < residual:
+                metadata[word] = {"category": "other", "category_source": "unknown:no_thematic_evidence"}
+            else:
+                metadata[word] = {"category": "tools", "category_source": "gloss_head:tools"}
+        return dict(thematic.category_index(metadata, self.taxonomy), words_sha256="synthetic-input"), sorted(metadata)
 
     def test_only_residual_words_and_closed_features_are_sent(self):
         self.index["word_metadata"]["портал"]["definition"] = "НЕ ПЕРЕДАВАТЬ"
@@ -386,9 +402,167 @@ class CategoryClassificationTest(unittest.TestCase):
 
     def test_configuration_bounds_are_enforced(self):
         for options in ({"batch_size": 0}, {"batch_size": 41}, {"timeout": 0}, {"timeout": 601},
-                        {"retries": -1}, {"retries": 4}, {"provider": "arbitrary"}):
+                        {"retries": -1}, {"retries": 4}, {"provider": "arbitrary"},
+                        {"max_new": -1}, {"max_batches": -1}, {"time_budget": -0.1}):
             with self.subTest(options=options), self.assertRaises(ValueError):
                 self.provider(**options)
+
+    def test_selective_empty_list_makes_zero_calls(self):
+        path = self.words_file([])
+        with patch.object(CategoryProvider, "exchange",
+                          side_effect=AssertionError("empty list must not touch the provider")) as exchange:
+            summary = classify.run(self.args(words_file=path, allow_network=True))
+        exchange.assert_not_called()
+        self.assertEqual("selective", summary["mode"])
+        self.assertEqual(0, summary["requested"])
+        self.assertEqual(0, summary["structural"])
+        self.assertEqual(0, summary["cached"])
+        self.assertEqual(0, summary["ai_new"])
+        self.assertEqual(0, summary["unknown"])
+        self.assertEqual(0, summary["rejected"])
+        self.assertEqual(0, summary["pending"])
+        self.assertGreaterEqual(summary["spent_time"], 0)
+
+    def test_selective_mode_only_sends_requested_residual_words(self):
+        index, words = self.selective_fixture()
+        atomic_json(self.root / "selective.json", index)
+        path = self.words_file(words)
+        executor = Mock(side_effect=reply)
+        with patch.object(CategoryProvider, "codex_complete", side_effect=executor):
+            summary = classify.run(self.args(input=self.root / "selective.json", words_file=path,
+                                             allow_network=True, batch_size=20))
+        self.assertEqual(200, summary["requested"])
+        self.assertEqual(180, summary["structural"])
+        self.assertEqual(0, summary["cached"])
+        self.assertEqual(20, summary["ai_new"])
+        self.assertEqual(0, summary["unknown"])
+        self.assertEqual(0, summary["rejected"])
+        self.assertEqual(0, summary["pending"])
+        self.assertEqual(1, executor.call_count)
+        sent = executor.call_args.args[0]["items"]
+        self.assertEqual(20, len(sent))
+        residual = {word for word in words if index["word_metadata"][word]["category"] == "other"}
+        self.assertEqual(residual, {item["word"] for item in sent})
+        output = json.loads((self.root / "reports/category_index.json").read_text())
+        self.assertEqual(set(words), {word for values in output["categories"].values() for word in values})
+
+    def test_unknown_category_never_becomes_t6(self):
+        path = self.words_file(["образец", "портал"])
+        def unknown(request, schema):
+            return {"results": [{"id": item["id"], "category": "unknown", "confidence": 0.99}
+                                for item in request["items"]]}
+        executor = Mock(side_effect=unknown)
+        with patch.object(CategoryProvider, "codex_complete", side_effect=executor):
+            summary = classify.run(self.args(words_file=path, allow_network=True, retries=0))
+        self.assertEqual(0, summary["ai_new"])
+        self.assertEqual(2, summary["pending"])
+        self.assertEqual(2, summary["unknown"])
+        self.assertEqual(0, summary["ai_other"])
+        output = json.loads((self.root / "reports/category_index.json").read_text())
+        targeted = {word for values in output["categories"].values() for word in values}
+        self.assertFalse(targeted & {"образец", "портал"})
+        self.assertEqual([], list((self.root / "cache").glob("*.json")))
+
+    def test_selective_repeat_reads_cache_without_new_calls_and_keeps_features(self):
+        words = ["образец", "портал", "тор"]
+        self.index["classification_features"] = {
+            "образец": {"reason": "ambiguous_senses", "sense_count": 2, "candidate_categories": ["tools"]},
+            "портал": {"reason": "no_thematic_evidence", "sense_count": 1, "candidate_categories": []},
+            "тор": {"reason": "uncertain_sense", "sense_count": 2, "candidate_categories": ["tools"]}}
+        path = self.words_file(words)
+        def no_category(request, schema):
+            return {"results": [{"id": item["id"], "category": "other", "confidence": 1.0}
+                                for item in request["items"]]}
+        first_args = self.args(words_file=path, allow_network=True)
+        with patch.object(CategoryProvider, "codex_complete", side_effect=no_category):
+            first = classify.run(first_args)
+        self.assertEqual(3, first["ai_new"])
+        self.assertEqual(3, first["ai_other"])
+        self.assertEqual(0, first["unknown"])
+        output_path = first_args.reports / "category_index.json"
+        output = json.loads(output_path.read_text())
+        self.assertEqual(self.index["classification_features"], output["classification_features"])
+        second_args = self.args(input=output_path, words_file=path, allow_network=True)
+        with patch.object(CategoryProvider, "codex_complete",
+                          side_effect=AssertionError("cached decisions must not be requested")) as executor:
+            second = classify.run(second_args)
+        executor.assert_not_called()
+        self.assertEqual(0, second["ai_new"])
+        self.assertEqual(3, second["cached"])
+        self.assertEqual(3, second["ai_other"])
+        self.assertEqual(0, second["unknown"])
+        self.assertEqual(0, second["pending"])
+
+    def test_cache_is_not_shared_across_model_taxonomy_or_provider(self):
+        provider = self.provider()
+        provider.exchange(self.items)
+        item = self.items[0]
+        self.assertIsNotNone(provider.read(item))
+        changed_taxonomy = dict(self.taxonomy, birds=self.taxonomy["birds"] + " (synthetic)")
+        for changed in (CategoryProvider(self.root / "cache", "another-model", self.taxonomy),
+                        CategoryProvider(self.root / "cache", "configured-model", changed_taxonomy),
+                        CategoryProvider(self.root / "cache", "configured-model", self.taxonomy, provider="opencode")):
+            with self.subTest(context=changed.context):
+                self.assertIsNone(changed.read(item))
+
+    def test_corrupt_cache_refuses_instead_of_calling_the_model(self):
+        provider = self.provider()
+        provider.exchange(self.items)
+        path = provider.path(self.items[0])
+        envelope = json.loads(path.read_text(encoding="utf-8"))
+        envelope["result"]["category"] = "alien"
+        atomic_json(path, envelope)
+        args = self.args(words_file=self.words_file(["образец", "портал", "тор"]), allow_network=True)
+        with patch.object(CategoryProvider, "codex_complete",
+                          side_effect=AssertionError("corrupt cache must not be bypassed")) as executor:
+            with self.assertRaises(ValueError):
+                classify.run(args)
+        executor.assert_not_called()
+
+    def test_new_decision_budget_caps_the_batch(self):
+        path = self.words_file(["образец", "портал", "тор"])
+        executor = Mock(side_effect=reply)
+        with patch.object(CategoryProvider, "codex_complete", side_effect=executor):
+            summary = classify.run(self.args(words_file=path, allow_network=True,
+                                             batch_size=2, max_new_decisions=1))
+        self.assertEqual(1, summary["ai_new"])
+        self.assertEqual(2, summary["pending"])
+        self.assertEqual(1, summary["batches"])
+        self.assertEqual(1, len(executor.call_args.args[0]["items"]))
+        self.assertIn("лимит новых", summary["error"])
+
+    def test_batch_budget_stops_before_extra_calls(self):
+        path = self.words_file(["образец", "портал", "тор"])
+        executor = Mock(side_effect=reply)
+        with patch.object(CategoryProvider, "codex_complete", side_effect=executor):
+            summary = classify.run(self.args(words_file=path, allow_network=True,
+                                             batch_size=1, max_batches=2))
+        self.assertEqual(2, executor.call_count)
+        self.assertEqual(2, summary["ai_new"])
+        self.assertEqual(1, summary["pending"])
+        self.assertEqual(2, summary["batches"])
+        self.assertIn("лимит батчей", summary["error"])
+
+    def test_zero_time_budget_makes_no_model_calls(self):
+        path = self.words_file(["образец", "портал", "тор"])
+        with patch.object(CategoryProvider, "codex_complete",
+                          side_effect=AssertionError("time budget exhausted")) as executor:
+            summary = classify.run(self.args(words_file=path, allow_network=True, time_budget=0))
+        executor.assert_not_called()
+        self.assertEqual(0, summary["ai_new"])
+        self.assertEqual(3, summary["pending"])
+        self.assertIn("лимит времени", summary["error"])
+        self.assertEqual(0, summary["budget"]["time_budget"])
+
+    def test_selective_rejected_words_are_reported_and_not_sent(self):
+        path = self.words_file(["образец", "нет-слова", "отсутствует"])
+        executor = Mock(side_effect=reply)
+        with patch.object(CategoryProvider, "codex_complete", side_effect=executor):
+            summary = classify.run(self.args(words_file=path, allow_network=True))
+        self.assertEqual(3, summary["requested"])
+        self.assertEqual(2, summary["rejected"])
+        self.assertEqual(1, summary["ai_new"])
+        self.assertEqual(["образец"], [item["word"] for item in executor.call_args.args[0]["items"]])
 
 
 if __name__ == "__main__":

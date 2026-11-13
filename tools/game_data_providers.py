@@ -362,7 +362,8 @@ class CategoryProvider:
     validate_results = staticmethod(validate_category_results)
 
     def __init__(self, cache, model, taxonomy, *, provider="codex", allow_network=False,
-                 batch_size=20, timeout=120, retries=2, executor=None):
+                 batch_size=20, timeout=120, retries=2, executor=None,
+                 max_new=None, max_batches=None, time_budget=None):
         if not isinstance(model, str) or not model.strip() or len(model) > 200:
             raise ValueError("Категории: задайте --model или CATEGORY_MODEL")
         if provider not in ("codex", "opencode"):
@@ -371,12 +372,27 @@ class CategoryProvider:
                 type(timeout) is not int or not 1 <= timeout <= 600 or
                 type(retries) is not int or not 0 <= retries <= 3):
             raise ValueError("Категории: batch-size 1–40, timeout 1–600, retries 0–3")
+        self.max_new = self.budget_limit(max_new, "max-new-decisions")
+        self.max_batches = self.budget_limit(max_batches, "max-batches")
+        if time_budget is not None and (type(time_budget) not in (int, float) or
+                                        not math.isfinite(time_budget) or time_budget < 0):
+            raise ValueError("Категории: time-budget должен быть неотрицательным числом секунд")
+        self.time_budget = time_budget
+        self.stats = {"cached": 0, "ai_new": 0, "batches": 0, "pending": 0, "spent_time": 0.0}
         self.cache, self.taxonomy = Path(cache), taxonomy
         self.allow_network, self.batch_size, self.timeout, self.retries = allow_network, batch_size, timeout, retries
         self.executor = executor or (self.codex_complete if provider == "codex" else self.opencode_complete)
         self.context = {"task": self.task, "prompt_sha256": prompt_hash(self.prompt),
                         "taxonomy_sha256": json_digest(taxonomy), "schema_sha256": json_digest(self.schema_builder(taxonomy)),
                         "provider": provider, "model": model}
+
+    @staticmethod
+    def budget_limit(value, name):
+        if value is None:
+            return None
+        if type(value) is not int or value < 0:
+            raise ValueError("Категории: " + name + " должен быть неотрицательным целым")
+        return value
 
     def key(self, item):
         return json_digest([self.context, item])
@@ -412,38 +428,65 @@ class CategoryProvider:
             self.validate_item(item, self.taxonomy)
         if len({item["id"] for item in items}) != len(items):
             raise ValueError("Категории: повторный входной ID")
+        started = time.monotonic()
+        self.stats = {"cached": 0, "ai_new": 0, "batches": 0, "pending": 0, "spent_time": 0.0}
         answers = {item["id"]: result for item in items if (result := self.read(item)) is not None}
+        self.stats["cached"] = len(answers)
         missing = [item for item in items if item["id"] not in answers]
         if not self.allow_network:
+            self.stats["pending"] = len(missing)
+            self.stats["spent_time"] = round(time.monotonic() - started, 6)
             return answers, len(missing), "--allow-network не задан" if missing else None
-        for offset in range(0, len(missing), self.batch_size):
-            batch = missing[offset:offset + self.batch_size]
+        position, error = 0, None
+        while position < len(missing):
+            # Budgets bound only new model decisions; verified cache hits are free.
+            if self.max_batches is not None and self.stats["batches"] >= self.max_batches:
+                error = "Категории: исчерпан лимит батчей"
+                break
+            if self.time_budget is not None and time.monotonic() - started >= self.time_budget:
+                error = "Категории: исчерпан лимит времени"
+                break
+            limit = self.batch_size
+            if self.max_new is not None:
+                remaining = self.max_new - self.stats["ai_new"]
+                if remaining <= 0:
+                    error = "Категории: исчерпан лимит новых решений"
+                    break
+                limit = min(limit, remaining)
+            batch = missing[position:position + limit]
+            self.stats["batches"] += 1
             request = self.request_payload(batch)
             for attempt in range(self.retries + 1):
                 try:
                     payload = self.executor(request, self.schema_builder(self.taxonomy))
                     results = self.validate_results(payload, batch, self.taxonomy)
                     break
-                except (ValueError, OSError, subprocess.SubprocessError) as error:
+                except (ValueError, OSError, subprocess.SubprocessError) as failure:
                     if attempt == self.retries:
                         # Do not leak CLI stderr, credentials, or raw remote output.
                         cli = "OpenCode CLI" if self.context["provider"] == "opencode" else "Codex CLI"
-                        if isinstance(error, subprocess.TimeoutExpired):
+                        if isinstance(failure, subprocess.TimeoutExpired):
                             reason = f"{cli}: таймаут {self.timeout} с"
-                        elif isinstance(error, FileNotFoundError):
+                        elif isinstance(failure, FileNotFoundError):
                             reason = f"{cli}: не найден исполняемый файл или файл ответа"
-                        elif isinstance(error, subprocess.CalledProcessError):
-                            reason = f"{cli}: код завершения {error.returncode}; проверьте доступ к модели и сеть в окружении запуска"
-                        elif isinstance(error, ValueError):
+                        elif isinstance(failure, subprocess.CalledProcessError):
+                            reason = f"{cli}: код завершения {failure.returncode}; проверьте доступ к модели и сеть в окружении запуска"
+                        elif isinstance(failure, ValueError):
                             reason = f"{cli}: невалидный JSON или ответ не соответствует схеме"
                         else:
                             reason = f"{cli}: ошибка запуска или чтения ответа"
+                        self.stats["pending"] = len(items) - len(answers)
+                        self.stats["spent_time"] = round(time.monotonic() - started, 6)
                         return answers, len(items) - len(answers), reason
             by_id = {result["id"]: result for result in results}
             for item in batch:
                 self.store(item, by_id[item["id"]])
                 answers[item["id"]] = by_id[item["id"]]
-        return answers, 0, None
+            self.stats["ai_new"] += len(batch)
+            position += len(batch)
+        self.stats["pending"] = len(items) - len(answers)
+        self.stats["spent_time"] = round(time.monotonic() - started, 6)
+        return answers, len(items) - len(answers), error
 
     def request_payload(self, items):
         return {"task": self.task, "prompt": self.prompt, "taxonomy": self.taxonomy, "items": items}

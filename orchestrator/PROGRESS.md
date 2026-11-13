@@ -101,3 +101,6 @@
 
 - [SEL-01] ✓ 2026-11-13T15:15:50+00:00 — Выявить обязательность полной ИИ-разметки в конвейере v2 — ИТОГ: SEL-01 выполнен. Создан [docs/SELECTIVE_CAMPAIGN.md](/var/www/words-combination/docs/SELECTIVE_CAMPAIGN.md) — карта текущего конвейера v2 и безопасная схема перехода к выборочной обработке. Зафиксированы:
 <!-- orchestrator:v1 {"id": "SEL-01", "fingerprint": "18422e668d131d52761509a366a5d0eba76299000433701181b8a7c9b749b86e", "date": "2026-11-13T15:15:50+00:00", "gate": "passed", "manual": false, "summary": "ИТОГ: SEL-01 выполнен. Создан [docs/SELECTIVE_CAMPAIGN.md](/var/www/words-combination/docs/SELECTIVE_CAMPAIGN.md) — карта текущего конвейера v2 и безопасная схема перехода к выборочной обработке. Зафиксированы:", "model": "opencode/deepseek-v4.1-flash#max", "effort": "medium"} -->
+
+- [SEL-02] ✓ 2026-11-13T15:31:29+00:00 — Поддержать неполную тематическую разметку и запрос категорий по списку — ИТОГ: SEL-02 выполнен.
+<!-- orchestrator:v1 {"id": "SEL-02", "fingerprint": "ddaa77476f3e0d51db5e0fbf116153bc7ea59327aed37c57afe438ff11e26b9c", "date": "2026-11-13T15:31:29+00:00", "gate": "passed", "manual": false, "summary": "ИТОГ: SEL-02 выполнен.", "model": "opencode/deepseek-v4.1-flash#max", "effort": "medium"} -->

@@ -3,9 +3,12 @@
 import argparse
 import copy
 import json
+import math
 import os
+import re
 import shlex
 import sys
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -17,26 +20,100 @@ ROOT = Path(__file__).resolve().parents[1]
 SNAPSHOT_SCHEMA = "word-category-decisions-v1"
 
 
-def classification_items(index, taxonomy):
+def read_words_file(path):
+    """UTF-8 request list: one normalized word per line, blanks and # comments ignored."""
+    words, seen = [], set()
+    for line in Path(path).read_text(encoding="utf-8-sig").splitlines():
+        token = line.strip()
+        if not token or token.startswith("#"):
+            continue
+        word = thematic.normalize(token)
+        if word not in seen:
+            seen.add(word)
+            words.append(word)
+    return words
+
+
+def validate_metadata(word, value, taxonomy):
+    if (not isinstance(value, dict) or value.get("category") not in taxonomy or
+            not isinstance(value.get("category_source"), str) or
+            (value["category"] == "other") != value["category_source"].startswith("unknown:")):
+        raise ValueError("Некорректные локальные метаданные: " + word)
+    return value
+
+
+def classification_items(index, taxonomy, words=None):
     if (not isinstance(index, dict) or index.get("schema") != "word-category-index-v1" or
             not isinstance(index.get("word_metadata"), dict)):
         raise ValueError("Нужен category_index.json от LEX-02")
+    if words is not None and (isinstance(words, (str, bytes)) or
+                              not isinstance(words, (list, tuple, set, frozenset)) or
+                              any(not isinstance(word, str) for word in words)):
+        raise ValueError("Список слов должен быть последовательностью строк")
+    features_by_word = index.get("classification_features", {})
+    if not isinstance(features_by_word, dict):
+        raise ValueError("Некорректные признаки классификации")
+    metadata = index["word_metadata"]
+    candidates = sorted(metadata) if words is None else sorted(set(words))
     items = []
-    for word, value in sorted(index["word_metadata"].items()):
-        if (not isinstance(value, dict) or value.get("category") not in taxonomy or
-                not isinstance(value.get("category_source"), str) or
-                (value["category"] == "other") != value["category_source"].startswith("unknown:")):
-            raise ValueError("Некорректные локальные метаданные: " + word)
+    for word in candidates:
+        if word not in metadata:
+            # A selective request may name a word outside this index; the caller
+            # reports it as rejected and intentionally does not invent metadata.
+            continue
+        value = validate_metadata(word, metadata[word], taxonomy)
         if not thematic.category_target_allowed(word, value) or value["category"] != "other":
             continue
         reason = value["category_source"].removeprefix("unknown:")
-        features = index.get("classification_features", {}).get(word, {
+        features = features_by_word.get(word, {
             "reason": reason if reason in CATEGORY_REASONS else "no_thematic_evidence",
             "sense_count": 0, "candidate_categories": []})
         item = {"word": word, "features": features, "id": json_digest([word, features])}
         validate_category_item(item, taxonomy)
         items.append(item)
     return items
+
+
+def scope_breakdown(index, taxonomy, words):
+    """Requested words split into already resolved, rejected and model candidates."""
+    metadata = index["word_metadata"]
+    structural = rejected = 0
+    rejected_words = set()
+    for word in words:
+        if not isinstance(word, str) or not re.fullmatch(r"[а-я]{3,30}", word) or word not in metadata:
+            rejected += 1
+            if isinstance(word, str):
+                rejected_words.add(word)
+            continue
+        value = validate_metadata(word, metadata[word], taxonomy)
+        if not thematic.category_target_allowed(word, value):
+            rejected += 1
+            rejected_words.add(word)
+        elif value["category"] != "other":
+            structural += 1
+    return {"requested": len(words), "structural": structural, "rejected": rejected}, rejected_words
+
+
+def final_states(output, words, rejected_words):
+    """Three-state report: verified, checked_no_category, still unknown."""
+    metadata = output["word_metadata"]
+    counts = {"unknown": 0, "ai_other": 0, "ai_low_confidence": 0}
+    for word in words:
+        if word in rejected_words:
+            continue
+        value = metadata.get(word)
+        if value is None:
+            continue
+        source = value["category_source"]
+        if value["category"] != "other" and not source.startswith("unknown:"):
+            continue
+        if source == "unknown:ai_other":
+            counts["ai_other"] += 1
+        elif source == "unknown:ai_low_confidence":
+            counts["ai_low_confidence"] += 1
+        else:
+            counts["unknown"] += 1
+    return counts
 
 
 def export_snapshot(path, provider, index, items, answers, threshold=0.8):
@@ -98,6 +175,12 @@ def apply_decisions(index, taxonomy, items, answers, threshold, context):
         else:
             value.update(category=result["category"], category_source="ai:" + context["provider"] + ":" + context["model"])
     output = thematic.category_index(metadata, taxonomy)
+    # Keep the closed, text-free features so a repeated selective request uses
+    # exactly the same item IDs and therefore the same LEX-03 cache keys.
+    features = index.get("classification_features")
+    if isinstance(features, dict):
+        output["classification_features"] = {word: copy.deepcopy(value) for word, value in features.items()
+                                            if word in metadata}
     for key in ("database_sha256", "words_sha256"):
         if key in index:
             output[key] = index[key]
@@ -188,6 +271,15 @@ def resume_command(args, model, provider):
                "--reports", str(args.reports.resolve()), "--model", model, "--provider", provider,
                "--batch-size", str(args.batch_size), "--timeout", str(args.timeout), "--retries", str(args.retries),
                "--min-confidence", str(args.min_confidence), "--allow-network"]
+    words_file = getattr(args, "words_file", None)
+    if words_file:
+        command += ["--words-file", str(Path(words_file).resolve())]
+    for attribute, flag in (("max_new_decisions", "--max-new-decisions"),
+                            ("max_batches", "--max-batches"),
+                            ("time_budget", "--time-budget")):
+        value = getattr(args, attribute, None)
+        if value is not None:
+            command += [flag, str(value)]
     command += ["--snapshot", str((args.reports / "category_decisions.json").resolve())]
     if args.gold:
         command += ["--gold", str(args.gold.resolve())]
@@ -195,9 +287,16 @@ def resume_command(args, model, provider):
 
 
 def run(args):
+    started = time.monotonic()
     taxonomy = thematic.load_taxonomy(args.taxonomy)
     index = json.loads(args.input.read_text(encoding="utf-8"))
-    items = classification_items(index, taxonomy)
+    words_file = getattr(args, "words_file", None)
+    requested = read_words_file(words_file) if words_file is not None else None
+    # Without --words-file the historic full pass is unchanged. With a list only
+    # those normalized words become candidates; the rest of the index is never sent.
+    items = classification_items(index, taxonomy, requested)
+    scope = requested if requested is not None else sorted(index["word_metadata"])
+    counts, rejected_words = scope_breakdown(index, taxonomy, scope)
     snapshot = json.loads(args.snapshot.read_text(encoding="utf-8")) if args.snapshot else None
     if args.snapshot and (not isinstance(snapshot, dict) or not isinstance(snapshot.get("context"), dict) or
                           not isinstance(snapshot.get("policy"), dict)):
@@ -210,12 +309,24 @@ def run(args):
     if snapshot is not None and policy != {"min_confidence": args.min_confidence}:
         raise ValueError("Снимок несовместим: изменён порог уверенности")
     model = args.model or (snapshot["context"].get("model") if snapshot is not None else None)
+    budget_time = getattr(args, "time_budget", None)
+    if budget_time is not None:
+        if type(budget_time) not in (int, float) or not math.isfinite(budget_time) or budget_time < 0:
+            raise ValueError("time-budget должен быть неотрицательным числом секунд")
+        budget_time = max(0.0, float(budget_time) - (time.monotonic() - started))
     provider = CategoryProvider(args.cache, model, taxonomy, allow_network=args.allow_network,
                                 batch_size=args.batch_size, timeout=args.timeout, retries=args.retries,
-                                provider=args.provider)
-    if snapshot is not None:
+                                provider=args.provider,
+                                max_new=getattr(args, "max_new_decisions", None),
+                                max_batches=getattr(args, "max_batches", None),
+                                time_budget=budget_time)
+    if snapshot is not None and (requested is None or items):
         import_snapshot(snapshot, provider, index, items)
-    answers, pending, error = provider.exchange(items)
+    if items:
+        answers, pending, error = provider.exchange(items)
+    else:
+        # An empty request list is a valid no-op: no cache scan and no model call.
+        answers, pending, error = {}, 0, None
     output = apply_decisions(index, taxonomy, items, answers, args.min_confidence, provider.context)
     snapshot = export_snapshot(args.reports / "category_decisions.json", provider, index, items, answers, args.min_confidence)
     output["classification"]["snapshot_sha256"] = snapshot["sha256"]
@@ -223,6 +334,19 @@ def run(args):
     accuracy = independent_accuracy(args.gold, output["word_metadata"], taxonomy)
     resume = resume_command(args, model, args.provider) if pending else None
     summary = write_report(args.reports / "CATEGORIES.md", output, taxonomy, snapshot, pending, accuracy, resume)
+    states = final_states(output, scope, rejected_words)
+    stats = getattr(provider, "stats", {})
+    summary.update(
+        mode="selective" if requested is not None else "full",
+        requested=counts["requested"], structural=counts["structural"],
+        cached=stats.get("cached", 0), ai_new=stats.get("ai_new", 0),
+        unknown=states["unknown"], ai_other=states["ai_other"],
+        ai_low_confidence=states["ai_low_confidence"], rejected=counts["rejected"],
+        batches=stats.get("batches", 0),
+        spent_time=round(time.monotonic() - started, 6),
+        budget={"max_new_decisions": getattr(args, "max_new_decisions", None),
+                "max_batches": getattr(args, "max_batches", None),
+                "time_budget": getattr(args, "time_budget", None)})
     summary.update(error=error, resume=resume)
     atomic_json(args.reports / "summary.json", summary)
     return summary
@@ -235,6 +359,11 @@ def main():
     parser.add_argument("--cache", type=Path, default=ROOT / "tools/cache/word_categories")
     parser.add_argument("--reports", type=Path, default=ROOT / "build/reports/categories")
     parser.add_argument("--snapshot", type=Path)
+    parser.add_argument("--words-file", type=Path,
+                        help="UTF-8, по одному нормализованному слову в строке; без флага — полный проход")
+    parser.add_argument("--max-new-decisions", type=int, help="Максимум новых ИИ-решений за вызов")
+    parser.add_argument("--max-batches", type=int, help="Максимум батчей модели за вызов")
+    parser.add_argument("--time-budget", type=float, help="Лимит времени на ИИ-батчи, секунды")
     parser.add_argument("--model", default=os.environ.get("CATEGORY_MODEL"))
     parser.add_argument("--provider", choices=("codex", "opencode"), default="codex")
     parser.add_argument("--allow-network", action="store_true")
