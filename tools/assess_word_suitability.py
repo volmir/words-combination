@@ -11,6 +11,7 @@ from pathlib import Path
 
 from classify_word_categories import export_snapshot, import_snapshot
 from game_data_providers import CategoryProvider, atomic_json, json_digest
+import termination_guard as termination
 from word_categories import ROLE_EXCLUSIONS, normalize
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -346,6 +347,8 @@ def main():
     parser.add_argument("--timeout", type=int, default=120)
     parser.add_argument("--retries", type=int, default=2)
     args = parser.parse_args()
+    termination.become_group_leader()
+    termination.install_termination_handler()
     try:
         summary = run(args)
         print(json.dumps(summary, ensure_ascii=False, sort_keys=True))

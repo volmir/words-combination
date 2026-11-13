@@ -1,0 +1,25 @@
+{
+  "schema": "selective-mode-config-v1",
+  "iterations_per_round": 3,
+  "max_new_decisions_per_iteration": 300,
+  "max_batches_per_iteration": 16,
+  "time_budget_per_iteration_s": 600,
+  "total_new_decisions": 2000,
+  "total_time_budget_s": 3300,
+  "batch_size": 20,
+  "timeout": 120,
+  "retries": 2,
+  "resume": "cache-and-journal",
+  "rationale": {
+    "iterations_per_round": "Сколько циклов «план -> кэш -> ограниченный ИИ-батч -> GEN-02..05 -> проверка» выполняется внутри одного раунда отбора исходников.",
+    "max_new_decisions_per_iteration": "Максимум НОВЫХ ИИ-решений одного вызова LEX-03 и одного вызова LEX-04 на итерацию; повторные (кэш/снимок) не считаются.",
+    "max_batches_per_iteration": "Максимум батчей модели в одном вызове LEX.",
+    "time_budget_per_iteration_s": "Максимум времени одного вызова LEX (секунды); действует для LEX-03 и LEX-04 отдельно.",
+    "total_new_decisions": "Совокупный лимит новых ИИ-решений на все вызовы DATA-01 (верхний предохранитель SEL-R01..R04 + DATA-01, не цель).",
+    "total_time_budget_s": "Совокупный лимит времени всего вызова prepare; 3300 с оставляет запас под task_timeout=3600 у оркестратора.",
+    "batch_size": "Размер пачки модели: 1-40.",
+    "timeout": "Таймаут одного батча CLI модели: 1-600.",
+    "retries": "Повторов на неудачный батч: 0-3.",
+    "resume": "Политика возобновления: поштучные кэши по ключам и постоянный журнал совокупных лимитов; повторный запуск не перезапрашивает решённое и не обновляет совокупные счётчики."
+  }
+}

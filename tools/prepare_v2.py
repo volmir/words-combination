@@ -13,6 +13,9 @@ import subprocess
 import tempfile
 from types import SimpleNamespace as NS
 
+import math
+import time
+
 import assess_word_suitability as suitability
 import build_campaign as campaign
 import build_dictionary as dictionary
@@ -23,18 +26,60 @@ import classify_word_categories as classification
 import clean_dictionary as clean
 from game_data_providers import atomic_json, json_digest
 import pick_level_words as profiles
+import plan_semantic_requests as planner
 import prepare_frequency as frequency
 import rebalance_campaign as rebalance
 import select_level_words as selection
 import simulate_campaign as simulation
+import termination_guard as termination
 import validate_campaign as validation
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / 'tools'
 LEGACY = ROOT / 'core/src/test/resources/legacy_levels_v1.json'
+SELECTIVE_CONFIG = TOOLS / 'selective_config.json'
 PACKAGE_ARTIFACTS = (*clean.ARTIFACTS[:-1], 'definitions.db', 'campaign.json', 'known_words.bloom',
                      'input_manifest.json', 'lexical_profiles.json.gz', 'previous_levels.json',
                      'category_decisions.json', 'suitability_decisions.json', 'manifest.json')
+SELECTIVE_REPORT_SCHEMA = 'selective-report-v1'
+SELECTIVE_JOURNAL_SCHEMA = 'selective-run-journal-v1'
+
+
+def load_selective_config(path=SELECTIVE_CONFIG):
+    """Explicit resource boundaries for the selective mode (SEL-05).
+
+    Numbers are validated against the provider CLI limits, never against the
+    campaign thresholds: GEN-02/03/04/05 constraints are not relaxed here.
+    """
+    document = json.loads(Path(path).read_text(encoding='utf-8'))
+    if document.get('schema') != 'selective-mode-config-v1':
+        raise ValueError('Неверная схема конфигурации выборочного режима')
+    required = {'iterations_per_round', 'max_new_decisions_per_iteration', 'max_batches_per_iteration',
+                'time_budget_per_iteration_s', 'total_new_decisions', 'total_time_budget_s',
+                'batch_size', 'timeout', 'retries', 'resume'}
+    if not required <= set(document):
+        raise ValueError('Неполный набор параметров выборочного режима: '
+                         + ', '.join(sorted(required - set(document))))
+    for name in ('iterations_per_round', 'max_new_decisions_per_iteration', 'max_batches_per_iteration',
+                 'total_new_decisions', 'batch_size', 'timeout', 'retries'):
+        if type(document[name]) is not int or document[name] <= 0:
+            raise ValueError('Ожидалось положительное целое: ' + name)
+    if not 1 <= document['batch_size'] <= 40:
+        raise ValueError('batch_size должен быть в диапазоне 1–40')
+    if not 1 <= document['timeout'] <= 600:
+        raise ValueError('timeout должен быть в диапазоне 1–600')
+    if not 0 <= document['retries'] <= 3:
+        raise ValueError('retries должен быть в диапазоне 0–3')
+    for name in ('time_budget_per_iteration_s', 'total_time_budget_s'):
+        value = document[name]
+        if type(value) not in (int, float) or not math.isfinite(value) or value < 0:
+            raise ValueError(name + ' должен быть неотрицательным числом секунд')
+        document[name] = float(value)
+    if not document['total_time_budget_s'] >= document['time_budget_per_iteration_s'] > 0:
+        raise ValueError('Совокупный лимит времени должен покрывать лимит одной итерации')
+    if document['resume'] != 'cache-and-journal':
+        raise ValueError('Политика возобновления: cache-and-journal')
+    return document
 
 
 def read_json(path):
@@ -178,50 +223,93 @@ def automatic_decisions(run, arguments):
     return result
 
 
+def round_structural(args, workspace, number, words, base_manifest, base, candidates, universe):
+    """Local stages shared by full and selective rounds, up to the LEX-02 index.
+
+    No model, decisions cache or network is touched here. The first local
+    category index covers every word; unknowns stay `unknown:*`, never `other`.
+    """
+    directory = workspace / f'round-{number:02d}'
+    directory.mkdir()
+    package = directory / 'package'
+    package.mkdir()
+    # Provenance comes from the same verified dump as cleanup, also for
+    # selected source-only exceptions; no manually fabricated source rows.
+    cleanup = clean.load_config(TOOLS / 'selection_config.json')
+    records = clean.extract_records(args.dump, words, cleanup)
+    sources = {w: records[w]['sources'] for w in sorted(words)}
+    dictionary.write_game_data(package, sources, base_manifest['source']['dump_date'],
+                               base_manifest['source']['sha256_input'], levels_spec=[])
+    shutil.copyfile(LEGACY, package / 'levels.json')
+    manifest = read_json(package / 'manifest.json')
+    manifest['sha256_levels_json'] = sha(package / 'levels.json')
+    manifest['levels_source'].update(role='historical-v1-comparison-only',
+        snapshot_sha256=sha(LEGACY),
+        changes='Delivered v1 snapshot including owner-authorized replacements; v2 tasks are generated separately')
+    manifest['selection'] = dict(base_manifest['selection'], source_candidates=sorted(candidates),
+                                  source_only=sorted(set(candidates) - base))
+    manifest['selection']['reference_checks'] = dict(manifest['selection']['reference_checks'],
+        level_exceptions={w: candidates[w] for w in sorted(words - base)})
+    atomic_json(package / 'manifest.json', manifest)
+    local_args = NS(dump=args.dump, manifest=package / 'manifest.json',
+        config=TOOLS / 'definition_import_config.json', selection_config=TOOLS / 'selection_config.json',
+        cache=args.cache / 'definitions', reports=directory / 'definitions', out=args.installed,
+        remove_definitions=TOOLS / 'overrides/remove_definitions.txt', prepare_only=True)
+    definitions.run(local_args)
+    previous = workspace / 'previous_levels.json'
+    return directory, package, local_args, previous
+
+
+def rebind_definitions(package, local_args, category_index):
+    """Rebuild metadata so T6, hint categories and the shipped DB agree."""
+    local_args.category_index = category_index
+    second = definitions.run(local_args)
+    second_dir = Path(second['database']).parent
+    for name in definitions.WORD_ARTIFACTS + ('definitions.db', 'manifest.json'):
+        shutil.copyfile(second_dir / name, package / name)
+    index = read_json(category_index)
+    index['database_sha256'] = sha(package / 'definitions.db')
+    atomic_json(category_index, index)
+    return second
+
+
+def gen02(args, directory, snapshot, prof_args, previous):
+    selected = selection.run(NS(profiles=snapshot, words=prof_args.words, previous_levels=previous,
+                                config=selection.CONFIG, alphabet=selection.ALPHABET,
+                                reports=directory / 'selection'))
+    return selected, {slot['word'] for slot in selected['slots']}
+
+
+def gen345(args, directory, snapshot, prof_args, previous, hints):
+    proposal = directory / 'selection/level_words_proposal.json'
+    common = dict(profiles=snapshot, words=prof_args.words, previous_levels=previous,
+                  selection_config=selection.CONFIG, manifest=prof_args.manifest,
+                  database=prof_args.database, dump=args.dump, hints=hints, proposal=proposal,
+                  java=args.java, jvm_classpath=args.jvm_classpath)
+    generated = campaign.run(NS(**common, config=campaign.CONFIG, output=directory / 'campaign'))
+    balanced = rebalance.run(NS(**common, config=simulation.CONFIG,
+        campaign=directory / 'campaign/campaign.json', output=directory / 'simulation'))
+    return generated, balanced
+
+
+def finalize_package(package, directory, balanced, snapshot, previous):
+    shutil.copyfile(directory / 'simulation/balanced_campaign.json', package / 'campaign.json')
+    shutil.copyfile(snapshot, package / 'lexical_profiles.json.gz')
+    shutil.copyfile(previous, package / 'previous_levels.json')
+    return {l['word'] for l in balanced['campaign']['levels']}
+
+
 def make_round(args, workspace, base_manifest, base, candidates, universe):
     def build(words, number):
-        directory = workspace / f'round-{number:02d}'
-        directory.mkdir()
-        package = directory / 'package'
-        package.mkdir()
-        # Provenance comes from the same verified dump as cleanup, also for
-        # selected source-only exceptions; no manually fabricated source rows.
-        cleanup = clean.load_config(TOOLS / 'selection_config.json')
-        records = clean.extract_records(args.dump, words, cleanup)
-        sources = {w: records[w]['sources'] for w in sorted(words)}
-        dictionary.write_game_data(package, sources, base_manifest['source']['dump_date'],
-                                   base_manifest['source']['sha256_input'], levels_spec=[])
-        shutil.copyfile(LEGACY, package / 'levels.json')
-        manifest = read_json(package / 'manifest.json')
-        manifest['sha256_levels_json'] = sha(package / 'levels.json')
-        manifest['levels_source'].update(role='historical-v1-comparison-only',
-            snapshot_sha256=sha(LEGACY),
-            changes='Delivered v1 snapshot including owner-authorized replacements; v2 tasks are generated separately')
-        manifest['selection'] = dict(base_manifest['selection'], source_candidates=sorted(candidates),
-                                      source_only=sorted(set(candidates) - base))
-        manifest['selection']['reference_checks'] = dict(manifest['selection']['reference_checks'],
-            level_exceptions={w: candidates[w] for w in sorted(words - base)})
-        atomic_json(package / 'manifest.json', manifest)
-        local_args = NS(dump=args.dump, manifest=package / 'manifest.json',
-            config=TOOLS / 'definition_import_config.json', selection_config=TOOLS / 'selection_config.json',
-            cache=args.cache / 'definitions', reports=directory / 'definitions', out=args.installed,
-            remove_definitions=TOOLS / 'overrides/remove_definitions.txt', prepare_only=True)
-        definitions.run(local_args)
+        directory, package, local_args, previous = round_structural(
+            args, workspace, number, words, base_manifest, base, candidates, universe)
         category_args = ai_args(args, local_args.reports / 'category_index.json', directory / 'categories',
                                 args.cache / 'categories', args.category_snapshot)
         automatic_decisions(classification.run, category_args)
         category_index = category_args.reports / 'category_index.json'
         # Rebuild metadata so T6, hint categories and the shipped DB agree.
-        local_args.category_index = category_index
-        second = definitions.run(local_args)
-        second_dir = Path(second['database']).parent
-        for name in definitions.WORD_ARTIFACTS + ('definitions.db', 'manifest.json'):
-            shutil.copyfile(second_dir / name, package / name)
-        index = read_json(category_index)
-        index['database_sha256'] = sha(package / 'definitions.db')
-        atomic_json(category_index, index)
+        rebind_definitions(package, local_args, category_index)
         hints = jvm_hints(args, package / 'definitions.db', package / 'words.txt', directory)
-        previous = workspace / 'previous_levels.json'
         prof_args = NS(words=package / 'words.txt', manifest=package / 'manifest.json',
             database=package / 'definitions.db', dump=args.dump, frequency_list=args.frequency_list,
             frequency_universe=universe, config=profiles.CONFIG, selection_config=TOOLS / 'selection_config.json',
@@ -235,31 +323,486 @@ def make_round(args, workspace, base_manifest, base, candidates, universe):
         prof_args.prepare_only = False
         measured = profiles.run(prof_args)
         snapshot = Path(measured['cache_path'])
-        selected = selection.run(NS(profiles=snapshot, words=prof_args.words, previous_levels=previous,
-                                    config=selection.CONFIG, alphabet=selection.ALPHABET,
-                                    reports=directory / 'selection'))
+        selected, selected_sources = gen02(args, directory, snapshot, prof_args, previous)
         if not selected['installable']:
             raise ValueError('GEN-02 отклонил исходники: ' + selected['status'])
-        selected_sources = {slot['word'] for slot in selected['slots']}
         if base | (selected_sources & set(candidates)) != words:
             return selected_sources, package
-        proposal = directory / 'selection/level_words_proposal.json'
-        common = dict(profiles=snapshot, words=prof_args.words, previous_levels=previous,
-                      selection_config=selection.CONFIG, manifest=prof_args.manifest,
-                      database=prof_args.database, dump=args.dump, hints=hints, proposal=proposal,
-                      java=args.java, jvm_classpath=args.jvm_classpath)
-        generated = campaign.run(NS(**common, config=campaign.CONFIG, output=directory / 'campaign'))
+        generated, balanced = gen345(args, directory, snapshot, prof_args, previous, hints)
         if generated['status'] != 'valid':
             raise ValueError('GEN-03 отклонил кампанию: ' + generated['status'])
-        balanced = rebalance.run(NS(**common, config=simulation.CONFIG,
-            campaign=directory / 'campaign/campaign.json', output=directory / 'simulation'))
         if not balanced['installable']:
             raise ValueError('GEN-04/GEN-05 отклонили кампанию; см. ' + str(directory / 'simulation'))
-        shutil.copyfile(directory / 'simulation/balanced_campaign.json', package / 'campaign.json')
-        shutil.copyfile(snapshot, package / 'lexical_profiles.json.gz')
-        shutil.copyfile(previous, package / 'previous_levels.json')
-        return {l['word'] for l in balanced['campaign']['levels']}, package
+        return finalize_package(package, directory, balanced, snapshot, previous), package
     return build
+
+
+def decision_provider(arguments, semantic, model):
+    """Provider mirrored from the stage: same context, cache keys and validators."""
+    if semantic:
+        return suitability.SuitabilityProvider(arguments.cache, model,
+                                               provider=getattr(arguments, 'provider', 'codex'))
+    return classification.CategoryProvider(arguments.cache, model,
+                                           classification.thematic.load_taxonomy(arguments.taxonomy),
+                                           provider=getattr(arguments, 'provider', 'codex'))
+
+
+def requested_decision_items(arguments, provider, semantic):
+    """The exact item subset a LEX stage will process under its request file."""
+    incoming = read_json(arguments.input)
+    if semantic:
+        pairs_file = getattr(arguments, 'pairs_file', None)
+        pairs = suitability.read_pairs_file(pairs_file) if pairs_file is not None else None
+        return suitability.input_items(incoming, pairs)
+    words_file = getattr(arguments, 'words_file', None)
+    requested = classification.read_words_file(words_file) if words_file is not None else None
+    return classification.classification_items(incoming, provider.taxonomy, requested)
+
+
+def selective_decisions(run, arguments, semantic):
+    """Import compatible snapshot elements for the REQUESTED subset, then run the stage.
+
+    Full `automatic_decisions` demands every disputed item be resolved; here only
+    the explicitly requested items matter and a `pending` result (budget/offline)
+    is a legitimate outcome handed to the selective driver. Snapshot elements are
+    reused only on exact item match; different inputs invalidate them item-wise.
+    """
+    if arguments.snapshot:
+        frozen = read_json(arguments.snapshot)
+        snapshots = frozen['snapshots'] if frozen.get('schema') == 'v2-decision-bundle-v1' else [frozen]
+        if not snapshots:
+            raise ValueError('Пустой пакет замороженных решений')
+        model = arguments.model or snapshots[-1].get('context', {}).get('model')
+        provider = decision_provider(arguments, semantic, model)
+        policy = getattr(provider, 'snapshot_policy', None)
+        if policy is None:  # only for providers without a fixed snapshot policy
+            policy = {'min_confidence': arguments.min_confidence}
+        items = requested_decision_items(arguments, provider, semantic)
+        for snapshot in snapshots:
+            if (snapshot.get('context') == provider.context and snapshot.get('taxonomy') == provider.taxonomy and
+                    snapshot.get('policy') == policy and
+                    snapshot.get('schema') == getattr(provider, 'snapshot_schema', classification.SNAPSHOT_SCHEMA)):
+                seed_snapshot(snapshot, provider, items)
+        arguments.model = model
+        arguments.snapshot = None
+    return run(arguments)
+
+
+def selective_ai_args(args, kind, input_path, reports, cache, snapshot, request_file, budget):
+    """Bounded LEX invocation: network only under --allow-network, per-call limits."""
+    common = dict(input=input_path, reports=reports, cache=cache, snapshot=snapshot,
+                  model=args.model, provider=getattr(args, 'provider', 'codex'),
+                  allow_network=args.allow_network, batch_size=budget['batch_size'],
+                  timeout=budget['timeout'], retries=budget['retries'],
+                  max_new_decisions=budget['max_new'], max_batches=budget['max_batches'],
+                  time_budget=budget['time_budget'])
+    if kind == 'categories':
+        return NS(**common, taxonomy=TOOLS / 'categories.json', min_confidence=0.8,
+                  words_file=request_file, gold=None)
+    return NS(**common, pairs_file=request_file)
+
+
+def rehead_hints(source, target, database, words):
+    """Hint rows do not depend on categories; only the header binds the DB bytes.
+
+    The expensive JVM audit runs once per round. Rebuilding the header around the
+    same validated rows keeps profile inputs consistent with each rebind of the
+    category-enriched database without re-running Gradle/JVM per iteration.
+    """
+    lines = source.read_text(encoding='utf-8').splitlines()
+    if not lines:
+        raise ValueError('Файл подсказок пуст')
+    header = json.dumps(profiles.hint_header(database, words), ensure_ascii=False, sort_keys=True)
+    rows = [line for line in lines[1:] if line.strip()]
+    target.write_text(header + '\n' + '\n'.join(rows) + ('\n' if rows else ''), encoding='utf-8')
+    return target
+
+
+def plan_iteration(args, directory, iteration, words_path, suitability_input, categories, hints,
+                   previous, suitability_decisions):
+    """Deterministic SEL-04 plan for the round's current state; AI is never called."""
+    plan_dir = directory / f'plan-{iteration:02d}'
+    plan_args = NS(words=words_path, suitability_input=suitability_input, categories=categories,
+                   hints=hints, previous_levels=previous, output=plan_dir / 'request_plan.json',
+                   config=getattr(args, 'plan_config', None) or planner.CONFIG,
+                   profiles_config=profiles.CONFIG,
+                   selection_config=getattr(args, 'plan_selection_config', None) or selection.CONFIG,
+                   campaign_config=campaign.CONFIG, alphabet=planner.ALPHABET_FILE,
+                   suitability_decisions=suitability_decisions,
+                   cache_suitability=args.cache / 'suitability', cache_categories=args.cache / 'categories',
+                   model=args.model, provider=getattr(args, 'provider', 'codex'))
+    planner.run(plan_args)
+    return plan_dir
+
+
+def record_deficits(plan, gen_failures):
+    """Explainable diagnostic: plan-level deficiencies plus stage failure codes."""
+    deficits = []
+    for row in plan.get('expansions', []):
+        deficits.append({'source': 'plan', 'reason_code': row.get('reason_code'),
+                         'detail': row.get('detail')})
+    if plan.get('status') == 'proven_infeasible':
+        deficits.extend({'source': 'plan', 'reason_code': 'infeasible', 'detail': reason}
+                        for reason in plan.get('infeasible', {}).get('reasons', []))
+    if gen_failures:
+        deficits.append({'source': 'gen', 'reason_code': 'stage_failure', 'detail': gen_failures})
+    return deficits
+
+
+def empty_selective_journal(inputs):
+    return dict(schema=SELECTIVE_JOURNAL_SCHEMA, inputs=inputs, status='running',
+                cumulative=dict(new_ai_categories=0, new_ai_suitability=0, cached_categories=0,
+                                cached_suitability=0, iterations=0, rounds=0, elapsed_s=0.0))
+
+
+def load_journal(path, inputs):
+    if not path.exists():
+        return empty_selective_journal(inputs)
+    journal = read_json(path)
+    if (journal.get('schema') != SELECTIVE_JOURNAL_SCHEMA or journal.get('inputs') != inputs or
+            not isinstance(journal.get('cumulative'), dict)):
+        raise ValueError('Повреждён журнал выборочного режима: ' + str(path))
+    return journal
+
+
+def calc_iteration_budget(config, journal):
+    """Per-LEX-call budget clipped by the cumulative DATA-01 limits."""
+    remaining_new = max(0, config['total_new_decisions'] -
+                        journal['cumulative']['new_ai_categories'] -
+                        journal['cumulative']['new_ai_suitability'])
+    remaining_time = max(0.0, config['total_time_budget_s'] - journal['cumulative']['elapsed_s'])
+    return dict(max_new=min(config['max_new_decisions_per_iteration'], remaining_new),
+                max_batches=config['max_batches_per_iteration'],
+                time_budget=min(config['time_budget_per_iteration_s'], remaining_time),
+                batch_size=config['batch_size'], timeout=config['timeout'], retries=config['retries'])
+
+
+def selective_round(args, config, journal, journal_path, workspace, number, words,
+                    base_manifest, base, candidates, universe):
+    """One converge-round of selective preparation: plan -> bounded LEX -> GEN-02..05.
+
+    Returns a validated package, the dictionary expansion set, or an incomplete
+    outcome with per-iteration diagnostics. AI work stops the moment GEN-02..05
+    accept the campaign. An iteration without new decisions cannot spawn further
+    duplicate batches; structurally proven infeasibility never spends AI budget.
+    """
+    directory, package, local_args, previous = round_structural(
+        args, workspace, number, words, base_manifest, base, candidates, universe)
+    local_index = local_args.reports / 'category_index.json'
+    rebind_definitions(package, local_args, local_index)
+    hints = jvm_hints(args, package / 'definitions.db', package / 'words.txt', directory)
+    prof_args = NS(words=package / 'words.txt', manifest=package / 'manifest.json',
+        database=package / 'definitions.db', dump=args.dump, frequency_list=args.frequency_list,
+        frequency_universe=universe, config=profiles.CONFIG, selection_config=TOOLS / 'selection_config.json',
+        previous_levels=previous, categories=local_index, suitability=None, hints=hints,
+        cache=args.cache / 'profiles', reports=directory / 'profiles', prepare_only=True)
+    profiles.run(prof_args)
+    suitability_input = prof_args.reports / 'suitability_input.json'
+    carry_index, carry_ws, iterations = local_index, None, []
+    snapshots = [directory / 'categories', directory / 'suitability']
+    for name in snapshots:
+        (name / 'snapshots').mkdir(parents=True, exist_ok=True)
+    last_infeasible = False
+    for iteration in range(1, config['iterations_per_round'] + 1):
+        started = time.monotonic()
+        budget = calc_iteration_budget(config, journal)
+        plan_dir = plan_iteration(args, directory, iteration, package / 'words.txt', suitability_input,
+                                  carry_index, hints, previous, carry_ws)
+        plan = read_json(plan_dir / 'request_plan.json')
+        last_infeasible = plan.get('status') == 'proven_infeasible'
+        if last_infeasible:
+            # Structurally proven impossibility: AI cannot add missing carriers,
+            # bands or historical sources; never spend budget on that.
+            record = dict(round=number, iteration=iteration,
+                          plan=dict(status=plan['status']),
+                          category=dict(ai_new=0, cached=0, pending=0, unknown=0, ai_other=0,
+                                        rejected=0, spent_time=0),
+                          suitability=dict(ai_new=0, cached=0, pending=0,
+                                           role_counters={}, spent_time=0),
+                          budget=dict(budget), gen={},
+                          deficits=record_deficits(plan, []))
+            iterations.append(record)
+            return dict(kind='incomplete', iterations=iterations,
+                        status='IMPOSSIBLE_UNDER_CONSTRAINTS', last_infeasible=True)
+        pairs_file, words_file = plan_dir / 'requested_pairs.txt', plan_dir / 'requested_words.txt'
+        for request_file in (pairs_file, words_file):
+            if not request_file.exists():
+                request_file.write_text('', encoding='utf-8')
+        category_args = selective_ai_args(args, 'categories', carry_index, directory / 'categories',
+                                          args.cache / 'categories', args.category_snapshot,
+                                          words_file, budget)
+        category_summary = selective_decisions(classification.run, category_args, False)
+        carry_index = category_args.reports / 'category_index.json'
+        suitability_args = selective_ai_args(args, 'suitability', suitability_input, directory / 'suitability',
+                                             args.cache / 'suitability', args.suitability_snapshot,
+                                             pairs_file, budget)
+        suitability_summary = selective_decisions(suitability.run, suitability_args, True)
+        carry_ws = suitability_args.reports / 'word_suitability.json'
+        # Compact snapshots of exactly the decisions used this iteration.
+        shutil.copyfile(directory / 'categories' / 'category_decisions.json',
+                        snapshots[0] / 'snapshots' / ('iter-%02d.json' % iteration))
+        shutil.copyfile(directory / 'suitability' / 'suitability_decisions.json',
+                        snapshots[1] / 'snapshots' / ('iter-%02d.json' % iteration))
+        new_categories = category_summary.get('ai_new', 0)
+        new_suitability = suitability_summary.get('ai_new', 0)
+        category_pending = category_summary.get('pending', 0)
+        suitability_pending = suitability_summary.get('pending', 0)
+        gen_failures, deficits = [], []
+        record = dict(round=number, iteration=iteration,
+                      plan=dict(status=plan['status'],
+                                pairs_requested=plan['suitability']['requested'],
+                                words_requested=plan['category']['requested'],
+                                cache_hits_pairs=plan['suitability']['cache_resolved'],
+                                cache_hits_words=plan['category']['cache_resolved']),
+                      category=dict(ai_new=new_categories, cached=category_summary.get('cached', 0),
+                                    pending=category_pending, unknown=category_summary.get('unknown', 0),
+                                    ai_other=category_summary.get('ai_other', 0),
+                                    rejected=category_summary.get('rejected', 0),
+                                    spent_time=category_summary.get('spent_time', 0)),
+                      suitability=dict(ai_new=new_suitability, cached=suitability_summary.get('cache_hit', 0),
+                                       pending=suitability_pending,
+                                       role_counters=suitability_summary.get('role_counters', {}),
+                                       spent_time=suitability_summary.get('spent_time', 0)),
+                      budget=dict(budget), gen={}, deficits=[])
+        journal['cumulative']['new_ai_categories'] += new_categories
+        journal['cumulative']['new_ai_suitability'] += new_suitability
+        journal['cumulative']['cached_categories'] += record['category']['cached']
+        journal['cumulative']['cached_suitability'] += record['suitability']['cached']
+        journal['cumulative']['iterations'] += 1
+        journal['cumulative']['elapsed_s'] = round(journal['cumulative']['elapsed_s'] + time.monotonic() - started, 6)
+        save_journal(journal_path, journal)
+        # Recompute profiles against the updated semantic inputs.
+        rebind_definitions(package, local_args, carry_index)
+        prof_args.categories, prof_args.suitability = carry_index, carry_ws
+        prof_args.hints = rehead_hints(hints, directory / 'hints-current.jsonl',
+                                       package / 'definitions.db', package / 'words.txt')
+        prof_args.prepare_only = False
+        measured = profiles.run(prof_args)
+        snapshot = Path(measured['cache_path'])
+        selected, selected_sources = gen02(args, directory, snapshot, prof_args, previous)
+        if not selected['installable']:
+            gen_failures.append('GEN-02: ' + selected['status'])
+            record['gen']['gen02'] = selected['status']
+            record['deficits'] = record_deficits(plan, gen_failures)
+            iterations.append(record)
+            if new_categories + new_suitability == 0:
+                return dict(kind='incomplete', iterations=iterations,
+                            status='NEEDS_MORE_EVIDENCE', last_infeasible=False)
+            continue
+        if base | (selected_sources & set(candidates)) != words:
+            record['gen']['gen02'] = 'expand'
+            iterations.append(record)
+            return dict(kind='expand', selected=selected_sources, iterations=iterations)
+        generated, balanced = gen345(args, directory, snapshot, prof_args, previous, prof_args.hints)
+        if generated['status'] == 'valid' and balanced['installable']:
+            levels = finalize_package(package, directory, balanced, snapshot, previous)
+            record['gen'] = dict(gen02='ok', gen03='valid', gen04='installable')
+            iterations.append(record)
+            # VALID: no further AI calls this round.
+            return dict(kind='valid', package=package, levels=levels, iterations=iterations)
+        if generated['status'] != 'valid':
+            gen_failures.append('GEN-03: ' + generated['status'])
+            record['gen']['gen03'] = generated['status']
+        else:
+            gen_failures.append('GEN-04/GEN-05: installable=false')
+            record['gen']['gen04'] = 'not-installable'
+        record['deficits'] = record_deficits(plan, gen_failures)
+        if new_categories + new_suitability == 0:
+            # No progress is possible: save the diagnosis and stop instead of
+            # repeating the same pending batch.
+            record['deficits'].append({'source': 'budget', 'reason_code': 'no_progress',
+                                       'detail': 'Новых решений нет, GEN-стадии отклонили кандидата'
+                                                 ' и часть запрошенного осталась pending;'
+                                                 ' нужны бюджет/сеть либо совместимый кэш/снимок.'})
+            iterations.append(record)
+            return dict(kind='incomplete', iterations=iterations,
+                        status='NEEDS_MORE_EVIDENCE', last_infeasible=False)
+        iterations.append(record)
+    return dict(kind='incomplete', iterations=iterations,
+                status='IMPOSSIBLE_UNDER_CONSTRAINTS' if last_infeasible else 'NEEDS_MORE_EVIDENCE',
+                last_infeasible=last_infeasible)
+
+
+def selective_journal_dir(args, inputs):
+    """Persistent resume state for the selective mode (keyed by verified inputs)."""
+    return args.cache / 'selective-runs' / json_digest(dict(inputs, mode='selective'))
+
+
+def selective_rounds(args, workspace, base_manifest, base, candidates, universe, inputs):
+    """Converge-style driver for the selective mode, bounded by explicit resources.
+
+    Returns (package, history, iterations, config, status): `package` is None for
+    NEEDS_MORE_EVIDENCE/IMPOSSIBLE_UNDER_CONSTRAINTS; only VALID has bytes.
+    """
+    config = load_selective_config(getattr(args, 'selective_config', None) or SELECTIVE_CONFIG)
+    apply_selective_overrides(config, args)
+    journal_dir = selective_journal_dir(args, inputs)
+    journal_path = journal_dir / 'journal.json'
+    journal = load_journal(journal_path, dict(inputs, mode='selective'))
+    words, seen, history = set(base), set(), []
+    for number in range(1, args.max_rounds + 1):
+        key = hashlib.sha256(canonical(words)).hexdigest()
+        if key in seen:
+            raise ValueError('Цикл отбора исходников: ' + json.dumps(history, ensure_ascii=False))
+        seen.add(key)
+        outcome = selective_round(args, config, journal, journal_path, workspace, number, words,
+                                  base_manifest, base, candidates, universe)
+        journal['cumulative']['rounds'] += 1
+        save_journal(journal_path, journal)
+        if outcome['kind'] == 'valid':
+            journal['status'] = 'VALID'
+            history.append(dict(round=number, words_sha256=key, exceptions=sorted(set(words) - base)))
+            save_journal(journal_path, journal)
+            return outcome['package'], history, outcome['iterations'], config, 'VALID'
+        if outcome['kind'] == 'expand':
+            final = set(base) | (outcome['selected'] & set(candidates))
+            if final == words:
+                raise ValueError('Выбран необоснованный исходник вне пула: ' + ', '.join(sorted(outcome['selected'] - words)))
+            history.append(dict(round=number, words_sha256=key, exceptions=sorted(final - base)))
+            words = final
+            continue
+        journal['status'] = outcome['status']
+        save_journal(journal_path, journal)
+        return None, history, outcome['iterations'], config, outcome['status']
+    raise ValueError('Исчерпан лимит пересчётов словаря: ' + json.dumps(history, ensure_ascii=False))
+
+
+def apply_selective_overrides(config, args):
+    """CLI limits refine the config; values are validated against provider bounds."""
+    for key, attribute, name in (
+            ('iterations_per_round', 'iterations', 'iterations'),
+            ('max_new_decisions_per_iteration', 'max_new_decisions', 'max-new-decisions'),
+            ('max_batches_per_iteration', 'max_batches', 'max-batches'),
+            ('total_new_decisions', 'total_new_decisions', 'total-new-decisions')):
+        value = getattr(args, attribute, None)
+        if value is not None:
+            if type(value) is not int or value <= 0:
+                raise ValueError(name + ' должен быть положительным целым')
+            config[key] = value
+    for key, attribute, name in (('time_budget_per_iteration_s', 'time_budget', 'time-budget'),
+                                 ('total_time_budget_s', 'total_time_budget', 'total-time-budget')):
+        value = getattr(args, attribute, None)
+        if value is not None:
+            if type(value) not in (int, float) or not math.isfinite(value) or value < 0:
+                raise ValueError(name + ' должен быть неотрицательным числом секунд')
+            config[key] = float(value)
+
+
+def save_journal(path, journal):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    atomic_json(path, journal)
+
+
+def collect_selective_decisions(workspace, task):
+    """Compact, versioned snapshot of exactly the decisions actually used.
+
+    Iteration-level LEX exports carry their own context/taxonomy/input/policy/SHA,
+    so a strict offline replay can import them item by item; enlarging or changing
+    the inputs invalidates affected items instead of silently reusing them.
+    """
+    return [read_json(path) for directory in sorted(workspace.glob('round-*'))
+            for path in sorted((directory / task / 'snapshots').glob('*.json'))]
+
+
+def build_selective_report(args, workspace, history, iterations, status, config, inputs,
+                           published=False, hashes=None, gen_checks=None):
+    """Machine-readable report: iterations, AI work by kind, time, deficits, checks."""
+    totals = dict(new_ai_categories=sum(i['category']['ai_new'] for i in iterations),
+                  new_ai_suitability=sum(i['suitability']['ai_new'] for i in iterations),
+                  new_ai_suitability_source=sum(i['suitability']['role_counters'].get('source', {}).get('ai_new', 0)
+                                                for i in iterations),
+                  new_ai_suitability_target=sum(i['suitability']['role_counters'].get('target', {}).get('ai_new', 0)
+                                               for i in iterations),
+                  cached_categories=sum(i['category']['cached'] for i in iterations),
+                  cached_suitability=sum(i['suitability']['cached'] for i in iterations),
+                  pending_categories=sum(i['category']['pending'] for i in iterations),
+                  pending_suitability=sum(i['suitability']['pending'] for i in iterations),
+                  iterations=len(iterations),
+                  spent_time_total_s=round(sum(i['category']['spent_time'] + i['suitability']['spent_time']
+                                               for i in iterations), 6))
+    failures, deficits, seen = [], [], set()
+    stage_names = {'gen02': 'GEN-02', 'gen03': 'GEN-03', 'gen04': 'GEN-04/GEN-05'}
+    for iteration in iterations:
+        for key, label in stage_names.items():
+            value = iteration['gen'].get(key)
+            if value and value not in ('ok', 'valid', 'installable', 'expand'):
+                failures.append(label + ': ' + str(value))
+        for row in iteration['deficits']:
+            detail = row.get('detail')
+            if isinstance(detail, list):
+                detail = '; '.join(str(part) for part in detail)
+            identity = (row.get('reason_code'), json.dumps(detail, ensure_ascii=False, sort_keys=True))
+            if identity in seen:
+                continue
+            seen.add(identity)
+            deficits.append({'reason_code': row.get('reason_code'), 'detail': detail})
+    report = dict(schema=SELECTIVE_REPORT_SCHEMA, status=status,
+                  inputs=dict(dump=inputs.get('dump'), frequency=inputs.get('frequency'),
+                              manifest=inputs.get('manifest'), model=inputs.get('model'),
+                              provider=inputs.get('provider')),
+                  budget=dict(iterations_per_round=config['iterations_per_round'],
+                              max_new_per_iteration=config['max_new_decisions_per_iteration'],
+                              max_batches_per_iteration=config['max_batches_per_iteration'],
+                              time_budget_per_iteration_s=config['time_budget_per_iteration_s'],
+                              total_new_decisions=config['total_new_decisions'],
+                              total_time_budget_s=config['total_time_budget_s'],
+                              resume=config['resume']),
+                  rounds=history, iterations=iterations, totals=totals,
+                  checks=dict(gen02=gen_checks.get('gen02') if gen_checks else None,
+                              gen04_valid=gen_checks.get('gen04_valid') if gen_checks else False,
+                              gen05_valid=gen_checks.get('gen05_valid') if gen_checks else False,
+                              verify_package=gen_checks.get('verify_package') if gen_checks else False,
+                              published=published),
+                  failures=failures, deficits=deficits, hashes=hashes or {},
+                  resume=selective_resume_command(args), accuracy=None,
+                  notes=['Новые и повторные (кэш/снимок) решения считаются раздельно по категориям и пригодности.',
+                         'Ни одна неизвестная категория не считалась other: незапрошенные слова остаются unknown:*.',
+                         'Точность модели не измерена: независимой разметки нет.',
+                         'Поштучные кэши и ключи снимков сохраняют версии контекста, модели и провайдера.',
+                         'Подготовка не пишет в data/; опубликован только проверенный VALID-пакет.'])
+    path = workspace / 'selective_report.json'
+    atomic_json(path, report)
+    return path
+
+
+def selective_resume_command(args):
+    parts = ['python3', str(ROOT / 'tools/prepare_v2.py'), 'prepare', '--selective',
+             '--dump', str(Path(args.dump).resolve()),
+             '--manifest', str(Path(args.manifest).resolve()),
+             '--cache', str(Path(args.cache).resolve()),
+             '--package', str(Path(args.package).resolve())]
+    if args.source_words:
+        parts += ['--source-words', str(Path(args.source_words).resolve())]
+    if getattr(args, 'frequency_list', None):
+        parts += ['--frequency-list', str(Path(args.frequency_list).resolve())]
+    if args.model:
+        parts += ['--model', args.model]
+    parts += ['--provider', getattr(args, 'provider', 'codex')]
+    if args.category_snapshot:
+        parts += ['--category-snapshot', str(Path(args.category_snapshot).resolve())]
+    if args.suitability_snapshot:
+        parts += ['--suitability-snapshot', str(Path(args.suitability_snapshot).resolve())]
+    if args.allow_network:
+        parts += ['--allow-network']
+    parts += flatten_override_flags(args)
+    return shlex.join(parts)
+
+
+def flatten_override_flags(args):
+    parts = []
+    for attribute, flag in (('selective_config', '--selective-config'),
+                            ('plan_config', '--plan-config'),
+                            ('plan_selection_config', '--plan-selection-config'),
+                            ('iterations', '--iterations'),
+                            ('max_new_decisions', '--max-new-decisions'),
+                            ('max_batches', '--max-batches'),
+                            ('time_budget', '--time-budget'),
+                            ('total_new_decisions', '--total-new-decisions'),
+                            ('total_time_budget', '--total-time-budget')):
+        value = getattr(args, attribute, None)
+        if value is not None:
+            parts += [flag, str(value)]
+    return parts
 
 
 def verify_package(package, *, java='java', jvm_classpath=None):
@@ -435,12 +978,31 @@ def prepare(args):
                                  frequency_list=args.frequency_list)['words']
         lexical = clean.decide(records, ranks, clean.load_config(TOOLS / 'selection_config.json'))
         candidates = {w: lexical[w]['reasons'] or ['source_candidate'] for w in sorted(wanted & source)}
-        package, history = converge(base, candidates,
-            make_round(build_args, workspace, base_manifest, base, candidates, universe), args.max_rounds)
+        if getattr(args, 'selective', False):
+            package, history, selective_iterations, selective_config, selective_status = selective_rounds(
+                build_args, workspace, base_manifest, base, candidates, universe, inputs)
+            if package is None:
+                # Never publish an incomplete package and never touch data/.
+                report_path = build_selective_report(args, workspace, history, selective_iterations,
+                                                     selective_status, selective_config, inputs)
+                report = read_json(report_path)
+                report['resume'] = selective_resume_command(args)
+                atomic_json(report_path, report)
+                # Диагностика переживает очистку рабочего каталога следующего запуска.
+                atomic_json(selective_journal_dir(args, inputs) / 'last-report.json', report)
+                return dict(status=selective_status, report=str(report_path),
+                            iterations=len(selective_iterations), rounds=len(history),
+                            resume=selective_resume_command(args))
+        else:
+            package, history = converge(base, candidates,
+                make_round(build_args, workspace, base_manifest, base, candidates, universe), args.max_rounds)
         # Freeze every pass, not just the last: a fresh machine must reproduce
         # intermediate feature sets without a lucky per-item provider cache.
         for task, name in (('categories', 'category_decisions.json'), ('suitability', 'suitability_decisions.json')):
-            snapshots = [read_json(directory / task / name) for directory in sorted(workspace.glob('round-*'))]
+            if getattr(args, 'selective', False):
+                snapshots = collect_selective_decisions(workspace, task)
+            else:
+                snapshots = [read_json(directory / task / name) for directory in sorted(workspace.glob('round-*'))]
             atomic_json(package / name, dict(schema='v2-decision-bundle-v1', snapshots=snapshots))
         report = bloom.generate(universe, package / 'manifest.json', package / 'words.txt', package)
         manifest = read_json(package / 'manifest.json')
@@ -459,6 +1021,14 @@ def prepare(args):
             artifacts={n: sha(package / n) for n in PACKAGE_ARTIFACTS if n != 'manifest.json'})
         atomic_json(package / 'manifest.json', manifest)
         verify_package(package, java=args.java, jvm_classpath=args.jvm_classpath)
+        if getattr(args, 'selective', False):
+            report_path = build_selective_report(args, workspace, history, selective_iterations, 'VALID',
+                                                 selective_config, inputs, published=True,
+                                                 hashes={name: sha(package / name) for name in PACKAGE_ARTIFACTS},
+                                                 gen_checks=dict(gen02='ok', gen04_valid=True, gen05_valid=True,
+                                                                 verify_package=True))
+            atomic_json(selective_journal_dir(args, inputs) / 'last-report.json',
+                        read_json(report_path))
         if inputs['dump'] != sha(args.dump) or inputs['frequency'] != sha(args.frequency_list):
             raise ValueError('Внешний вход изменился во время подготовки; повторите запуск')
         game.publish(package, args.package, PACKAGE_ARTIFACTS)
@@ -506,6 +1076,26 @@ def main():
     preparing.add_argument('--suitability-snapshot', type=Path)
     preparing.add_argument('--allow-network', action='store_true', help='Только FrequencyWords и модель LEX')
     preparing.add_argument('--max-rounds', type=int, choices=range(1, 9), default=4)
+    preparing.add_argument('--selective', action='store_true',
+                           help='Выборочный режим SEL-05: план SEL-04, совместимый кэш/снимок, '
+                                'ограниченные ИИ-батчи LEX только под --allow-network, GEN-02..05, '
+                                'VALID/NEEDS_MORE_EVIDENCE/IMPOSSIBLE_UNDER_CONSTRAINTS')
+    preparing.add_argument('--selective-config', type=Path,
+                           help='Границы ресурсов выборочного режима; по умолчанию tools/selective_config.json')
+    preparing.add_argument('--plan-config', type=Path,
+                           help='Конфиг планировщика SEL-04; по умолчанию tools/request_plan_config.json')
+    preparing.add_argument('--plan-selection-config', type=Path,
+                           help='Служебный конфиг полос отбора для планировщика; по умолчанию реальные полосы GEN-02')
+    preparing.add_argument('--iterations', type=int,
+                           help='Циклов план/ИИ/GEN в раунде; по умолчанию из --selective-config')
+    preparing.add_argument('--max-new-decisions', type=int,
+                           help='Максимум НОВЫХ ИИ-решений одного вызова LEX (категории и пригодность отдельно)')
+    preparing.add_argument('--max-batches', type=int, help='Максимум батчей модели одного вызова LEX')
+    preparing.add_argument('--time-budget', type=float, help='Лимит секунд одного вызова LEX')
+    preparing.add_argument('--total-new-decisions', type=int,
+                           help='Совокупный лимит новых ИИ-решений всех вызовов DATA-01')
+    preparing.add_argument('--total-time-budget', type=float,
+                           help='Совокупный лимит времени вызова prepare; < task_timeout=3600 оркестратора')
     installing = modes.add_parser('install', help='Автоматическая проверка и установка готового пакета, без сети')
     installing.add_argument('--out', type=Path, default=ROOT / 'data')
     for mode in (preparing, installing):
@@ -513,6 +1103,14 @@ def main():
         mode.add_argument('--jvm-classpath', help='Свежесобранный core+audit classpath; иначе offline Gradle')
         mode.add_argument('--java', default='java')
     args = parser.parse_args()
+    selective_only = ('selective_config', 'plan_config', 'plan_selection_config', 'iterations',
+                      'max_new_decisions', 'max_batches', 'time_budget', 'total_new_decisions',
+                      'total_time_budget')
+    if args.mode == 'prepare' and not args.selective and \
+            any(getattr(args, name, None) is not None for name in selective_only):
+        parser.error('Флаги выборочного режима требуют --selective')
+    termination.become_group_leader()
+    termination.install_termination_handler()
     try:
         print(json.dumps(prepare(args) if args.mode == 'prepare' else install(args), ensure_ascii=False, indent=2))
     except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:

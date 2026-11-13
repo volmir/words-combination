@@ -13,6 +13,7 @@ from collections import Counter
 from pathlib import Path
 
 import word_categories as thematic
+import termination_guard as termination
 from game_data_providers import (CATEGORY_REASONS, CategoryProvider, atomic_json, json_digest,
                                  validate_category_item, validate_category_results)
 
@@ -373,6 +374,8 @@ def main():
     parser.add_argument("--min-confidence", type=float, help="По умолчанию из снимка, иначе 0.8")
     parser.add_argument("--gold", type=Path)
     args = parser.parse_args()
+    termination.become_group_leader()
+    termination.install_termination_handler()
     try:
         summary = run(args)
         print(json.dumps(summary, ensure_ascii=False, indent=2))
