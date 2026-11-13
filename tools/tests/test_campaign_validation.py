@@ -141,6 +141,10 @@ class IndependentCampaignValidationTest(unittest.TestCase):
         self.hints['карта']['definitions'] = ['карта']
         self.assert_issue(self.run_audit(), 'riddle_hint', 1, 'riddle')
 
+    def test_t3_hint_target_requires_useful_definition(self):
+        self.hints['катер']['definitions'] = ['катер']
+        self.assert_issue(self.run_audit(), 'hint_target', 1, 'long')
+
     def test_reserve_shortage_separate_from_reachability(self):
         self.payload['assessments'] = [r for r in self.payload['assessments'] if r['word'] != 'кара']
         report = self.run_audit()

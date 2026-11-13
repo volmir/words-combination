@@ -218,6 +218,8 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
                     fail('assigned_target', 'Not a canonical, distinct, buildable, recognizable target: ' + target)
                 if kind == 'T4' and target not in useful:
                     fail('riddle_hint', 'No useful safely masked definition: ' + target)
+                if kind == 'T3' and target not in useful:
+                    fail('hint_target', 'No useful safely masked definition for hint target: ' + target)
             if kind == 'T5':
                 ending = task['ending']
                 if ending in used_endings:
@@ -370,6 +372,9 @@ def run(args):
                 row['riddle_targets'] = task['targets']
                 row['riddle_comparison_words'] = evidence['answers']
                 relevant.update(evidence['answers'])
+            elif task['type'] == 'T3':
+                row['riddle_targets'] = [task['hintTarget']]
+                relevant.add(task['hintTarget'])
     hint_inputs = {w: hints[w] for w in sorted(relevant)}
     with tempfile.TemporaryDirectory(prefix='campaign-audit-') as tmp:
         bundle, output = Path(tmp) / 'input.json', Path(tmp) / 'output.json'

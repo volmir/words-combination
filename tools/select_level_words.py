@@ -193,7 +193,7 @@ class Selector:
         return {
             'T1': {'count'} if r['count_4plus'] else set(),
             'T2': {k for k, v in r['initial_4plus'].items() if v},
-            'T3': {w for w in p['assigned_targets'] if len(w) >= plan['long_min_length'] and w not in ROLE_EXCLUSIONS},
+            'T3': {w for w in p['riddle_targets'] if len(w) >= plan['long_min_length'] and w not in ROLE_EXCLUSIONS},
             'T4': set(p['riddle_targets']) - ROLE_EXCLUSIONS,
             'T5': {suffix for suffix, lengths in r['suffix_lengths'].items()
                    if any(int(n) >= plan['suffix_min_length'] and count for n, count in lengths.items())},

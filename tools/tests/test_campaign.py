@@ -104,6 +104,17 @@ class CampaignTest(unittest.TestCase):
         other = dict(task, hintTarget=row['accepted_answers'][-1])
         self.assertEqual(row['accepted_answers'], b.accepted(self.source, other))
 
+    def test_t3_hint_target_needs_useful_definition_but_star_accepts_long_answers(self):
+        b = self.builder([[('T3', dict(minLength=8))]])
+        for info in self.payload['hints'].values():
+            info['useful'] = False
+        result, report = b.attempt([self.source])
+        self.assertIsNone(result)
+        self.assertIn('reserve_shortage', {row['code'] for row in report['violations']})
+        long_target = next(word for word in self.words if len(word) >= 8)
+        task = dict(id='l01-t3', type='T3', minLength=8, hintTarget=long_target)
+        self.assertTrue(b.accepted(self.source, task))
+
     def test_t4_reserve_before_assignment_all_fixed_targets_required(self):
         _, task, row = self.one('T4', targetCount=3)
         self.assertEqual(3, len(task['targets']))

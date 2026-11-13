@@ -165,6 +165,24 @@ class LevelProfilesTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             profiles.assessments_for(document, result)
 
+    def test_selective_semantic_output_keeps_unrequested_pairs_pending(self):
+        document = {'schema': 'word-suitability-input-v1', 'candidates': [
+            self.document(['religious'])['candidates'][0],
+            dict(self.document(['religious'])['candidates'][0], word='портал')]}
+        item = semantic.input_items(document)[0]
+        selected = semantic.apply_decisions([item], {
+            item['id']: semantic.decision(item, 'suitable', 'Синтетическая оценка')},
+            {'provider': 'test', 'model': 'test'})
+        selected.update(mode='selective', input_sha256=json_digest(document))
+        assessed = profiles.assessments_for(document, selected)
+        self.assertEqual('ai', assessed['образец', 'target']['assessment_source'])
+        self.assertEqual('suitable', assessed['образец', 'target']['assessment']['status'])
+        self.assertEqual('pending', assessed['портал', 'target']['assessment_source'])
+        self.assertEqual('insufficient_data', assessed['портал', 'target']['assessment']['status'])
+        selected['mode'] = 'full'
+        with self.assertRaises(ValueError):
+            profiles.assessments_for(document, selected)
+
     def test_cache_is_deterministic_and_detects_corruption(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'cache.gz'

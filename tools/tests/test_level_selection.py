@@ -50,6 +50,15 @@ class LevelSelectionTest(unittest.TestCase):
                 self.assertEqual(selection.jaccard(self.measured[a]['recognizable_answers'],
                                                    self.measured[b]['recognizable_answers']), s.pair(a, b))
 
+    def test_t3_preliminary_target_requires_a_useful_hint(self):
+        self.config['planning'] = dict(self.config['planning'], long_min_length=4)
+        source = self.sources[0]
+        self.measured[source]['assigned_targets'] = ['мама']
+        self.measured[source]['riddle_targets'] = []
+        self.assertEqual(set(), self.selector().options[source]['T3'])
+        self.measured[source]['riddle_targets'] = ['мама']
+        self.assertEqual({'мама'}, self.selector().options[source]['T3'])
+
     def test_real_alphabet_includes_all_32_characters(self):
         alphabet = selection.read_alphabet()
         self.assertEqual('абвгдежзийклмнопрстуфхцчшщъыьэюя', alphabet)

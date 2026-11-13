@@ -140,7 +140,10 @@ class CampaignBuilder:
                 for letter in sorted(set(source)):
                     pools[letter] = [w for w in safe if len(w) >= self.config['count_min_length'] and w[0] == letter]
             elif t == 'T3':
-                pools['length'] = sorted(w for w in assigned if len(w) >= task['minLength'])
+                # The target is the hint anchor, so it must have a useful safely
+                # masked definition; the star itself still accepts every long answer.
+                pools['length'] = sorted(w for w in assigned if len(w) >= task['minLength']
+                                         and self.payload['hints'].get(w, {}).get('useful', False))
             elif t == 'T4':
                 pools['riddles'] = sorted(w for w in assigned & set(measured['riddle_targets'])
                     if self.payload['hints'].get(w, {}).get('useful', False))

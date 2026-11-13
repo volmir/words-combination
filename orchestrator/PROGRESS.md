@@ -104,3 +104,6 @@
 
 - [SEL-02] ✓ 2026-11-13T15:31:29+00:00 — Поддержать неполную тематическую разметку и запрос категорий по списку — ИТОГ: SEL-02 выполнен.
 <!-- orchestrator:v1 {"id": "SEL-02", "fingerprint": "ddaa77476f3e0d51db5e0fbf116153bc7ea59327aed37c57afe438ff11e26b9c", "date": "2026-11-13T15:31:29+00:00", "gate": "passed", "manual": false, "summary": "ИТОГ: SEL-02 выполнен.", "model": "opencode/deepseek-v4.1-flash#max", "effort": "medium"} -->
+
+- [SEL-03] ✓ 2026-11-13T15:45:30+00:00 — Оценивать пригодность только выбранных исходников и целей — ИТОГ: SEL-03 выполнен.
+<!-- orchestrator:v1 {"id": "SEL-03", "fingerprint": "5ed3e3c7a08a2e25b4fdf8a5f2edc5cc94201d28eeae874ccb39362dbbcc691a", "date": "2026-11-13T15:45:30+00:00", "gate": "passed", "manual": false, "summary": "ИТОГ: SEL-03 выполнен.", "model": "opencode/deepseek-v4.1-flash#max", "effort": "medium"} -->

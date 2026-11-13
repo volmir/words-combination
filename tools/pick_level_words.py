@@ -253,9 +253,15 @@ def assessments_for(document, supplied=None):
         if (supplied.get('schema') != semantic.VERSION or
                 supplied.get('input_sha256') != json_digest(document)):
             raise ValueError('Семантические оценки относятся к другому входу')
+        mode = supplied.get('mode', 'full')
+        if mode not in ('full', 'selective'):
+            raise ValueError('Неизвестный режим семантических оценок')
         context = supplied['context']
         rows = supplied['assessments']
-        if {row['id'] for row in rows} != {item['id'] for item in items} or len(rows) != len(items):
+        expected = {item['id'] for item in items}
+        received = [row.get('id') for row in rows if isinstance(row, dict)]
+        if (len(received) != len(rows) or len(set(received)) != len(received) or
+                not set(received) <= expected or (mode == 'full' and set(received) != expected)):
             raise ValueError('Неполный/повторный набор семантических оценок')
         by_id = {item['id']: item for item in items}
         for row in rows:
