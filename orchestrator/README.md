@@ -165,6 +165,19 @@ opencode` — `model_sets.opencode`. Неизвестное имя набора 
 | 1. Codex (дешёвый) | `bash orchestrator/run.sh --backend codex --models cheap` | `gpt-5.6-luna` | `codex` / `gpt-6.1-sol` | `.local/data01-cache` |
 | 2. OpenCode (дешёвый) | `bash orchestrator/run.sh --backend opencode --models cheap` | `deepseek-v4.1-flash#max` | `opencode` / `opencode/deepseek-v4.1-flash#max` | `.local/data01-oc-cache` |
 
+Точные команды для локального запуска (без публикации результатов; `push`
+по умолчанию включён через `config.json → push: true`):
+
+```bash
+# 1. Агент Codex (дешёвый набор), ИИ-оценки через Codex
+bash orchestrator/run.sh --backend codex --models cheap --no-push
+
+# 2. Агент OpenCode (дешёвый набор), ИИ-оценки через OpenCode
+bash orchestrator/run.sh --backend opencode --models cheap --no-push
+```
+
+Без `--no-push` те же команды выполнят push после каждой завершённой задачи.
+
 Перед запуском агента оркестратор выставляет ему переменные окружения и
 печатает выбранный профиль в `--dry-run` и в начале очереди:
 
