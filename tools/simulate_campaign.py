@@ -4,6 +4,7 @@
 This is a model, not audience telemetry. No runtime player limits are introduced.
 """
 from collections import Counter
+from copy import deepcopy
 import hashlib
 import json
 import math
@@ -11,13 +12,15 @@ from pathlib import Path
 import random
 import re
 
+import campaign_profiles
 import hint_text
 from validate_campaign import BANNED, normalize
 
 CONFIG = Path(__file__).with_name('campaign_simulation_config.json')
 
 
-def load_config(path=CONFIG):
+def load_config(path=CONFIG, profile=None):
+    """Общая модель GEN-05; цели и число уровней берутся из версии профиля."""
     c = json.loads(Path(path).read_text(encoding='utf-8'))
     if c.get('schema') != 'campaign-simulation-v1':
         raise ValueError('Unknown simulation schema')
@@ -41,9 +44,24 @@ def load_config(path=CONFIG):
         raise ValueError('Invalid guessing probabilities')
     if c['comparison'] != 'inclusive_point_estimate' or c['uncertainty'] != 'wilson_95':
         raise ValueError('Unknown probability comparison/uncertainty')
+    if len(c['targets']) != 30:
+        raise ValueError('Need explicit base targets for all 30 levels')
+    if profile is not None:
+        if isinstance(profile, str):
+            profile = campaign_profiles.get(profile)
+        campaign_profiles.validate_profile(profile)
+        c = deepcopy(c)
+        c['profile'] = dict(id=profile['id'], digest=campaign_profiles.digest(profile),
+                            levels=profile['levels'], max_stars=profile['max_stars'],
+                            alphabet_required=profile['alphabet_required'],
+                            thresholds=deepcopy(profile['thresholds']))
+        c['targets'] = deepcopy(profile['simulation_targets'])
+        c['levels'] = profile['levels']
+        c['max_stars'] = profile['max_stars']
+    levels = c.get('levels', 30)
     targets = c['targets']
-    if [t['level'] for t in targets] != list(range(1, 31)):
-        raise ValueError('Need explicit targets for all 30 levels')
+    if [t['level'] for t in targets] != list(range(1, levels + 1)):
+        raise ValueError(f'Need explicit targets for all {levels} levels')
     if (targets[0]['required_min'] != .95 or targets[-1]['required_min'] != .80
             or targets[0]['master_min'] != .70 or targets[-1]['master_max'] != .25):
         raise ValueError('Endpoint targets disagree with GEN-05')
@@ -58,6 +76,10 @@ def load_config(path=CONFIG):
         if type(c['rebalance'][key]) is not int or c['rebalance'][key] < 1:
             raise ValueError('Invalid bounded rebalance budget')
     return c
+
+
+def load_profile_config(name, path=CONFIG):
+    return load_config(path, campaign_profiles.get(name))
 
 
 class Knowledge:

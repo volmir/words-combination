@@ -2,6 +2,7 @@ package com.example.sostavslova.core
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CampaignTest {
@@ -154,6 +155,132 @@ class CampaignTest {
                 if (number == 30) 4 else listOf(1, 1, 2, 2, 3, 3)[stage - 1], tasks)
         }
         return Campaign(stages, levels)
+    }
+
+    /** Синтетический short15: числа зеркалят tools/campaign_profiles.json, словарь не нужен. */
+    private fun short15(): Campaign {
+        val base = "картотека"
+        val sources = Alphabet.LETTERS.take(15).map { base + it }
+        val t1 = listOf(10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40)
+        val t2 = listOf(5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+        val t3 = listOf(6, 6, 6, 7, 7, 7, 8, 8, 9)
+        val t5 = listOf(5, 5, 6, 7, 8)
+        val t3Targets = listOf("картет", "ракета", "карета", "картека", "артотек", "картоет",
+            "картотек", "артотека", "картоетка")
+        val t4Targets = listOf("кот", "ток", "рак", "карта", "катер", "тетка",
+            "тара", "тора", "кара", "крот", "актер", "кора")
+        val t6Words = listOf("рот", "рок", "кот", "ток", "рак")
+        val endings = listOf("ка", "та", "ра", "ок", "ет")
+        val rows = listOf(
+            (1..3) to (listOf(TaskType.T1) to 1),
+            (4..5) to (listOf(TaskType.T1, TaskType.T2) to 2),
+            (6..8) to (listOf(TaskType.T1, TaskType.T2, TaskType.T3) to 3),
+            (9..10) to (listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T4) to 3),
+            (11..13) to (listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T4, TaskType.T5) to 4),
+            (14..14) to (listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T5, TaskType.T6) to 4),
+            (15..15) to (listOf(TaskType.T1, TaskType.T2, TaskType.T4, TaskType.T5, TaskType.T7) to 4),
+        )
+        var t3Index = 0
+        var t4Index = 0
+        var t5Index = 0
+        val levels = (1..15).map { number ->
+            val row = rows.single { number in it.first }
+            val stage = listOf(1..3, 4..5, 6..8, 9..10, 11..13, 14..15)
+                .indexOfFirst { number in it } + 1
+            val tasks = row.second.first.map { type ->
+                val id = "$number-$type"
+                when (type) {
+                    TaskType.T1 -> CampaignTask.T1(id, t1[number - 1])
+                    TaskType.T2 -> CampaignTask.T2(id, 'к', t2[number - 4])
+                    TaskType.T3 -> CampaignTask.T3(id, t3[t3Index], t3Targets[t3Index++])
+                    TaskType.T4 -> {
+                        val count = when (stage) { 4 -> 1; 5 -> 2; else -> 3 }
+                        CampaignTask.T4(id, (0 until count).map { t4Targets[t4Index++] })
+                    }
+                    TaskType.T5 -> CampaignTask.T5(id, endings[t5Index], t5[t5Index++])
+                    TaskType.T6 -> CampaignTask.T6(id, "professions", 5, t6Words)
+                    TaskType.T7 -> CampaignTask.T7(id, 'к', 10)
+                }
+            }
+            CampaignLevel(number, sources[number - 1], stage, row.second.second, tasks)
+        }
+        val stages = listOf(1..3, 4..5, 6..8, 9..10, 11..13, 14..15)
+            .mapIndexed { index, range -> Stage(index + 1, range.first, range.last) }
+        return Campaign(stages, levels)
+    }
+
+    @Test fun short15ProfileIsExplicitAndRequiresAllSixStagesAndTypes() {
+        val campaign = short15()
+        assertEquals(emptyList(), ProductionCampaignValidator.validate(
+            campaign, ProductionCampaignProfile.SHORT15_RELEASE_V1))
+        assertEquals(15, campaign.levels.size)
+        assertEquals(49, campaign.maxStars)
+        assertEquals(listOf(3, 2, 3, 2, 3, 2), campaign.stages.map { it.lastLevel - it.firstLevel + 1 })
+        assertEquals(TaskType.entries.toSet(), campaign.levels.flatMap { it.tasks }.map { it.type }.toSet())
+        assertTrue(campaign.levels[13].tasks.any { it.type == TaskType.T6 })
+        assertTrue(campaign.levels[14].tasks.any { it.type == TaskType.T7 })
+        assertEquals(5, campaign.levels[14].maxStars)
+        assertEquals(4, campaign.levels[14].requiredStars)
+        assertEquals("short15-release-v1", ProductionCampaignProfile.SHORT15_RELEASE_V1.id)
+        assertEquals("release-30", ProductionCampaignProfile.RELEASE_30.id)
+    }
+
+    @Test fun short15AndLegacy30ProfilesRejectEachOther() {
+        assertTrue(ProductionCampaignValidator.validate(short15(),
+            ProductionCampaignProfile.RELEASE_30).any { it.field == "levels.size" })
+        assertTrue(ProductionCampaignValidator.validate(production(),
+            ProductionCampaignProfile.SHORT15_RELEASE_V1).any { it.field == "levels.size" })
+        val wrongFinale = short15().copy(levels = short15().levels.dropLast(1) +
+            short15().levels.last().copy(requiredStars = 3))
+        assertTrue(ProductionCampaignValidator.validate(wrongFinale,
+            ProductionCampaignProfile.SHORT15_RELEASE_V1).any { it.levelNumber == 15 && it.field == "requiredStars" })
+        val unknown = ProductionCampaignValidator.validate(short15(), "unknown-profile")
+        assertTrue(unknown.any { it.field == "profile" })
+    }
+
+    @Test fun short15AnyRUnlocksNextAndMasterNeedsAllFortyNine() {
+        val campaign = short15()
+        val emptyIndex = WordIndex(emptyList())
+        fun earn(progress: CampaignProgress, level: CampaignLevel, stars: Int): CampaignProgress =
+            CampaignRules.recordLevel(campaign, progress, CurrentCampaignLevel(level,
+                GameState.start(level.word, emptyIndex),
+                level.tasks.take(stars).map { it.id }.toSet()))
+
+        val passed = campaign.levels.fold(CampaignProgress()) { state, level ->
+            earn(state, level, level.requiredStars)
+        }
+        assertTrue(passed.finaleReached)
+        assertEquals(15, passed.highestUnlockedLevel)
+        val requiredOnly = CampaignRules.summary(campaign, passed)
+        assertEquals(42, requiredOnly.stars)
+        assertEquals(49, requiredOnly.maxStars)
+        assertTrue(!requiredOnly.isMaster)
+        assertEquals(9, CampaignRules.continueLevel(campaign, passed).number)
+
+        val full = campaign.levels.fold(passed) { state, level -> earn(state, level, level.maxStars) }
+        val master = CampaignRules.summary(campaign, full)
+        assertEquals(49, master.stars)
+        assertTrue(master.isMaster)
+        assertEquals(15, CampaignRules.continueLevel(campaign, full).number)
+
+        // Любой набор из R=4 заданий уровня 15 завершает финал; пятая звезда — только добор.
+        val beforeFinal = campaign.levels.dropLast(1).fold(CampaignProgress()) { state, level ->
+            earn(state, level, level.requiredStars)
+        }
+        val final = campaign.levels.last()
+        for (chosen in final.tasks.indices.toList().combinations(4)) {
+            val ids = chosen.map { final.tasks[it].id }.toSet()
+            val state = CampaignRules.recordLevel(campaign, beforeFinal, CurrentCampaignLevel(
+                final, GameState.start(final.word, emptyIndex), ids))
+            assertTrue(state.finaleReached)
+            assertFalse(CampaignRules.summary(campaign, state).isMaster)
+        }
+    }
+
+    private fun <T> List<T>.combinations(count: Int): List<List<T>> {
+        if (count == 0) return listOf(emptyList())
+        if (size < count) return emptyList()
+        return drop(1).combinations(count - 1).map { listOf(first()) + it } + drop(1).combinations(count)
     }
 
     @Test fun productionScheduleAndItsViolations() {

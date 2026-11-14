@@ -60,7 +60,9 @@ object CampaignDatasetAudit {
             error(e.message ?: "Invalid campaign JSON")
             return output
         }
-        val structural = if (input.optBoolean("production", true)) ProductionCampaignValidator.validate(campaign)
+        val profileId = input.optJSONObject("profile")?.optString("id")?.takeIf { it.isNotBlank() }
+            ?: input.optString("profile", "").takeIf { it.isNotBlank() }
+        val structural = if (input.optBoolean("production", true)) ProductionCampaignValidator.validate(campaign, profileId)
             else CampaignValidator.validate(campaign)
         for (problem in structural) {
             errors.put(JSONObject().put("level", problem.levelNumber ?: JSONObject.NULL)

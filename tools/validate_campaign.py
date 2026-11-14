@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 
 from hint_text import prepare
+import campaign_profiles
 
 ROOT = Path(__file__).resolve().parents[1]
 ALPHABET = 'абвгдежзийклмнопрстуфхцчшщъыьэюя'
@@ -54,12 +55,12 @@ def prepared_hint(word, row):
                  if (text := prepare(word, definition, row.get('forms', []), row.get('related', []))) is not None), None)
 
 
-def task_answers(task, answers, category):
+def task_answers(task, answers, category, count_min_length=4):
     kind = task['type']
     if kind == 'T1':
-        return {w for w in answers if len(w) >= 4}
+        return {w for w in answers if len(w) >= count_min_length}
     if kind == 'T2':
-        return {w for w in answers if len(w) >= 4 and w.startswith(task['letter'])}
+        return {w for w in answers if len(w) >= count_min_length and w.startswith(task['letter'])}
     if kind == 'T3':
         return {w for w in answers if len(w) >= task['minLength']}
     if kind == 'T4':
@@ -78,10 +79,32 @@ def issue(report, bucket, code, reason, level=None, task=None):
     report['installable'] = False
 
 
-def validate(campaign, dictionary, payload, hints, previous, production=True, endings=None, categories=None):
-    """Only lexical observations/assessments are evidence; profile pools are ignored."""
+def validate(campaign, dictionary, payload, hints, previous, production=True, endings=None,
+             categories=None, profile=None):
+    """Only lexical observations/assessments are evidence; profile pools are ignored.
+
+    При profile — явная проверка версионированного профиля (например,
+    short15-release-v1): 15 уровней, 49 звёзд, этапы [3,2,3,2,3,2], минимумы
+    T1/T2, длины T3/T5, тема профессий T6, n=10 для T7, Jaccard 0.07/0.30 на
+    105 парах, сохранение 3..5 старых исходников, покрытие букв отчётное без
+    требования 32/32. Без профиля действует прежний 30/100-контракт.
+    """
+    if isinstance(profile, str):
+        profile = campaign_profiles.get(profile)
     report = dict(schema='campaign-validation-v1', installable=True, unreachable=[],
-                  balance_deviations=[], parity_deviations=[], levels=[], r_combinations_checked=0, jvm_checked=False)
+                  balance_deviations=[], parity_deviations=[], levels=[], r_combinations_checked=0,
+                  jvm_checked=False)
+    if profile is not None:
+        report['profile'] = dict(id=profile['id'], digest=campaign_profiles.digest(profile),
+                                 levels=profile['levels'], max_stars=profile['max_stars'],
+                                 alphabet_required=profile['alphabet_required'],
+                                 threshold_source=dict(
+                                     min_length=profile['thresholds']['source_min_length'],
+                                     max_length=profile['thresholds']['source_max_length']),
+                                 threshold_target=dict(
+                                     answer_min_length=profile['thresholds']['answer_min_length'],
+                                     counted_min_length=profile['thresholds']['counted_min_length'],
+                                     min_observed_occurrences=profile['thresholds']['min_observed_occurrences']))
     fields = {'T1': {'n': int}, 'T2': {'n': int, 'letter': str},
               'T3': {'minLength': int, 'hintTarget': str}, 'T4': {'targets': list},
               'T5': {'minLength': int, 'ending': str},
@@ -115,6 +138,10 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
         return key if key and key != 'other' and not m.get('category_source', 'unknown:').startswith('unknown:') else None
 
     words = {normalize(w) for w in dictionary}
+    counted_min_length = profile['thresholds']['counted_min_length'] if profile is not None else 4
+    source_min_length = profile['thresholds']['source_min_length'] if profile is not None else 8
+    source_max_length = profile['thresholds']['source_max_length'] if profile is not None else 13
+    category_global_min = profile['category_global_min'] if profile is not None else 40
     familiar = {w for w in words if suitable(w, 'target')}
     useful = {w for w in familiar if prepared_hint(w, hints.get(w, {})) is not None}
     frequencies = Counter(''.join(sorted(words)))
@@ -124,19 +151,36 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
     if campaign.get('version') != 2 or campaign.get('countMinLength') != 4:
         bad('version', 'Expected version=2 and countMinLength=4')
     expected_stages = [dict(number=n, firstLevel=n * 5 - 4, lastLevel=n * 5) for n in range(1, 7)]
-    if production and (len(levels) != 30 or sum(len(l['tasks']) for l in levels) != 100
-                       or campaign['stages'] != expected_stages):
+    if profile is not None:
+        expected_stages = campaign_profiles.expected_stages(profile)
+    if profile is not None:
+        if (len(levels) != profile['levels'] or sum(len(l['tasks']) for l in levels) != profile['max_stars']
+                or campaign['stages'] != expected_stages):
+            bad('campaign_size', f"Expected {profile['levels']} levels, {profile['max_stars']} tasks/stars "
+                f"and profile stages ({profile['id']})")
+        if len(levels) != profile['levels']:
+            # Не разбирает чужую 30-уровневую кампанию профильными индексами.
+            return report
+    elif production and (len(levels) != 30 or sum(len(l['tasks']) for l in levels) != 100
+                         or campaign['stages'] != expected_stages):
         bad('campaign_size', 'Expected 30 levels, 6 five-level stages, 100 tasks/stars')
     if not levels:
         impossible('empty_campaign', 'No path to finale')
     sources = [normalize(l['word']) for l in levels]
     retained = len(set(sources) & {normalize(w) for w in previous})
     report['retained_sources'] = retained
-    if production and not 8 <= retained <= 15:
+    if profile is not None:
+        if not profile['retain']['min'] <= retained <= profile['retain']['max']:
+            bad('retained_sources', f"Expected {profile['retain']['min']}..{profile['retain']['max']} "
+                f'old sources, got {retained}')
+        report['alphabet_required'] = profile['alphabet_required']
+    elif production and not 8 <= retained <= 15:
         bad('retained_sources', f'Expected 8..15 old sources, got {retained} (owner amendment)')
     missing = sorted(set(ALPHABET) - set(''.join(sources)))
     report['missing_letters'] = missing
-    if production and missing:
+    # Покрытие 32/32 остаётся обязательным только в 30-профиле; short15 сообщает
+    # реальное покрытие букв без требования полноты (известный ориентир 24/32).
+    if profile is None and production and missing:
         bad('alphabet', 'Missing letters: ' + ''.join(missing))
     if len(set(sources)) != len(sources):
         bad('unique_source', 'Source words repeat after normalization')
@@ -147,30 +191,47 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
     master_rows, recognizable_sets = [], []
     for position, level in enumerate(levels, 1):
         n, source, tasks = level['number'], level['word'], level['tasks']
-        stage = (position - 1) // 5 + 1
+        if profile is not None:
+            stage = campaign_profiles.stage_of(profile, position)
+        else:
+            stage = (position - 1) // 5 + 1
         r = level['requiredStars']
         if n != position:
             bad('level_number', f'Expected ordered level {position}', n)
-        if source != normalize(source) or not 8 <= len(source) <= 13 or not suitable(source, 'source'):
-            bad('source', 'Noncanonical, prohibited or unsuitable source (expected length 8..13)', n)
+        if (source != normalize(source) or not source_min_length <= len(source) <= source_max_length
+                or not suitable(source, 'source')):
+            bad('source', f'Noncanonical, prohibited or unsuitable source '
+                f'(expected length {source_min_length}..{source_max_length})', n)
         if not tasks or len(tasks) > 5 or type(r) is not int or not 1 <= r <= len(tasks):
             impossible('threshold', 'M must be 1..5, R must be 1..M', n)
-        if production:
+        if profile is not None:
+            expected_types = campaign_profiles.types_of(profile, position)
+            expected_r = campaign_profiles.required_of(profile, position)
+            if level['stage'] != stage or len(tasks) != len(expected_types) or r != expected_r:
+                bad('schedule', f'Expected stage={stage} M={len(expected_types)} R={expected_r}', n)
+        elif production:
             expected_r = 4 if n == 30 else [1, 1, 2, 2, 3, 3][min(stage, 6) - 1]
             if level['stage'] != stage or len(tasks) != min(stage, 5) or r != expected_r:
                 bad('schedule', f'Expected stage={stage} M={min(stage, 5)} R={expected_r}', n)
         kinds = [t['type'] for t in tasks]
         if len(set(kinds)) != len(kinds):
             bad('task_types', 'Types must be different within a level', n)
-        if production and stage < 6 and set(kinds) != {f'T{i}' for i in range(1, stage + 1)}:
+        if profile is not None:
+            if set(kinds) != set(expected_types):
+                bad('task_types', f'Expected types {expected_types}, got {kinds}', n)
+        elif production and stage < 6 and set(kinds) != {f'T{i}' for i in range(1, stage + 1)}:
             bad('task_types', 'Unexpected types for stage', n)
         if stage == 6:
             master_rows.append(set(kinds))
         answers = answers_for(source, words)
         safe = answers & familiar
         recognizable_sets.append(safe)
-        if production and not BANDS[min(stage, 6) - 1][0] <= len(safe) <= BANDS[min(stage, 6) - 1][1]:
-            bad('answer_band', f'Recognizable={len(safe)}, expected {BANDS[min(stage, 6) - 1]}', n)
+        if profile is not None:
+            lower, upper = campaign_profiles.band_of(profile, position)
+        else:
+            lower, upper = BANDS[min(stage, 6) - 1]
+        if (profile is not None or production) and not lower <= len(safe) <= upper:
+            bad('answer_band', f'Recognizable={len(safe)}, expected {[lower, upper]}', n)
         row = dict(number=n, answers=sorted(answers), recognizable_count=len(safe), tasks=[])
         report['levels'].append(row)
         for task in tasks:
@@ -185,11 +246,48 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
                 continue
             needed = task.get('n', len(task.get('targets', [])) if kind == 'T4' else 1)
             param = task.get('minLength' if kind in ('T3', 'T5') else 'n')
-            if kind != 'T4':
+            if profile is None and kind != 'T4':
                 start, end = CURVES[kind]
                 expected = start + (end - start) * seen[kind] // max(1, totals[kind] - 1)
                 if production and param != expected:
                     fail('parameter_curve', f'Expected appearance {seen[kind] + 1}: {expected}, got {param}')
+            if kind != 'T4' and profile is not None:
+                # Явные числа профиля вместо кривой появления 30-профиля.
+                if kind == 'T1':
+                    if not 1 <= n <= len(profile['t1_minimum']):
+                        fail('t1_minimum', f'No T1 minimum for level {n}')
+                    else:
+                        wanted = profile['t1_minimum'][n - 1]
+                        if param != wanted:
+                            fail('t1_minimum', f'T1 n must be {wanted} on level {n}, got {param}')
+                elif kind == 'T2':
+                    first, values = profile['t2_minimum']['first'], profile['t2_minimum']['values']
+                    if n < first or n - first >= len(values):
+                        fail('t2_minimum', f'No T2 minimum for level {n}')
+                    else:
+                        wanted = values[n - first]
+                        if param != wanted:
+                            fail('t2_minimum', f'T2 n must be {wanted} on level {n}, got {param}')
+                elif kind == 'T3':
+                    if seen['T3'] >= len(profile['t3_min_lengths']):
+                        fail('t3_min_length', f'Too many T3 appearances ({seen["T3"] + 1})')
+                    else:
+                        wanted = profile['t3_min_lengths'][seen['T3']]
+                        if param != wanted:
+                            fail('t3_min_length', f'T3 minLength must be {wanted} on appearance {seen[kind] + 1}, got {param}')
+                elif kind == 'T5':
+                    if seen['T5'] >= len(profile['t5_min_lengths']):
+                        fail('t5_min_length', f'Too many T5 appearances ({seen["T5"] + 1})')
+                    else:
+                        wanted = profile['t5_min_lengths'][seen['T5']]
+                        if param != wanted:
+                            fail('t5_min_length', f'T5 minLength must be {wanted} on appearance {seen[kind] + 1}, got {param}')
+                elif kind == 'T7':
+                    if param != profile['t7']['n']:
+                        fail('t7_n', f"T7 n must be {profile['t7']['n']}, got {param}")
+                elif kind != 'T6':
+                    raise ValueError('Unexpected parameter kind: ' + kind)
+            if kind != 'T4':
                 if type(param) is not int or param <= 0 or (kind in ('T3', 'T5') and not 3 <= param <= len(source)):
                     fail('parameter_bounds', 'Invalid n/minLength')
                     continue
@@ -197,8 +295,11 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
             if type(needed) is not int or needed <= 0:
                 fail('parameter_bounds', 'Task must require at least one answer')
                 continue
-            if kind == 'T4' and production and len(task['targets']) != {4: 1, 5: 2, 6: 3}.get(stage):
-                fail('riddle_count', 'Expected 1/2/3 riddle targets in stages 4/5/6')
+            if kind == 'T4' and (profile is not None or production):
+                riddles = (int(profile['t4_riddles_by_stage'].get(str(stage), 0)) if profile is not None
+                           else {4: 1, 5: 2, 6: 3}.get(stage))
+                if len(task['targets']) != riddles:
+                    fail('riddle_count', f'Expected {riddles} riddle targets in stage {stage}')
             if kind in ('T2', 'T7'):
                 letter = task['letter']
                 if len(letter) != 1 or letter not in ALPHABET or letter not in source:
@@ -235,16 +336,27 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
                 if (not theme or theme == 'other' or (categories is not None and theme not in categories)
                         or not any(category(w) == theme for w in words)):
                     fail('category', 'Unknown/non-thematic category: ' + theme)
+                if profile is not None:
+                    # Тема профессий фиксирована профилем; ни генератор, ни ребалансировка
+                    # не могут её подменить. Нехватка реальных ответов даёт BLOCKED.
+                    if theme != profile['t6']['category']:
+                        fail('t6_theme', f"T6 theme must be {profile['t6']['category']}, got {theme}")
+                    if type(task.get('n')) is not int or task.get('n') != profile['t6']['n']:
+                        fail('t6_n', f"T6 n must be {profile['t6']['n']}, got {task.get('n')}")
                 expected_words = {w for w in answers if category(w) == theme}
                 if set(task['words']) != expected_words or len(task['words']) != len(set(task['words'])):
                     fail('category_membership', 'T6 words must equal complete independently recounted local set')
                 global_count = sum(category(w) == theme for w in familiar)
-                if production and global_count < 40:
-                    fail('category_global_reserve', f'Global recognizable category={global_count}, need 40')
-            accepted = task_answers(task, answers, category)
+                if (profile is not None or production) and global_count < category_global_min:
+                    fail('category_global_reserve',
+                         f'Global recognizable category={global_count}, need {category_global_min}')
+            accepted = task_answers(task, answers, category, counted_min_length)
             # T4 reserve is measured BEFORE assigning fixed targets, not just targets themselves.
             pool = (safe & useful) if kind == 'T4' else safe & accepted
-            numerator, denominator = (3, 1) if n <= 10 else (5, 2) if n <= 20 else (2, 1)
+            if profile is not None:
+                numerator, denominator = campaign_profiles.reserve_fraction(profile, n)
+            else:
+                numerator, denominator = (3, 1) if n <= 10 else (5, 2) if n <= 20 else (2, 1)
             minimum = (needed * numerator + denominator - 1) // denominator
             if len(accepted) < needed:
                 impossible('unreachable_task', f'Only {len(accepted)} legal answers; need {needed}', n, key)
@@ -267,8 +379,19 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
                 for t in chosen:
                     if len(found & set(t['accepted'])) < t['needed']:
                         impossible('r_chain', 'R subset cannot unlock next level/finale', n, t['id'])
-    if production and (len(master_rows) != 5 or len({tuple(sorted(s)) for s in master_rows}) < 2
-                       or not {'T6', 'T7'} <= set().union(set(), *master_rows)):
+    if profile is not None:
+        master_numbers = {position for position, level in enumerate(levels, 1)
+                          if campaign_profiles.stage_of(profile, position) == 6}
+        expected_master = sorted(profile['schedule'][-2:], key=lambda row: row['first'])
+        if (master_numbers != {row['first'] for row in expected_master} or
+                len(master_rows) != len(profile['schedule'][-2:]) or
+                any(len(row) != 5 for row in master_rows) or
+                len({tuple(sorted(row)) for row in master_rows}) != len(master_rows) or
+                not {'T6', 'T7'} <= set().union(set(), *master_rows) or
+                set().union(set(), *master_rows) != {f'T{i}' for i in range(1, 8)}):
+            bad('master_rotation', 'Уровень 14 обязан нести T6, 15 — T7; по 5 различных типов; все T1..T7')
+    elif production and (len(master_rows) != 5 or len({tuple(sorted(s)) for s in master_rows}) < 2
+                         or not {'T6', 'T7'} <= set().union(set(), *master_rows)):
         bad('master_rotation', 'Need five master levels with rotation including T6 and T7')
     collisions = [dict(left=i + 1, right=j + 1, intersection=len(a & b), union=len(a | b),
                        jaccard=len(a & b) / len(a | b) if a | b else 0.0)
@@ -277,7 +400,13 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
     maximum = max((p['jaccard'] for p in collisions), default=0.0)
     report['jaccard'] = dict(basis='independently recounted recognizable answer sets',
                              mean=mean, maximum=maximum, pairs=collisions)
-    if production and (mean > 0.03 or maximum > 0.15):
+    if profile is not None:
+        if len(collisions) != profile['jaccard']['pairs']:
+            bad('jaccard_pairs', f"Expected {profile['jaccard']['pairs']} pairs, got {len(collisions)}")
+        if mean > profile['jaccard']['mean_max'] or maximum > profile['jaccard']['max_max']:
+            bad('jaccard', f"Mean={mean:.8f} (max {profile['jaccard']['mean_max']}), "
+                f"maximum={maximum:.8f} (max {profile['jaccard']['max_max']})")
+    elif production and (mean > 0.03 or maximum > 0.15):
         bad('jaccard', f'Mean={mean:.8f} (max .03), maximum={maximum:.8f} (max .15)')
     report['preferred_sources'] = sorted(set(sources) & PREFERRED)
     return report
@@ -357,9 +486,18 @@ def run(args):
     hints = load_hint_inputs(args.database, words)
     endings = json.loads((ROOT / 'tools/campaign_config.json').read_text(encoding='utf-8'))['endings']
     categories = json.loads((ROOT / 'tools/categories.json').read_text(encoding='utf-8'))
-    report = validate(candidate, words, document['payload'], hints, previous, endings=endings, categories=categories)
+    profile = campaign_profiles.get(args.profile) if getattr(args, 'profile', None) else None
+    report = validate(candidate, words, document['payload'], hints, previous,
+                      endings=endings, categories=categories, profile=profile)
     report['inputs'] = dict(**actual, candidate=file_hash(args.campaign), lexical_snapshot=file_hash(profile_path),
-                           validator=file_hash(Path(__file__)))
+                            validator=file_hash(Path(__file__)))
+    if profile is not None:
+        # Воспроизводимость: реестр профилей и его digest фиксируются в отчёте,
+        # а сам профиль целиком передаётся JVM-валидатору тем же байт-объектом.
+        report['profile'].update(alphabet_required=profile['alphabet_required'],
+                                 source_sha256=campaign_profiles.source_hashes(),
+                                 campaign_profiles_sha256=campaign_profiles.profiles_file_sha256())
+        report['inputs']['campaign_profiles_sha256'] = campaign_profiles.profiles_file_sha256()
     report['inputs']['core_processors'] = {name: file_hash(ROOT / 'core/src/main/kotlin/com/example/sostavslova/core' / name)
         for name in ('Alphabet.kt', 'WordIndex.kt', 'GameState.kt', 'TaskRules.kt', 'CampaignRules.kt',
                      'CampaignValidator.kt', 'DefinitionHint.kt', 'HintText.kt', 'HintRules.kt', 'HintLadder.kt')}
@@ -378,8 +516,12 @@ def run(args):
     hint_inputs = {w: hints[w] for w in sorted(relevant)}
     with tempfile.TemporaryDirectory(prefix='campaign-audit-') as tmp:
         bundle, output = Path(tmp) / 'input.json', Path(tmp) / 'output.json'
-        bundle.write_text(json.dumps(dict(campaign=candidate, dictionary=words, production=True,
-                                         hintInputs=hint_inputs), ensure_ascii=False), encoding='utf-8')
+        bundle_payload = dict(campaign=candidate, dictionary=words, production=True,
+                              hintInputs=hint_inputs)
+        if profile is not None:
+            # Тот же профиль, что проверяет Python: JVM получает его целиком.
+            bundle_payload['profile'] = profile
+        bundle.write_text(json.dumps(bundle_payload, ensure_ascii=False), encoding='utf-8')
         command = ([args.java, '-cp', args.jvm_classpath,
                     'com.example.sostavslova.core.CampaignDatasetAudit', str(bundle), str(output)]
                    if args.jvm_classpath else
@@ -399,6 +541,9 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--campaign', type=Path, default=ROOT / 'build/reports/campaign/campaign.json')
+    parser.add_argument('--profile', choices=campaign_profiles.names(),
+                        help='Версионированный профиль кампании (например, short15-release-v1); '
+                             'без него проверяется 30/100-контракт')
     parser.add_argument('--profiles', type=Path)
     parser.add_argument('--words', type=Path, default=ROOT / 'data/words.txt')
     parser.add_argument('--previous-levels', type=Path, default=ROOT / 'data/levels.json')

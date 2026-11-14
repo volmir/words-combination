@@ -1,0 +1,383 @@
+"""Версионированный реестр профилей кампании — единый источник чисел для GEN-02..05.
+
+Все генераторы, валидация, симуляция и перебалансировка обязаны получать числа
+профиля отсюда, а не из собственных копий констант. Поведение без профиля
+(release-30, 30 уровней / 100 звёзд) остаётся в действующих конфигах и не
+затрагивается этим модулем.
+"""
+import argparse
+from copy import deepcopy
+import hashlib
+import json
+from pathlib import Path
+
+from game_data_providers import json_digest
+
+ROOT = Path(__file__).resolve().parents[1]
+CONFIG = ROOT / 'tools/campaign_profiles.json'
+LEVEL_PROFILE_CONFIG = ROOT / 'tools/level_profile_config.json'
+CATEGORIES = ROOT / 'tools/categories.json'
+
+
+def sha256_file(path):
+    h = hashlib.sha256()
+    with Path(path).open('rb') as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b''):
+            h.update(block)
+    return h.hexdigest()
+
+
+def load(path=CONFIG):
+    document = json.loads(Path(path).read_text(encoding='utf-8'))
+    if document.get('schema') != 'campaign-profiles-v1':
+        raise ValueError('Неизвестная схема реестра профилей')
+    if not isinstance(document.get('profiles'), dict) or not document['profiles']:
+        raise ValueError('Реестр профилей пуст')
+    for key, profile in document['profiles'].items():
+        if not isinstance(profile, dict) or profile.get('id') != key:
+            raise ValueError('Профиль не совпадает с ключом реестра: ' + str(key))
+    return document
+
+
+def get(name, path=CONFIG):
+    """Проверенный профиль по ID; возвращает независимую копию."""
+    document = load(path)
+    if name not in document['profiles']:
+        raise ValueError('Неизвестный профиль кампании: ' + str(name))
+    profile = deepcopy(document['profiles'][name])
+    validate_profile(profile)
+    return profile
+
+
+def names(path=CONFIG):
+    return list(load(path)['profiles'])
+
+
+def profiles_file_sha256(path=CONFIG):
+    return sha256_file(path)
+
+
+def _stages_cover(stages, levels):
+    return ([s['first'] for s in stages] == [1, 4, 6, 9, 11, 14] and
+            [s['last'] for s in stages] == [3, 5, 8, 10, 13, levels] and
+            [s['number'] for s in stages] == list(range(1, 7)))
+
+
+def _bands_cover(bands, levels):
+    return ([b['first'] for b in bands] == [1, 4, 6, 9, 11, 14] and
+            [b['last'] for b in bands] == [3, 5, 8, 10, 13, levels])
+
+
+def expanded_stages(stages):
+    result = []
+    for stage in stages:
+        result.extend((number, stage['number']) for number in
+                      range(stage['first'], stage['last'] + 1))
+    return result
+
+
+def validate_profile(profile):
+    """Полная проверка профиля включая вывод согласованности расписания."""
+    levels = profile['levels']
+    if type(levels) is not int or levels != 15:
+        raise ValueError('Профиль поддерживает ровно 15 уровней')
+    if type(profile.get('max_stars')) is not int or profile['max_stars'] != 49:
+        raise ValueError('Ожидается 49 звёзд')
+    stages = profile['stages']
+    if (len(stages) != 6 or [s['number'] for s in stages] != list(range(1, 7)) or
+            [s['last'] - s['first'] + 1 for s in stages] != [3, 2, 3, 2, 3, 2] or
+            not _stages_cover(stages, levels)):
+        raise ValueError('Нужны 6 этапов с длинами [3,2,3,2,3,2], покрывающие 1..15')
+    for stage in stages:
+        for key in ('number', 'first', 'last'):
+            if type(stage[key]) is not int:
+                raise ValueError('Неверная граница этапа: ' + key)
+    bands = profile['bands']
+    expected_bands = [(40, 60), (70, 85), (100, 120), (130, 160), (160, 200), (200, 260)]
+    if (len(bands) != 6 or not _bands_cover(bands, levels) or
+            [(b['min'], b['max']) for b in bands] != expected_bands):
+        raise ValueError('Полосы узнаваемых ответов должны быть 40-60/70-85/100-120/130-160/160-200/200-260')
+    for band in bands:
+        if any(type(band[k]) is not int for k in ('first', 'last', 'min', 'max')) or not 0 < band['min'] <= band['max']:
+            raise ValueError('Неверная полоса')
+    rows = profile['schedule']
+    if [r['first'] for r in rows] != [1, 4, 6, 9, 11, 14, 15] or [r['last'] for r in rows] != [3, 5, 8, 10, 13, 14, 15]:
+        raise ValueError('Расписание должно покрывать уровни 1..15 без пропусков')
+    total = 0
+    counts = {}
+    for row in rows:
+        if any(type(row[k]) is not int for k in ('first', 'last', 'required')):
+            raise ValueError('Неверная строка расписания')
+        if not row['first'] <= row['last']:
+            raise ValueError('Нарушен порядок уровней расписания')
+        types = row['types']
+        if not types or len(types) > 5 or len(set(types)) != len(types):
+            raise ValueError('M должен быть 1..5 без повторений типов')
+        if not set(types) <= {f'T{i}' for i in range(1, 8)}:
+            raise ValueError('Неизвестный тип задания')
+        if not 1 <= row['required'] <= len(types):
+            raise ValueError('R должен быть 1..M')
+        for t in types:
+            counts[t] = counts.get(t, 0) + row['last'] - row['first'] + 1
+        total += len(types) * (row['last'] - row['first'] + 1)
+    if total != profile['max_stars']:
+        raise ValueError('Число заданий не равно числу звёзд')
+    if counts != {'T1': 15, 'T2': 12, 'T3': 9, 'T4': 6, 'T5': 5, 'T6': 1, 'T7': 1}:
+        raise ValueError('Ожидались появления T1x15 T2x12 T3x9 T4x6 T5x5 T6x1 T7x1: ' + json.dumps(counts))
+    required = [next(r['required'] for r in rows if r['first'] <= number <= r['last'])
+                for number in range(1, levels + 1)]
+    if required != [1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4]:
+        raise ValueError('Неверная схема R/S')
+    master = [r['types'] for r in rows[-2:]]
+    if sorted(master) != [['T1', 'T2', 'T3', 'T5', 'T6'], ['T1', 'T2', 'T4', 'T5', 'T7']]:
+        raise ValueError('Уровень 14 обязан нести T6, уровень 15 — T7, по 5 различных типов')
+    if profile.get('t1_minimum') != [10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40]:
+        raise ValueError('Неверный ряд T1 minimum')
+    t2 = profile['t2_minimum']
+    if t2.get('first') != 4 or t2.get('values') != [5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]:
+        raise ValueError('Неверный ряд T2 minimum для уровней 4..15')
+    if profile.get('t3_min_lengths') != [6, 6, 6, 7, 7, 7, 8, 8, 9]:
+        raise ValueError('Неверные ориентировочные длины T3')
+    if profile.get('t4_riddles_by_stage') != {'4': 1, '5': 2, '6': 3}:
+        raise ValueError('Неверное число целей T4 по этапам')
+    if profile.get('t5_min_lengths') != [5, 5, 6, 7, 8]:
+        raise ValueError('Неверные длины T5')
+    t6 = profile.get('t6') or {}
+    if t6.get('n') != 5 or not isinstance(t6.get('category'), str) or not t6['category'].strip():
+        raise ValueError('T6 обязан требовать n=5 на реальной теме профессий')
+    categories = json.loads(CATEGORIES.read_text(encoding='utf-8'))
+    if t6['category'] not in categories:
+        raise ValueError('Тема T6 отсутствует в tools/categories.json: ' + t6['category'])
+    t7 = profile.get('t7') or {}
+    if t7.get('n') != 10:
+        raise ValueError('T7 обязан требовать n=10')
+    jaccard = profile.get('jaccard') or {}
+    if not jaccard.get('mean_max') == 0.07 or not jaccard.get('max_max') == 0.30 or jaccard.get('pairs') != 105:
+        raise ValueError('Нужны raw Jaccard mean<=0.07, max<=0.30 на 105 парах')
+    retain = profile.get('retain') or {}
+    if retain.get('min') != 3 or retain.get('max') != 5:
+        raise ValueError('Нужно сохранение 3..5 старых исходников')
+    if profile.get('alphabet_required') is not False:
+        raise ValueError('Покрытие алфавита отчётное, без требования 32/32')
+    if profile.get('count_min_length') != 4 or profile.get('category_global_min') != 40:
+        raise ValueError('Правила ввода и темы без изменений: count_min_length=4, category_global_min=40')
+    reserve = profile.get('reserve_bands') or []
+    if [(b['first'], b['last']) for b in reserve] != [(1, 5), (6, 10), (11, 15)] or \
+            [(b['numerator'], b['denominator']) for b in reserve] != [(3, 1), (5, 2), (2, 1)]:
+        raise ValueError('Неверные резервные доли')
+    thresholds = profile.get('thresholds') or {}
+    reference = json.loads(LEVEL_PROFILE_CONFIG.read_text(encoding='utf-8'))
+    for key in ('source_min_length', 'source_max_length', 'answer_min_length', 'counted_min_length',
+                'min_observed_occurrences', 'semantic_common_min_occurrences', 'semantic_common_max_rank'):
+        if thresholds.get(key) != reference[key]['value']:
+            raise ValueError('Порог профиля расходится с level_profile_config.json: ' + key)
+    targets = profile.get('simulation_targets') or []
+    if [t['level'] for t in targets] != list(range(1, levels + 1)):
+        raise ValueError('Нужны явные цели симуляции для всех 15 уровней')
+    if (targets[0]['required_min'] != .95 or targets[-1]['required_min'] != .8 or
+            targets[0]['master_min'] != .70 or targets[-1]['master_max'] != .25):
+        raise ValueError('Края целей симуляции расходятся с планкой финала 4/5')
+    for t in targets:
+        if not 0 <= t['master_min'] <= t['master_max'] <= 1 or not 0 <= t['required_min'] <= 1:
+            raise ValueError('Неверная целевая вероятность')
+        if t['level'] <= 5 and t['master_max'] < t['required_min']:
+            raise ValueError('M=R: потолок Мастера не может быть ниже пола R')
+    if any(a['required_min'] < b['required_min'] for a, b in zip(targets, targets[1:])):
+        raise ValueError('Цели R должны убывать по уровням')
+    if any(a['master_min'] < b['master_min'] for a, b in zip(targets, targets[1:])):
+        raise ValueError('Цели Мастера должны монотонно убывать')
+    return True
+
+
+def stage_of(profile, level):
+    for stage in profile['stages']:
+        if stage['first'] <= level <= stage['last']:
+            return stage['number']
+    raise ValueError('Уровень вне профиля: ' + str(level))
+
+
+def row_of(profile, level):
+    for row in profile['schedule']:
+        if row['first'] <= level <= row['last']:
+            return row
+    raise ValueError('Уровень вне расписания: ' + str(level))
+
+
+def types_of(profile, level):
+    return row_of(profile, level)['types']
+
+
+def required_of(profile, level):
+    return row_of(profile, level)['required']
+
+
+def band_of(profile, level):
+    for band in profile['bands']:
+        if band['first'] <= level <= band['last']:
+            return band['min'], band['max']
+    raise ValueError('Уровень вне полос: ' + str(level))
+
+
+def t2_minimum(profile, level):
+    minimum = profile['t2_minimum']
+    index = level - minimum['first']
+    if index < 0 or index >= len(minimum['values']):
+        raise ValueError('T2 minimum определён только для уровней 4..15')
+    return minimum['values'][index]
+
+
+def reserve_fraction(profile, level):
+    for band in profile['reserve_bands']:
+        if band['first'] <= level <= band['last']:
+            return band['numerator'], band['denominator']
+    raise ValueError('Уровень вне резервных полос: ' + str(level))
+
+
+def reserve_size(profile, level, needed):
+    numerator, denominator = reserve_fraction(profile, level)
+    return (needed * numerator + denominator - 1) // denominator
+
+
+def t3_length(profile, appearance_zero_based):
+    return profile['t3_min_lengths'][appearance_zero_based]
+
+
+def t5_length(profile, appearance_zero_based):
+    return profile['t5_min_lengths'][appearance_zero_based]
+
+
+def expected_stages(profile):
+    return [dict(number=s['number'], firstLevel=s['first'], lastLevel=s['last'])
+            for s in profile['stages']]
+
+
+def expected_required(profile):
+    return [required_of(profile, number) for number in range(1, profile['levels'] + 1)]
+
+
+def digest(profile):
+    return json_digest(profile)
+
+
+def selection_config_for(name, base, path=CONFIG):
+    """Эффективный конфиг GEN-02 из профиля + неизменные лимиты поиска/планирования.
+
+    Возвращает копию; базовый конфиг (tools/level_selection_config.json) не меняется.
+    Числа заданий (T1/T2/T3/T5/T6/T7) вкладываются в конфиг, чтобы сгенерированное
+    предложение GEN-02 оставалось воспроизводимым вместе с профилем.
+    """
+    profile = get(name, path)
+    config = deepcopy(base)
+    config['profile_id'] = profile['id']
+    config['profile_sha256'] = digest(profile)
+    config['profile_thresholds'] = deepcopy(profile['thresholds'])
+    config['profile_citations'] = dict(
+        t6_category=profile['t6']['category'], t7_n=profile['t7']['n'],
+        t1_minimum=profile['t1_minimum'], t2_minimum=profile['t2_minimum'],
+        t3_min_lengths=profile['t3_min_lengths'], t5_min_lengths=profile['t5_min_lengths'],
+        t4_riddles_by_stage=profile['t4_riddles_by_stage'])
+    config['levels'] = 15
+    config['bands'] = [dict(first=b['first'], last=b['last'], min=b['min'], max=b['max'])
+                       for b in profile['bands']]
+    config['retain_min'] = profile['retain']['min']
+    config['retain_max'] = profile['retain']['max']
+    config['mean_jaccard_max'] = profile['jaccard']['mean_max']
+    config['max_jaccard_max'] = profile['jaccard']['max_max']
+    config['master_types'] = [deepcopy(row['types']) for row in profile['schedule'][-2:]]
+    config['level_types'] = [deepcopy(types_of(profile, number))
+                             for number in range(1, profile['levels'] + 1)]
+    config['alphabet_required'] = profile['alphabet_required']
+    # GEN-02 планирует T3/T5 заранее. Берём самые длинные требования профиля:
+    # исходник, прошедший планирование, выдержит и ранние, и поздние появления.
+    if 'planning' not in config or 'search' not in config:
+        raise ValueError('Базовый конфиг подбора неполный')
+    config['planning'] = deepcopy(config['planning'])
+    config['planning']['long_min_length'] = max(profile['t3_min_lengths'])
+    config['planning']['suffix_min_length'] = max(profile['t5_min_lengths'])
+    config['planning']['profile_rule'] = ('T3/T5 планируются по максимальной длине профиля; '
+                                         'сами задания получают точные длины из schedule.')
+    return config
+
+
+def simulation_config_for(name, base, path=CONFIG):
+    """Эффективный конфиг GEN-04/05: общая модель и бюджеты, цели из профиля."""
+    profile = get(name, path)
+    config = deepcopy(base)
+    config['profile'] = dict(id=profile['id'], digest=digest(profile),
+                             levels=profile['levels'], max_stars=profile['max_stars'],
+                             alphabet_required=profile['alphabet_required'],
+                             thresholds=deepcopy(profile['thresholds']))
+    config['targets'] = deepcopy(profile['simulation_targets'])
+    config['levels'] = profile['levels']
+    config['max_stars'] = profile['max_stars']
+    return config
+
+
+def source_hashes(path=CONFIG):
+    """SHA-256 входов, от которых зависит профиль и его проверки."""
+    paths = {
+        'campaign_profiles': Path(path),
+        'level_profile_config': LEVEL_PROFILE_CONFIG,
+        'level_selection_config': ROOT / 'tools/level_selection_config.json',
+        'campaign_config': ROOT / 'tools/campaign_config.json',
+        'campaign_simulation_config': ROOT / 'tools/campaign_simulation_config.json',
+        'categories': CATEGORIES,
+        'words': ROOT / 'data/words.txt',
+        'levels': ROOT / 'data/levels.json',
+        'manifest': ROOT / 'data/manifest.json',
+        'definitions_db': ROOT / 'data/definitions.db',
+    }
+    return {key: sha256_file(file) for key, file in paths.items() if Path(file).exists()}
+
+
+def diagnostics(name, path=CONFIG):
+    """Воспроизводимый JSON готовности профиля: ID, digest, SHA входов и пороги."""
+    profile = get(name, path)
+    thresholds = profile['thresholds']
+    return {
+        'schema': 'campaign-profile-diagnostic-v1',
+        'profile': {
+            'id': profile['id'],
+            'digest': digest(profile),
+            'levels': profile['levels'],
+            'max_stars': profile['max_stars'],
+            'stages': [dict(first=s['first'], last=s['last'], length=s['last'] - s['first'] + 1)
+                       for s in profile['stages']],
+        },
+        'source_sha256': source_hashes(path),
+        'thresholds': {
+            'source': {
+                'min_length': thresholds['source_min_length'],
+                'max_length': thresholds['source_max_length'],
+            },
+            'target': {
+                'answer_min_length': thresholds['answer_min_length'],
+                'counted_min_length': thresholds['counted_min_length'],
+                'min_observed_occurrences': thresholds['min_observed_occurrences'],
+            },
+        },
+        'schedule': [dict(first=row['first'], last=row['last'], types=row['types'],
+                          required=row['required']) for row in profile['schedule']],
+        'official_gen02': {
+            'status': 'profile_ready_for_official_gen02',
+            'candidate_installed': False,
+            'campaign_validated': False,
+            'next_task': 'SHORT15-02',
+            'note': 'Профиль проверен; официальный прогон GEN-02 на закреплённом словаре — SHORT15-02. '
+                    'Кампания не выпущена и не установлена.',
+        },
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--diagnostics', metavar='PROFILE', choices=names())
+    args = parser.parse_args()
+    if args.diagnostics:
+        print(json.dumps(diagnostics(args.diagnostics), ensure_ascii=False, indent=2, sort_keys=True))
+    else:
+        print(json.dumps(load(), ensure_ascii=False, indent=2, sort_keys=True))
+
+
+if __name__ == '__main__':
+    main()

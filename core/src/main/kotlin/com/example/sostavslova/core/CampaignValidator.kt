@@ -93,8 +93,37 @@ object CampaignValidator {
         value.length in Alphabet.MIN_WORD_LENGTH..Alphabet.MAX_WORD_LENGTH && value == Alphabet.normalize(value)
 }
 
-/** Производственное расписание из CAMPAIGN.md; структурные мини-кампании его не требуют. */
+/** Единственная версия производственного профиля, которую принимает валидатор. */
+enum class ProductionCampaignProfile(val id: String) {
+    RELEASE_30("release-30"),
+    SHORT15_RELEASE_V1("short15-release-v1"),
+}
+
+/**
+ * Производственное расписание; структурные мини-кампании его не требуют.
+ * Без профиля сохраняется исторический 30/100-контракт, а short15 включается
+ * только явным ID профиля (тем же, что в tools/campaign_profiles.json).
+ */
 object ProductionCampaignValidator {
+    fun validate(campaign: Campaign): List<CampaignValidationError> =
+        validate(campaign, ProductionCampaignProfile.RELEASE_30)
+
+    fun validate(campaign: Campaign, profile: ProductionCampaignProfile): List<CampaignValidationError> = when (profile) {
+        ProductionCampaignProfile.RELEASE_30 -> Release30CampaignValidator.validate(campaign)
+        ProductionCampaignProfile.SHORT15_RELEASE_V1 -> Short15CampaignValidator.validate(campaign)
+    }
+
+    fun validate(campaign: Campaign, profileId: String?): List<CampaignValidationError> = when (profileId) {
+        null, "", ProductionCampaignProfile.RELEASE_30.id ->
+            validate(campaign, ProductionCampaignProfile.RELEASE_30)
+        ProductionCampaignProfile.SHORT15_RELEASE_V1.id ->
+            validate(campaign, ProductionCampaignProfile.SHORT15_RELEASE_V1)
+        else -> listOf(CampaignValidationError("profile", "Unknown production profile: $profileId"))
+    }
+}
+
+/** Исторический синтетический 30/100 профиль; остаётся доступен тестам. */
+internal object Release30CampaignValidator {
     fun validate(campaign: Campaign): List<CampaignValidationError> = buildList {
         addAll(CampaignValidator.validate(campaign))
         fun error(field: String, reason: String, level: CampaignLevel? = null) {
@@ -128,5 +157,89 @@ object ProductionCampaignValidator {
         val masterTypes = masterLevels.flatMap { it.tasks }.map { it.type }.toSet()
         if (TaskType.T6 !in masterTypes || TaskType.T7 !in masterTypes) error("tasks.types", "Master stage must include T6 and T7")
         if (masterLevels.map { level -> level.tasks.map { it.type }.toSet() }.distinct().size < 2) error("tasks.types", "Master stage must rotate types")
+    }
+}
+
+/**
+ * SHORT15-01 / short15-release-v1. Числа намеренно повторяют один профиль
+ * tools/campaign_profiles.json; Python и JVM проверяют одни и те же границы.
+ * Проверка словаря (частоты, узнаваемость, резервы) остаётся в GEN-04/GEN-05.
+ */
+object Short15CampaignValidator {
+    private data class Row(val first: Int, val last: Int, val types: List<TaskType>, val required: Int)
+
+    private val schedule = listOf(
+        Row(1, 3, listOf(TaskType.T1), 1),
+        Row(4, 5, listOf(TaskType.T1, TaskType.T2), 2),
+        Row(6, 8, listOf(TaskType.T1, TaskType.T2, TaskType.T3), 3),
+        Row(9, 10, listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T4), 3),
+        Row(11, 13, listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T4, TaskType.T5), 4),
+        Row(14, 14, listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T5, TaskType.T6), 4),
+        Row(15, 15, listOf(TaskType.T1, TaskType.T2, TaskType.T4, TaskType.T5, TaskType.T7), 4),
+    )
+    private val t1 = listOf(10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40)
+    private val t2 = listOf(5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+    private val t3 = listOf(6, 6, 6, 7, 7, 7, 8, 8, 9)
+    private val t5 = listOf(5, 5, 6, 7, 8)
+
+    fun validate(campaign: Campaign): List<CampaignValidationError> = buildList {
+        addAll(CampaignValidator.validate(campaign))
+        fun error(field: String, reason: String, level: CampaignLevel? = null, task: CampaignTask? = null) {
+            add(CampaignValidationError(field, reason, level?.number, task?.id))
+        }
+        val stageRanges = listOf(1 to 3, 4 to 5, 6 to 8, 9 to 10, 11 to 13, 14 to 15)
+        if (campaign.levels.size != 15) error("levels.size", "Expected 15 levels")
+        if (campaign.maxStars != 49) error("maxStars", "Expected 49 stars")
+        if (campaign.stages.size != 6) error("stages.size", "Expected 6 stages")
+        for ((index, range) in stageRanges.withIndex()) {
+            val number = index + 1
+            val stage = campaign.stages.singleOrNull { it.number == number }
+            if (stage != Stage(number, range.first, range.second))
+                error("stages.range", "Expected stage $number range ${range.first}..${range.second}")
+        }
+        var t3Index = 0
+        var t5Index = 0
+        for (level in campaign.levels) {
+            val row = schedule.singleOrNull { level.number in it.first..it.last }
+            if (row == null) {
+                error("schedule", "No short15 schedule row for level ${level.number}", level)
+                continue
+            }
+            val expectedStage = stageRanges.indexOfFirst { level.number in it.first..it.second } + 1
+            if (level.stage != expectedStage) error("stage", "Expected stage $expectedStage", level)
+            if (level.word.length !in 8..13) error("word", "Short15 source must be 8..13 letters", level)
+            if (level.maxStars != row.types.size) error("tasks", "Expected M=${row.types.size}", level)
+            if (level.requiredStars != row.required) error("requiredStars", "Expected R=${row.required}", level)
+            val kinds = level.tasks.map { it.type }
+            if (kinds.size != row.types.size || kinds.toSet() != row.types.toSet())
+                error("tasks.types", "Expected types ${row.types.joinToString(",")}", level)
+            for (task in level.tasks) {
+                when (task) {
+                    is CampaignTask.T1 -> if (task.n != t1[level.number - 1])
+                        error("t1_minimum", "Expected n=${t1[level.number - 1]}", level, task)
+                    is CampaignTask.T2 -> if (level.number < 4 || task.n != t2[level.number - 4])
+                        error("t2_minimum", "Expected n=${t2.getOrNull(level.number - 4)}", level, task)
+                    is CampaignTask.T3 -> if (task.minLength != t3.getOrNull(t3Index++))
+                        error("t3_min_length", "Expected minLength=${t3.getOrNull(t3Index - 1)}", level, task)
+                    is CampaignTask.T4 -> {
+                        val wanted = when (level.stage) { 4 -> 1; 5 -> 2; 6 -> 3; else -> 0 }
+                        if (task.targets.size != wanted) error("riddle_count", "Expected $wanted targets", level, task)
+                    }
+                    is CampaignTask.T5 -> if (task.minLength != t5.getOrNull(t5Index++))
+                        error("t5_min_length", "Expected minLength=${t5.getOrNull(t5Index - 1)}", level, task)
+                    is CampaignTask.T6 -> {
+                        if (task.category != "professions") error("t6_theme", "Expected professions", level, task)
+                        if (task.n != 5) error("t6_n", "Expected n=5", level, task)
+                    }
+                    is CampaignTask.T7 -> if (task.n != 10) error("t7_n", "Expected n=10", level, task)
+                }
+            }
+        }
+        if (t3Index != t3.size) error("t3_min_length", "Expected ${t3.size} T3 tasks, got $t3Index")
+        if (t5Index != t5.size) error("t5_min_length", "Expected ${t5.size} T5 tasks, got $t5Index")
+        val allTypes = campaign.levels.flatMap { level -> level.tasks.map { it.type } }.toSet()
+        if (allTypes != TaskType.entries.toSet()) error("tasks.types", "Short15 must include all T1..T7")
+        if (campaign.levels.lastOrNull()?.requiredStars != 4) error("finale", "Level 15 must pass at 4/5")
+        if (campaign.levels.sumOf { it.maxStars } != 49) error("maxStars", "All tasks/stars must total 49")
     }
 }

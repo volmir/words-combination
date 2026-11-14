@@ -30,7 +30,7 @@ data class CampaignSummary(
     val shownHintSteps: Int = 0,
     val paidHintUnits: Int = 0,
 ) {
-    /** Для производственной кампании максимум равен 100; финал сам по себе недостаточен. */
+    /** Максимум берётся из кампании (49 у short15, 100 у 30/100); финал сам по себе недостаточен. */
     val isMaster: Boolean get() = maxStars > 0 && stars == maxStars
 }
 

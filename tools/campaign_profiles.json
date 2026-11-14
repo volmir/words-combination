@@ -1,0 +1,88 @@
+{
+  "schema": "campaign-profiles-v1",
+  "legacy_default": {
+    "id": "release-30",
+    "note": "Действующее 30/100-расписание живёт в tools/level_selection_config.json, tools/campaign_config.json и tools/campaign_simulation_config.json и остаётся поведением по умолчанию без --profile. Этот ключ только описывает происхождение."
+  },
+  "profiles": {
+    "short15-release-v1": {
+      "id": "short15-release-v1",
+      "name": "Первый релизный конвейер: 15 исходников, 6 этапов, 49 звёзд",
+      "levels": 15,
+      "max_stars": 49,
+      "stages": [
+        {"number": 1, "first": 1, "last": 3},
+        {"number": 2, "first": 4, "last": 5},
+        {"number": 3, "first": 6, "last": 8},
+        {"number": 4, "first": 9, "last": 10},
+        {"number": 5, "first": 11, "last": 13},
+        {"number": 6, "first": 14, "last": 15}
+      ],
+      "bands": [
+        {"first": 1, "last": 3, "min": 40, "max": 60},
+        {"first": 4, "last": 5, "min": 70, "max": 85},
+        {"first": 6, "last": 8, "min": 100, "max": 120},
+        {"first": 9, "last": 10, "min": 130, "max": 160},
+        {"first": 11, "last": 13, "min": 160, "max": 200},
+        {"first": 14, "last": 15, "min": 200, "max": 260}
+      ],
+      "schedule": [
+        {"first": 1, "last": 3, "types": ["T1"], "required": 1},
+        {"first": 4, "last": 5, "types": ["T1", "T2"], "required": 2},
+        {"first": 6, "last": 8, "types": ["T1", "T2", "T3"], "required": 3},
+        {"first": 9, "last": 10, "types": ["T1", "T2", "T3", "T4"], "required": 3},
+        {"first": 11, "last": 13, "types": ["T1", "T2", "T3", "T4", "T5"], "required": 4},
+        {"first": 14, "last": 14, "types": ["T1", "T2", "T3", "T5", "T6"], "required": 4},
+        {"first": 15, "last": 15, "types": ["T1", "T2", "T4", "T5", "T7"], "required": 4}
+      ],
+      "t1_minimum": [10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40],
+      "t2_minimum": {"first": 4, "values": [5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]},
+      "t3_min_lengths": [6, 6, 6, 7, 7, 7, 8, 8, 9],
+      "t4_riddles_by_stage": {"4": 1, "5": 2, "6": 3},
+      "t5_min_lengths": [5, 5, 6, 7, 8],
+      "t6": {"category": "professions", "n": 5,
+             "reason": "Профессии по ключу tools/categories.json; при нехватке качественных реальных ответов кампания блокируется с доказательством, тема не подменяется."},
+      "t7": {"n": 10},
+      "jaccard": {"mean_max": 0.07, "max_max": 0.30, "pairs": 105},
+      "retain": {"min": 3, "max": 5},
+      "alphabet_required": false,
+      "alphabet_note": "Покрытие Alphabet.LETTERS сообщается в отчёте, но не является границей установки (известный ориентир 24/32 у кандидата 15K).",
+      "count_min_length": 4,
+      "category_global_min": 40,
+      "reserve_bands": [
+        {"first": 1, "last": 5, "numerator": 3, "denominator": 1},
+        {"first": 6, "last": 10, "numerator": 5, "denominator": 2},
+        {"first": 11, "last": 15, "numerator": 2, "denominator": 1}
+      ],
+      "thresholds": {
+        "source_min_length": 8,
+        "source_max_length": 13,
+        "answer_min_length": 3,
+        "counted_min_length": 4,
+        "min_observed_occurrences": 10,
+        "semantic_common_min_occurrences": 100,
+        "semantic_common_max_rank": 30000,
+        "provenance": "Значения проверяются на равенство tools/level_profile_config.json; источник пригодности — существующие правила source/target без изменений."
+      },
+      "simulation_targets": [
+        {"level": 1, "required_min": 0.95, "master_min": 0.7, "master_max": 1},
+        {"level": 2, "required_min": 0.939286, "master_min": 0.68, "master_max": 1},
+        {"level": 3, "required_min": 0.928571, "master_min": 0.66, "master_max": 1},
+        {"level": 4, "required_min": 0.917857, "master_min": 0.64, "master_max": 1},
+        {"level": 5, "required_min": 0.907143, "master_min": 0.62, "master_max": 1},
+        {"level": 6, "required_min": 0.896429, "master_min": 0.6, "master_max": 0.9},
+        {"level": 7, "required_min": 0.885714, "master_min": 0.58, "master_max": 0.827778},
+        {"level": 8, "required_min": 0.875, "master_min": 0.56, "master_max": 0.755556},
+        {"level": 9, "required_min": 0.864286, "master_min": 0.54, "master_max": 0.683333},
+        {"level": 10, "required_min": 0.853571, "master_min": 0.52, "master_max": 0.611111},
+        {"level": 11, "required_min": 0.842857, "master_min": 0.5, "master_max": 0.538889},
+        {"level": 12, "required_min": 0.832143, "master_min": 0.42, "master_max": 0.466667},
+        {"level": 13, "required_min": 0.821429, "master_min": 0.35, "master_max": 0.394444},
+        {"level": 14, "required_min": 0.810714, "master_min": 0.3, "master_max": 0.322222},
+        {"level": 15, "required_min": 0.8, "master_min": 0.1, "master_max": 0.25}
+      ],
+      "simulation_note": "Стартовые целевые вероятности GO_15_STRONG: линейные края required_min 0.95→0.80, финал повторяет границы 30-профиля (R=4/M=5). GEN-05 (SHORT15-02) обязан их проверить и перебалансировать; это не валидированные результаты.",
+      "rationale": "Короткий первый релиз: 15 уровней, этапы [3,2,3,2,3,2], M/R по контракту SHORT15-01; T1/T2 считают ответы 4+, обычный ввод 3+ сохраняется; финал 4/5 на уровне 15, Мастер только 49/49. Числа профиля — единственный источник для GEN-02..05 и валидаторов Python/Kotlin."
+    }
+  }
+}

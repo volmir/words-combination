@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import pick_level_words as profiles
+import campaign_profiles
 import select_level_words as selection
 from build_dictionary import read_list, sha256_file
 from game_data_providers import atomic_json, json_digest
@@ -44,9 +45,52 @@ def load_config(path=CONFIG):
     return c
 
 
-def schedule(config):
+def schedule(config, profile=None):
+    """Расписание 30-профиля или, при явном профиле, его версионированное число.
+
+    Профиль — единственный источник M/R, типов, минимумов T1/T2, длин T3/T5,
+    числа целей T4 и параметров T6/T7; кривые и резервные полосы 30-конфига здесь
+    не дублируются.
+    """
     result = []
     seen = Counter()
+    if isinstance(profile, str):
+        profile = campaign_profiles.get(profile)
+    if profile is not None:
+        rows = profile['schedule']
+        for number in range(1, profile['levels'] + 1):
+            row = next(r for r in rows if r['first'] <= number <= r['last'])
+            stage = campaign_profiles.stage_of(profile, number)
+            tasks = []
+            for t in row['types']:
+                task = dict(id=f'l{number:02d}-{t.lower()}', type=t)
+                if t == 'T4':
+                    task['targetCount'] = profile['t4_riddles_by_stage'][str(stage)]
+                elif t == 'T6':
+                    task['n'] = profile['t6']['n']
+                    task['category'] = profile['t6']['category']
+                elif t == 'T7':
+                    task['n'] = profile['t7']['n']
+                else:
+                    # Ленивый выбор: t2_minimum существует только с 4-го уровня,
+                    # поэтому его нельзя вычислять для T1 на уровнях 1–3.
+                    if t == 'T1':
+                        value = profile['t1_minimum'][number - 1]
+                    elif t == 'T2':
+                        value = campaign_profiles.t2_minimum(profile, number)
+                    elif t == 'T3':
+                        value = campaign_profiles.t3_length(profile, seen['T3'])
+                    elif t == 'T5':
+                        value = campaign_profiles.t5_length(profile, seen['T5'])
+                    else:
+                        raise ValueError('Тип без параметров профиля: ' + t)
+                    task['minLength' if t in ('T3', 'T5') else 'n'] = value
+                task['introduce'] = seen[t] == 0
+                seen[t] += 1
+                tasks.append(task)
+            result.append(dict(number=number, stage=stage,
+                               requiredStars=row['required'], tasks=tasks))
+        return result
     types = [[f'T{i}' for i in range(1, (n - 1) // 5 + 2)] if n <= 25
              else config['master_types'][n - 26] for n in range(1, 31)]
     totals = Counter(t for row in types for t in row)
@@ -95,13 +139,27 @@ def alternating_letters(options):
 
 
 class CampaignBuilder:
-    def __init__(self, payload, words, config):
+    def __init__(self, payload, words, config, profile=None):
+        if isinstance(profile, str):
+            profile = campaign_profiles.get(profile)
         self.config = config
+        self.profile = profile
         self.payload = payload
         self.words = {normalize_form(w) for w in words}
         self.metadata = payload['words']
         self.index = profiles.MultisetIndex(w for w in self.words if len(w) >= 3)
-        self.plan = schedule(config)
+        self.plan = schedule(config, profile)
+        self.reserve_bands = (profile['reserve_bands'] if profile is not None
+                              else config['reserve_bands'])
+        self.t6_category = profile['t6']['category'] if profile is not None else None
+        self.category_min = int(profile['category_global_min']
+                                if profile is not None else config['category_global_min'])
+        self.count_min_length = int(profile['count_min_length']
+                                    if profile is not None else config['count_min_length'])
+        if profile is not None:
+            self.stage_rows = campaign_profiles.expected_stages(profile)
+        else:
+            self.stage_rows = [dict(number=i, firstLevel=5*i-4, lastLevel=5*i) for i in range(1, 7)]
         self.familiar = {row['word'] for row in payload['assessments']
                          if row['role'] == 'target' and row['assessment']['status'] == 'suitable'
                          and self.metadata[row['word']]['observed_frequency']['frequency'] >= 10}
@@ -122,6 +180,10 @@ class CampaignBuilder:
             return category
         return None
 
+    def reserve_size(self, number, needed):
+        b = next(b for b in self.reserve_bands if b['first'] <= number <= b['last'])
+        return (needed * b['numerator'] + b['denominator'] - 1) // b['denominator']
+
     def _local(self, number, source):
         """Recount predicates from actual dictionary answers, never from stored metrics."""
         answers = self.answers(source)
@@ -132,13 +194,13 @@ class CampaignBuilder:
         for task in self.plan[number - 1]['tasks']:
             t = task['type']
             needed = task.get('n', task.get('targetCount', 1))
-            minimum = reserve_size(self.config, number, needed)
+            minimum = self.reserve_size(number, needed)
             pools = {}
             if t == 'T1':
-                pools['count'] = [w for w in safe if len(w) >= self.config['count_min_length']]
+                pools['count'] = [w for w in safe if len(w) >= self.count_min_length]
             elif t == 'T2':
                 for letter in sorted(set(source)):
-                    pools[letter] = [w for w in safe if len(w) >= self.config['count_min_length'] and w[0] == letter]
+                    pools[letter] = [w for w in safe if len(w) >= self.count_min_length and w[0] == letter]
             elif t == 'T3':
                 # The target is the hint anchor, so it must have a useful safely
                 # masked definition; the star itself still accepts every long answer.
@@ -151,8 +213,10 @@ class CampaignBuilder:
                 for ending in sorted(self.config['endings']):
                     pools[ending] = [w for w in safe if len(w) >= task['minLength'] and w.endswith(ending)]
             elif t == 'T6':
-                for category, global_words in sorted(self.global_categories.items()):
-                    if len(global_words) >= self.config['category_global_min']:
+                themes = [self.t6_category] if self.t6_category is not None else sorted(self.global_categories)
+                for category in themes:
+                    global_words = self.global_categories.get(category, set())
+                    if len(global_words) >= self.category_min:
                         pools[category] = sorted(set(safe) & global_words)
             elif t == 'T7':
                 for letter in sorted(set(source), key=lambda ch: (self.letter_counts[ch], ch)):
@@ -242,8 +306,9 @@ class CampaignBuilder:
                 tasks.append(task)
             levels.append(dict(number=number, word=source, stage=plan['stage'],
                                requiredStars=plan['requiredStars'], tasks=tasks))
-        campaign = dict(version=2, countMinLength=self.config['count_min_length'],
-                        stages=[dict(number=i, firstLevel=5*i-4, lastLevel=5*i) for i in range(1, 7)],
+        campaign = dict(version=2, countMinLength=self.count_min_length,
+                        stages=[dict(number=row['number'], firstLevel=row['firstLevel'],
+                                     lastLevel=row['lastLevel']) for row in self.stage_rows],
                         levels=levels, introductions=introductions)
         return campaign, dict(violations=[], tasks=evidence)
 
@@ -251,9 +316,9 @@ class CampaignBuilder:
         """The runtime predicate, deliberately independent of uniqueness of assignments."""
         t, words = task['type'], self.answers(source)
         if t == 'T1':
-            return [w for w in words if len(w) >= self.config['count_min_length']]
+            return [w for w in words if len(w) >= self.count_min_length]
         if t == 'T2':
-            return [w for w in words if len(w) >= self.config['count_min_length'] and w.startswith(task['letter'])]
+            return [w for w in words if len(w) >= self.count_min_length and w.startswith(task['letter'])]
         if t == 'T3':
             return [w for w in words if len(w) >= task['minLength']]
         if t == 'T4':
@@ -288,6 +353,9 @@ def search(builder, selector, proposal):
                        source_candidates=len(sources), fitting_sources=fitting,
                        max_candidate_count=max(sizes.values(), default=0),
                        candidate_counts=dict(sorted(sizes.items())))
+            if t == 'T6' and builder.t6_category:
+                # Доказательство BLOCKED: тема профессий фиксирована профилем и не подменяется.
+                row['global_category_count'] = len(builder.global_categories.get(builder.t6_category, ()))
             feasibility.append(row)
             if not fitting:
                 return None, dict(status='infeasible', installable=False, attempts=0,
@@ -363,18 +431,30 @@ def search(builder, selector, proposal):
 
 def verify_inputs(args, document, proposal):
     """Bind the proposal to measurements and the full, still available hint package."""
+    profile_name = getattr(args, 'profile', None)
     expected = {'profile_payload_sha256': document['payload_sha256'], 'profile_inputs': document['inputs'],
                 'profiles_sha256': sha256_file(args.profiles), 'words_sha256': sha256_file(args.words),
                 'previous_levels_sha256': sha256_file(args.previous_levels),
                 'config_sha256': sha256_file(args.selection_config),
                 'alphabet_sha256': sha256_file(selection.ALPHABET),
                 'selector_sha256': sha256_file(Path(selection.__file__))}
+    if profile_name:
+        expected['campaign_profiles_sha256'] = campaign_profiles.profiles_file_sha256()
     if (proposal.get('schema') != selection.SCHEMA or proposal.get('status') != 'valid' or
             proposal.get('installable') is not True or proposal['inputs'] != expected):
         raise ValueError('Нужно актуальное проверенное предложение GEN-02')
-    if ([r['index'] for r in proposal['slots']] != list(range(1, 31)) or
-            proposal['config'] != selection.load_config(args.selection_config)):
+    effective = (campaign_profiles.selection_config_for(profile_name, selection.load_config(args.selection_config))
+                 if profile_name else selection.load_config(args.selection_config))
+    if ([r['index'] for r in proposal['slots']] != list(range(1, effective['levels'] + 1)) or
+            proposal['config'] != effective):
         raise ValueError('Слоты/конфигурация GEN-02 изменились')
+    if profile_name:
+        recorded = proposal.get('profile') or {}
+        if (recorded.get('id') != profile_name or
+                recorded.get('digest') != campaign_profiles.digest(campaign_profiles.get(profile_name))):
+            raise ValueError('Профиль предложения GEN-02 не совпадает с реестром')
+    elif proposal.get('profile'):
+        raise ValueError('Профильное предложение GEN-02 передано без --profile')
     manifest = json.loads(args.manifest.read_text(encoding='utf-8'))
     for name, path in [('manifest', args.manifest), ('database', args.database),
                        ('dump', args.dump), ('hints', args.hints)]:
@@ -415,17 +495,20 @@ def write_outputs(directory, campaign, report):
 
 def run(args):
     config = load_config(args.config)
+    profile = campaign_profiles.get(args.profile) if getattr(args, 'profile', None) else None
     if args.profiles is None:
         args.profiles = Path(json.loads((ROOT / 'build/reports/level_profiles/summary.json').read_text())['cache_path'])
     document = selection.load_snapshot(args.profiles, args.words, args.previous_levels)
     proposal = json.loads(args.proposal.read_text(encoding='utf-8'))
     verify_inputs(args, document, proposal)
-    if config['master_types'] != proposal['config']['master_types']:
+    expected_master = ([row['types'] for row in profile['schedule'][-2:]]
+                       if profile is not None else config['master_types'])
+    if expected_master != proposal['config']['master_types']:
         raise ValueError('Ротация расходится с планированием GEN-02')
     words = read_list(args.words)
     selector = selection.Selector(document['payload'], words,
         json.loads(args.previous_levels.read_text(encoding='utf-8')), proposal['config'], selection.read_alphabet())
-    builder = CampaignBuilder(document['payload'], words, config)
+    builder = CampaignBuilder(document['payload'], words, config, profile)
     campaign, report = search(builder, selector, proposal)
     report.update(schema='campaign-generation-v1', config=config,
                   inputs=dict(proposal_sha256=sha256_file(args.proposal), profile_inputs=document['inputs'],
@@ -435,6 +518,17 @@ def run(args):
                                         counts=dict(sorted(builder.letter_counts.items()))),
                   curve_appearances={t: [dict(level=p['number'], value=task.get('n', task.get('minLength', task.get('targetCount'))))
                       for p in builder.plan for task in p['tasks'] if task['type'] == t] for t in [f'T{i}' for i in range(1, 8)]})
+    if profile is not None:
+        report['profile'] = {
+            'id': profile['id'],
+            'digest': campaign_profiles.digest(profile),
+            'profiles_sha256': campaign_profiles.profiles_file_sha256(),
+            'levels': profile['levels'],
+            'max_stars': profile['max_stars'],
+            'alphabet_required': profile['alphabet_required'],
+            'thresholds': profile['thresholds'],
+        }
+        report['inputs']['campaign_profiles_sha256'] = campaign_profiles.profiles_file_sha256()
     write_outputs(args.output, campaign, report)
     return report
 
@@ -442,6 +536,9 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, default=CONFIG)
+    parser.add_argument('--profile', choices=campaign_profiles.names(),
+                        help='Версионированный профиль кампании (например, short15-release-v1); '
+                             'без него действует 30-уровневое расписание')
     parser.add_argument('--profiles', type=Path)
     parser.add_argument('--proposal', type=Path, default=ROOT / 'build/reports/level_words_proposal.json')
     parser.add_argument('--words', type=Path, default=ROOT / 'data/words.txt')

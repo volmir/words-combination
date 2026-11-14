@@ -15,6 +15,7 @@ import re
 import time
 
 import pick_level_words as measurements
+import campaign_profiles
 from assess_word_suitability import PREFERRED_SOURCES
 from build_dictionary import read_list, sha256_file
 from game_data_providers import atomic_json, json_digest
@@ -217,7 +218,8 @@ def load_snapshot(path, words_path, previous_path):
 
 class Selector:
     def __init__(self, payload, words, previous, config, alphabet, thresholds=None,
-                 policy=None, time_limit_seconds=None, max_checks=None, seed=None, clock=None):
+                 policy=None, time_limit_seconds=None, max_checks=None, seed=None, clock=None,
+                 profile=None):
         self.profiles = dict(payload['profiles'])
         self.metadata = payload['words']
         self.words = set(map(normalize_form, words))
@@ -228,6 +230,8 @@ class Selector:
         self.default_config = deepcopy(config)
         self.config = effective_config(config, thresholds, policy)
         self.policy = policy or ('STRICT' if thresholds is None else 'CUSTOM')
+        self.profile = profile
+        self.profile_id = None if profile is None else profile['id']
         self.alphabet = alphabet
         self.size = self.config['levels']
         self.seed = self.config['seed'] if seed is None else seed
@@ -365,12 +369,24 @@ class Selector:
         return next(b for b in config['bands'] if b['first'] <= slot + 1 <= b['last'])
 
     def types(self, slot):
+        """Схема типов слота; расписание профиля приоритетно, иначе прежняя формула 30.
+
+        Профильные конфиги обязаны нести точный список level_types (6 этапов с
+        длинами [3,2,3,2,3,2] и ротацией Мастера), чтобы никакой генератор не
+        выводил расписание из собственных копий чисел.
+        """
+        if 'level_types' in self.config:
+            return self.config['level_types'][slot]
         return ([f'T{i}' for i in range(1, slot // 5 + 2)] if slot < 25
                 else self.config['master_types'][slot - 25])
 
     def task_options(self, word):
         p, plan = self.profiles[word], self.config['planning']
         r = p['recognizable']
+        themes = {theme for theme, count in r['themes'].items() if count and theme != 'other'}
+        if self.profile is not None:
+            # Тема T6 закреплена профилем и не подменяется при поиске GEN-02.
+            themes &= {self.profile['t6']['category']}
         return {
             'T1': {'count'} if r['count_4plus'] else set(),
             'T2': {k for k, v in r['initial_4plus'].items() if v},
@@ -378,7 +394,7 @@ class Selector:
             'T4': set(p['riddle_targets']) - ROLE_EXCLUSIONS,
             'T5': {suffix for suffix, lengths in r['suffix_lengths'].items()
                    if any(int(n) >= plan['suffix_min_length'] and count for n, count in lengths.items())},
-            'T6': {theme for theme, count in r['themes'].items() if count and theme != 'other'},
+            'T6': themes,
             'T7': {letter for letter, count in r['containing'].items() if count}}
 
     def local_failures(self, slot, word, config=None):
@@ -526,7 +542,9 @@ class Selector:
         remaining = self.size - m['selected'] if partial else 0
         if m['retained'] + remaining < config['retain_min']:
             fail('retained_min', config['retain_min'] - m['retained'] - remaining)
-        if not partial and m['missing_letters']:
+        # Покрытие алфавита остаётся жёсткой границей только там, где это объявлено.
+        # Профиль short15 отчитывается о реальном покрытии букв без требования 32/32.
+        if not partial and m['missing_letters'] and config.get('alphabet_required', True):
             fail('alphabet_coverage', len(m['missing_letters']), missing=m['missing_letters'])
         for metric, limit in [('mean_jaccard', 'mean_jaccard_max'), ('max_jaccard', 'max_jaccard_max')]:
             if m[metric] > config[limit] + 1e-12:
@@ -805,6 +823,8 @@ class Selector:
         # Band misses are an explicit penalty, so a 26/30 candidate can still be
         # improved while Jaccard is reduced. These weights guide search only; the
         # final validator still uses exact policy bounds.
+        alphabet_missing_weight = (ALPHABET_MISS_WEIGHT
+                                    if self.config.get('alphabet_required', True) else 0)
         for penalty in (1000, 1000000):
             def pair_cost(value):
                 return value + penalty*max(value-pair_limit, 0)**2
@@ -817,7 +837,7 @@ class Selector:
                 retain_penalty = max(0, self.config['retain_min'] - retained - empty)
                 return (sum(pair_cost(values[i][j]) for i in range(self.size) for j in range(i)) +
                         MEAN_JACCARD_WEIGHT*mean_excess + band_energy(words) +
-                        ALPHABET_MISS_WEIGHT*missing + RETAIN_WEIGHT*retain_penalty)
+                        alphabet_missing_weight*missing + RETAIN_WEIGHT*retain_penalty)
 
             seed_counts, seed_missing = self.letter_state(seed_words)
             seed_retained = len(set(seed_words) & self.old)
@@ -922,7 +942,7 @@ class Selector:
                              MEAN_JACCARD_WEIGHT*(new_mean_excess-old_mean_excess) +
                              BAND_MISS_WEIGHT*(new_miss-old_miss) +
                              DEFICIT_WEIGHT*(new_deficit-old_deficit) +
-                             ALPHABET_MISS_WEIGHT*(new_missing-missing) +
+                             alphabet_missing_weight*(new_missing-missing) +
                              RETAIN_WEIGHT*(new_retain_penalty-old_retain_penalty))
                     start_temperature = .3 if penalty == 1000 else 1.0
                     temperature = start_temperature*(.002/start_temperature)**(step/steps)
@@ -1050,7 +1070,7 @@ class Selector:
         if len(old_possible) < self.config['retain_min']:
             reasons.append(f"Старых исходников, подходящих хотя бы одному слоту: {len(old_possible)}; требуется минимум {self.config['retain_min']}.")
         missing = ''.join(c for c in self.alphabet if c not in letters)
-        if missing:
+        if missing and self.config.get('alphabet_required', True):
             reasons.append('В объединении подходящих кандидатур отсутствуют буквы: ' + missing + '.')
         return {'proven_infeasible': bool(reasons),
                 'hard_infeasible_by_matching': source_matching['matched'] < self.size,
@@ -1180,6 +1200,12 @@ def make_proposal(selector, selected, trace, inputs):
                           'Автоматическая замена/перестановка для общих границ, покрытия и запаса.'),
                       'spares': spares[slot]})
     return {'schema': SCHEMA, 'status': status, 'installable': installable,
+            'profile': (dict(id=selector.profile_id, digest=json_digest(selector.profile),
+                             levels=selector.profile['levels'],
+                             max_stars=selector.profile['max_stars'],
+                             thresholds=deepcopy(selector.profile['thresholds']),
+                             alphabet_required=selector.profile['alphabet_required'])
+                        if selector.profile is not None else None),
             'policy': selector.policy,
             'policy_limits': dict(mean_jaccard_max=selector.config['mean_jaccard_max'],
                                   max_jaccard_max=selector.config['max_jaccard_max'],
@@ -1233,7 +1259,11 @@ def write_reports(selector, proposal, directory):
              f"Статус: **{proposal['status']}**. Политика: **{policy}**. Установка разрешена числовой проверкой: **{proposal['installable']}**.",
              f"Полная проверка по STRICT: **{strict}**. Вариант с нарушениями сохраняется исключительно для диагностики; data/ не изменяется.", '',
              proposal['search_note'], '',
-             f"Жёсткие границы: 30 разных исходников; {selector.config['retain_min']}–{selector.config['retain_max']} старых; все 32 знака Alphabet.LETTERS; диапазон каждого слота; средний Jaccard ≤{limits.get('mean_jaccard_max', 0):.2%}, максимальный ≤{limits.get('max_jaccard_max', 0):.2%}. Нет требования «большинство».",
+             f"Жёсткие границы: {selector.size} разных исходников; {selector.config['retain_min']}–{selector.config['retain_max']} старых; "
+             + ('все 32 знака Alphabet.LETTERS; ' if selector.config.get('alphabet_required', True)
+                else 'покрытие Alphabet.LETTERS отчётное без требования 32/32; ')
+             + f"диапазон каждого слота; средний Jaccard ≤{limits.get('mean_jaccard_max', 0):.2%}, "
+               f"максимальный ≤{limits.get('max_jaccard_max', 0):.2%}. Нет требования «большинство».",
              'Мягкие критерии: предпочтительные слова, максимизация топ-5000, запас будущих заданий, охват всего словаря и только затем верхняя часть допустимого диапазона ответов.', '',
              '| Метрика | Старая кампания | Новый вариант |', '|---|---:|---:|']
     for key, label in [('selected', 'Исходников'), ('unique_sources', 'Разных исходников'),
@@ -1313,7 +1343,8 @@ def write_reports(selector, proposal, directory):
         lines.append(f"| {row['index']} | {row['previous_word']} | {row['word'] or '—'} | {row['all_answers']} / {row['recognizable_answers']} | {row['replacement_reason']} | {spares} |")
     lines.extend(['', 'Запасные проверены заменой в полном варианте, включая сохранение старых слов, покрытие, Jaccard и паросочетания. До пяти на слот; отсутствие подходящих не подменяется неподходящими кандидатами.', '',
                   '## Коллизии узнаваемых ответов', '',
-                  'Jaccard(A,B) = |A ∩ B| / |A ∪ B|. Пример: {кот, ток} и {ток, сок}: 1/3. Среднее по всем неупорядоченным парам (435 для 30 слов); пустые объединения дают 0.',
+                  'Jaccard(A,B) = |A ∩ B| / |A ∪ B|. Пример: {кот, ток} и {ток, сок}: 1/3. Среднее по всем неупорядоченным парам '
+                  f'({selector.size * (selector.size - 1) // 2} пар для {selector.size} слов); пустые объединения дают 0.',
                   'Все пары и их числители/знаменатели обеих кампаний сохранены в JSON. Здесь десять максимальных новых пересечений:', '',
                   '| Слоты | Слова | Пересечение / объединение | Jaccard |', '|---|---|---:|---:|'])
     for row in proposal['collisions'][:10]:
@@ -1347,6 +1378,10 @@ def requested_policies(args):
 
 def run(args):
     config, alphabet = load_config(args.config), read_alphabet(args.alphabet)
+    profile = None
+    if getattr(args, 'profile', None):
+        profile = campaign_profiles.get(args.profile)
+        config = campaign_profiles.selection_config_for(args.profile, config)
     profile_path = args.profiles
     if profile_path is None:
         summary = json.loads((ROOT / 'build/reports/level_profiles/summary.json').read_text())
@@ -1359,21 +1394,32 @@ def run(args):
               'previous_levels_sha256': sha256_file(args.previous_levels),
               'config_sha256': sha256_file(args.config), 'alphabet_sha256': sha256_file(args.alphabet),
               'selector_sha256': sha256_file(Path(__file__))}
-    policies = requested_policies(args)
-    for name in policies:
-        policy_thresholds(name)  # reject unknown names before touching the cache
+    if profile is not None:
+        # Воспроизводимость: реестр версий профиля фиксируется в предложении.
+        inputs['campaign_profiles_sha256'] = campaign_profiles.profiles_file_sha256()
     attempts = []
-    for name in policies:
+    if profile is not None:
         selector = Selector(document['payload'], words, previous, config, alphabet,
-                            thresholds=policy_thresholds(name), policy=name,
+                            profile=profile, policy=profile['id'],
                             time_limit_seconds=getattr(args, 'time_limit_seconds', None),
                             max_checks=getattr(args, 'max_checks', None),
                             seed=getattr(args, 'seed', None))
         selected, trace = selector.search()
-        proposal = make_proposal(selector, selected, trace, inputs)
-        attempts.append((name, selector, proposal))
-        if proposal['installable']:
-            break
+        attempts.append((profile['id'], selector, make_proposal(selector, selected, trace, inputs)))
+    else:
+        policies = requested_policies(args)
+        for name in policies:
+            policy_thresholds(name)  # reject unknown names before touching the cache
+            selector = Selector(document['payload'], words, previous, config, alphabet,
+                                thresholds=policy_thresholds(name), policy=name,
+                                time_limit_seconds=getattr(args, 'time_limit_seconds', None),
+                                max_checks=getattr(args, 'max_checks', None),
+                                seed=getattr(args, 'seed', None))
+            selected, trace = selector.search()
+            proposal = make_proposal(selector, selected, trace, inputs)
+            attempts.append((name, selector, proposal))
+            if proposal['installable']:
+                break
     chosen = next((row for row in attempts if row[2]['installable']), None)
     if chosen is None:
         # No policy produced an installable campaign. Keep the best diagnostic
@@ -1415,6 +1461,9 @@ def main():
     parser.add_argument('--reports', type=Path, default=ROOT / 'build/reports')
     parser.add_argument('--policy', action='append', choices=list(PROVISIONAL_POLICY_ORDER),
                         help='STRICT или последовательность с повтором флага: сначала STRICT, затем SOFT-A/SOFT-B')
+    parser.add_argument('--profile', choices=campaign_profiles.names(),
+                        help='Версионированный профиль кампании (например, short15-release-v1); '
+                             'без него действует 30-уровневый конвейер')
     parser.add_argument('--policy-sequence', action='store_true',
                         help='Сокращение для STRICT → SOFT-A → SOFT-B')
     parser.add_argument('--time-limit', dest='time_limit_seconds', type=float, default=None,
@@ -1427,6 +1476,8 @@ def main():
         if args.policy:
             parser.error('Используйте либо --policy, либо --policy-sequence, но не оба.')
         args.policies = list(PROVISIONAL_POLICY_ORDER)
+    if args.profile and (args.policy or args.policy_sequence):
+        parser.error('Профиль кампании несовместим с лестницей политик 30-профиля.')
     if args.time_limit_seconds is not None and args.time_limit_seconds < 0:
         parser.error('--time-limit не может быть отрицательным.')
     if args.max_checks is not None and args.max_checks < 1:

@@ -53,6 +53,17 @@ class CampaignDatasetAuditTest {
         assertTrue(productionErrors.toString().contains("Expected 30 levels"))
     }
 
+    @Test fun short15ProfileSelectsExplicitProductionValidator() {
+        val input = input().put("production", true)
+            .put("profile", JSONObject().put("id", "short15-release-v1"))
+        val errors = CampaignDatasetAudit.audit(input).getJSONArray("errors")
+        val reasons = (0 until errors.length()).map { errors.getJSONObject(it).getString("reason") }
+        assertTrue(reasons.any { "Expected 15 levels" in it || "levels.size" in it }, reasons.toString())
+        input.put("profile", JSONObject().put("id", "unknown-profile"))
+        val unknown = CampaignDatasetAudit.audit(input).getJSONArray("errors")
+        assertTrue(unknown.toString().contains("Unknown production profile"))
+    }
+
     @Test fun malformedAndForbiddenAssignmentsFailWithAddress() {
         for (word in listOf("токток", "картотека", "праймериз")) {
             val input = input()

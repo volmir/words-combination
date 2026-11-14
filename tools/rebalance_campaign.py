@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import build_campaign as generation
+import campaign_profiles
 from game_data_providers import atomic_json
 import simulate_campaign as simulation
 import validate_campaign as validation
@@ -25,8 +26,12 @@ def models(candidate, builder, hints, categories):
                                   builder.familiar, data, candidate['countMinLength']) for level in candidate['levels']]
 
 
-def assignment_alternatives(candidate, row, builder, knowledge, limit):
-    """Change only allowed assignments; numeric appearance curves stay untouched."""
+def assignment_alternatives(candidate, row, builder, knowledge, limit, profile=None):
+    """Change only allowed assignments; numeric appearance curves stay untouched.
+
+    В профиле short15 тема T6 закреплена (профессии), поэтому её нельзя
+    перебирать как обычную категорию 30-профиля.
+    """
     number = row['level']
     level = candidate['levels'][number - 1]
     local = builder.local(number, level['word'])
@@ -63,7 +68,7 @@ def assignment_alternatives(candidate, row, builder, knowledge, limit):
             for ending, pool in eligible.items():
                 if ending not in used_endings:
                     variants.append((dict(task, ending=ending), sum(map(knowledge, pool))))
-        elif kind == 'T6':
+        elif kind == 'T6' and profile is None:
             for category, pool in eligible.items():
                 if category not in used_themes:
                     words = [w for w in builder.answers(level['word']) if builder.category(w) == category]
@@ -78,10 +83,13 @@ def assignment_alternatives(candidate, row, builder, knowledge, limit):
         yield result, dict(kind='assignment', level=number, task=changed['id'], parameters=changed)
 
 
-def source_alternatives(candidate, row, builder, knowledge, limit):
+def source_alternatives(candidate, row, builder, knowledge, limit, profile=None):
+    if isinstance(profile, str):
+        profile = campaign_profiles.get(profile)
     number = row['level']
     stage = candidate['levels'][number-1]['stage']
-    lower, upper = validation.BANDS[stage-1]
+    lower, upper = (campaign_profiles.band_of(profile, number)
+                    if profile is not None else validation.BANDS[stage-1])
     selected = [l['word'] for l in candidate['levels']]
     harden = any(d['rule'] == 'max' for d in row['deviations'])
     options = []
@@ -198,7 +206,8 @@ def markdown(report):
 
 
 def run(args):
-    config = simulation.load_config(args.config)
+    profile = campaign_profiles.get(args.profile) if getattr(args, 'profile', None) else None
+    config = simulation.load_config(args.config, profile)
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / 'balanced_campaign.json').unlink(missing_ok=True)
     # Verify the same upstream artifacts as GEN-03, including local dump SHA-256.
@@ -207,7 +216,8 @@ def run(args):
     document = generation.selection.load_snapshot(args.profiles, args.words, args.previous_levels)
     proposal = json.loads(args.proposal.read_text(encoding='utf-8'))
     generation.verify_inputs(args, document, proposal)
-    builder = generation.CampaignBuilder(document['payload'], args.words.read_text().splitlines(), generation.load_config())
+    builder = generation.CampaignBuilder(document['payload'], args.words.read_text().splitlines(),
+                                         generation.load_config(), profile)
     # Pool is exactly the global recognizable target rule, not just words occurring in selected levels.
     assessments = {(r['word'], r['role']): r['assessment']['status'] for r in document['payload']['assessments']}
     pool = {w for w in builder.words if w not in validation.BANNED and builder.metadata[w]['noun']
@@ -248,13 +258,19 @@ def run(args):
         for mode in modes:
             for row in failed:
                 limit = config['rebalance']['source_slots' if mode is source_alternatives else 'alternatives_per_level']
-                yield from mode(current, row, builder, knowledge, limit)
+                yield from mode(current, row, builder, knowledge, limit, profile)
 
     report = search(candidate, config, evaluate, alternatives)
     report.update(schema='campaign-simulation-report-v1', config=config,
                   knowledge=dict(intercept=knowledge.intercept, mean=knowledge.mean, pool_size=knowledge.pool_size, pool_sha256=knowledge.pool_sha256),
                   inputs={name: validation.file_hash(getattr(args, name)) for name in
                           ('campaign', 'config', 'profiles', 'words', 'database', 'manifest', 'dump', 'hints')})
+    if profile is not None:
+        report['profile'] = dict(id=profile['id'], digest=campaign_profiles.digest(profile),
+                                 levels=profile['levels'], max_stars=profile['max_stars'],
+                                 alphabet_required=profile['alphabet_required'],
+                                 thresholds=profile['thresholds'])
+        report['inputs']['campaign_profiles_sha256'] = campaign_profiles.profiles_file_sha256()
     report['inputs']['processors'] = {name: validation.file_hash(Path(__file__).with_name(name)) for name in
                                      ('rebalance_campaign.py', 'simulate_campaign.py', 'validate_campaign.py', 'hint_text.py')}
     atomic_json(args.output / 'simulation_report.json', report)
@@ -267,6 +283,8 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, default=simulation.CONFIG)
+    parser.add_argument('--profile', choices=campaign_profiles.names(),
+                        help='Версионированный профиль кампании; без него действует 30/100-контракт')
     parser.add_argument('--campaign', type=Path, default=ROOT / 'build/reports/campaign/campaign.json')
     parser.add_argument('--profiles', type=Path)
     parser.add_argument('--proposal', type=Path, default=ROOT / 'build/reports/level_words_proposal.json')

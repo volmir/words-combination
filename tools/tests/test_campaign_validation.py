@@ -1,6 +1,7 @@
 """Independent GEN-04 checks on synthetic words and definitions only."""
 from copy import deepcopy
 from contextlib import redirect_stdout
+from itertools import islice, permutations
 import io
 import json
 from pathlib import Path
@@ -11,6 +12,8 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import build_campaign as generation
+import campaign_profiles as profiles
 import validate_campaign as audit
 
 
@@ -36,6 +39,85 @@ def fixture():
                          definitions=['Карта — карточный предмет для хранения небольших вещей.'])
     campaign['levels'][1]['tasks'][0]['words'] = sorted(audit.answers_for('картотекаа', words))
     return campaign, words, payload, hints
+
+
+def short15_fixture():
+    """Synthetic 15-level campaign; tags make recognizable answer sets disjoint."""
+    profile = profiles.get('short15-release-v1')
+    core = 'картотеканич'
+    tags = [ch for ch in audit.ALPHABET if ch not in core][:15]
+    counts = [42, 44, 54, 73, 80, 103, 112, 116, 134, 156, 168, 190, 199, 221, 215]
+    endings = {11: 'ок', 12: 'ик', 13: 'ка', 14: 'ник', 15: 'чик'}
+    prefixes = {
+        'ок': ['рт', 'тр'], 'ик': ['рат', 'тар'], 'ка': ['ртое', 'тоер'],
+        'ник': ['ртое', 'тоер'], 'чик': ['ртое', 'тоер'],
+    }
+    plan = generation.schedule(generation.load_config(), profile)
+    sources = [core + tag for tag in tags]
+    levels, dictionary, metadata = [], [], {}
+    hints = {}
+    target_pool = {}
+
+    def words_for(tag, count, ending):
+        normal = list(dict.fromkeys(tag + ''.join(p) for p in permutations(core, 4)))
+        long_words = list(dict.fromkeys(tag + ''.join(p) for p in islice(permutations(core, 8), 200)))[:3]
+        ending_words = [tag + prefix + ending for prefix in prefixes[ending]] if ending else []
+        pool = list(dict.fromkeys(long_words + ending_words + normal))
+        if len(pool) < count:
+            raise AssertionError('synthetic short15 pool is too small')
+        return pool[:count], long_words[0]
+
+    for number, source in enumerate(sources, 1):
+        plan_row = plan[number - 1]
+        tag = tags[number - 1]
+        ending = endings.get(number)
+        pool, long_target = words_for(tag, counts[number - 1], ending)
+        target_pool[number] = [w for w in pool if len(w) <= 6 and w not in pool[:3]]
+        dictionary.extend(pool)
+        for word in pool:
+            metadata[word] = dict(noun=True, labels=[],
+                                  category='professions' if number == 14 else 'objects',
+                                  category_source='rules:synthetic',
+                                  observed_frequency=dict(frequency=100))
+            hints[word] = dict(forms=[word], related=[], definitions=['Предмет для хранения небольших вещей.'])
+        tasks = []
+        t4_index = 0
+        for planned in plan_row['tasks']:
+            kind, key = planned['type'], planned['id']
+            if kind == 'T1':
+                task = dict(id=key, type=kind, n=planned['n'])
+            elif kind == 'T2':
+                task = dict(id=key, type=kind, n=planned['n'], letter=tag)
+            elif kind == 'T3':
+                task = dict(id=key, type=kind, minLength=planned['minLength'], hintTarget=long_target)
+            elif kind == 'T4':
+                selected = target_pool[number][t4_index:t4_index + planned['targetCount']]
+                t4_index += planned['targetCount']
+                task = dict(id=key, type=kind, targets=selected)
+            elif kind == 'T5':
+                task = dict(id=key, type=kind, minLength=planned['minLength'], ending=ending)
+            elif kind == 'T6':
+                task = dict(id=key, type=kind, category='professions', n=5, words=sorted(pool))
+            elif kind == 'T7':
+                task = dict(id=key, type=kind, n=10, letter=tag)
+            else:
+                raise AssertionError(kind)
+            tasks.append(task)
+        levels.append(dict(number=number, stage=plan_row['stage'], word=source,
+                           requiredStars=plan_row['requiredStars'], tasks=tasks))
+    for source in sources:
+        metadata[source] = dict(noun=True, labels=[], category='objects',
+                                category_source='rules:synthetic',
+                                observed_frequency=dict(frequency=100))
+        hints[source] = dict(forms=[source], related=[], definitions=['Предмет для хранения небольших вещей.'])
+    vocabulary = sorted(set(dictionary) | set(sources))
+    payload = dict(words=metadata,
+                   assessments=[dict(word=w, role=role, assessment=dict(status='suitable'))
+                                for w in vocabulary for role in ('source', 'target')],
+                   profiles={})
+    campaign = dict(version=2, countMinLength=4,
+                    stages=profiles.expected_stages(profile), levels=levels)
+    return campaign, dictionary, payload, hints, sources[:3]
 
 
 class IndependentCampaignValidationTest(unittest.TestCase):
@@ -160,6 +242,31 @@ class IndependentCampaignValidationTest(unittest.TestCase):
         self.setUp()
         self.payload['words']['карта']['labels'] = ['productive_diminutive']
         self.assert_issue(self.run_audit(), 'assigned_target', 1, 'riddle')
+
+    def test_short15_profile_is_checked_explicitly_and_old_30_is_not_its_shape(self):
+        campaign, words, payload, hints, previous = short15_fixture()
+        profile = profiles.get('short15-release-v1')
+        endings = json.loads((Path(audit.__file__).parent / 'campaign_config.json').read_text())['endings']
+        categories = json.loads((Path(audit.__file__).parent / 'categories.json').read_text())
+        report = audit.validate(campaign, words, payload, hints, previous, production=True,
+                                endings=endings, categories=categories, profile=profile)
+        self.assertTrue(report['installable'], report)
+        self.assertEqual(15, len(report['levels']))
+        self.assertEqual(49, sum(len(level['tasks']) for level in campaign['levels']))
+        self.assertEqual(105, len(report['jaccard']['pairs']))
+        self.assertEqual(0.0, report['jaccard']['mean'])
+        self.assertEqual(3, report['retained_sources'])
+        self.assertEqual(profile['id'], report['profile']['id'])
+        # Old 30/100 остаётся доступен тем же validator без profile.
+        old = audit.validate(campaign, words, payload, hints, previous, production=True)
+        self.assertFalse(old['installable'])
+        self.assertTrue(any(row['code'] == 'campaign_size' for row in old['balance_deviations']))
+        # Чужая короткая/длинная кампания с профилем отклоняется без падения.
+        tiny, tiny_words, tiny_payload, tiny_hints = fixture()
+        foreign = audit.validate(tiny, tiny_words, tiny_payload, tiny_hints, previous,
+                                 production=True, profile=profile)
+        self.assertFalse(foreign['installable'])
+        self.assertTrue(any(row['code'] == 'campaign_size' for row in foreign['balance_deviations']))
 
     def test_production_size_schedule_bounds_alphabet_and_retention(self):
         self.campaign['levels'][0]['requiredStars'] = 4
