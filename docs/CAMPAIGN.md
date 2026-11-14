@@ -429,3 +429,281 @@ Unicode-границы слов; прежняя запись «инвалид: 2
 решений. Узкие проверки 2026-11-13: 40 Python-тестов (`test_hint_text`,
 `test_category_classification`, `test_prepare_v2`) — OK; `:core:test` трёх
 классов подсказок — OK. Полный gate остаётся внешнему оркестратору.
+
+## DATA-01: выборочная попытка 2026-11-13 (после SEL-R04)
+
+**Статус: BLOCKED. Валидный кандидат v2 не получен и не установлен.**
+`GEN-02` отклонил последнего кандидата; `GEN-03`/`GEN-04`/`GEN-05` не
+запускались, `install` не выполнялся. Активная `data/` осталась v1: SHA-256
+`words.txt` `980a7e44d560c6b5efa3a46a38ca80828809afce02458c54d73a3b4e5b8f50b0`,
+`definitions.db` `718db097687d2246baebc138c121a9a17e889a6d881d4f07a496eddc4158f9fc`,
+`manifest.json` `06d8d824d75a9a1f6665a80e11d42cb187b0ebeaeaf634cc438ad035f7cc8491`.
+Поштучные кэши решений, журналы и независимые кэши cleanup/definitions
+сохранены; штатный `prepare` пересобрал только рабочий каталог `runs/<sha>`
+под тем же входом. Git-история не менялась.
+
+### Входы
+
+Проверены по `data/manifest.json`:
+
+- Kaikki: `.local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz`,
+  SHA-256 `98bebfb8013064d23bc6f0981b64cd097f64e098c9e434ebb97684c9606cc2da`;
+- FrequencyWords: `.local/frequency/frequencywords-2018-ru/ru_full.txt`,
+  SHA-256 `32dfd94138aea2667ec455dcc8512029e39bd4b8ea70b09410d569b69d511a30`,
+  commit `f8a65e6ddc17e0baa2e366a909986798d8dbe55b`;
+- staging-словарь: 20 106 слов,
+  `3b8a1339df5485ae2c5493cec3b5297e84173b94e57cf253c3543a8c85efc997`;
+- staging `definitions.db`: `6d0cd051b75babdb4435777f29e00419ff3ba7dbc8c0d9ae602cff7b18869d7f`,
+  `PRAGMA user_version=8`.
+
+Провайдер и модель взяты из окружения без подмены:
+`CATEGORY_PROVIDER=opencode`, `CATEGORY_MODEL=opencode/deepseek-v4.1-flash#max`,
+кэш `SEMANTIC_CACHE=/var/www/words-combination/.local/data01-oc-cache`.
+Версии контекста: `word-category-v1`, `word-category-decisions-v1`,
+`word-suitability-v1`, `word-suitability-decisions-v1`, порог категорий 0,8.
+Обработчики подсказок: `core-definition-hint-v2` / `hint-text-v1`.
+
+### Что фактически выполнено
+
+1. Повторена максимальная кампания без новых категорийных решений на
+   состоянии SEL-R04: `GEN-02` `infeasible`, 25/30 слотов, 8 старых
+   исходников, максимум 212 узнаваемых ответов, средний Jaccard 6,3549%,
+   максимальный 25,00%.
+2. По плану SEL-04 взята одна недостающая порция пригодности `target`:
+   100 пар, выбранных по покрытию верхних этапов и частоте. Это 3 батча
+   OpenCode, **72 новых ИИ-решения**, 28 решений правилами, 67 `suitable`
+   (39 ИИ + 28 правил), 19 `unsuitable`, 14 `insufficient_data`; кэш-попаданий
+   в этой порции 0. Время ИИ — 585,76 с.
+3. Канонический офлайн-прогон
+   `tools/prepare_v2.py prepare --selective` с теми же входами и кэшем:
+   **0 новых ИИ-решений**, 497 кэш-попаданий категорий, 352 кэш-попадания
+   пригодности, 2 389 категорий и 2 433 пары пригодности остались `pending`.
+   `GEN-02` снова `infeasible`; отчёт
+   `.local/data01-oc-cache/runs/cf75f869.../selective_report.json`, статус
+   `NEEDS_MORE_EVIDENCE`.
+4. Категорийные ИИ-решения в этой задаче не расходовались: после SEL-R04
+   уже есть 11 тем с глобальным резервом ≥40, чего достаточно для пяти
+   уникальных T6 на этапе Мастера. Дефицит 27 «тем» из плана — расширение
+   необязательного резерва, а не блокер VALID.
+
+### Измерения GEN-02
+
+Лучший кандидат: 30 уровней, 100 заданий/звёзд, 32 буквы без пропусков,
+30 разных исходников, 8 прежних исходников, `retained=8`. Но:
+
+| Показатель | Значение | Требование |
+|---|---:|---:|
+| Заполнимых слотов | **26 / 30** | 30 |
+| Источников с ≥250 узнаваемыми | **1** (`автоинспектор`, 251) | 5 на 26–30 |
+| Слоты 26–29 | 122, 34, 134, 68 | ≥250 |
+| Слот 30 | 251 | 250–700 |
+| Средний Jaccard | **8,1693%** | ≤3% |
+| Максимальный Jaccard | **29,7872%** | ≤15% |
+| Узнаваемый союз | 1 315 | — |
+| Топ-5000: узнаваемые / все | 649 / 1 481 | — |
+
+Причины отказа: `recognizable_range` для слотов 26–29; `mean_jaccard` и
+`max_jaccard`. Это не ослаблялось и не пересчитывалось под выборочный режим.
+
+### Почему остановка, а не ещё 328 решений
+
+Порция 100 пар подняла максимум узнаваемых с 212 до 251, но **ухудшила**
+Jaccard: средний 6,3549% → 8,1693%, максимальный 25,00% → 29,7872%. Причина —
+добавленные слова общие для многих исходников: они увеличивают пересечение
+быстрее, чем союз. Для четырёх слотов не хватает 29, 35, 36 и 51 узнаваемого
+ответа; нужны не общие, а специфичные для конкретных исходников цели, и
+одновременно более широкий узнаваемый пул. Исторический полный LEX-04
+располагал 16 588 ИИ-решениями и 7 913 target-suitable; текущий выборочный
+снимок даёт 247 target-suitable в выборочном индексе (3 811 target-suitable
+по полному входу с правилами и кэшем), а узнаваемый союз — 1 315. При
+лимите 400 новых решений и строгих порогах 3%/15% это не доказуемо как
+VALID. Оставшиеся 328 решений автоматически не расходовались: это не
+минимально необходимая порция, а расширение, которое по измеренному тренду
+ухудшает Jaccard.
+
+### Что не проверено
+
+- `GEN-03`, `GEN-04`, `GEN-05` не запускались: нет валидного `GEN-02`.
+- Независимая проверка `validate_campaign`, подсказки Python/JVM и
+  `:core:auditDefinitionHints` для нового кандидата не перезапускались:
+  кандидата нет. Существующий staging: 17 991 полезная подсказка (89,50%),
+  `audit.passed=false`, `rights_review.passed=false`,
+  `rights_policy=wiktionary-provisional-v1`.
+- Два детерминированных прогона полного пакета и `install` не выполнялись.
+- Release не разрешён; ручной аудит определений не заменялся ИИ-ответом.
+
+### Команды
+
+Порция пригодности (фактическая, сокращённо; полный лог —
+`build/reports/data01/suitability-batch-1/`):
+
+```sh
+python3 tools/assess_word_suitability.py \
+  --input <staging>/suitability_input.json \
+  --pairs-file build/reports/data01/suitability-batch-1/pairs.txt \
+  --cache "$SEMANTIC_CACHE/suitability" \
+  --reports build/reports/data01/suitability-batch-1 \
+  --model "$CATEGORY_MODEL" --provider "$CATEGORY_PROVIDER" --allow-network \
+  --max-new-decisions 100 --max-batches 4 --time-budget 1200 \
+  --batch-size 25 --timeout 300 --retries 0
+```
+
+Канонический офлайн-прогон (0 новых ИИ; завершился `NEEDS_MORE_EVIDENCE`):
+
+```sh
+python3 tools/prepare_v2.py prepare --selective \
+  --dump .local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz \
+  --manifest data/manifest.json \
+  --frequency-list .local/frequency/frequencywords-2018-ru/ru_full.txt \
+  --provider "$CATEGORY_PROVIDER" --model "$CATEGORY_MODEL" \
+  --cache "$SEMANTIC_CACHE" --package .local/data01-oc-package \
+  --iterations 1 --max-rounds 1 --max-new-decisions 1 --max-batches 1 \
+  --time-budget 1 --total-new-decisions 2000 --total-time-budget 3000 \
+  --jvm-classpath "$(cat .local/data01-jvm/classpath.txt)"
+```
+
+Точная команда возобновления с бюджетом (после добавления специфичных для
+исходников пар; не запускать вслепую):
+
+```sh
+python3 tools/prepare_v2.py prepare --selective \
+  --dump .local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz \
+  --manifest data/manifest.json \
+  --frequency-list .local/frequency/frequencywords-2018-ru/ru_full.txt \
+  --provider "$CATEGORY_PROVIDER" --model "$CATEGORY_MODEL" \
+  --cache "$SEMANTIC_CACHE" --package .local/data01-oc-package \
+  --iterations 1 --max-rounds 1 \
+  --max-new-decisions 300 --max-batches 20 --time-budget 2400 \
+  --total-new-decisions 2000 --total-time-budget 3300 --allow-network \
+  --jvm-classpath "$(cat .local/data01-jvm/classpath.txt)"
+```
+
+Бюджет: 630 новых решений SEL-R01…R04 + 72 DATA-01 = **702 из 2000**;
+в этой задаче израсходовано 72 из 400, остаток 328. Новые и кэшированные
+решения в отчётах разделены. Точность модели не измерена: независимой
+разметки нет. Машиночитаемая сводка —
+`build/reports/data01/data01-selective-20261113.json`.
+
+## DATA-01: повторная проверка 2026-11-14
+
+**Статус: BLOCKED. VALID-кандидат v2 не получен.** Новых ИИ-вызовов в этом
+продолжении — **0**; использованы только существующие совместимые кэши и
+профили. `data/` не менялась: `words.txt`
+`980a7e44d560c6b5efa3a46a38ca80828809afce02458c54d73a3b4e5b8f50b0`,
+`levels.json` `e4ded7a9bdfc5855c69bd167abb03c25d5291652a1504956d3a0e99e4742e73a`,
+`definitions.db` `718db097687d2246baebc138c121a9a17e889a6d881d4f07a496eddc4158f9fc`,
+`manifest.json` `06d8d824d75a9a1f6665a80e11d42cb187b0ebeaeaf634cc438ad035f7cc8491`.
+Бюджет остаётся **702 из 2000** (630 SEL-R01…R04 + 72 DATA-01); в DATA-01
+израсходовано 72 из 400, остаток 328. Машиночитаемая сводка —
+`build/reports/data01/data01-continuation-20261114.json`.
+
+### Входы и версии
+
+Проверены по `data/manifest.json`: Kaikki
+`.local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz`, SHA-256
+`98bebfb8013064d23bc6f0981b64cd097f64e098c9e434ebb97684c9606cc2da`;
+FrequencyWords `.local/frequency/frequencywords-2018-ru/ru_full.txt`, SHA-256
+`32dfd94138aea2667ec455dcc8512029e39bd4b8ea70b09410d569b69d511a30`.
+Провайдер и модель — из окружения без подмены: `opencode` /
+`opencode/deepseek-v4.1-flash#max`; `SEMANTIC_CACHE=.local/data01-oc-cache`.
+Контексты `word-category-v1`, `word-category-decisions-v1`,
+`word-suitability-v1`, `word-suitability-decisions-v1`; порог категорий 0,8;
+обработчики подсказок `core-definition-hint-v2` / `hint-text-v1`.
+
+Кэш профилей профиля `20 106` слов:
+`.local/data01-oc-cache/profiles/97db2c28cfbdef78ef6f2f523e9f02510c27b52fb14e7beffb4ffb37bda14dd9.json.gz`.
+Семантические счётчики на этом входе (target): правила 3 592 `suitable` /
+8 098 `unsuitable`; ИИ 219 `suitable` / 63 `unsuitable` / 47
+`insufficient_data`; 8 087 `pending`. Source: правила 2 597 `suitable` /
+25 `unsuitable`, ИИ 23 `suitable`, 6 297 `pending`. Категории в метаданных:
+2 377 правил, 160 ИИ, 132 `ai_other`, 205 `ai_low_confidence`, 17 248
+`unknown`. Это structural/cache/AI/unknown по отдельности; новых ИИ-решений
+нет.
+
+### Что проверено без сети
+
+1. Полный `GEN-02` на текущем кэше: 26/30 слотов, 8 старых исходников,
+   максимум 212 узнаваемых, средний Jaccard 6,3549%, максимальный 25,00%;
+   причина — `recognizable_range` для четырёх верхних слотов.
+2. Для пяти верхних слотов (26–30) построен максимальный план без новых
+   ИИ: 5-клика `преследование, автоинспектор, проблематика, документалист,
+   благодарность`, дефицит 319 узнаваемых ответов. Детерминированный
+   pattern-расчёт даёт **233** различных target-слова; если пометить их все
+   `suitable`, получаются 5 источников ≥250, максимум Jaccard среди них
+   14,4989%. Это верхняя граница возможного без новых ИИ, а не кандидат.
+3. `GEN-02` на этом смоделированном профиле: 30/30 слотов, 32 буквы, но
+   `retained=7`; средний Jaccard 7,6594%, максимальный 28,2609%. Принудительное
+   сохранение 8 старых источников и `refine_jaccard`: средний 6,6268%,
+   максимальный 25,3521% — всё ещё выше 3%/15%.
+4. Альтернативная 5-клика из плана SEL-04
+   (`приостановка, подстрекатель, преследование, документалист, проблематика`)
+   требует 189 target-слов и достигает 250 у всех пяти, но `GEN-02` даёт
+   30/30, `retained=7`, отсутствует `й`, средний Jaccard 7,4384%,
+   максимальный 26,1194%.
+5. Лучший найденный минимум Jaccard для 25 нижних слотов (1–25): сумма
+   12,7123 по 300 парам (средний 4,2374%). Точная min-cost-flow оценка
+   high-low для верхней пятёрки — 9,5510 по 125 парам; high-high — 0,9908
+   по 10 парам. Итого измеренный минимум
+   **23,2541 / 435 = 5,3458%** до добавления новых слов. Чтобы уложиться в
+   3%, сумма должна быть ≤13,05; дефицит — более 10,2 пункта.
+6. Даже если добавить все **624** доступных эксклюзивных target-слова
+   нижним источникам (больше остатка бюджета 328), low-low сумма падает
+   только до 10,4525; добавление 233 слов — до 11,6764. По измеренному
+   тренду сокращение low-low до ≤2,51 (в 5 раз) в этом пуле недостижимо.
+   Поэтому остаток 328 решений не расходовался: он не может закрыть
+   разрыв, а расширение бюджета или изменение правил — решение владельца,
+   не DATA-01.
+
+### Почему это не ложный успех
+
+`GEN-02` не признан валидным; `GEN-03`, `GEN-04`, `GEN-05`,
+`validate_campaign`, проверка подсказок Python/JVM,
+`:core:auditDefinitionHints`, два детерминированных прогона и `install`
+не запускались. Определения и права не переоценивались:
+`audit.passed=false`, `rights_review.passed=false`,
+`rights_policy=wiktionary-provisional-v1`. Публичный release запрещён.
+Активная `data/` осталась v1; кэши `.local/data01-cache`,
+`.local/data01-oc-cache` и независимые кэши cleanup/definitions сохранены.
+Осиротевших дочерних процессов нет.
+
+### Команды
+
+Канонический офлайн-прогон 2026-11-14 завершился за **5m02,749s**:
+`NEEDS_MORE_EVIDENCE`, `GEN-02: infeasible`, **0** новых ИИ-решений,
+497 кэш-категорий и 352 кэш-пригодности, 2 389/2 433 `pending`; отчёт
+`.local/data01-oc-cache/runs/eb80087458575123948d8906124891bf24f3ff181c0dfac2f12b25cfed4b773e/selective_report.json`.
+Команда (0 новых ИИ-решений; `data/` не меняет):
+
+```sh
+python3 tools/prepare_v2.py prepare --selective \
+  --dump .local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz \
+  --manifest data/manifest.json \
+  --frequency-list .local/frequency/frequencywords-2018-ru/ru_full.txt \
+  --provider "$CATEGORY_PROVIDER" --model "$CATEGORY_MODEL" \
+  --cache "$SEMANTIC_CACHE" --package .local/data01-oc-package \
+  --iterations 1 --max-rounds 1 \
+  --max-new-decisions 1 --max-batches 1 --time-budget 1 \
+  --total-new-decisions 2000 --total-time-budget 3000 \
+  --jvm-classpath "$(cat .local/data01-jvm/classpath.txt)"
+```
+
+Целевой батч (не запускался; команда для владельца при расширении бюджета
+или изменении правил):
+
+```sh
+python3 tools/assess_word_suitability.py \
+  --input <staging>/suitability_input.json \
+  --pairs-file <targeted_pairs.txt> \
+  --cache "$SEMANTIC_CACHE/suitability" \
+  --reports build/reports/data01/suitability-targeted \
+  --model "$CATEGORY_MODEL" --provider "$CATEGORY_PROVIDER" --allow-network \
+  --max-new-decisions <N> --max-batches <M> --time-budget <S> \
+  --batch-size 25 --timeout 300 --retries 0
+```
+
+Точная команда возобновления после решения владельца — та же, что выше, с
+`--allow-network` и явными `--max-new-decisions`/`--max-batches`/
+`--time-budget`. Без расширения бюджета или изменения контракта v2
+(например, порога Jaccard либо требований к верхним диапазонам) VALID-кандидат
+в этом пуле не достигается. Точность модели не измерена: независимой
+разметки нет.
