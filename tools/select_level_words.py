@@ -21,6 +21,23 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / 'tools/level_selection_config.json'
 ALPHABET = ROOT / 'core/src/main/kotlin/com/example/sostavslova/core/Alphabet.kt'
 SCHEMA = 'level-word-proposal-v1'
+# Search-only penalty per missing/out-of-band slot. It ranks intermediate
+# candidates; it never turns a band violation into an installable result.
+DEFICIT_WEIGHT = 100.0
+
+
+class RefinementResult(dict):
+    """Structured refinement outcome; legacy (best_found, trace) unpacking works."""
+
+    def __iter__(self):
+        yield self['best_found']
+        yield self['trace']
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError as error:
+            raise AttributeError(name) from error
 
 
 def read_alphabet(path=ALPHABET):
@@ -227,9 +244,20 @@ class Selector:
         return sorted(chosen)
 
     def _pair(self, left, right):
+        if not left or not right:
+            return 0.0
         a, b = self.rec_bits[left], self.rec_bits[right]
         union = (a | b).bit_count()
         return (a & b).bit_count() / union if union else 0.0
+
+    @staticmethod
+    def word_key(words):
+        """Stable tie-break for candidates that may include unfilled slots."""
+        return tuple(word or '' for word in words)
+
+    def slot_deficit(self, slot, word):
+        """Band shortfall of one slot; empty slots cost a full slot."""
+        return 1.0 if word is None else self.range_distance(slot, word)
 
     def reservations(self, selected):
         groups = {'targets_T3_T4': {}, 'suffixes_T5': {}, 'themes_T6': {}}
@@ -320,6 +348,34 @@ class Selector:
             score += (len(m['missing_letters']), -min(m['retained'], self.config['retain_min']))
         return score, m, failures, reservations
 
+    def optimization_score(self, selected):
+        """Order intermediate candidates; evaluate() remains the final validator.
+
+        Missing slots and range shortfalls are explicit penalties so refinement
+        can improve a 26/30 candidate. They are never removed from final
+        validation: a returned candidate is valid only when evaluate() has no
+        failures at all.
+        """
+        _, metrics, failures, _ = self.evaluate(selected)
+        gap = len(selected) < self.size or any(word is None for word in selected)
+        allowed = {'mean_jaccard', 'max_jaccard', 'recognizable_range'}
+        if gap:
+            allowed |= {'slot_count', 'empty_slot', 'alphabet_coverage', 'retained_min'}
+        other = sum(row['code'] not in allowed for row in failures)
+        missing = self.size - sum(word is not None for word in selected)
+        deficit = missing + sum(self.slot_deficit(slot, word)
+                                for slot, word in enumerate(selected) if word is not None)
+
+        def excess(value, limit):
+            return max(value - limit, 0.0) / limit
+
+        jaccard = (excess(metrics['mean_jaccard'], self.config['mean_jaccard_max']) +
+                   excess(metrics['max_jaccard'], self.config['max_jaccard_max']))
+        return (other, round(deficit, 12), round(jaccard, 12),
+                -len(metrics['preferred']), -metrics['top5000_recognizable_covered'],
+                -metrics['all_answers_union'], len(metrics['missing_letters']),
+                -min(metrics['retained'], self.config['retain_min']))
+
     def improve(self, selected):
         selected = list(selected)
         before = tuple(selected)
@@ -350,11 +406,45 @@ class Selector:
         return (best if best is not None else selected), before != tuple(best or selected)
 
     def refine_jaccard(self, selected):
-        """Bounded local moves over full pools; validate every saved candidate."""
-        score, _, failures, _ = self.evaluate(selected)
-        if any(row['code'] not in ('mean_jaccard', 'max_jaccard') for row in failures):
-            return list(selected), []
-        best, seed_words, trace = list(selected), list(selected), []
+        """Optimize overlap while allowing explicitly penalized band deficits.
+
+        An intermediate 26/30 candidate or a full-length candidate with empty
+        ranges may enter refinement. The result reports hard matching
+        infeasibility, search exhaustion and the best found candidate
+        separately. Only evaluate() decides installability; it is never
+        weakened here.
+        """
+        original = list(selected)
+        words = original + [None] * max(0, self.size - len(original))
+        if len(words) > self.size:
+            words = words[:self.size]
+        _, _, failures, _ = self.evaluate(words)
+        gap = len(original) < self.size or any(word is None for word in words)
+        allowed = {'mean_jaccard', 'max_jaccard', 'recognizable_range'}
+        if gap:
+            allowed |= {'slot_count', 'empty_slot', 'alphabet_coverage', 'retained_min'}
+        feasibility = self.impossibility()
+        source_matching = feasibility['distinct_source_matching']
+        hard_by_matching = source_matching['matched'] < self.size
+
+        def result(best, trace):
+            _, _, final_failures, _ = self.evaluate(best)
+            valid = not final_failures
+            return RefinementResult(
+                best_found=list(best), trace=trace,
+                hard_infeasible_by_matching=hard_by_matching,
+                hard_infeasible=feasibility['proven_infeasible'],
+                search_exhausted=not valid and not feasibility['proven_infeasible'],
+                valid=valid, violations=final_failures,
+                matching=source_matching, seed=self.config['seed'])
+
+        if any(row['code'] not in allowed for row in failures):
+            return result(original, [])
+
+        best = words.copy()
+        best_key = self.word_key(best)
+        best_score = self.optimization_score(best)
+        seed_words, trace = words.copy(), []
         for word in sorted(PREFERRED_SOURCES & self.eligible - set(seed_words)):
             choices = []
             for slot, current_word in enumerate(seed_words):
@@ -362,18 +452,20 @@ class Selector:
                     continue
                 proposal = seed_words.copy()
                 proposal[slot] = word
-                proposal_score, _, proposal_failures, _ = self.evaluate(proposal)
-                if all(row['code'] in ('mean_jaccard', 'max_jaccard') for row in proposal_failures):
-                    choices.append((proposal_score, tuple(proposal), slot))
+                _, _, proposal_failures, _ = self.evaluate(proposal)
+                if all(row['code'] in allowed for row in proposal_failures):
+                    choices.append((self.optimization_score(proposal),
+                                    self.word_key(proposal), proposal, slot))
             if choices:
-                proposal_score, proposal, slot = min(choices)
-                seed_words = list(proposal)
+                proposal_score, _, proposal, slot = min(choices)
+                seed_words = proposal
                 trace.append(dict(phase='preferred_seed', word=word, slot=slot+1, score=proposal_score))
-        seed_score, _, seed_failures, _ = self.evaluate(seed_words)
+        _, _, seed_failures, _ = self.evaluate(seed_words)
         if not seed_failures:
-            return seed_words, trace
-        if (seed_score, tuple(seed_words)) < (score, tuple(best)):
-            best, score = seed_words.copy(), seed_score
+            return result(seed_words, trace)
+        seed_score, seed_key = self.optimization_score(seed_words), self.word_key(seed_words)
+        if (seed_score, seed_key) < (best_score, best_key):
+            best, best_score, best_key = seed_words.copy(), seed_score, seed_key
         pools = [sorted(w for w in self.candidates if not self.local[i, w]) for i in range(self.size)]
         old_pools = [[w for w in pool if w in self.old] for pool in pools]
         masks = {w: sum(1 << self.alphabet.index(c) for c in set(w)) for w in self.candidates}
@@ -384,10 +476,14 @@ class Selector:
         preferred = set(seed_words) & PREFERRED_SOURCES
 
         def matrix(words):
-            return [[self.pair(a, b) if i != j else 0.0 for j, b in enumerate(words)]
-                    for i, a in enumerate(words)]
+            return [[self.pair(a, b) if i != j and a and b else 0.0
+                     for j, b in enumerate(words)] for i, a in enumerate(words)]
+
+        def deficit_energy(words):
+            return sum(self.slot_deficit(slot, word) for slot, word in enumerate(words))
 
         # First reduce total overlap, then remove the last excessive pairs.
+        # The deficit term keeps filling missing bands while Jaccard is reduced.
         # These weights guide search; the final validator still uses exact bounds.
         for penalty in (1000, 1000000):
             rng = random.Random(self.config['seed'])
@@ -395,14 +491,15 @@ class Selector:
             def pair_cost(value):
                 return value + penalty*max(value-pair_limit, 0)**2
 
-            def energy(values):
-                return sum(pair_cost(values[i][j]) for i in range(self.size) for j in range(i))
+            def energy(values, words):
+                return (sum(pair_cost(values[i][j]) for i in range(self.size) for j in range(i)) +
+                        DEFICIT_WEIGHT*deficit_energy(words))
 
-            lowest_energy = energy(matrix(seed_words))
+            lowest_energy = energy(matrix(seed_words), seed_words)
             for restart in range(limits['refinement_restarts']):
                 words = seed_words.copy()
                 values = matrix(words)
-                current = energy(values)
+                current = energy(values, words)
                 retained = len(set(words) & self.old)
                 accepted = 0
                 steps = limits['refinement_iterations']
@@ -410,10 +507,12 @@ class Selector:
                     slot = rng.randrange(self.size)
                     if step % 50 == 0:
                         other = rng.randrange(self.size)
-                        if not self.local[slot, words[other]] and not self.local[other, words[slot]]:
+                        if (words[slot] is not None and words[other] is not None and
+                                not self.local[slot, words[other]] and
+                                not self.local[other, words[slot]]):
                             words[slot], words[other] = words[other], words[slot]
                             values = matrix(words)
-                            current = energy(values)
+                            current = energy(values, words)
                         continue
                     # Preferences stay soft: the final restart can replace them.
                     if (penalty == 1000 or restart+1 < limits['refinement_restarts']) and words[slot] in preferred:
@@ -428,13 +527,16 @@ class Selector:
                     if not self.config['retain_min'] <= new_retained <= self.config['retain_max']:
                         continue
                     mask = masks[word]
-                    for i, w in enumerate(words):
-                        if i != slot:
-                            mask |= masks[w]
+                    for i, current_word in enumerate(words):
+                        if i != slot and current_word is not None:
+                            mask |= masks[current_word]
                     if mask != full_mask:
                         continue
-                    row = [self.pair(word, w) if j != slot else 0.0 for j, w in enumerate(words)]
-                    delta = sum(pair_cost(v)-pair_cost(old) for v, old in zip(row, values[slot]))
+                    row = [self.pair(word, current_word) if j != slot and current_word else 0.0
+                           for j, current_word in enumerate(words)]
+                    delta = (sum(pair_cost(v)-pair_cost(old) for v, old in zip(row, values[slot])) +
+                             DEFICIT_WEIGHT*(self.slot_deficit(slot, word) -
+                                              self.slot_deficit(slot, words[slot])))
                     start_temperature = .3 if penalty == 1000 else 1.0
                     temperature = start_temperature*(.002/start_temperature)**(step/steps)
                     if delta > 0 and rng.random() >= math.exp(-delta/temperature):
@@ -445,21 +547,23 @@ class Selector:
                     current += delta
                     accepted += 1
                     if current <= sum_limit+1e-10 and max(map(max, values)) <= pair_limit+1e-12:
-                        candidate_score, _, candidate_failures, _ = self.evaluate(words)
+                        _, _, candidate_failures, _ = self.evaluate(words)
                         if not candidate_failures:
                             trace.append(dict(phase='jaccard_refinement', penalty=penalty, restart=restart,
-                                              iterations=step+1, accepted=accepted, score=candidate_score))
-                            return words.copy(), trace
+                                              iterations=step+1, accepted=accepted,
+                                              score=self.optimization_score(words)))
+                            return result(words, trace)
                     if current < lowest_energy-1e-10:
                         reservations, _ = self.reservations(words)
-                        if all(not result['unmatched'] for result in reservations.values()):
+                        if all(not reservation['unmatched'] for reservation in reservations.values()):
                             seed_words, lowest_energy = words.copy(), current
-                            candidate_score = self.evaluate(words)[0]
-                            if (candidate_score, tuple(words)) < (score, tuple(best)):
-                                best, score = words.copy(), candidate_score
+                            candidate_score = self.optimization_score(words)
+                            candidate_key = self.word_key(words)
+                            if (candidate_score, candidate_key) < (best_score, best_key):
+                                best, best_score, best_key = words.copy(), candidate_score, candidate_key
                 trace.append(dict(phase='jaccard_refinement', penalty=penalty, restart=restart,
-                                  iterations=steps, accepted=accepted, score=score))
-        return best, trace
+                                  iterations=steps, accepted=accepted, score=best_score))
+        return result(best, trace)
 
     def search(self):
         rng, best, trace = random.Random(self.config['seed']), None, []
@@ -491,8 +595,8 @@ class Selector:
             key = (score, tuple(w or '' for w in selected))
             if best is None or key < best[0]:
                 best = key, selected
-        refined, refinement_trace = self.refine_jaccard(best[1])
-        return refined, trace+refinement_trace
+        refinement = self.refine_jaccard(best[1])
+        return refinement['best_found'], trace+refinement['trace']
 
     def impossibility(self):
         feasible = {f'{slot + 1:02}': {w for w in self.candidates if not self.local[slot, w]}
@@ -509,7 +613,9 @@ class Selector:
         missing = ''.join(c for c in self.alphabet if c not in letters)
         if missing:
             reasons.append('В объединении подходящих кандидатур отсутствуют буквы: ' + missing + '.')
-        return {'proven_infeasible': bool(reasons), 'reasons': reasons,
+        return {'proven_infeasible': bool(reasons),
+                'hard_infeasible_by_matching': source_matching['matched'] < self.size,
+                'reasons': reasons,
                 'slot_candidate_counts': {s: len(v) for s, v in feasible.items()},
                 'distinct_source_matching': source_matching, 'old_eligible_any_slot': sorted(old_possible),
                 'eligible_source_count': len(self.candidates),
@@ -555,6 +661,7 @@ def make_proposal(selector, selected, trace, inputs):
     feasibility = selector.impossibility()
     installable = not failures
     status = 'valid' if installable else 'infeasible' if feasibility['proven_infeasible'] else 'search_exhausted'
+    hard_by_matching = feasibility['distinct_source_matching']['matched'] < selector.size
     spares = selector.spares(selected)
     preferred = []
     for word in sorted(PREFERRED_SOURCES):
@@ -599,6 +706,9 @@ def make_proposal(selector, selected, trace, inputs):
                           'Автоматическая замена/перестановка для общих границ, покрытия и запаса.'),
                       'spares': spares[slot]})
     return {'schema': SCHEMA, 'status': status, 'installable': installable,
+            'hard_infeasible_by_matching': hard_by_matching,
+            'search_exhausted': status == 'search_exhausted',
+            'best_found': list(selected),
             'diagnostic_only': not installable, 'inputs': inputs, 'config': selector.config,
             'score': score, 'search_trace': trace, 'feasibility': feasibility,
             'semantic_coverage': selector.semantic_coverage,

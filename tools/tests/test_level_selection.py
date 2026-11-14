@@ -40,6 +40,145 @@ class LevelSelectionTest(unittest.TestCase):
         return selection.Selector(dict(profiles=self.measured, words=self.metadata),
                                   self.words, self.previous, self.config, alphabet)
 
+    def synthetic_campaign(self):
+        """30 slots: 26 low-band sources and four 250+ candidates for slots 27-30."""
+        config = selection.load_config()
+        config.update(levels=30, retain_min=0, retain_max=0)
+        config['bands'] = [dict(first=1, last=26, min=2, max=5),
+                           dict(first=27, last=30, min=250, max=700)]
+        config['search'].update(restarts=1, max_iterations=1,
+                                refinement_restarts=1, refinement_iterations=600)
+        config['mean_jaccard_max'] = 1.0
+        config['max_jaccard_max'] = 1.0
+        letters = 'вгдежзиклмнопрстуфхцчшщъыьэюя'
+        counter = [0]
+
+        def answer():
+            number = counter[0]
+            counter[0] += 1
+            result = []
+            for _ in range(4):
+                result.append(letters[number % len(letters)])
+                number //= len(letters)
+            return ''.join(result)
+
+        def source(number):
+            return ''.join('аб'[int(bit)] for bit in format(number, '08b'))
+
+        common = [answer(), answer()]
+        metadata = {}
+
+        def remember(word, category):
+            metadata[word] = dict(category=category, category_source='rules:synthetic',
+                                  observed_frequency=dict(frequency=100, freq_rank=1))
+
+        for word in common:
+            remember(word, 'common')
+        low_sources = [source(i) for i in range(30)]
+        low_answers = []
+        for i in range(30):
+            unique = [answer(), answer()]
+            for word in unique:
+                remember(word, f'theme-low-{i}')
+            low_answers.append(common + unique)
+        high_sources = [source(i) for i in range(30, 34)]
+        high_answers = []
+        for i in range(4):
+            answers = [answer() for _ in range(250)]
+            for word in answers:
+                remember(word, f'theme-high-{i}')
+            high_answers.append(answers)
+        target_letters = 'гдежзиклмнопрстуфхцчшщъыьэюя'
+        targets = []
+        for number in range(60):
+            value, word = number, []
+            for _ in range(6):
+                word.append(target_letters[value % len(target_letters)])
+                value //= len(target_letters)
+            targets.append(''.join(word))
+        profile_config = profiles.load_config(profiles.CONFIG)
+
+        def profile(answers):
+            metrics = profiles.metrics(answers, metadata, profile_config)
+            return dict(source_eligible=True, answers=answers, recognizable_answers=answers,
+                        assigned_targets=targets, riddle_targets=targets,
+                        recognizable=metrics, all=metrics)
+
+        measured = {}
+        for sources, answers in ((low_sources, low_answers), (high_sources, high_answers)):
+            for word, rows in zip(sources, answers):
+                measured[word] = profile(rows)
+        selector = selection.Selector(dict(profiles=measured, words=metadata),
+                                      set(metadata), [], config, 'аб')
+        return selector, measured, metadata, low_sources, high_sources, config
+
+    def test_incomplete_26_of_30_improves_after_pool_expansion(self):
+        full, measured, metadata, low_sources, high_sources, config = self.synthetic_campaign()
+        partial = selection.Selector(
+            dict(profiles={word: measured[word] for word in low_sources}, words=metadata),
+            set(metadata), [], config, 'аб')
+        selected = low_sources[:26]
+        before = partial.refine_jaccard(selected)
+        self.assertTrue(before['hard_infeasible_by_matching'])
+        self.assertFalse(before['search_exhausted'])
+        self.assertFalse(before['valid'])
+        self.assertEqual(26, sum(word is not None for word in before['best_found']))
+        before_mean = partial.measure(before['best_found'])['mean_jaccard']
+
+        after = full.refine_jaccard(selected)
+        self.assertFalse(after['hard_infeasible_by_matching'])
+        self.assertFalse(after['search_exhausted'])
+        self.assertTrue(after['valid'])
+        self.assertFalse(full.evaluate(after['best_found'])[2])
+        self.assertEqual(30, sum(word is not None for word in after['best_found']))
+        self.assertTrue(set(high_sources) <= set(after['best_found']))
+        after_mean = full.measure(after['best_found'])['mean_jaccard']
+        self.assertLess(after_mean, before_mean)
+
+        # The same incomplete result may arrive as 30 filled slots, four of
+        # them outside the 250+ band; refinement must still be able to repair it.
+        full_length = low_sources[:26] + low_sources[26:30]
+        repaired = full.refine_jaccard(full_length)
+        self.assertTrue(repaired['valid'])
+        self.assertTrue(set(high_sources) <= set(repaired['best_found']))
+
+        # The final validator still rejects a 250+ band filled with a low-band word.
+        invalid = after['best_found'].copy()
+        invalid[26] = low_sources[0]
+        codes = {row['code'] for row in full.evaluate(invalid)[2]}
+        self.assertIn('recognizable_range', codes)
+
+        proposal = selection.make_proposal(full, after['best_found'], after['trace'], {})
+        self.assertTrue(proposal['installable'])
+        self.assertFalse(proposal['hard_infeasible_by_matching'])
+        self.assertFalse(proposal['search_exhausted'])
+        self.assertEqual(after['best_found'], proposal['best_found'])
+
+    def test_one_250_plus_candidate_cannot_fill_30_slots(self):
+        full, measured, metadata, _, high_sources, config = self.synthetic_campaign()
+        candidate = high_sources[0]
+        self.assertEqual(250, len(measured[candidate]['recognizable_answers']))
+        config = deepcopy(config)
+        config['bands'] = [dict(first=1, last=30, min=250, max=700)]
+        config['search'].update(refinement_iterations=20)
+        selector = selection.Selector(
+            dict(profiles={candidate: measured[candidate]}, words=metadata),
+            set(metadata), [], config, 'аб')
+        result = selector.refine_jaccard([candidate] + [None] * 29)
+        self.assertTrue(result['hard_infeasible_by_matching'])
+        self.assertFalse(result['search_exhausted'])
+        self.assertFalse(result['valid'])
+        self.assertTrue(selector.impossibility()['hard_infeasible_by_matching'])
+        self.assertEqual(1, result['matching']['matched'])
+        self.assertEqual(1, sum(word is not None for word in result['best_found']))
+
+        proposal = selection.make_proposal(selector, result['best_found'], result['trace'], {})
+        self.assertEqual('infeasible', proposal['status'])
+        self.assertFalse(proposal['installable'])
+        self.assertTrue(proposal['hard_infeasible_by_matching'])
+        self.assertFalse(proposal['search_exhausted'])
+        self.assertEqual(1, proposal['feasibility']['distinct_source_matching']['matched'])
+
     def test_simple_jaccard_and_empty_sets(self):
         self.assertEqual(1 / 3, selection.jaccard(['кот', 'ток', 'кот'], ['ток', 'сок']))
         self.assertEqual(0, selection.jaccard([], []))
@@ -133,6 +272,8 @@ class LevelSelectionTest(unittest.TestCase):
         self.assertEqual('search_exhausted', proposal['status'])
         self.assertFalse(proposal['installable'])
         self.assertFalse(proposal['feasibility']['proven_infeasible'])
+        self.assertFalse(proposal['hard_infeasible_by_matching'])
+        self.assertTrue(proposal['search_exhausted'])
         greedy = [row for row in trace if row.get('phase') != 'jaccard_refinement']
         refinement = [row for row in trace if row.get('phase') == 'jaccard_refinement']
         self.assertEqual(1, len(greedy))
