@@ -284,6 +284,194 @@ class LevelSelectionTest(unittest.TestCase):
     def test_wrong_number_of_slots_cannot_pass_final_validation(self):
         s = self.selector()
         self.assertTrue(any(v['code'] == 'slot_count' for v in s.evaluate(self.sources[:2])[2]))
+        self.assertTrue(any(v['code'] == 'slot_count'
+                            for v in s.evaluate(self.sources + [self.sources[0]])[2]))
+
+    def test_achievable_full_pool_keeps_max_jaccard_at_or_below_15_percent(self):
+        thresholds = dict(selection.policy_thresholds('STRICT'),
+                          retain_min=self.config['retain_min'])
+        s = selection.Selector(dict(profiles=self.measured, words=self.metadata),
+                               self.words, self.previous, self.config, 'аб',
+                               thresholds=thresholds, policy='STRICT')
+        selected, trace = s.search()
+        proposal = selection.make_proposal(s, selected, trace, {})
+        self.assertTrue(proposal['installable'])
+        self.assertTrue(proposal['strict_installable'])
+        self.assertEqual('STRICT', proposal['policy'])
+        self.assertLessEqual(proposal['metrics']['max_jaccard'], 0.15)
+        self.assertEqual(0, proposal['pool']['admissible_omitted_without_report'])
+        self.assertGreater(proposal['search_stats']['checks'], 0)
+        self.assertEqual('STRICT', proposal['search_stats']['policy'])
+        self.assertTrue(proposal['search_stats']['seed'])
+        self.assertFalse(proposal['search_stats']['timed_out'])
+
+    def test_impossible_full_pool_keeps_max_jaccard_failure_diagnostic(self):
+        # Three distinct sources with identical recognizable sets: every pair
+        # has J = 1.0, so the STRICT max-J boundary is impossible to satisfy.
+        for word in self.sources:
+            self.measured[word] = deepcopy(self.measured[self.sources[0]])
+        thresholds = dict(selection.policy_thresholds('STRICT'),
+                          retain_min=self.config['retain_min'])
+        s = selection.Selector(dict(profiles=self.measured, words=self.metadata),
+                               self.words, self.previous, self.config, 'аб',
+                               thresholds=thresholds, policy='STRICT')
+        selected, trace = s.search()
+        proposal = selection.make_proposal(s, selected, trace, {})
+        self.assertFalse(proposal['installable'])
+        self.assertTrue(any(v['code'] == 'max_jaccard'
+                            for v in proposal['violations']))
+        self.assertEqual(1.0, proposal['metrics']['max_jaccard'])
+        self.assertGreater(proposal['search_stats']['checks'], 0)
+        self.assertEqual(0, proposal['pool']['admissible_omitted_without_report'])
+        self.assertEqual(len(s.candidates),
+                         proposal['pool']['per_slot']['01']['admissible'] +
+                         proposal['pool']['per_slot']['01']['range_only'] +
+                         proposal['pool']['per_slot']['01']['locally_inadmissible'])
+
+    def test_full_pool_is_not_truncated_to_a_fixed_shortlist(self):
+        config = deepcopy(self.config)
+        config.update(levels=1, retain_min=0, retain_max=0)
+        config['bands'] = [dict(first=1, last=1, min=2, max=5)]
+        config['search'].update(restarts=1, max_iterations=1,
+                                refinement_restarts=1, refinement_iterations=1)
+        sources, metadata = [], {}
+        answers = ['мама', 'папа', 'рама']
+        for word in answers:
+            metadata[word] = dict(category='plants', category_source='rules:synthetic',
+                                  observed_frequency=dict(frequency=100, freq_rank=1))
+        profile_config = profiles.load_config(profiles.CONFIG)
+        metrics = profiles.metrics(answers, metadata, profile_config)
+        measured = {}
+        for number in range(80):
+            bits = format(number, '08b').replace('0', 'а').replace('1', 'б')
+            source = bits
+            sources.append(source)
+            measured[source] = dict(source_eligible=True, answers=answers,
+                                    recognizable_answers=answers, assigned_targets=[],
+                                    riddle_targets=[], recognizable=metrics, all=metrics)
+        selector = selection.Selector(dict(profiles=measured, words=metadata),
+                                      set(metadata), [], config, 'аб')
+        self.assertGreater(len(selector.candidates), 64)
+        self.assertEqual(len(selector.candidates),
+                         len(selector.admissible_pools[0]))
+        self.assertEqual(len(selector.candidates), len(selector.shortlists[0]))
+        selected, trace = selector.search()
+        self.assertEqual(1, len([word for word in selected if word is not None]))
+        self.assertFalse(selector.evaluate(selected)[2])
+
+    def test_policy_ladder_prefers_strict_then_soft_a_without_weakening_validator(self):
+        # Four sources; only the first pair shares {c1,c2}. All pairs are
+        # otherwise disjoint, so mean J = (1/6)/6 = 2.78% and max J = 16.67%.
+        # STRICT max 15% must reject it; SOFT-A max 18% may accept it.
+        letters = 'вгдежзиклмнопрстуфхцчшщъыьэюя'
+        counter = [0]
+
+        def answer():
+            number = counter[0]
+            counter[0] += 1
+            result = []
+            for _ in range(4):
+                result.append(letters[number % len(letters)])
+                number //= len(letters)
+            return ''.join(result)
+
+        common = [answer(), answer()]
+        sources = ['аааааааб', 'ааааааба', 'ааааабаа', 'аааабааа']
+        groups = [common + [answer() for _ in range(5)],
+                  common + [answer() for _ in range(5)],
+                  [answer() for _ in range(7)],
+                  [answer() for _ in range(7)]]
+        metadata = {w: dict(category='synthetic', category_source='rules:synthetic',
+                            observed_frequency=dict(frequency=100, freq_rank=1))
+                    for group in groups for w in group}
+        profile_config = profiles.load_config(profiles.CONFIG)
+        measured = {}
+        for word, group in zip(sources, groups):
+            metrics = profiles.metrics(group, metadata, profile_config)
+            measured[word] = dict(source_eligible=True, answers=group,
+                                  recognizable_answers=group, assigned_targets=[],
+                                  riddle_targets=[], recognizable=metrics, all=metrics)
+        config = selection.load_config()
+        config.update(levels=4, retain_min=0, retain_max=0)
+        config['bands'] = [dict(first=1, last=4, min=7, max=7)]
+        config['search'].update(restarts=1, max_iterations=1,
+                                refinement_restarts=1, refinement_iterations=100)
+        words = set(metadata)
+
+        strict_thresholds = dict(selection.policy_thresholds('STRICT'), retain_min=0)
+        strict = selection.Selector(dict(profiles=measured, words=metadata), words, [],
+                                    config, 'аб', thresholds=strict_thresholds,
+                                    policy='STRICT')
+        strict_selected, strict_trace = strict.search()
+        strict_proposal = selection.make_proposal(strict, strict_selected, strict_trace, {})
+        self.assertFalse(strict_proposal['installable'])
+        self.assertTrue(any(v['code'] == 'max_jaccard' for v in strict_proposal['violations']))
+        self.assertAlmostEqual(1 / 6, strict_proposal['metrics']['max_jaccard'])
+
+        soft_thresholds = dict(selection.policy_thresholds('SOFT-A'), retain_min=0)
+        soft = selection.Selector(dict(profiles=measured, words=metadata), words, [],
+                                  config, 'аб', thresholds=soft_thresholds,
+                                  policy='SOFT-A')
+        soft_selected, soft_trace = soft.search()
+        soft_proposal = selection.make_proposal(soft, soft_selected, soft_trace, {})
+        self.assertTrue(soft_proposal['installable'])
+        self.assertFalse(soft_proposal['strict_installable'])
+        self.assertEqual('SOFT-A', soft_proposal['policy'])
+        self.assertAlmostEqual(1 / 6, soft_proposal['metrics']['max_jaccard'])
+        self.assertLessEqual(soft_proposal['metrics']['mean_jaccard'], 0.04)
+        self.assertTrue(any(v['code'] == 'max_jaccard'
+                            for v in soft_proposal['strict_violations']))
+
+    def test_policy_defaults_remain_strict_and_ladder_is_explicit(self):
+        default = selection.load_config()
+        self.assertEqual((0.03, 0.15, 8), (default['mean_jaccard_max'],
+                                           default['max_jaccard_max'],
+                                           default['retain_min']))
+        self.assertEqual(250, default['bands'][-1]['min'])
+        self.assertEqual(('STRICT', 'SOFT-A', 'SOFT-B'), selection.PROVISIONAL_POLICY_ORDER)
+        self.assertEqual(250, selection.policy_thresholds('STRICT')['top_band_min'])
+        self.assertEqual(230, selection.policy_thresholds('SOFT-A')['top_band_min'])
+        self.assertEqual(210, selection.policy_thresholds('SOFT-B')['top_band_min'])
+        with self.assertRaises(ValueError):
+            selection.policy_thresholds('UNKNOWN')
+
+    def test_search_timeout_is_reported_not_installed(self):
+        normal = self.selector()
+        normal.search()
+        normal_checks = normal.search_stats['checks']
+        s = selection.Selector(dict(profiles=self.measured, words=self.metadata),
+                               self.words, self.previous, self.config, 'аб',
+                               time_limit_seconds=0, clock=lambda: 0)
+        selected, trace = s.search()
+        proposal = selection.make_proposal(s, selected, trace, {})
+        self.assertTrue(proposal['search_stats']['timed_out'])
+        self.assertFalse(proposal['installable'])
+        self.assertLess(proposal['search_stats']['checks'], normal_checks)
+        self.assertEqual(0, proposal['search_stats']['restarts_completed'])
+        self.assertTrue(proposal['search_exhausted'])
+        self.assertEqual([None] * 3, proposal['best_found'])
+
+    def test_full_pool_search_hashes_and_seed_list_are_stable(self):
+        def artifact_hashes(directory):
+            s = self.selector()
+            selected, trace = s.search()
+            proposal = selection.make_proposal(s, selected, trace, {'synthetic': True})
+            selection.write_reports(s, proposal, directory)
+            return ({name: selection.sha256_file(directory / name)
+                     for name in ('level_words_candidates.csv',
+                                  'level_words_proposal.json',
+                                  'LEVEL_WORDS_REPORT.md')},
+                    proposal)
+
+        with tempfile.TemporaryDirectory() as directory:
+            first_hashes, first = artifact_hashes(Path(directory) / 'first')
+            second_hashes, second = artifact_hashes(Path(directory) / 'second')
+        self.assertEqual(first_hashes, second_hashes)
+        self.assertEqual(first['search_stats'], second['search_stats'])
+        self.assertGreater(first['search_stats']['checks'], 0)
+        self.assertEqual(first['search_stats']['seed'], self.config['seed'])
+        self.assertEqual(0, first['pool']['admissible_omitted_without_report'])
+        self.assertGreater(first['pool']['admissible_pool_total'], 0)
 
     def test_local_replacement_resolves_collision(self):
         # Bad initial source has exactly the second source's answers. Replacing
@@ -314,7 +502,9 @@ class LevelSelectionTest(unittest.TestCase):
         s = self.selector('абв')
         selected, trace = s.refine_jaccard(self.sources[:3])
         self.assertEqual(self.sources[:3], selected)
-        self.assertFalse(trace)
+        # Alphabet coverage is searchable, but the final validator still
+        # rejects the unchanged selection when no candidate can supply "в".
+        self.assertTrue(trace)
         self.assertTrue(any(row['code']=='alphabet_coverage' for row in s.evaluate(selected)[2]))
 
     def test_refinement_promotes_feasible_preferences_before_optimizing_overlap(self):
