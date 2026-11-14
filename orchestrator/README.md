@@ -460,8 +460,8 @@ gate: bash orchestrator/run.sh --check full && bash orchestrator/run.sh --check 
 | `sandbox` | `workspace-write` | Песочница агента Codex (для opencode не используется) |
 | `gate_base` | `[]` | Префикс команды проверки массивом аргументов |
 | `checks` | `{}` | Профили `--check`: «профиль → массив shell-команд» |
-| `task_timeout` | `3600` | Секунд на один запуск агента |
-| `gate_timeout` | `1800` | Секунд на один запуск gate |
+| `task_timeout` | `14400` | Секунд на один запуск агента |
+| `gate_timeout` | `7200` | Секунд на один запуск gate |
 | `git_timeout` | `120` | Секунд на commit и на push |
 | `restart_retries` | `3` | Дополнительные запуски после сбоя агента, пустого ответа, таймаута или сбоя push; 0–20 |
 | `retry_delay` | `30` | Пауза между перезапусками, секунд |

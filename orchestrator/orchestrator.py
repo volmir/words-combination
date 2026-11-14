@@ -122,7 +122,7 @@ DEFAULTS = {
     "branch": "auto/tasks", "remote": "origin", "push": True,
     "backend": "codex", "codex_bin": "codex", "opencode_bin": "opencode",
     "sandbox": "workspace-write", "gate_base": [], "checks": {},
-    "task_timeout": 3600, "gate_timeout": 1800, "git_timeout": 120,
+    "task_timeout": 14400, "gate_timeout": 7200, "git_timeout": 120,
     "restart_retries": 3, "retry_delay": 30,
     "models": {"codex": dict(CODEX_MODEL_DEFAULTS), "opencode": dict(OPENCODE_MODEL_DEFAULTS)},
     "model_sets": {},
