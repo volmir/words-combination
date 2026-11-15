@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -197,7 +198,7 @@ private fun stageName(number: Int): String = stringResource(when (number) {
 
 @Composable
 private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Unit) {
-    val stars = stringResource(R.string.level_stars_progress, item.stars, item.maxStars)
+    val stars = pluralStringResource(R.plurals.level_stars_progress, item.maxStars, item.stars, item.maxStars)
     val status = stringResource(when {
         !item.unlocked -> R.string.level_status_locked
         item.stars == item.maxStars -> R.string.level_all_stars

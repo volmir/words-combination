@@ -35,6 +35,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -136,8 +137,8 @@ fun GameScreen(
                         current.level.number, state.totalLevels), Modifier.testTag("level_header"),
                         style = MaterialTheme.typography.titleLarge)
                     LetterTiles(game.word)
-                    val starsDescription = stringResource(R.string.level_stars_progress,
-                        current.completedTaskIds.size, current.level.maxStars)
+                    val starsDescription = pluralStringResource(R.plurals.level_stars_progress,
+                        current.level.maxStars, current.completedTaskIds.size, current.level.maxStars)
                     Text(stringResource(if (current.level.number == state.totalLevels) R.string.game_level_final_threshold
                         else R.string.game_level_threshold, current.completedTaskIds.size,
                         current.level.maxStars, current.level.requiredStars),

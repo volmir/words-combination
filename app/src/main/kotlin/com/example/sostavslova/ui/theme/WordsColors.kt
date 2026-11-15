@@ -18,8 +18,10 @@ object WordsColors {
     val wellBorder = Color(0xFFE3E3E3)
     val inputFocusBorder = Color(0xFF66AFE9)
     val tileBorder = Color(0xFFB7CCCE)
-    val starDone = Color(0xFFE48107)
-    val starEmpty = Color(0xFF999999)
+    /** Контраст на фактическом белом фоне: 3,88:1 (порог 3:1 для значимых индикаторов). */
+    val starDone = Color(0xFFC46A00)
+    /** Контраст на фактическом белом фоне: 4,48:1. */
+    val starEmpty = Color(0xFF777777)
     val tableHead = Color(0xFFE8E8E8)
     val tableFoot = Color(0xFFF1F1F1)
     val alertSuccessBackground = Color(0xFFDFF0D8)

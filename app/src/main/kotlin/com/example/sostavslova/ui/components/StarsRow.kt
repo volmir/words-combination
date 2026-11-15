@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -35,7 +36,8 @@ fun StarsRow(stars: Int, maxStars: Int, modifier: Modifier = Modifier) {
 @Composable
 private fun StarsRow(positions: List<Boolean>, modifier: Modifier, onClick: (() -> Unit)? = null) {
     val title = stringResource(R.string.tasks)
-    val description = stringResource(R.string.level_stars_progress, positions.count { it }, positions.size)
+    val description = pluralStringResource(R.plurals.level_stars_progress, positions.size,
+        positions.count { it }, positions.size)
     val interactive = if (onClick != null) {
         Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).clickable(role = Role.Button, onClick = onClick).padding(8.dp)
     } else Modifier

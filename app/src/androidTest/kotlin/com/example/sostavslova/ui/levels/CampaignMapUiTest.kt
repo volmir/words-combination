@@ -25,7 +25,8 @@ class CampaignMapUiTest {
         for (index in 0..4) compose.onNodeWithTag("stars_position_$index", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("stars_position_5", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithContentDescription("Задания").assert(
-            SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Звёзды: 3 из 5"))
+            SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Получено 3 из 5 звёзд"))
+        compose.onAllNodesWithContentDescription("Задания").assertCountEquals(1)
     }
 
     @Test fun summaryStageContinueLockedExplanationFinaleAndMaster() {

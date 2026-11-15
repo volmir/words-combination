@@ -102,7 +102,12 @@
     <string name="level_invalid">Такого уровня нет. Выберите уровень на карте.</string>
     <string name="level_closed">Этот уровень ещё закрыт. Пройдите предыдущий уровень.</string>
     <string name="back_to_levels">К карте уровней</string>
-    <string name="level_stars_progress">Звёзды: %1$d из %2$d</string>
+    <plurals name="level_stars_progress">
+        <item quantity="one">Получено %1$d из %2$d звезды</item>
+        <item quantity="few">Получено %1$d из %2$d звёзд</item>
+        <item quantity="many">Получено %1$d из %2$d звёзд</item>
+        <item quantity="other">Получено %1$d из %2$d звёзд</item>
+    </plurals>
     <string name="hint_length">Слово из %1$d %2$s</string>
     <string name="hint_budget_exhausted">Подсказки закончились. Каждые 4 найденных слова дают ещё одну подсказку.</string>
     <string name="hint_ladder_complete">Все шаги этой подсказки уже показаны.</string>

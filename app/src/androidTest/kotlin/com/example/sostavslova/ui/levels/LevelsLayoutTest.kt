@@ -16,6 +16,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
+import com.example.sostavslova.R
 import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.core.Stage
 import com.example.sostavslova.ui.theme.WordsTheme
@@ -76,7 +77,9 @@ class LevelsLayoutTest(private val width: Int, private val fontScale: Float) {
             if (i == 0) item.copy(campaignStars = item.maxStars)
             else if (i == 1) item.copy(unlocked = true) else item
         }) }
-        compose.onNodeWithTag("level_card_1").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Звёзды: 1 из 1"))
+        val starsDescription = context.resources.getQuantityString(R.plurals.level_stars_progress, 1, 1, 1)
+        compose.onNodeWithTag("level_card_1")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, starsDescription))
             .assertTextContains("Все звёзды", substring = true)
         compose.onNodeWithTag("level_card_2").assertIsEnabled()
             .assertTextContains("Открыт", substring = true)
