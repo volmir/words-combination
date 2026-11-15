@@ -96,7 +96,7 @@ SQLite имеет `user_version >= 5`. Таблица `definitions` сохран
 Для проверки всего набора тем же JVM-кодом:
 
 ```bash
-JAVA_HOME=/home/vladimir/.cache/words-combination/jdk21/jdk-21.0.13+9 \
+JAVA_HOME=$HOME/.cache/words-combination/jdk21/jdk-21.0.13+9 \
   bash ./gradlew :core:auditDefinitionHints \
   --args='../build/reports/local_definitions/hint_inputs.jsonl ../build/reports/local_definitions/hint_audit.jsonl' \
   --console=plain

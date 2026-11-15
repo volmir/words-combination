@@ -153,8 +153,9 @@ def write_game_data(directory, sources, dump_date, input_sha, definitions=None, 
                        "dump_date": dump_date, "sha256_input": input_sha,
                        "selection": "Russian lowercase noun headwords; no SQL selection or free-text glosses"},
             "definitions": definitions,
-            "levels_source": {"url": "https://github.com/volmir/words-api/blob/master/models/Level.php",
-                              "license": "MIT", "changes": "Cyrillic с in level 19; level 20 uses правоведение"},
+            "levels_source": {"url": None, "license": "MIT",
+                              "provenance": "historical v1 snapshot of this project",
+                              "changes": "Cyrillic с in level 19; level 20 uses правоведение"},
         }
         write_json("manifest.json", manifest)
         for name in os.listdir(staged):

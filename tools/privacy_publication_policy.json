@@ -1,0 +1,32 @@
+{
+  "schema": "privacy-publication-policy-v1",
+  "forbidden_token_sha256": [
+    "d6561c5511980ffd487f677e4abcadc539b11aea1ec84a2ef9e10f7d72191a37",
+    "2a3c07711ff6feb1a8b1763e6497ee02b884879fe94ca0e5900c936c66efdee8",
+    "a03b043c7b103f5c3e586ab54727d49f6fc1f32528a1210d441ea596dc305021",
+    "b45d67f96829040b71baa58af7d5f50c79fe6a206567d9571e1c2af07735da47",
+    "c08a1749f18455682837634c29901ad94660a5e1d6b75ff1f72eade488da89c0",
+    "814e2ae0398348d9a87ff91c0372dcb76186ba2d2504b1235c8d5350bf52edda",
+    "5ba01fb8f9605384f197ef08bf25d594379d1a4b8b2979e8c3de3d741827a8fd",
+    "2dc9ebf68dc3f9c627f38e59eed674e0a417f54277c9cbbed1108b283dd8ccc7",
+    "261fea40072dce2ca2d320286128cfc69a998f0bfeff66c4818b9262fa5e8cae",
+    "0fbc5310b488dd218b122d40a859b325263907a090a671acd41fb854c0127803"
+  ],
+  "allowed_user_facing_url_hosts": [
+    "ru.wiktionary.org",
+    "kaikki.org",
+    "creativecommons.org"
+  ],
+  "required_third_party_markers": [
+    "Викисловар",
+    "CC BY-SA 4.0",
+    "Kaikki.org",
+    "FrequencyWords",
+    "Apache-2.0",
+    "BSD-3-Clause"
+  ],
+  "expected_user_strings": {
+    "about_code_heading": "Программный код",
+    "about_code_sources": "Программный код проекта «Составь слова» распространяется по лицензии MIT. Полный текст лицензии — в файле LICENSE в исходном репозитории и в составе APK."
+  }
+}

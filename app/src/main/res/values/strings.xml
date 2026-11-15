@@ -44,7 +44,8 @@
     <string name="about_definitions_license">Для материалов Викисловаря указана лицензия Creative Commons «С указанием авторства — С сохранением условий» 4.0 Международная (CC BY-SA 4.0). Индивидуальный статус прав толкований в этой сборке не проверен; они предназначены для разработки.\nhttps://creativecommons.org/licenses/by-sa/4.0/</string>
     <string name="about_definitions_changes">Обработка: отбор слов и значений, нормализация ё→е, извлечение обычного текста и раскрытие простых отсылок. Литературные примеры исключены. В подсказках ответ, его формы и распознанные однокоренные слова заменяются на ***.</string>
     <string name="about_definitions_history">Для каждого слова сохранён адрес исходной статьи. История статьи содержит сведения об авторах. Полный список адресов включён в приложение вместе со словарём.</string>
-    <string name="about_code_sources">Игра основана на проектах volmir/words-combination и volmir/words-api. Автор исходных проектов — Владимир Прохненко. Лицензия MIT; полные уведомления сохранены в приложении.\nhttps://github.com/volmir/words-combination\nhttps://github.com/volmir/words-api</string>
+    <string name="about_code_heading">Программный код</string>
+    <string name="about_code_sources">Программный код проекта «Составь слова» распространяется по лицензии MIT. Полный текст лицензии — в файле LICENSE в исходном репозитории и в составе APK.</string>
     <string name="game_counts">Найдено %1$d из %2$d %3$s</string>
     <string name="answer_already_found">Вы уже разгадали слово %1$s</string>
     <string name="answer_unknown">Слово «%1$s» не распознано словарём</string>

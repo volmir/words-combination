@@ -90,6 +90,14 @@ class WordlistBuildTest(unittest.TestCase):
         builder.write_word_sources(b, sources)
         self.assertEqual(a.read_bytes(), b.read_bytes())
 
+    def test_manifest_keeps_historical_levels_mit_without_personal_upstream_url(self):
+        builder.write_game_data(self.root, {}, "2026-11-01", "0" * 64, levels_spec=[])
+        manifest = json.loads((self.root / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual("MIT", manifest["levels_source"]["license"])
+        self.assertIsNone(manifest["levels_source"]["url"])
+        self.assertEqual("historical v1 snapshot of this project",
+                         manifest["levels_source"]["provenance"])
+
     def test_unsatisfied_levels_do_not_replace_game_data(self):
         (self.root / "words.txt").write_text("original", encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "данные не заменены"):

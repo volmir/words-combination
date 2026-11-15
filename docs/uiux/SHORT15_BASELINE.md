@@ -164,7 +164,7 @@ UIUX-01…UIUX-28»). Полный перечень направлений (P1-1
 
 ## 6. SDK, эмулятор, доступные тесты
 
-- SDK: `$ANDROID_HOME=/home/vladimir/.local/share/words-combination/android-sdk`
+- SDK: `ANDROID_HOME=$HOME/.local/share/words-combination/android-sdk`
   (build-tools, cmdline-tools, platforms, platform-tools). JDK 21.0.13.
 - Эмулятор: **нет** — каталога `emulator/` и `system-images/` в SDK нет.
 - Устройства: `adb devices` — пусто. Инструментальные тесты **NOT RUN**

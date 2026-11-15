@@ -187,12 +187,19 @@ fun AboutScreen() {
                         stringResource(R.string.about_definitions_history),
                         style = MaterialTheme.typography.bodyMedium,
                     )
-                    Text(
-                        stringResource(R.string.about_code_sources),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
                 }
             }
+
+            Text(
+                stringResource(R.string.about_code_heading),
+                style = MaterialTheme.typography.titleMedium,
+            )
+
+            Text(
+                stringResource(R.string.about_code_sources),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag("about_code_license"),
+            )
 
             if (!BuildConfig.HAS_DEFINITIONS) {
                 Text(

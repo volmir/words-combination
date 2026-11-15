@@ -180,9 +180,12 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
     from(rootProject.layout.projectDirectory.dir("legal")) {
         include("THIRD_PARTY_NOTICES.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
     }
+    from(rootProject.layout.projectDirectory) {
+        include("LICENSE")
+    }
     into(layout.projectDirectory.dir("src/main/assets"))
     preserve {
-        exclude("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz", "definitions.db", "THIRD_PARTY_NOTICES.txt", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
+        exclude("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz", "definitions.db", "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
     }
     doLast {
         val manifest = JsonSlurper().parse(dictionaryData.file("manifest.json").asFile) as Map<*, *>
@@ -211,8 +214,20 @@ val syncAndroidTestDictionary = tasks.register<CopyDictionaryTestAssets>("syncAn
     outputDirectory.set(layout.buildDirectory.dir("generated/dictionary-test-assets"))
 }
 
-tasks.named("preBuild") {
+val verifyPrivacyPublication = tasks.register<Exec>("verifyPrivacyPublication") {
+    description = "Проверяет отсутствие персональных данных и сохранность уведомлений третьих лиц."
+    group = "verification"
     dependsOn(syncDictionaryAssets)
+    workingDir(rootProject.projectDir)
+    commandLine(
+        "python3", "tools/check_privacy_publication.py",
+        "--root", rootProject.projectDir.absolutePath,
+        "--require-generated",
+    )
+}
+
+tasks.named("preBuild") {
+    dependsOn(syncDictionaryAssets, verifyPrivacyPublication)
 }
 
 // androidx.core добавляет signature-permission для своих динамических receiver-ов.
