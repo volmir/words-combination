@@ -22,12 +22,14 @@ internal fun CampaignTasks(state: GameUiState) {
         val progress = state.taskProgress.firstOrNull { it.id == task.id }
         Column(Modifier.testTag("level_task_${task.type.name.lowercase()}"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             TaskRow(taskTitle(task), task.id in current.completedTaskIds)
-            Text(stringResource(R.string.game_task_progress, progress?.current ?: 0, progress?.target ?: 1))
+            Text(stringResource(R.string.game_task_progress, progress?.current ?: 0, progress?.target ?: 1),
+                style = MaterialTheme.typography.bodyMedium)
             if (task is CampaignTask.T4) {
                 state.riddles[task.id].orEmpty().forEachIndexed { index, riddle ->
                     Column(Modifier.testTag("level_riddle_${index + 1}"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(stringResource(R.string.game_riddle_number, index + 1), style = MaterialTheme.typography.titleSmall)
-                        Text(stringResource(if (riddle.solved) R.string.game_riddle_solved else R.string.game_riddle_pending))
+                        Text(stringResource(if (riddle.solved) R.string.game_riddle_solved else R.string.game_riddle_pending),
+                            style = MaterialTheme.typography.bodyMedium)
                         RiddleText(riddle)
                     }
                 }
@@ -59,10 +61,11 @@ internal fun CampaignRiddlePreview(state: GameUiState) {
 @Composable
 private fun RiddleText(riddle: RiddleUiState) {
     if (riddle.text != null) {
-        Text(riddle.text)
+        Text(riddle.text, style = MaterialTheme.typography.bodyLarge)
         if (riddle.wiktionary) Text(stringResource(R.string.hint_definition_source), style = MaterialTheme.typography.bodySmall)
     } else {
-        Text(stringResource(R.string.hint_fallback, riddle.length, letterForm(riddle.length), riddle.firstLetter))
+        Text(stringResource(R.string.hint_fallback, riddle.length, letterForm(riddle.length), riddle.firstLetter),
+            style = MaterialTheme.typography.bodyLarge)
         if (com.example.sostavslova.BuildConfig.DEBUG) Text(stringResource(R.string.game_riddle_fallback), style = MaterialTheme.typography.bodySmall)
     }
 }

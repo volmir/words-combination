@@ -41,7 +41,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -148,7 +147,7 @@ fun GameScreen(
                     LetterTiles(game.word)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.game_counts, game.total, RussianPlural.words(game.total), game.foundCount),
-                            style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic))
+                            style = MaterialTheme.typography.bodyMedium)
                         if (state.level != null) StarsRow(state.levelProgress, onClick = { onDialog(GameDialog.Tasks) })
                     }
                 }
@@ -188,7 +187,7 @@ fun GameScreen(
                     }
                     if (tasksExpanded) CampaignTasks(state)
                     Text(stringResource(R.string.game_counts, game.total, RussianPlural.words(game.total), game.foundCount),
-                        style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic))
+                        style = MaterialTheme.typography.bodyMedium)
                 }
                 Text(stringResource(R.string.found_words), style = MaterialTheme.typography.titleMedium)
                 for ((length, found) in game.found.groupBy { it.length }.toSortedMap()) {
@@ -198,7 +197,8 @@ fun GameScreen(
                             Text(stringResource(R.string.game_found_group, length,
                                 RussianPlural.form(length, stringResource(R.string.game_letter_one),
                                     stringResource(R.string.game_letter_few), stringResource(R.string.hint_letter_genitive_many)),
-                                found.size, stringResource(if (expanded) R.string.game_group_close else R.string.game_group_open)))
+                                found.size, stringResource(if (expanded) R.string.game_group_close else R.string.game_group_open)),
+                                style = MaterialTheme.typography.bodyLarge)
                         }
                         if (expanded) WordLinks(found, onDefinition)
                     }
@@ -224,9 +224,10 @@ fun GameScreen(
                     Column(Modifier.testTag("game_hint"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.hint_title), style = MaterialTheme.typography.titleMedium)
                         Text(stringResource(R.string.hint_stage, state.campaignHints.size,
-                            state.campaignLevel?.hints?.ladder?.steps?.size ?: 0), Modifier.testTag("game_hint_stage"))
+                            state.campaignLevel?.hints?.ladder?.steps?.size ?: 0), Modifier.testTag("game_hint_stage"),
+                            style = MaterialTheme.typography.bodyLarge)
                         state.campaignHints.forEach { step ->
-                            step.text?.let { Text(it) }
+                            step.text?.let { Text(it, style = MaterialTheme.typography.bodyLarge) }
                             step.length?.let { length -> Text(stringResource(R.string.hint_length, length,
                                 RussianPlural.form(length, stringResource(R.string.hint_letter_genitive_one),
                                     stringResource(R.string.hint_letter_genitive_many), stringResource(R.string.hint_letter_genitive_many)))) }
@@ -240,7 +241,8 @@ fun GameScreen(
                     }
                 }
                 if (state.campaignLevel != null && state.hintRemaining == 0 && state.hintCost != 0) {
-                    Text(stringResource(R.string.hint_budget_exhausted), Modifier.testTag("game_hint_budget"))
+                    Text(stringResource(R.string.hint_budget_exhausted), Modifier.testTag("game_hint_budget"),
+                    style = MaterialTheme.typography.bodyMedium)
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     GameAction(if (state.campaignLevel == null) stringResource(R.string.show_hint)
@@ -257,9 +259,9 @@ fun GameScreen(
     state.finaleSummary?.let { summary ->
         WordsDialog(stringResource(R.string.game_finale_title), { onCloseFinale(false) }) {
             Column(Modifier.testTag("level_finale_dialog"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.game_finale_stars, summary.stars, summary.maxStars))
-                Text(stringResource(R.string.game_finale_words, summary.foundWords, RussianPlural.words(summary.foundWords)))
-                Text(stringResource(R.string.game_finale_hints, summary.shownHintSteps))
+                Text(stringResource(R.string.game_finale_stars, summary.stars, summary.maxStars), style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.game_finale_words, summary.foundWords, RussianPlural.words(summary.foundWords)), style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.game_finale_hints, summary.shownHintSteps), style = MaterialTheme.typography.bodyLarge)
                 TextButton({ onCloseFinale(false) }, enabled = !state.finaleClosing) {
                     Text(stringResource(R.string.game_finale_continue))
                 }
@@ -273,7 +275,7 @@ fun GameScreen(
     }
     if (state.explanations.isNotEmpty() && !state.loading && state.finaleSummary == null) {
         WordsDialog(stringResource(R.string.game_explanations), onDismissExplanations) {
-            state.explanations.forEach { Text(stringResource(explanationText(it))) }
+            state.explanations.forEach { Text(stringResource(explanationText(it)), style = MaterialTheme.typography.bodyLarge) }
             CloseDialogButton(onDismissExplanations)
         }
     }
@@ -290,7 +292,7 @@ fun GameScreen(
                 Column(Modifier.testTag("level_stats")) {
                     StatsTable(state.statistics, showRemaining = true)
                     state.campaignLevel?.hints?.let { hints ->
-                        Text(stringResource(R.string.game_stats_hints, hints.shownSteps, hints.paidUnits))
+                        Text(stringResource(R.string.game_stats_hints, hints.shownSteps, hints.paidUnits), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
                 CloseDialogButton(onDismissDialog)

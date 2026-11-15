@@ -139,7 +139,8 @@ fun LevelsScreen(
                     Text(stringResource(R.string.levels_title), Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
                     state.summary?.let { summary ->
                         Text(stringResource(R.string.levels_campaign_progress, summary.stars, summary.maxStars,
-                            summary.passedLevels, summary.totalLevels), Modifier.testTag("levels_progress"))
+                            summary.passedLevels, summary.totalLevels), Modifier.testTag("levels_progress"),
+                            style = MaterialTheme.typography.bodyMedium)
                         OutlinedButton(onClick = {
                             state.levels.firstOrNull { it.index == state.recommendedLevel }?.let { onSelectLevel(it.word) }
                         }, enabled = state.canSelect, modifier = Modifier.testTag("levels_continue").heightIn(min = 48.dp)) {
@@ -149,7 +150,8 @@ fun LevelsScreen(
                     if (state.finaleReached) {
                         Well {
                             Text(stringResource(if (state.summary?.isMaster == true) R.string.levels_master else R.string.levels_finale),
-                                Modifier.testTag("levels_finale_banner").semantics { heading() })
+                                Modifier.testTag("levels_finale_banner").semantics { heading() },
+                                style = MaterialTheme.typography.bodyLarge)
                         }
                     }
                     if (state.loadError) {
@@ -217,8 +219,8 @@ private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Uni
             }
             if (item.campaignStars == null) StarsRow(item.progress) else {
                 StarsRow(item.stars, item.maxStars)
-                Text(status)
-                if (item.recommended) Text(stringResource(R.string.level_recommended))
+                Text(status, style = MaterialTheme.typography.bodySmall)
+                if (item.recommended) Text(stringResource(R.string.level_recommended), style = MaterialTheme.typography.bodySmall)
             }
         }
     }
