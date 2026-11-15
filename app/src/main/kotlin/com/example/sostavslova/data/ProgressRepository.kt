@@ -17,6 +17,7 @@ import com.example.sostavslova.core.GameState
 import com.example.sostavslova.core.HintResult
 import com.example.sostavslova.core.HintRules
 import com.example.sostavslova.core.HintWordData
+import com.example.sostavslova.core.InstallEvidence
 import com.example.sostavslova.core.KnownWords
 import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.LevelProgress
@@ -24,6 +25,8 @@ import com.example.sostavslova.core.LevelRules
 import com.example.sostavslova.core.TaskRules
 import com.example.sostavslova.core.TaskSubmission
 import com.example.sostavslova.core.TaskType
+import com.example.sostavslova.core.WelcomeRules
+import com.example.sostavslova.core.WelcomeState
 import com.example.sostavslova.core.WordIndex
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +70,9 @@ data class CampaignAnswerUpdate(
 class ProgressRepository(
     private val dataStore: DataStore<Preferences>,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val installEvidence: () -> InstallEvidence = { InstallEvidence.UNKNOWN },
+    /** Снимок до первого обращения к DataStore: отличие старой установки от текущей сессии. */
+    private val hadLocalStateAtStartup: Boolean = true,
 ) {
     private val writeMutex = Mutex()
     private val operations = mutableSetOf<Job>()
@@ -117,6 +123,7 @@ class ProgressRepository(
     private val legacyLevelsKey = stringPreferencesKey("levelSessionV1")
     private val campaignProgressKey = stringPreferencesKey("campaignProgressV2")
     private val campaignProgressArchiveKey = stringPreferencesKey("campaignProgressV2Archive")
+    private val welcomeStateKey = stringPreferencesKey("welcomeStateV1")
 
     /** Один снимок для уровня, доступа, подсказок и итогов CampaignRules.summary. */
     fun observeCampaignProgress(): Flow<CampaignProgress> = dataStore.data
@@ -309,6 +316,37 @@ class ProgressRepository(
         presentation.state to presentation.showDialog
     }
 
+    /**
+     * Отдельное от прогресса состояние приветствия. SHOW выдаётся только после
+     * подтверждённой первой установки и при отсутствии локального состояния,
+     * существовавшего до запуска. Иначе возвращается UNKNOWN (fail-closed),
+     * а старые ключи прогресса не читаются и не изменяются.
+     */
+    suspend fun resolveWelcomeState(): WelcomeState = committedWrite {
+        var result = WelcomeState.UNKNOWN
+        dataStore.edit { preferences ->
+            val stored = readWelcomeState(preferences)
+            result = WelcomeRules.resolve(stored, hadLocalStateAtStartup, installEvidence())
+            if (result != stored) preferences[welcomeStateKey] = result.name
+        }
+        result
+    }
+
+    /**
+     * Идемпотентно фиксирует фактический показ. UNKNOWN не превращается в DONE:
+     * отметить можно только уже подтверждённый SHOW.
+     */
+    suspend fun markWelcomeDone(): Boolean = committedWrite {
+        var changed = false
+        dataStore.edit { preferences ->
+            if (readWelcomeState(preferences) == WelcomeState.SHOW) {
+                preferences[welcomeStateKey] = WelcomeState.DONE.name
+                changed = true
+            }
+        }
+        changed
+    }
+
     private fun openCampaignLevel(
         campaign: Campaign, saved: CampaignProgress, levelNumber: Int, index: WordIndex,
     ): CurrentCampaignLevel = requireNotNull(CampaignRules.openLevel(campaign, saved, levelNumber, index)) {
@@ -317,6 +355,13 @@ class ProgressRepository(
 
     private fun readCampaign(preferences: Preferences): CampaignProgress =
         readCampaignDto(preferences)?.toCore() ?: CampaignProgress()
+
+    private fun readWelcomeState(preferences: Preferences): WelcomeState =
+        when (preferences[welcomeStateKey]) {
+            WelcomeState.SHOW.name -> WelcomeState.SHOW
+            WelcomeState.DONE.name -> WelcomeState.DONE
+            else -> WelcomeState.UNKNOWN
+        }
 
     private fun readCampaignDto(preferences: Preferences): CampaignProgressDto? =
         preferences[campaignProgressKey]?.let { raw ->
@@ -408,6 +453,7 @@ class ProgressRepository(
             preferences.remove(levelAnswersKey)
             preferences.remove(legacyLevelsKey)
             preferences.remove(campaignProgressKey)
+            preferences.remove(welcomeStateKey)
             preferences.asMap().keys
                 .filter { it.name == campaignProgressArchiveKey.name || it.name.startsWith("${campaignProgressArchiveKey.name}.") }
                 .forEach { preferences.remove(it) }

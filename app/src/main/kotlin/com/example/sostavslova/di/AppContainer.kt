@@ -9,6 +9,7 @@ import com.example.sostavslova.data.LevelsRepository
 import com.example.sostavslova.data.ProgressRepository
 import com.example.sostavslova.data.SqliteDefinitionsRepository
 import com.example.sostavslova.data.WordRepository
+import com.example.sostavslova.data.readInstallEvidence
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,13 +40,29 @@ class AppContainer(
     )
     val definitionsRepository: DefinitionsRepository = definitions ?: SqliteDefinitionsRepository(appContext)
 
+    private val progressFileProvider = progressFile ?: { appContext.preferencesDataStoreFile("progress") }
+
+    // Снимок до первого edit: отсутствие файла не доказывает новую установку,
+    // но его наличие подтверждает локальное состояние старого запуска.
+    private val hadLocalStateAtStartup = try {
+        progressFileProvider().exists()
+    } catch (_: Exception) {
+        true
+    }
+
     private val progressDataStore by lazy {
         PreferenceDataStoreFactory.create(
             scope = CoroutineScope(applicationScope.coroutineContext + Dispatchers.IO),
-            produceFile = progressFile ?: { appContext.preferencesDataStoreFile("progress") },
+            produceFile = progressFileProvider,
         )
     }
-    val progressRepository: ProgressRepository by lazy { ProgressRepository(progressDataStore) }
+    val progressRepository: ProgressRepository by lazy {
+        ProgressRepository(
+            dataStore = progressDataStore,
+            installEvidence = appContext::readInstallEvidence,
+            hadLocalStateAtStartup = hadLocalStateAtStartup,
+        )
+    }
 
     private fun readAsset(name: String): String =
         appContext.assets.open(name).bufferedReader(Charsets.UTF_8).use { it.readText() }
