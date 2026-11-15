@@ -145,7 +145,7 @@ bash ./gradlew :app:bundleRelease
 bash ./gradlew :app:connectedDebugAndroidTest
 ```
 
-Release-команды сейчас должны завершаться отказом проверки `verifyDefinitionsAudit`: определения имеют временную политику `wiktionary-provisional-v1`, `audit.passed=false`. Даже установка SDK не снимает этот блок. Для проверки данных без сборки APK доступны `bash ./gradlew :app:verifyDictionaryLicenses :app:syncDictionaryAssets`.
+Проверка `verifyDefinitionsAudit` по-прежнему отказывает без ручного аудита: определения имеют временную политику `wiktionary-provisional-v1`, `audit.passed=false`, и строгий вызов `python3 tools/build_game_data.py --check-release --out data` завершается кодом 2. Техническая pre-release сборка разрешена явным решением владельца от 2026-11-15 через `sostavslova.release.allowUnauditedDefinitions=true` в `gradle.properties`; она печатает предупреждение, не меняет `audit.passed` и не разрешает публикацию. Строку удалить после ручного аудита. Для проверки данных без сборки APK доступны `bash ./gradlew :app:verifyDictionaryLicenses :app:syncDictionaryAssets`.
 
 ### Оркестратор задач разработки
 

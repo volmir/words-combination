@@ -24,8 +24,12 @@ python3 tools/install_short15_package.py --package build/reports/short15/package
 `campaign_source.sha256` в манифесте совпадает с `campaign.json`.
 `verifyDictionaryLicenses` и `syncDictionaryAssets` проверяют эти хэши;
 `BuildConfig.CAMPAIGN_SHA256`, `WORDS_SHA256` и `DEFINITIONS_SHA256` доступны
-androidTest. `HAS_DEFINITIONS=true` оставлен без изменений; release-blocker
-`verifyDefinitionsAudit` продолжает отказывать, пока ручной аудит прав не пройден.
+androidTest. `HAS_DEFINITIONS=true` оставлен без изменений; строгий
+`--check-release` продолжает отказывать, пока ручной аудит прав не пройден.
+Техническую release-сборку разрешает waiver владельца от 2026-11-15
+(`sostavslova.release.allowUnauditedDefinitions=true` в `gradle.properties`);
+он печатает предупреждение, оставляет `audit.passed=false` и не разрешает
+публикацию.
 
 ## Откат
 

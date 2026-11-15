@@ -202,7 +202,8 @@ class LegacyCampaignMigrationTest {
         )
         val saved = migrate()
         assertEquals(listOf("река", "каре"), saved.levels.getValue("рекуперация").found)
-        assertEquals(1, saved.highestUnlockedLevel)
+        // «река» закрывает T1, «каре» — T2: две звезды при R=2 открывают уровень 2.
+        assertEquals(2, saved.highestUnlockedLevel)
         assertTrue(saved.seenExplanations.isEmpty())
     }
 

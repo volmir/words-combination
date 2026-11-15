@@ -536,6 +536,30 @@ class AuditTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "списки жалоб"):
             game.verify_audit(self.sample, self.out, "Тестировщик", overrides)
 
+    def test_owner_waiver_allows_technical_release_and_keeps_audit_false(self):
+        with self.assertRaisesRegex(ValueError, "ручному аудиту"):
+            game.require_release_audit(self.candidate)
+        waived = game.require_release_audit(self.candidate, allow_unaudited=True)
+        self.assertEqual("owner-waiver-unaudited", waived["release_audit"])
+        self.assertFalse(waived["publishable"])
+        self.assertTrue(any("аудит" in finding for finding in waived["findings"]))
+        manifest = json.loads((self.candidate / "manifest.json").read_text())
+        self.assertFalse(manifest["definitions"]["audit"]["passed"])
+        with (self.candidate / "definitions.db").open("ab") as output:
+            output.write(b"tampered")
+        with self.assertRaisesRegex(ValueError, "изменена"):
+            game.require_release_audit(self.candidate, allow_unaudited=True)
+
+    def test_check_release_cli_waiver_prints_warning(self):
+        args = argparse.Namespace(check_release=True, allow_unaudited_release=True,
+                                  out=self.candidate, overrides=game.TOOLS / "overrides",
+                                  config=game.TOOLS / "selection_config.json")
+        stderr = io.StringIO()
+        with patch("sys.stderr", stderr):
+            result = game.run(args)
+        self.assertEqual("owner-waiver-unaudited", result["release_audit"])
+        self.assertIn("ВНИМАНИЕ", stderr.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

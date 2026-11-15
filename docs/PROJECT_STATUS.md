@@ -1,8 +1,10 @@
 # Состояние проекта
 
-Снимок от **2026-11-15** после SHORT15-03. Приложение использует проверенную
+Снимок от **2026-11-15** после SHORT15-04. Приложение использует проверенную
 short15-кампанию; исторические материалы v1 ниже не являются текущей картой.
-Контракт перехода — [CAMPAIGN.md](CAMPAIGN.md).
+Контракт перехода — [CAMPAIGN.md](CAMPAIGN.md). Финальный gate, waiver владельца
+на техническую release-сборку, точные блокеры публикации и пути локальных APK —
+[SHORT15_RELEASE_GATE.md](SHORT15_RELEASE_GATE.md).
 
 ## Что реализовано
 
@@ -45,23 +47,35 @@ short15-кампанию; исторические материалы v1 ниж�
 
 | Проверка | Последний результат |
 |---|---|
-| `python3 -m unittest discover tools/tests` | 406 тестов, OK |
-| `bash ./gradlew :core:test` | 129 тестов, 0 ошибок и падений |
+| `python3 -m unittest discover tools/tests` | 408 тестов, OK |
+| `bash ./gradlew :core:test --rerun-tasks` | 135 тестов, 0 ошибок и падений |
 | `:app:verifyDictionaryLicenses` | Прошла: словарь, уровни, кампания, БД и manifest согласованы |
 | `:app:syncDictionaryAssets` | Прошла: скопированные assets совпадают с manifest |
 | `:app:compileDebugKotlin`, `:app:compileDebugAndroidTestKotlin` | Прошли |
-| `:app:lintDebug` | Прошла |
+| `:app:lintDebug` | Прошла; 0 errors, 10 warnings |
 | `:app:assembleDebug` | Прошла; APK содержит `assets/campaign.json` с SHA `eb440873…` |
-| `tools/validate_campaign.py` на установленных данных | `valid`, `installable=true`, `jvm_checked=true` |
-| `:app:verifyDefinitionsAudit` | Ожидаемый отказ: ручной аудит прав не пройден |
-| Инструментальные тесты на устройстве/эмуляторе | Не запускались |
+| `python3 tools/build_game_data.py --check-release --out data` | Код 2: строгий режим без waiver защищает публикацию |
+| `:app:assembleRelease` | Прошла по waiver владельца (2026-11-15): технический pre-release APK собран |
+| `tools/validate_campaign.py` на установленных данных | `valid`, `installable=true`, `jvm_checked=true`, 41 ветка R, JVM 49/49 |
+| `:app:verifyDefinitionsAudit` | Предупреждение `owner-waiver-unaudited`, `publishable=false`; `audit.passed` остаётся `false` |
+| JVM-прогон `LegacyCampaignMigrationTest` | 27 из 27 (устаревшее ожидание исправлено, см. отчёт) |
+| Инструментальные тесты на устройстве/эмуляторе | Не запускались: нет устройства и эмулятора |
 | GEN-05 (баланс вероятностей) | `exhausted`; не заявляется как доказанный баланс |
 
 `data/` до установки сохранена для отката в
 `.local/short15-rollback-v1-data/` с `SHA256SUMS.rollback`; в Git этот каталог
-не входит. Release по-прежнему заблокирован: `definitions.audit.passed=false`,
-`rights_review.passed=false`, политика `wiktionary-provisional-v1`. Debug APK
-не доказывает прохождение ручного smoke-test на телефоне.
+не входит. Публикация по-прежнему заблокирована: `definitions.audit.passed=false`,
+`rights_review.passed=false`, политика `wiktionary-provisional-v1`, release
+подписан debug-ключом, ручной smoke-test на телефоне не пройден. Debug APK и
+технический release APK не доказывают готовность к публикации.
+
+Готовые локальные артефакты: `app/build/outputs/apk/debug/app-debug.apk`
+(`a9e05e42…ff1a95`) и технический pre-release
+`app/build/outputs/apk/release/app-release.apk` (`8a28c77a…ae69`). Техническую
+release-сборку разрешает waiver владельца от 2026-11-15; строгий
+`--check-release` без флага по-прежнему отказывает, `audit.passed` остаётся
+`false`. SHA release-APK между пересборками не воспроизводится — фиксируйте SHA
+конкретного файла.
 
 ## Историческая v1-кампания (не текущая карта)
 
@@ -85,9 +99,10 @@ short15-кампанию; исторические материалы v1 ниж�
 ## Как продолжать работу
 
 1. Установить `app/build/outputs/apk/debug/app-debug.apk` на устройство и
-   пройти чеклист smoke-test из отчёта SHORT15-03: карта 15/6, T1–T7,
-   подсказки, финал 4/5, мастер 49/49, повторный вход и перезапуск.
-2. Для данных следовать [DICTIONARY_CLEANUP.md](DICTIONARY_CLEANUP.md) и
-   [LOCAL_DEFINITIONS.md](LOCAL_DEFINITIONS.md); не править `data/` вручную.
-3. Перед публикацией провести ручной аудит прав определений и отдельно решить
-   вопрос GEN-05/публикации. Не выдавать автопроверку за ручной аудит.
+   пройти чеклист smoke-test из [SHORT15_RELEASE_GATE.md](SHORT15_RELEASE_GATE.md)
+   и [uiux/SHORT15_MANUAL_QA.md](uiux/SHORT15_MANUAL_QA.md): карта 15/6,
+   T1–T7, подсказки, финал 4/5, мастер 49/49, повторный вход, обновление с v1
+   и перезапуск. Без этого публичный release не разрешён.
+2. Перед публикацией провести ручной аудит прав определений, решить вопрос
+   собственной лицензии/ключей/applicationId и отдельно решить судьбу GEN-05.
+   Не выдавать автопроверку за ручной аудит.

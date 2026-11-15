@@ -11,6 +11,7 @@ import random
 import re
 import shutil
 import sqlite3
+import sys
 import tempfile
 from contextlib import contextmanager
 import fcntl
@@ -650,20 +651,35 @@ def verify_audit(path, output, reviewer, overrides=TOOLS / "overrides", config=T
     return manifest["definitions"]["audit"]
 
 
-def require_release_audit(output, overrides=TOOLS / "overrides", config=TOOLS / "selection_config.json"):
+def require_release_audit(output, overrides=TOOLS / "overrides", config=TOOLS / "selection_config.json",
+                          allow_unaudited=False):
     database = output / "definitions.db"
     if not database.exists():
-        return
+        return {"release_audit": "no-database"}
     manifest = json.loads((output / "manifest.json").read_text())
     block = manifest.get("definitions") or {}
     audit = block.get("audit") or {}
     digest = dictionary.sha256_file(database)
-    if (block.get("rights_policy") not in {"own-generated-v1", "hybrid-v1"} or block.get("sha256") != digest or
-            audit.get("passed") is not True or audit.get("database_sha256") != digest or
+    if block.get("sha256") != digest:
+        raise ValueError("Release заблокирован: definitions.db изменена после генерации manifest")
+    findings = []
+    if block.get("rights_policy") not in {"own-generated-v1", "hybrid-v1"}:
+        findings.append("политика прав %s не подтверждена" % block.get("rights_policy"))
+    if (audit.get("passed") is not True or audit.get("database_sha256") != digest or
             type(audit.get("checked")) is not int or type(audit.get("bad")) is not int or
             audit.get("checked", 0) < 300 or not 0 <= audit.get("bad", -1) <= audit.get("checked", 0) * 0.03):
+        findings.append("ручной аудит определений не пройден (audit.passed=%s)" % audit.get("passed"))
+    if not findings:
+        verify_selection_inputs(manifest, overrides, config)
+        return {"release_audit": "ok", "publishable": True}
+    if not allow_unaudited:
         raise ValueError("Release заблокирован: definitions.db не соответствует пройденному ручному аудиту")
-    verify_selection_inputs(manifest, overrides, config)
+    try:
+        verify_selection_inputs(manifest, overrides, config)
+    except ValueError as error:
+        findings.append(str(error))
+    return {"release_audit": "owner-waiver-unaudited", "publishable": False,
+            "rights_policy": block.get("rights_policy"), "findings": findings}
 
 
 def build_reference_data(args, manifest, input_sha, config, taxonomy, a, b, candidates, stage, reports, code_hash, protected):
@@ -783,8 +799,12 @@ def build_reference_data(args, manifest, input_sha, config, taxonomy, a, b, cand
 
 def run(args):
     if args.check_release:
-        require_release_audit(args.out, args.overrides, args.config)
-        return {"release_audit": "ok"}
+        result = require_release_audit(args.out, args.overrides, args.config,
+                                       getattr(args, "allow_unaudited_release", False))
+        if not result.get("publishable", True):
+            print("ВНИМАНИЕ: release собирается по явному решению владельца без ручного аудита прав "
+                  "определений. Публикация запрещена: " + "; ".join(result["findings"]), file=sys.stderr)
+        return result
     if args.verify_audit:
         return verify_audit(args.verify_audit, args.out, args.reviewer, args.overrides, args.config)
     if getattr(args, "definitions_source", "own") == "clean":
@@ -1078,6 +1098,9 @@ def main():
     parser.add_argument("--verify-audit", type=Path)
     parser.add_argument("--reviewer", default="")
     parser.add_argument("--check-release", action="store_true")
+    parser.add_argument("--allow-unaudited-release", action="store_true",
+                        help="Разрешить техническую release-сборку без ручного аудита прав "
+                             "по явному решению владельца; публикация остаётся запрещённой.")
     args = parser.parse_args()
     try:
         if args.generation_date:
