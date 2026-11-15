@@ -112,6 +112,32 @@ class LevelSelectionTest(unittest.TestCase):
                                       set(metadata), [], config, 'аб')
         return selector, measured, metadata, low_sources, high_sources, config
 
+    def test_pinned_candidate_preserves_order_and_skips_search(self):
+        selector = self.selector()
+        document = dict(schema=selection.PINNED_SCHEMA, name='synthetic',
+                        profile='short15-release-v1',
+                        words=[self.sources[2], self.sources[1], self.sources[0]])
+        proposal = selection.make_pinned_proposal(selector, document, {'synthetic': True})
+        self.assertTrue(proposal['installable'], proposal['violations'])
+        self.assertEqual(document['words'], [row['word'] for row in proposal['slots']])
+        self.assertEqual('pinned', proposal['search_stats']['mode'])
+        self.assertTrue(proposal['pinned']['words'] == document['words'])
+        self.assertEqual([], proposal['pinned']['precheck_failures'])
+
+    def test_pinned_candidate_rejects_wrong_length_and_ineligible_word(self):
+        selector = self.selector()
+        short = dict(schema=selection.PINNED_SCHEMA, words=[self.sources[0]])
+        proposal = selection.make_pinned_proposal(selector, short, {})
+        self.assertFalse(proposal['installable'])
+        self.assertEqual('invalid', proposal['status'])
+        self.assertIn('pinned_size', {row['code'] for row in proposal['violations']})
+
+        bad = dict(schema=selection.PINNED_SCHEMA,
+                   words=[self.sources[0], 'аааааааа', self.sources[1]])
+        proposal = selection.make_pinned_proposal(selector, bad, {})
+        self.assertFalse(proposal['installable'])
+        self.assertIn('pinned_not_eligible', {row['code'] for row in proposal['violations']})
+
     def test_incomplete_26_of_30_improves_after_pool_expansion(self):
         full, measured, metadata, low_sources, high_sources, config = self.synthetic_campaign()
         partial = selection.Selector(

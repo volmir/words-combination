@@ -177,8 +177,8 @@ class CampaignTest {
             (6..8) to (listOf(TaskType.T1, TaskType.T2, TaskType.T3) to 3),
             (9..10) to (listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T4) to 3),
             (11..13) to (listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T4, TaskType.T5) to 4),
-            (14..14) to (listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T5, TaskType.T6) to 4),
-            (15..15) to (listOf(TaskType.T1, TaskType.T2, TaskType.T4, TaskType.T5, TaskType.T7) to 4),
+            (14..14) to (listOf(TaskType.T1, TaskType.T2, TaskType.T4, TaskType.T5, TaskType.T6) to 4),
+            (15..15) to (listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T5, TaskType.T7) to 4),
         )
         var t3Index = 0
         var t4Index = 0

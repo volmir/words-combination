@@ -68,6 +68,14 @@ class CampaignProfilesTest(unittest.TestCase):
                          [row['level'] for row in sim['targets']])
         self.assertEqual('short15-release-v1', sim['profile']['id'])
 
+    def test_short15_reserves_are_1_35x_except_closed_t5_t6(self):
+        self.assertEqual(14, profiles.reserve_size(self.profile, 1, 10, 'T1'))
+        self.assertEqual(2, profiles.reserve_size(self.profile, 15, 1, 'T3'))
+        self.assertEqual(1, profiles.reserve_size(self.profile, 15, 1, 'T5'))
+        self.assertEqual(5, profiles.reserve_size(self.profile, 14, 5, 'T6'))
+        self.assertEqual(5, profiles.t6_reserve(self.profile))
+        self.assertEqual(['ок', 'ка', 'ние', 'ик', 'ина'], profiles.t5_endings(self.profile))
+
     def test_legacy_thirty_profile_is_still_the_default(self):
         plan = generation.schedule(generation.load_config())
         self.assertEqual(100, sum(len(row['tasks']) for row in plan))

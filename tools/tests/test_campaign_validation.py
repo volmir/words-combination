@@ -31,7 +31,7 @@ def fixture():
                             dict(id='theme', type='T6', category='objects', n=1, words=[]),
                             dict(id='letter', type='T7', letter='р', n=2)])])
     payload = dict(words={w: dict(noun=True, labels=[], category='objects',
-                         category_source='rules:synthetic', observed_frequency=dict(frequency=100)) for w in words},
+                         category_source='rules:synthetic', observed_frequency=dict(frequency=100, freq_rank=100)) for w in words},
                    assessments=[dict(word=w, role=r, assessment=dict(status='suitable'))
                                 for w in words for r in ('source', 'target')], profiles={})
     hints = {w: dict(forms=[w], related=[], definitions=['Предмет для хранения небольших вещей.']) for w in words}
@@ -47,10 +47,10 @@ def short15_fixture():
     core = 'картотеканич'
     tags = [ch for ch in audit.ALPHABET if ch not in core][:15]
     counts = [42, 44, 54, 73, 80, 103, 112, 116, 134, 156, 168, 190, 199, 221, 215]
-    endings = {11: 'ок', 12: 'ик', 13: 'ка', 14: 'ник', 15: 'чик'}
+    endings = {11: 'ок', 12: 'ка', 13: 'ние', 14: 'ик', 15: 'ина'}
     prefixes = {
-        'ок': ['рт', 'тр'], 'ик': ['рат', 'тар'], 'ка': ['ртое', 'тоер'],
-        'ник': ['ртое', 'тоер'], 'чик': ['ртое', 'тоер'],
+        'ок': ['рт', 'тр'], 'ка': ['ртое', 'тоер'], 'ние': ['рт', 'тр'],
+        'ик': ['рата', 'тара'], 'ина': ['рток', 'трок'],
     }
     plan = generation.schedule(generation.load_config(), profile)
     sources = [core + tag for tag in tags]
@@ -78,7 +78,7 @@ def short15_fixture():
             metadata[word] = dict(noun=True, labels=[],
                                   category='professions' if number == 14 else 'objects',
                                   category_source='rules:synthetic',
-                                  observed_frequency=dict(frequency=100))
+                                  observed_frequency=dict(frequency=100, freq_rank=100))
             hints[word] = dict(forms=[word], related=[], definitions=['Предмет для хранения небольших вещей.'])
         tasks = []
         t4_index = 0
@@ -108,7 +108,7 @@ def short15_fixture():
     for source in sources:
         metadata[source] = dict(noun=True, labels=[], category='objects',
                                 category_source='rules:synthetic',
-                                observed_frequency=dict(frequency=100))
+                                observed_frequency=dict(frequency=100, freq_rank=100))
         hints[source] = dict(forms=[source], related=[], definitions=['Предмет для хранения небольших вещей.'])
     vocabulary = sorted(set(dictionary) | set(sources))
     payload = dict(words=metadata,
@@ -267,6 +267,73 @@ class IndependentCampaignValidationTest(unittest.TestCase):
                                  production=True, profile=profile)
         self.assertFalse(foreign['installable'])
         self.assertTrue(any(row['code'] == 'campaign_size' for row in foreign['balance_deviations']))
+
+    def test_short15_t4_quality_rejects_unfrequent_target(self):
+        campaign, words, payload, hints, previous = short15_fixture()
+        profile = profiles.get('short15-release-v1')
+        endings = json.loads((Path(audit.__file__).parent / 'campaign_config.json').read_text())['endings']
+        categories = json.loads((Path(audit.__file__).parent / 'categories.json').read_text())
+        target = next(t['targets'][0] for level in campaign['levels']
+                      for t in level['tasks'] if t['type'] == 'T4')
+        payload['words'][target]['observed_frequency']['freq_rank'] = 6000
+        report = audit.validate(campaign, words, payload, hints, previous, production=True,
+                                endings=endings, categories=categories, profile=profile)
+        self.assertFalse(report['installable'])
+        self.assertIn('t4_quality', {row['code'] for row in report['balance_deviations']})
+
+    def test_short15_t4_quality_rejects_service_stopword(self):
+        campaign, words, payload, hints, previous = short15_fixture()
+        target = 'така'
+        words.append(target)
+        payload['words'][target] = dict(
+            noun=True, labels=[], category='objects', category_source='rules:synthetic',
+            observed_frequency=dict(frequency=100, freq_rank=100))
+        payload['assessments'] += [dict(word=target, role=role, assessment=dict(status='suitable'))
+                                   for role in ('source', 'target')]
+        hints[target] = dict(forms=[target], related=[],
+                             definitions=['Служебное слово для примера.'])
+        next(t for level in campaign['levels'] for t in level['tasks']
+             if t['type'] == 'T4')['targets'] = [target]
+        report = audit.validate(campaign, words, payload, hints, previous, production=True,
+                                profile=profiles.get('short15-release-v1'))
+        self.assertFalse(report['installable'])
+        self.assertTrue(any(row['code'] == 't4_quality'
+                            and 'function/suspicious' in row['reason']
+                            for row in report['balance_deviations']))
+
+    def test_short15_t5_rejects_ending_outside_profile(self):
+        campaign, words, payload, hints, previous = short15_fixture()
+        profile = profiles.get('short15-release-v1')
+        endings = json.loads((Path(audit.__file__).parent / 'campaign_config.json').read_text())['endings']
+        categories = json.loads((Path(audit.__file__).parent / 'categories.json').read_text())
+        task = next(t for level in campaign['levels'] for t in level['tasks'] if t['type'] == 'T5')
+        task['ending'] = 'ра'
+        report = audit.validate(campaign, words, payload, hints, previous, production=True,
+                                endings=endings, categories=categories, profile=profile)
+        self.assertFalse(report['installable'])
+        self.assertIn('t5_ending', {row['code'] for row in report['balance_deviations']})
+
+    def test_short15_final_t3_requires_several_legal_answers(self):
+        campaign, words, payload, hints, previous = short15_fixture()
+        profile = profiles.get('short15-release-v1')
+        endings = json.loads((Path(audit.__file__).parent / 'campaign_config.json').read_text())['endings']
+        categories = json.loads((Path(audit.__file__).parent / 'categories.json').read_text())
+        final = next(level for level in campaign['levels'] if level['number'] == 15)
+        next(t for t in final['tasks'] if t['type'] == 'T3')['minLength'] = len(final['word'])
+        report = audit.validate(campaign, words, payload, hints, previous, production=True,
+                                endings=endings, categories=categories, profile=profile)
+        self.assertFalse(report['installable'])
+        self.assertIn('t3_final_anchor_only',
+                      {row['code'] for row in report['balance_deviations']})
+
+    def test_short_repeat_metric_weights_short_words_without_changing_jaccard(self):
+        report = self.run_audit()
+        repeats = report['short_repeats']
+        self.assertEqual({'3': 3, '4': 2, 'longer': 1}, repeats['weights'])
+        self.assertEqual(20, repeats['weighted_adjacent'])
+        self.assertEqual(17, repeats['short_weighted_adjacent'])
+        self.assertEqual(2, repeats['top20'][0]['levels'])
+        self.assertEqual('кот', repeats['top20'][0]['word'])
 
     def test_production_size_schedule_bounds_alphabet_and_retention(self):
         self.campaign['levels'][0]['requiredStars'] = 4

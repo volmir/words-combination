@@ -18,6 +18,17 @@ CONFIG = ROOT / 'tools/campaign_profiles.json'
 LEVEL_PROFILE_CONFIG = ROOT / 'tools/level_profile_config.json'
 CATEGORIES = ROOT / 'tools/categories.json'
 
+# Служебные и подозрительные слова, которые нельзя назначать загадками T4.
+# Список не заменяет частотный/тематический фильтр, а закрывает известные
+# ложные «существительные» очищенного словаря (местоимения, формы, шум).
+T4_STOPWORDS = frozenset('''
+есть они она оно така так том рад вид дело раз три два один это все всё как что кто где когда там тут уже еще ещё
+или но да нет не ни же ли бы мы вы я он его ее её их нас вас себя свой своя свое своё этот тот та то те весь вся
+какой такой чей который которые потому поэтому также тоже только даже ведь вот вон ну уж мол де ага ого под пот лет
+эта эти этих тех этого эту этой этом этим ими нам вами нами мной тобой кем чем кого чего кому чему перед через между
+над без для при про около после до от по из у к о об во на за с со а и абы дабы либо нежели чем
+'''.split())
+
 
 def sha256_file(path):
     h = hashlib.sha256()
@@ -129,8 +140,10 @@ def validate_profile(profile):
     if required != [1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4]:
         raise ValueError('Неверная схема R/S')
     master = [r['types'] for r in rows[-2:]]
-    if sorted(master) != [['T1', 'T2', 'T3', 'T5', 'T6'], ['T1', 'T2', 'T4', 'T5', 'T7']]:
-        raise ValueError('Уровень 14 обязан нести T6, уровень 15 — T7, по 5 различных типов')
+    if sorted(master) != [['T1', 'T2', 'T3', 'T5', 'T7'], ['T1', 'T2', 'T4', 'T5', 'T6']]:
+        # T3 финала живёт на уровне 15 (документалист), T4 — на уровне 14
+        # (контрабандист): на контрабандисте нет цели T3 длины 9 с подсказкой.
+        raise ValueError('Уровень 14 обязан нести T6 и T4, уровень 15 — T7 и T3, по 5 различных типов')
     if profile.get('t1_minimum') != [10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40]:
         raise ValueError('Неверный ряд T1 minimum')
     t2 = profile['t2_minimum']
@@ -142,9 +155,20 @@ def validate_profile(profile):
         raise ValueError('Неверное число целей T4 по этапам')
     if profile.get('t5_min_lengths') != [5, 5, 6, 7, 8]:
         raise ValueError('Неверные длины T5')
+    if profile.get('t5_endings') != ['ок', 'ка', 'ние', 'ик', 'ина']:
+        raise ValueError('T5 15K обязан использовать окончания [ок, ка, ние, ик, ина]')
+    t4 = profile.get('t4') or {}
+    if (t4.get('min_length') != 4 or t4.get('max_frequency_rank') != 5000 or
+            t4.get('min_hint_length') != 20):
+        raise ValueError('Неверные пороги качества T4')
+    allowed = t4.get('allowed_targets') or []
+    if (len(allowed) != 11 or len(set(allowed)) != 11 or
+            any(not isinstance(w, str) or w != w.strip().lower() or len(w) < t4['min_length']
+                for w in allowed)):
+        raise ValueError('T4 обязан иметь 11 уникальных канонических целей 15K')
     t6 = profile.get('t6') or {}
-    if t6.get('n') != 5 or not isinstance(t6.get('category'), str) or not t6['category'].strip():
-        raise ValueError('T6 обязан требовать n=5 на реальной теме профессий')
+    if t6.get('n') != 5 or t6.get('reserve_min') != 5 or not isinstance(t6.get('category'), str) or not t6['category'].strip():
+        raise ValueError('T6 обязан требовать n=5, резерв 5 и реальную тему профессий')
     categories = json.loads(CATEGORIES.read_text(encoding='utf-8'))
     if t6['category'] not in categories:
         raise ValueError('Тема T6 отсутствует в tools/categories.json: ' + t6['category'])
@@ -163,8 +187,12 @@ def validate_profile(profile):
         raise ValueError('Правила ввода и темы без изменений: count_min_length=4, category_global_min=40')
     reserve = profile.get('reserve_bands') or []
     if [(b['first'], b['last']) for b in reserve] != [(1, 5), (6, 10), (11, 15)] or \
-            [(b['numerator'], b['denominator']) for b in reserve] != [(3, 1), (5, 2), (2, 1)]:
-        raise ValueError('Неверные резервные доли')
+            [(b['numerator'], b['denominator']) for b in reserve] != [(27, 20), (27, 20), (27, 20)]:
+        raise ValueError('Неверные резервные доли 15K')
+    overrides = profile.get('reserve_type_overrides') or {}
+    if overrides != {'T5': {'numerator': 1, 'denominator': 1},
+                     'T6': {'numerator': 1, 'denominator': 1}}:
+        raise ValueError('T5/T6 должны иметь резерв ровно n')
     thresholds = profile.get('thresholds') or {}
     reference = json.loads(LEVEL_PROFILE_CONFIG.read_text(encoding='utf-8'))
     for key in ('source_min_length', 'source_max_length', 'answer_min_length', 'counted_min_length',
@@ -226,15 +254,19 @@ def t2_minimum(profile, level):
     return minimum['values'][index]
 
 
-def reserve_fraction(profile, level):
+def reserve_fraction(profile, level, task_type=None):
+    overrides = profile.get('reserve_type_overrides') or {}
+    if task_type in overrides:
+        item = overrides[task_type]
+        return item['numerator'], item['denominator']
     for band in profile['reserve_bands']:
         if band['first'] <= level <= band['last']:
             return band['numerator'], band['denominator']
     raise ValueError('Уровень вне резервных полос: ' + str(level))
 
 
-def reserve_size(profile, level, needed):
-    numerator, denominator = reserve_fraction(profile, level)
+def reserve_size(profile, level, needed, task_type=None):
+    numerator, denominator = reserve_fraction(profile, level, task_type)
     return (needed * numerator + denominator - 1) // denominator
 
 
@@ -244,6 +276,18 @@ def t3_length(profile, appearance_zero_based):
 
 def t5_length(profile, appearance_zero_based):
     return profile['t5_min_lengths'][appearance_zero_based]
+
+
+def t5_endings(profile):
+    return list(profile.get('t5_endings') or [])
+
+
+def t4_policy(profile):
+    return deepcopy(profile.get('t4') or {})
+
+
+def t6_reserve(profile):
+    return int((profile.get('t6') or {}).get('reserve_min', profile['t6']['n']))
 
 
 def expected_stages(profile):
@@ -272,10 +316,12 @@ def selection_config_for(name, base, path=CONFIG):
     config['profile_sha256'] = digest(profile)
     config['profile_thresholds'] = deepcopy(profile['thresholds'])
     config['profile_citations'] = dict(
-        t6_category=profile['t6']['category'], t7_n=profile['t7']['n'],
-        t1_minimum=profile['t1_minimum'], t2_minimum=profile['t2_minimum'],
-        t3_min_lengths=profile['t3_min_lengths'], t5_min_lengths=profile['t5_min_lengths'],
-        t4_riddles_by_stage=profile['t4_riddles_by_stage'])
+        t6_category=profile['t6']['category'], t6_reserve_min=profile['t6'].get('reserve_min'),
+        t7_n=profile['t7']['n'], t1_minimum=profile['t1_minimum'],
+        t2_minimum=profile['t2_minimum'], t3_min_lengths=profile['t3_min_lengths'],
+        t5_min_lengths=profile['t5_min_lengths'], t5_endings=profile.get('t5_endings'),
+        t4_riddles_by_stage=profile['t4_riddles_by_stage'],
+        t4_allowed_targets=(profile.get('t4') or {}).get('allowed_targets'))
     config['levels'] = 15
     config['bands'] = [dict(first=b['first'], last=b['last'], min=b['min'], max=b['max'])
                        for b in profile['bands']]
@@ -313,8 +359,11 @@ def simulation_config_for(name, base, path=CONFIG):
     return config
 
 
-def source_hashes(path=CONFIG):
-    """SHA-256 входов, от которых зависит профиль и его проверки."""
+def source_hashes(path=CONFIG, words=None, levels=None, manifest=None, definitions_db=None):
+    """SHA-256 входов, от которых зависит профиль и его проверки.
+
+    Пути можно переопределить для staged-словаря; по умолчанию остаются data/.
+    """
     paths = {
         'campaign_profiles': Path(path),
         'level_profile_config': LEVEL_PROFILE_CONFIG,
@@ -322,10 +371,11 @@ def source_hashes(path=CONFIG):
         'campaign_config': ROOT / 'tools/campaign_config.json',
         'campaign_simulation_config': ROOT / 'tools/campaign_simulation_config.json',
         'categories': CATEGORIES,
-        'words': ROOT / 'data/words.txt',
-        'levels': ROOT / 'data/levels.json',
-        'manifest': ROOT / 'data/manifest.json',
-        'definitions_db': ROOT / 'data/definitions.db',
+        'words': Path(words) if words is not None else ROOT / 'data/words.txt',
+        'levels': Path(levels) if levels is not None else ROOT / 'data/levels.json',
+        'manifest': Path(manifest) if manifest is not None else ROOT / 'data/manifest.json',
+        'definitions_db': (Path(definitions_db) if definitions_db is not None
+                           else ROOT / 'data/definitions.db'),
     }
     return {key: sha256_file(file) for key, file in paths.items() if Path(file).exists()}
 

@@ -93,7 +93,7 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
         profile = campaign_profiles.get(profile)
     report = dict(schema='campaign-validation-v1', installable=True, unreachable=[],
                   balance_deviations=[], parity_deviations=[], levels=[], r_combinations_checked=0,
-                  jvm_checked=False)
+                  jvm_checked=False, t4_quality=[], t6_quality=[])
     if profile is not None:
         report['profile'] = dict(id=profile['id'], digest=campaign_profiles.digest(profile),
                                  levels=profile['levels'], max_stars=profile['max_stars'],
@@ -144,6 +144,11 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
     category_global_min = profile['category_global_min'] if profile is not None else 40
     familiar = {w for w in words if suitable(w, 'target')}
     useful = {w for w in familiar if prepared_hint(w, hints.get(w, {})) is not None}
+    t4_policy = campaign_profiles.t4_policy(profile) if profile is not None else {}
+    t4_allowed = set(t4_policy.get('allowed_targets') or [])
+    t5_profile_endings = (set(campaign_profiles.t5_endings(profile))
+                          if profile is not None else None)
+    t6_reserve = (campaign_profiles.t6_reserve(profile) if profile is not None else None)
     frequencies = Counter(''.join(sorted(words)))
     levels = campaign['levels']
     bad = lambda code, reason, n=None, t=None: issue(report, 'balance_deviations', code, reason, n, t)
@@ -319,8 +324,34 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
                     fail('assigned_target', 'Not a canonical, distinct, buildable, recognizable target: ' + target)
                 if kind == 'T4' and target not in useful:
                     fail('riddle_hint', 'No useful safely masked definition: ' + target)
+                if kind == 'T4' and profile is not None:
+                    meta = metadata.get(target, {})
+                    observed = meta.get('observed_frequency') or {}
+                    text = prepared_hint(target, hints.get(target, {})) or ''
+                    if not meta.get('noun', False):
+                        fail('t4_quality', 'Riddle target is not a noun: ' + target)
+                    if target in campaign_profiles.T4_STOPWORDS:
+                        fail('t4_quality', 'Riddle target is a function/suspicious word: ' + target)
+                    if len(target) < int(t4_policy.get('min_length', 4)):
+                        fail('t4_quality', 'Riddle target is too short: ' + target)
+                    if observed.get('freq_rank', 10**9) > int(t4_policy.get('max_frequency_rank', 5000)):
+                        fail('t4_quality', 'Riddle target is not frequent enough: ' + target)
+                    if len(text) < int(t4_policy.get('min_hint_length', 20)):
+                        fail('t4_quality', 'Riddle hint is too short: ' + target)
+                    if normalize(target) in normalize(text):
+                        fail('t4_quality', 'Riddle hint reveals the answer: ' + target)
                 if kind == 'T3' and target not in useful:
                     fail('hint_target', 'No useful safely masked definition for hint target: ' + target)
+            if kind == 'T4':
+                report['t4_quality'].append(dict(
+                    level=n, task=key, targets=[
+                        dict(word=target,
+                             frequency_rank=metadata.get(target, {}).get('observed_frequency', {}).get('freq_rank'),
+                             length=len(target),
+                             hint_length=len(prepared_hint(target, hints.get(target, {})) or ''),
+                             noun=bool(metadata.get(target, {}).get('noun', False)),
+                             allowed=(target in t4_allowed if t4_allowed else None))
+                        for target in task['targets']]))
             if kind == 'T5':
                 ending = task['ending']
                 if ending in used_endings:
@@ -328,6 +359,8 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
                 used_endings.add(ending)
                 if ending != normalize(ending) or not 2 <= len(ending) <= 4 or (endings is not None and ending not in endings):
                     fail('ending', 'Expected meaningful canonical ending from configured inventory')
+                if t5_profile_endings is not None and ending not in t5_profile_endings:
+                    fail('t5_ending', 'Ending is outside the short15 15K inventory: ' + ending)
             if kind == 'T6':
                 theme = task['category']
                 if theme in used_categories:
@@ -350,14 +383,32 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
                 if (profile is not None or production) and global_count < category_global_min:
                     fail('category_global_reserve',
                          f'Global recognizable category={global_count}, need {category_global_min}')
+                if profile is not None:
+                    local_safe = sorted(w for w in answers if category(w) == theme and w in familiar)
+                    report['t6_quality'].append(dict(
+                        level=n, task=key, category=theme, n=task.get('n'),
+                        local_words=sorted(w for w in answers if category(w) == theme),
+                        local_recognizable=local_safe, local_recognizable_count=len(local_safe),
+                        reserve_min=t6_reserve, global_recognizable=global_count))
             accepted = task_answers(task, answers, category, counted_min_length)
+            if profile is not None and kind == 'T3' and n == profile['levels'] and len(accepted) < 2:
+                fail('t3_final_anchor_only',
+                     f'Final T3 needs several legal answers, got {len(accepted)}')
             # T4 reserve is measured BEFORE assigning fixed targets, not just targets themselves.
-            pool = (safe & useful) if kind == 'T4' else safe & accepted
+            if kind == 'T4':
+                pool = safe & useful
+            elif kind == 'T3':
+                # T3 awards the star for any legal long answer; the assigned
+                # hint anchor is only one of several accepted words.
+                pool = accepted
+            else:
+                pool = safe & accepted
             if profile is not None:
-                numerator, denominator = campaign_profiles.reserve_fraction(profile, n)
+                numerator, denominator = campaign_profiles.reserve_fraction(profile, n, kind)
             else:
                 numerator, denominator = (3, 1) if n <= 10 else (5, 2) if n <= 20 else (2, 1)
-            minimum = (needed * numerator + denominator - 1) // denominator
+            minimum = (t6_reserve if kind == 'T6' and t6_reserve is not None
+                       else (needed * numerator + denominator - 1) // denominator)
             if len(accepted) < needed:
                 impossible('unreachable_task', f'Only {len(accepted)} legal answers; need {needed}', n, key)
             if len(pool) < minimum:
@@ -400,6 +451,32 @@ def validate(campaign, dictionary, payload, hints, previous, production=True, en
     maximum = max((p['jaccard'] for p in collisions), default=0.0)
     report['jaccard'] = dict(basis='independently recounted recognizable answer sets',
                              mean=mean, maximum=maximum, pairs=collisions)
+    # Отдельная метрика повторяемости обычных коротких слов; raw Jaccard выше
+    # не меняется. Вес 3 для длины 3, 2 для длины 4 и 1 для более длинных слов
+    # (ориентир 15K — 605); short_weighted считает только слова длины 3-4.
+    weight = lambda word: 3 if len(word) == 3 else 2 if len(word) == 4 else 1
+    short_weight = lambda word: 3 if len(word) == 3 else 2 if len(word) == 4 else 0
+    adjacent = []
+    for index, (left, right) in enumerate(zip(recognizable_sets, recognizable_sets[1:])):
+        shared = sorted(left & right)
+        short = [w for w in shared if 3 <= len(w) <= 4]
+        adjacent.append(dict(
+            left=sources[index], right=sources[index + 1],
+            words=short, weighted=sum(weight(w) for w in shared),
+            short_weighted=sum(short_weight(w) for w in shared)))
+    repeats = Counter(word for group in recognizable_sets for word in group if 3 <= len(word) <= 4)
+    top_short = [dict(word=word, levels=count, weighted=count * weight(word))
+                 for word, count in sorted(repeats.items(), key=lambda row: (-row[1], -weight(row[0]), row[0]))[:20]]
+    report['short_repeats'] = dict(
+        basis='adjacent recognizable answer sets; 3/4-letter words weighted 3/2, longer words 1',
+        weights={'3': 3, '4': 2, 'longer': 1},
+        weighted_adjacent=sum(row['weighted'] for row in adjacent),
+        short_weighted_adjacent=sum(row['short_weighted'] for row in adjacent),
+        adjacent_pairs=adjacent,
+        repeated_on_at_least_5_levels=sorted(
+            (dict(word=word, levels=count) for word, count in repeats.items() if count >= 5),
+            key=lambda row: (-row['levels'], row['word'])),
+        top20=top_short)
     if profile is not None:
         if len(collisions) != profile['jaccard']['pairs']:
             bad('jaccard_pairs', f"Expected {profile['jaccard']['pairs']} pairs, got {len(collisions)}")
@@ -494,9 +571,12 @@ def run(args):
     if profile is not None:
         # Воспроизводимость: реестр профилей и его digest фиксируются в отчёте,
         # а сам профиль целиком передаётся JVM-валидатору тем же байт-объектом.
-        report['profile'].update(alphabet_required=profile['alphabet_required'],
-                                 source_sha256=campaign_profiles.source_hashes(),
-                                 campaign_profiles_sha256=campaign_profiles.profiles_file_sha256())
+        report['profile'].update(
+            alphabet_required=profile['alphabet_required'],
+            source_sha256=campaign_profiles.source_hashes(
+                words=args.words, levels=args.previous_levels,
+                manifest=args.manifest, definitions_db=args.database),
+            campaign_profiles_sha256=campaign_profiles.profiles_file_sha256())
         report['inputs']['campaign_profiles_sha256'] = campaign_profiles.profiles_file_sha256()
     report['inputs']['core_processors'] = {name: file_hash(ROOT / 'core/src/main/kotlin/com/example/sostavslova/core' / name)
         for name in ('Alphabet.kt', 'WordIndex.kt', 'GameState.kt', 'TaskRules.kt', 'CampaignRules.kt',

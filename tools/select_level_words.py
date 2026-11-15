@@ -234,6 +234,10 @@ class Selector:
         self.profile_id = None if profile is None else profile['id']
         self.alphabet = alphabet
         self.size = self.config['levels']
+        self.t3_appearance = {slot: index for index, slot in enumerate(
+            slot for slot in range(self.size) if 'T3' in self.types(slot))}
+        self.t5_appearance = {slot: index for index, slot in enumerate(
+            slot for slot in range(self.size) if 'T5' in self.types(slot))}
         self.seed = self.config['seed'] if seed is None else seed
         self.time_limit_seconds = time_limit_seconds
         self.max_checks = max_checks
@@ -380,20 +384,27 @@ class Selector:
         return ([f'T{i}' for i in range(1, slot // 5 + 2)] if slot < 25
                 else self.config['master_types'][slot - 25])
 
-    def task_options(self, word):
+    def task_options(self, word, slot=None):
         p, plan = self.profiles[word], self.config['planning']
         r = p['recognizable']
         themes = {theme for theme, count in r['themes'].items() if count and theme != 'other'}
-        if self.profile is not None:
-            # Тема T6 закреплена профилем и не подменяется при поиске GEN-02.
+        t3_length = plan['long_min_length']
+        t5_length = plan['suffix_min_length']
+        if self.profile is not None and slot is not None:
+            # Ранние T3/T5 не должны требовать максимальную длину профиля:
+            # точная длина берётся из появления в расписании.
+            if slot in self.t3_appearance:
+                t3_length = campaign_profiles.t3_length(self.profile, self.t3_appearance[slot])
+            if slot in self.t5_appearance:
+                t5_length = campaign_profiles.t5_length(self.profile, self.t5_appearance[slot])
             themes &= {self.profile['t6']['category']}
         return {
             'T1': {'count'} if r['count_4plus'] else set(),
             'T2': {k for k, v in r['initial_4plus'].items() if v},
-            'T3': {w for w in p['riddle_targets'] if len(w) >= plan['long_min_length'] and w not in ROLE_EXCLUSIONS},
+            'T3': {w for w in p['riddle_targets'] if len(w) >= t3_length and w not in ROLE_EXCLUSIONS},
             'T4': set(p['riddle_targets']) - ROLE_EXCLUSIONS,
             'T5': {suffix for suffix, lengths in r['suffix_lengths'].items()
-                   if any(int(n) >= plan['suffix_min_length'] and count for n, count in lengths.items())},
+                   if any(int(n) >= t5_length and count for n, count in lengths.items())},
             'T6': themes,
             'T7': {letter for letter, count in r['containing'].items() if count}}
 
@@ -404,7 +415,8 @@ class Selector:
         count = len(self.profiles[word]['recognizable_answers'])
         if not b['min'] <= count <= b['max']:
             failures.append('recognizable_range')
-        failures.extend(t + '_empty' for t in self.types(slot) if not self.options[word][t])
+        options = self.task_options(word, slot)
+        failures.extend(t + '_empty' for t in self.types(slot) if not options[t])
         return failures
 
     def range_distance(self, slot, word, config=None):
@@ -451,8 +463,9 @@ class Selector:
                 continue
             if word not in self.eligible:
                 continue
+            slot_options = self.task_options(word, slot)
             for t in self.types(slot):
-                options = self.options[word][t]
+                options = slot_options[t]
                 reserve += min(len(options), self.config['planning']['reserve_per_task'])
                 group = ('targets_T3_T4' if t in ('T3', 'T4') else
                          'suffixes_T5' if t == 'T5' else 'themes_T6' if t == 'T6' else None)
@@ -1130,6 +1143,7 @@ def proposal_search_stats(selector, trace):
     refinement = [row for row in trace if row.get('phase') == 'jaccard_refinement']
     greedy = [row for row in trace if 'restart' in row and row.get('phase') != 'jaccard_refinement']
     return {
+        'mode': stats.get('mode'),
         'seed': selector.seed, 'policy': selector.policy,
         'policy_limits': dict(mean_jaccard_max=selector.config['mean_jaccard_max'],
                               max_jaccard_max=selector.config['max_jaccard_max'],
@@ -1147,7 +1161,59 @@ def proposal_search_stats(selector, trace):
         'pool': selector.pool_report}
 
 
-def make_proposal(selector, selected, trace, inputs):
+PINNED_SCHEMA = 'pinned-campaign-candidate-v1'
+
+
+def read_pinned(path):
+    """Read the explicit 15K candidate; never infer or reorder its words."""
+    document = json.loads(Path(path).read_text(encoding='utf-8'))
+    if document.get('schema') != PINNED_SCHEMA:
+        raise ValueError('Неверная схема pinned-кандидата')
+    words = document.get('words')
+    if not isinstance(words, list) or not words or any(not isinstance(w, str) for w in words):
+        raise ValueError('Pinned-кандидат должен содержать непустой список слов')
+    if any(w != normalize_form(w) for w in words) or len(set(words)) != len(words):
+        raise ValueError('Pinned-кандидат содержит неканонические или повторные слова')
+    return document
+
+
+def pinned_failures(selector, words):
+    """Local, deterministic checks before any generation; order is preserved."""
+    failures = []
+    if len(words) != selector.size:
+        failures.append(dict(code='pinned_size', actual=len(words), expected=selector.size))
+    for slot, word in enumerate(words[:selector.size], 1):
+        if word not in selector.eligible:
+            failures.append(dict(code='pinned_not_eligible', slot=slot, word=word))
+            continue
+        local = selector.local_failures(slot - 1, word)
+        if local:
+            failures.append(dict(code='pinned_local_violation', slot=slot, word=word, reasons=local))
+    return failures
+
+
+def make_pinned_proposal(selector, document, inputs):
+    words = list(document['words'])
+    failures = pinned_failures(selector, words)
+    trace = SearchTrace(dict(phase='pinned', slot=slot, word=word)
+                        for slot, word in enumerate(words, 1))
+    trace.stats = {'mode': 'pinned', 'checks': 0, 'timed_out': False}
+    # Keep a diagnostic proposal even when the pinned list is malformed: unknown
+    # words become empty slots for evaluate(), never silently replaced.
+    evaluated = (words + [None] * selector.size)[:selector.size]
+    evaluated = [w if w in selector.eligible else None for w in evaluated]
+    proposal = make_proposal(selector, evaluated, trace, inputs, with_spares=False)
+    proposal['pinned'] = dict(schema=PINNED_SCHEMA, name=document.get('name'),
+                              profile=document.get('profile'), words=words,
+                              precheck_failures=failures)
+    if failures:
+        proposal['installable'] = False
+        proposal['status'] = 'invalid'
+        proposal['violations'] = failures + proposal.get('violations', [])
+    return proposal
+
+
+def make_proposal(selector, selected, trace, inputs, with_spares=True):
     score, metrics, failures, reservations = selector.evaluate(selected)
     strict_failures = selector.evaluate(selected, config=selector.default_config)[2]
     strict_installable = not strict_failures
@@ -1156,7 +1222,7 @@ def make_proposal(selector, selected, trace, inputs):
     installable = not failures
     status = 'valid' if installable else 'infeasible' if feasibility['proven_infeasible'] else 'search_exhausted'
     hard_by_matching = feasibility['distinct_source_matching']['matched'] < selector.size
-    spares = selector.spares(selected)
+    spares = selector.spares(selected) if with_spares else [[] for _ in selected]
     preferred = []
     for word in sorted(PREFERRED_SOURCES):
         p = selector.profiles.get(word)
@@ -1190,7 +1256,7 @@ def make_proposal(selector, selected, trace, inputs):
         slots.append({'index': slot + 1, 'word': word, 'previous_word': old,
                       'retained_from_old_campaign': word in selector.old,
                       'range': selector.band(slot), 'planned_types': selector.types(slot),
-                      'task_pool_sizes': {t: len(selector.options[word][t]) for t in selector.types(slot)}
+                      'task_pool_sizes': {t: len(selector.task_options(word, slot)[t]) for t in selector.types(slot)}
                           if word in selector.eligible else {},
                       'all_answers': len(p['answers']) if p else 0,
                       'recognizable_answers': len(p['recognizable_answers']) if p else 0,
@@ -1404,9 +1470,19 @@ def run(args):
                             time_limit_seconds=getattr(args, 'time_limit_seconds', None),
                             max_checks=getattr(args, 'max_checks', None),
                             seed=getattr(args, 'seed', None))
-        selected, trace = selector.search()
-        attempts.append((profile['id'], selector, make_proposal(selector, selected, trace, inputs)))
+        pinned = getattr(args, 'pinned', None)
+        if pinned:
+            document_pinned = read_pinned(pinned)
+            if document_pinned.get('profile') != profile['id']:
+                raise ValueError('Pinned-кандидат относится к другому профилю')
+            attempts.append((profile['id'], selector,
+                             make_pinned_proposal(selector, document_pinned, inputs)))
+        else:
+            selected, trace = selector.search()
+            attempts.append((profile['id'], selector, make_proposal(selector, selected, trace, inputs)))
     else:
+        if getattr(args, 'pinned', None):
+            raise ValueError('Pinned-кандидат требует --profile short15-release-v1')
         policies = requested_policies(args)
         for name in policies:
             policy_thresholds(name)  # reject unknown names before touching the cache
@@ -1429,7 +1505,8 @@ def run(args):
         chosen = min(attempts, key=lambda row: (
             len(row[2]['violations']), -row[2]['metrics']['selected'],
             row[2]['metrics']['max_jaccard'], row[2]['metrics']['mean_jaccard'],
-            PROVISIONAL_POLICY_ORDER.index(row[0])))
+            (PROVISIONAL_POLICY_ORDER.index(row[0])
+             if row[0] in PROVISIONAL_POLICY_ORDER else 0)))
     chosen[2]['policy_attempts'] = [
         {'policy': name, 'status': proposal['status'], 'installable': proposal['installable'],
          'strict_installable': proposal['strict_installable'],
@@ -1464,6 +1541,8 @@ def main():
     parser.add_argument('--profile', choices=campaign_profiles.names(),
                         help='Версионированный профиль кампании (например, short15-release-v1); '
                              'без него действует 30-уровневый конвейер')
+    parser.add_argument('--pinned', type=Path,
+                        help='JSON pinned-кандидата: точный порядок 15 исходников без поиска')
     parser.add_argument('--policy-sequence', action='store_true',
                         help='Сокращение для STRICT → SOFT-A → SOFT-B')
     parser.add_argument('--time-limit', dest='time_limit_seconds', type=float, default=None,

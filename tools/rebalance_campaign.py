@@ -53,7 +53,10 @@ def assignment_alternatives(candidate, row, builder, knowledge, limit, profile=N
                 if letter != task['letter'] and letter not in neighbors:
                     variants.append((dict(task, letter=letter), sum(map(knowledge, pool))/task['n']))
         elif kind in ('T3', 'T4'):
-            pool = eligible.get('length' if kind == 'T3' else 'riddles', [])
+            # Never introduce a non-vetted riddle target or a conflicting T3
+            # anchor: the reserve pool and the assignment pool are different.
+            pool = local[kind].get('assignment_pool',
+                                   eligible.get('length' if kind == 'T3' else 'riddles', []))
             for word in pool:
                 if word in used_targets:
                     continue

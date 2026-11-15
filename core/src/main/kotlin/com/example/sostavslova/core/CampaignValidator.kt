@@ -174,8 +174,8 @@ object Short15CampaignValidator {
         Row(6, 8, listOf(TaskType.T1, TaskType.T2, TaskType.T3), 3),
         Row(9, 10, listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T4), 3),
         Row(11, 13, listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T4, TaskType.T5), 4),
-        Row(14, 14, listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T5, TaskType.T6), 4),
-        Row(15, 15, listOf(TaskType.T1, TaskType.T2, TaskType.T4, TaskType.T5, TaskType.T7), 4),
+        Row(14, 14, listOf(TaskType.T1, TaskType.T2, TaskType.T4, TaskType.T5, TaskType.T6), 4),
+        Row(15, 15, listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T5, TaskType.T7), 4),
     )
     private val t1 = listOf(10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40)
     private val t2 = listOf(5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)

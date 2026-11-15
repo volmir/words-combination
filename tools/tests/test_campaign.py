@@ -96,6 +96,17 @@ class CampaignTest(unittest.TestCase):
         self.assertEqual({'first': 'б', 'last': 'а'}, campaign.alternating_letters({'first': ['а', 'б'], 'last': ['а']}))
         self.assertIsNone(campaign.alternating_letters({'a': ['а'], 'b': ['а']}))
 
+    def test_t4_quality_rejects_service_words_and_keeps_vetted_nouns(self):
+        profile = campaign.campaign_profiles.get('short15-release-v1')
+        for word in ('есть', 'они', 'она', 'така', 'аба', 'работа'):
+            self.metadata[word] = dict(noun=True, labels=[],
+                                       observed_frequency=dict(frequency=100, freq_rank=1))
+        builder = campaign.CampaignBuilder(self.payload, self.words + list(('есть', 'они', 'она', 'така', 'аба', 'работа')),
+                                           self.config, profile)
+        for word in ('есть', 'они', 'она', 'така', 'аба'):
+            self.assertFalse(builder.t4_word_is_acceptable(word), word)
+        self.assertTrue(builder.t4_word_is_acceptable('работа'))
+
     def test_t3_accepts_every_long_answer_and_other_level_targets(self):
         b, task, row = self.one('T3', minLength=8)
         self.assertGreater(len(row['accepted_answers']), 1)

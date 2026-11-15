@@ -152,6 +152,12 @@ class CampaignBuilder:
         self.reserve_bands = (profile['reserve_bands'] if profile is not None
                               else config['reserve_bands'])
         self.t6_category = profile['t6']['category'] if profile is not None else None
+        self.t6_reserve = (campaign_profiles.t6_reserve(profile)
+                           if profile is not None else None)
+        self.t4_policy = campaign_profiles.t4_policy(profile) if profile is not None else {}
+        self.t4_allowed = set(self.t4_policy.get('allowed_targets') or [])
+        self.endings = (campaign_profiles.t5_endings(profile) if profile is not None
+                        else sorted(config['endings']))
         self.category_min = int(profile['category_global_min']
                                 if profile is not None else config['category_global_min'])
         self.count_min_length = int(profile['count_min_length']
@@ -180,7 +186,19 @@ class CampaignBuilder:
             return category
         return None
 
-    def reserve_size(self, number, needed):
+    def t4_word_is_acceptable(self, word):
+        """T4: только частое существительное вне служебного стоп-листа."""
+        meta = self.metadata.get(word, {})
+        observed = meta.get('observed_frequency') or {}
+        policy = self.t4_policy
+        return (bool(policy) and meta.get('noun', False)
+                and word not in campaign_profiles.T4_STOPWORDS
+                and len(word) >= int(policy.get('min_length', 4))
+                and observed.get('freq_rank', 10**9) <= int(policy.get('max_frequency_rank', 5000)))
+
+    def reserve_size(self, number, needed, task_type=None):
+        if self.profile is not None:
+            return campaign_profiles.reserve_size(self.profile, number, needed, task_type)
         b = next(b for b in self.reserve_bands if b['first'] <= number <= b['last'])
         return (needed * b['numerator'] + b['denominator'] - 1) // b['denominator']
 
@@ -194,7 +212,8 @@ class CampaignBuilder:
         for task in self.plan[number - 1]['tasks']:
             t = task['type']
             needed = task.get('n', task.get('targetCount', 1))
-            minimum = self.reserve_size(number, needed)
+            minimum = (self.t6_reserve if t == 'T6' and self.t6_reserve is not None
+                       else self.reserve_size(number, needed, t))
             pools = {}
             if t == 'T1':
                 pools['count'] = [w for w in safe if len(w) >= self.count_min_length]
@@ -202,15 +221,26 @@ class CampaignBuilder:
                 for letter in sorted(set(source)):
                     pools[letter] = [w for w in safe if len(w) >= self.count_min_length and w[0] == letter]
             elif t == 'T3':
-                # The target is the hint anchor, so it must have a useful safely
-                # masked definition; the star itself still accepts every long answer.
-                pools['length'] = sorted(w for w in assigned if len(w) >= task['minLength']
-                                         and self.payload['hints'].get(w, {}).get('useful', False))
+                # 15K reserves T3 on the runtime-accepted long-answer pool; the
+                # hint anchor is a separate assignment. The legacy 30 profile
+                # keeps its historical riddle-target reserve unchanged.
+                if self.profile is not None:
+                    # T3 accepts every legal long answer at runtime; its reserve
+                    # is therefore the whole buildable pool, not only familiar words.
+                    pools['length'] = sorted(w for w in answers if len(w) >= task['minLength'])
+                else:
+                    pools['length'] = sorted(
+                        w for w in assigned if len(w) >= task['minLength']
+                        and self.payload['hints'].get(w, {}).get('useful', False))
             elif t == 'T4':
-                pools['riddles'] = sorted(w for w in assigned & set(measured['riddle_targets'])
-                    if self.payload['hints'].get(w, {}).get('useful', False))
+                # Reserve is measured on the full quality pool before assignment;
+                # the short15 vetted list restricts only the final 11 assignments.
+                pools['riddles'] = sorted(
+                    w for w in assigned & set(measured['riddle_targets'])
+                    if (self.profile is None or self.t4_word_is_acceptable(w))
+                    and self.payload['hints'].get(w, {}).get('useful', False))
             elif t == 'T5':
-                for ending in sorted(self.config['endings']):
+                for ending in sorted(self.endings):
                     pools[ending] = [w for w in safe if len(w) >= task['minLength'] and w.endswith(ending)]
             elif t == 'T6':
                 themes = [self.t6_category] if self.t6_category is not None else sorted(self.global_categories)
@@ -222,7 +252,17 @@ class CampaignBuilder:
                 for letter in sorted(set(source), key=lambda ch: (self.letter_counts[ch], ch)):
                     pools[letter] = [w for w in safe if letter in w]
             eligible = {key: value for key, value in pools.items() if len(value) >= minimum}
-            result[t] = dict(task=task, pools=pools, eligible=eligible, minimum=minimum, needed=needed)
+            row = dict(task=task, pools=pools, eligible=eligible, minimum=minimum, needed=needed)
+            if t == 'T3':
+                row['assignment_pool'] = sorted(
+                    w for w in assigned if len(w) >= task['minLength']
+                    and w not in self.t4_allowed
+                    and self.payload['hints'].get(w, {}).get('useful', False))
+            elif t == 'T4':
+                row['assignment_pool'] = sorted(
+                    w for w in pools.get('riddles', [])
+                    if not self.t4_allowed or w in self.t4_allowed)
+            result[t] = row
         return result
 
     def attempt(self, selected):
@@ -236,10 +276,13 @@ class CampaignBuilder:
                     failures.append(dict(code='reserve_shortage', level=number, type=t,
                                          required=info['minimum'], available=max(map(len, info['pools'].values()), default=0)))
                 if t == 'T3':
-                    groups['targets'][task['id']] = pools.get('length', [])
+                    groups['targets'][task['id']] = info.get('assignment_pool', [])
                 elif t == 'T4':
+                    # Assignment itself uses only the vetted 15K targets; the
+                    # reserve above was measured on the full quality pool.
+                    assignment = info.get('assignment_pool', [])
                     for i in range(task['targetCount']):
-                        groups['targets'][task['id'] + f'/{i}'] = pools.get('riddles', [])
+                        groups['targets'][task['id'] + f'/{i}'] = assignment
                 elif t in ('T5', 'T6'):
                     groups['endings' if t == 'T5' else 'categories'][task['id']] = list(pools)
         assignments = {}
@@ -507,7 +550,8 @@ def run(args):
         raise ValueError('Ротация расходится с планированием GEN-02')
     words = read_list(args.words)
     selector = selection.Selector(document['payload'], words,
-        json.loads(args.previous_levels.read_text(encoding='utf-8')), proposal['config'], selection.read_alphabet())
+        json.loads(args.previous_levels.read_text(encoding='utf-8')), proposal['config'],
+        selection.read_alphabet(), profile=profile)
     builder = CampaignBuilder(document['payload'], words, config, profile)
     campaign, report = search(builder, selector, proposal)
     report.update(schema='campaign-generation-v1', config=config,
