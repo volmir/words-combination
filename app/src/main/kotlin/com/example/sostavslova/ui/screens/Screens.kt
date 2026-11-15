@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +35,7 @@ import com.example.sostavslova.di.appContainer
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.data.LoadState
 import com.example.sostavslova.ui.components.Well
+import com.example.sostavslova.ui.theme.WordsCardShape
 import com.example.sostavslova.ui.theme.WordsColors
 
 @Composable
@@ -96,7 +96,7 @@ fun RulesScreen() {
                 modifier = Modifier.fillMaxWidth(),
                 color = WordsColors.alertInfoBackground,
                 contentColor = WordsColors.alertInfoText,
-                shape = RoundedCornerShape(4.dp),
+                shape = WordsCardShape,
                 border = BorderStroke(1.dp, WordsColors.alertInfoBorder),
             ) {
                 Text(

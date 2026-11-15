@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +33,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.sostavslova.BuildConfig
 import com.example.sostavslova.R
 import com.example.sostavslova.data.Definition
+import com.example.sostavslova.ui.theme.WordsCardShape
 import com.example.sostavslova.ui.theme.WordsColors
 
 @Composable
@@ -62,7 +62,7 @@ fun WordsDialog(title: String, onDismiss: () -> Unit, titleText: AnnotatedString
     BasicAlertDialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         CompositionLocalProvider(LocalDensity provides density) {
         Box(Modifier.fillMaxSize().pointerInput(onDismiss) { detectTapGestures { onDismiss() } }.padding(24.dp), contentAlignment = Alignment.Center) {
-            Surface(Modifier.widthIn(max = 560.dp).fillMaxWidth().pointerInput(Unit) { detectTapGestures {} }, shape = RoundedCornerShape(4.dp), color = WordsColors.background, contentColor = WordsColors.text) {
+            Surface(Modifier.widthIn(max = 560.dp).fillMaxWidth().pointerInput(Unit) { detectTapGestures {} }, shape = WordsCardShape, color = WordsColors.background, contentColor = WordsColors.text) {
                 Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text(titleText ?: AnnotatedString(title), modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
                     content()

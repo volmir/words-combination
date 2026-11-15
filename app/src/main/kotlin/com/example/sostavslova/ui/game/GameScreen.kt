@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -66,6 +65,7 @@ import com.example.sostavslova.ui.components.WordInputRow
 import com.example.sostavslova.ui.components.WordLinks
 import com.example.sostavslova.ui.components.WordsDialog
 import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.WordsControlShape
 import java.util.Locale
 import kotlinx.coroutines.delay
 
@@ -365,7 +365,7 @@ private fun GameLoading(text: String) {
 
 @Composable
 private fun GameAction(text: String, enabled: Boolean, onClick: () -> Unit, icon: Int? = null, tag: String = "") {
-    OutlinedButton(onClick, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp).then(if (tag.isEmpty()) Modifier else Modifier.testTag(tag)), shape = RoundedCornerShape(4.dp),
+    OutlinedButton(onClick, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp).then(if (tag.isEmpty()) Modifier else Modifier.testTag(tag)), shape = WordsControlShape,
         border = BorderStroke(1.dp, WordsColors.defaultButtonBorder),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = WordsColors.background, contentColor = WordsColors.text)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {

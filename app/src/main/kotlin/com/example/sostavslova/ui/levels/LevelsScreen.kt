@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
@@ -54,6 +53,7 @@ import com.example.sostavslova.ui.components.AlertBanner
 import com.example.sostavslova.ui.components.AlertType
 import com.example.sostavslova.ui.components.StarsRow
 import com.example.sostavslova.ui.components.Well
+import com.example.sostavslova.ui.theme.WordsCardShape
 import com.example.sostavslova.ui.theme.WordsColors
 import java.util.Locale
 
@@ -206,7 +206,7 @@ private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Uni
     })
     OutlinedButton(onClick, Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("level_card_${item.index}")
         .semantics { stateDescription = stars },
-        enabled = enabled, shape = RoundedCornerShape(4.dp),
+        enabled = enabled, shape = WordsCardShape,
         border = BorderStroke(if (item.recommended) 3.dp else 1.dp, WordsColors.defaultButtonBorder),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = WordsColors.background, contentColor = WordsColors.text),
         contentPadding = PaddingValues(12.dp)) {

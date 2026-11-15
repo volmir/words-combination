@@ -12,6 +12,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/** Карточки и информационные панели. */
+val WordsCardShape = RoundedCornerShape(10.dp)
+
+/** Кнопки и поля ввода. */
+val WordsControlShape = RoundedCornerShape(8.dp)
+
 private val colorScheme = lightColorScheme(
     primary = WordsColors.primary,
     onPrimary = WordsColors.background,
@@ -77,7 +83,7 @@ fun WordsTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = colorScheme,
         typography = typography,
-        shapes = Shapes(small = RoundedCornerShape(4.dp)),
+        shapes = Shapes(small = WordsControlShape, medium = WordsCardShape, large = WordsCardShape),
         content = content,
     )
 }

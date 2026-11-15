@@ -10,7 +10,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.Surface
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -23,6 +22,7 @@ import com.example.sostavslova.BuildConfig
 import com.example.sostavslova.R
 import com.example.sostavslova.nav.Destination
 import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.WordsControlShape
 
 @Composable
 fun WordsDrawer(
@@ -79,7 +79,7 @@ internal fun WordsDrawerItem(label: String, selected: Boolean = false, modifier:
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { this.selected = selected },
-        shape = RoundedCornerShape(4.dp),
+        shape = WordsControlShape,
         color = if (selected) WordsColors.primary else WordsColors.background,
         contentColor = if (selected) WordsColors.background else WordsColors.text,
     ) {

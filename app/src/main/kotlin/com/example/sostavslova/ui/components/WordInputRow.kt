@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -33,6 +32,7 @@ import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.unit.dp
 import com.example.sostavslova.core.Alphabet
 import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.WordsControlShape
 
 @Composable
 fun WordInputRow(
@@ -68,7 +68,7 @@ fun WordInputRow(
                     enabled = inputEnabled,
                     singleLine = true,
                     textStyle = MaterialTheme.typography.bodyLarge,
-                    shape = RoundedCornerShape(4.dp),
+                    shape = WordsControlShape,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = WordsColors.inputFocusBorder,
                         unfocusedBorderColor = WordsColors.defaultButtonBorder,
@@ -110,7 +110,7 @@ private fun InputButton(text: String, enabled: Boolean, onClick: () -> Unit, mod
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.heightIn(min = 48.dp),
-        shape = RoundedCornerShape(4.dp),
+        shape = WordsControlShape,
         interactionSource = interaction,
         colors = ButtonDefaults.buttonColors(
             containerColor = if (pressed) WordsColors.primaryPressed else WordsColors.primary,
