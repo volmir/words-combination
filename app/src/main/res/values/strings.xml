@@ -130,8 +130,8 @@
     <string name="star_few">звезды</string>
     <string name="star_many">звёзд</string>
     <string name="game_level_header">%1$s · уровень %2$d из %3$d</string>
-    <string name="game_level_threshold">Для открытия следующего уровня: любые %1$d из %2$d заданий</string>
-    <string name="game_level_final_threshold">Для финала: любые %1$d из %2$d заданий</string>
+    <string name="game_level_threshold">Звёзды: %1$d из %2$d · нужно %3$d</string>
+    <string name="game_level_final_threshold">Для финала: звёзды %1$d из %2$d · нужно %3$d</string>
     <string name="game_task_progress">Прогресс: %1$d / %2$d</string>
     <string name="game_task_t1">Наберите %1$d %2$s длиной от 4 букв</string>
     <string name="game_task_t2">Найдите %1$d %2$s на букву «%3$s» длиной от 4 букв</string>

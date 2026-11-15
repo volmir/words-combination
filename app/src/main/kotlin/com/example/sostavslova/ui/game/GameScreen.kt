@@ -37,6 +37,8 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -128,22 +130,27 @@ fun GameScreen(
                 GameAction(stringResource(R.string.retry), true, onRetry)
             }
             val game = state.game
+            val current = state.campaignLevel
             if (game != null) {
-                state.campaignLevel?.let { current ->
+                if (current != null) {
                     Text(stringResource(R.string.game_level_header, gameStageName(current.level.stage),
                         current.level.number, state.totalLevels), Modifier.testTag("level_header"),
                         style = MaterialTheme.typography.titleLarge)
+                    LetterTiles(game.word)
+                    val starsDescription = stringResource(R.string.level_stars_progress,
+                        current.completedTaskIds.size, current.level.maxStars)
                     Text(stringResource(if (current.level.number == state.totalLevels) R.string.game_level_final_threshold
-                        else R.string.game_level_threshold, current.level.requiredStars, current.level.maxStars),
-                        Modifier.testTag("level_difficulty"))
-                    Text(stringResource(R.string.level_stars_progress, current.completedTaskIds.size, current.level.maxStars))
-                    CampaignTasks(state)
-                }
-                LetterTiles(game.word)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.game_counts, game.total, RussianPlural.words(game.total), game.foundCount),
-                        style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic))
-                    if (state.level != null) StarsRow(state.levelProgress, onClick = { onDialog(GameDialog.Tasks) })
+                        else R.string.game_level_threshold, current.completedTaskIds.size,
+                        current.level.maxStars, current.level.requiredStars),
+                        Modifier.testTag("level_difficulty").semantics { stateDescription = starsDescription },
+                        style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    LetterTiles(game.word)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(R.string.game_counts, game.total, RussianPlural.words(game.total), game.foundCount),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic))
+                        if (state.level != null) StarsRow(state.levelProgress, onClick = { onDialog(GameDialog.Tasks) })
+                    }
                 }
                 state.message?.let { GameBanner(it) }
                 notice?.let { GameBanner(it) }
@@ -156,6 +163,10 @@ fun GameScreen(
                         }, enabled = state.canPlay, inputEnabled = !state.loading && !state.returnLevels,
                         focusRequester = focus)
                     if (state.busy) GameLoading(stringResource(R.string.game_saving))
+                }
+                if (current != null) {
+                    Text(stringResource(R.string.game_counts, game.total, RussianPlural.words(game.total), game.foundCount),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic))
                 }
                 Text(stringResource(R.string.found_words), style = MaterialTheme.typography.titleMedium)
                 for ((length, found) in game.found.groupBy { it.length }.toSortedMap()) {
@@ -218,6 +229,7 @@ fun GameScreen(
                     if (state.level != null || state.campaignLevel != null) GameAction(stringResource(R.string.tasks), state.canPlay,
                         { onDialog(GameDialog.Tasks) }, R.drawable.ic_star_outline)
                 }
+                if (current != null) CampaignTasks(state)
             }
         }
     }
