@@ -1,6 +1,7 @@
 package com.example.sostavslova.data
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -115,6 +116,7 @@ class ProgressRepository(
     private val levelAnswersKey = stringPreferencesKey("levelAnswers")
     private val legacyLevelsKey = stringPreferencesKey("levelSessionV1")
     private val campaignProgressKey = stringPreferencesKey("campaignProgressV2")
+    private val campaignProgressArchiveKey = stringPreferencesKey("campaignProgressV2Archive")
 
     /** Один снимок для уровня, доступа, подсказок и итогов CampaignRules.summary. */
     fun observeCampaignProgress(): Flow<CampaignProgress> = dataStore.data
@@ -125,6 +127,10 @@ class ProgressRepository(
      * Вызывать после загрузки настоящей кампании v2 и нового словаря, до событий v2.
      * Чтение v1 и временный адаптер уровней не запускают миграцию. Повторный вызов
      * возвращает уже записанный снимок без пересчёта и без изменения ключей v1.
+     *
+     * Идентичность — SHA-256 установленного campaign.json. Сохранение другой
+     * кампании не превращается в звёзды этой: несовместимый v2 архивируется, а
+     * новый снимок получает явную метку resetReason. Ключи v1 не удаляются.
      */
     suspend fun migrateCampaign(campaign: Campaign, index: WordIndex): CampaignProgress {
         require(campaign.version == 2 && campaign.levels.isNotEmpty()) { "Real v2 campaign is required" }
@@ -136,9 +142,36 @@ class ProgressRepository(
         currentCoroutineContext().ensureActive()
         return committedWrite {
             val committed = dataStore.edit { preferences ->
+                val identity = campaign.contentSha256
                 if (preferences[campaignProgressKey] != null) {
                     // Проверка также запрещает перезаписывать будущую версию или битый v2.
-                    readCampaign(preferences)
+                    val existing = readCampaignDto(preferences)
+                        ?: throw SerializationException("Null campaign progress")
+                    // Даже при совпадении/отсутствии ID проверяем версию и типы:
+                    // повреждённый v2 не должен молча оставаться "валидным".
+                    val existingCore = existing.toCore()
+                    when {
+                        identity == null || existing.campaignId == identity -> Unit
+                        existing.campaignId == null && compatibleUnidentifiedV2(existing, campaign) -> {
+                            val core = existingCore.copy(
+                                campaignId = identity,
+                                highestUnlockedLevel = CampaignRules.frontier(campaign, existingCore),
+                                // Событие финала не восстанавливается по старым флагам/ID.
+                                finaleReached = false,
+                                finaleShown = false,
+                            )
+                            preferences[campaignProgressKey] = json.encodeToString(CampaignProgressDto.fromCore(core))
+                        }
+                        else -> {
+                            val old = preferences[campaignProgressKey] ?: throw SerializationException("Null campaign progress")
+                            archiveCampaignProgress(preferences, old)
+                            val reset = CampaignProgress(
+                                campaignId = identity,
+                                resetReason = "campaign-mismatch:${existing.campaignId ?: "unidentified-v2"}",
+                            )
+                            preferences[campaignProgressKey] = json.encodeToString(CampaignProgressDto.fromCore(reset))
+                        }
+                    }
                     return@edit
                 }
                 // В отличие от старых наблюдателей, здесь нет fallback на пустые данные.
@@ -154,8 +187,6 @@ class ProgressRepository(
                 if (progress.values.any { it.version != 1 } || (current != null && current.version != 1)) {
                     throw SerializationException("Unsupported legacy progress version")
                 }
-                val completedWords = progress.filterValues { it.completed }.keys
-                    .map(Alphabet::normalize).toSet()
                 val groupedAnswers = answers.entries.groupBy { Alphabet.normalize(it.key) }
                 val recordedWords = (progress.keys + answers.keys).map(Alphabet::normalize).toSet()
                 val currentWord = current?.word?.let(Alphabet::normalize)
@@ -179,12 +210,11 @@ class ProgressRepository(
                             .flatMap { it.targets }.filter { it in game.found }.toSet(),
                     )
                 }.toMap()
-                val saved = CampaignProgress(
-                    levels = migrated,
-                    highestUnlockedLevel = LegacyCampaignV1.highestUnlocked(completedWords)
-                        .coerceAtMost(campaign.levels.size),
-                    // Старый completed не означает финал v2. Здесь нет recordLevel:
-                    // пересчёт не расширяет старую границу и не запускает цепочку открытий.
+                val migratedState = CampaignProgress(levels = migrated, campaignId = identity)
+                val saved = migratedState.copy(
+                    // Только реально пересчитанные звёзды в новом порядке; старые
+                    // completed/номера не открывают уровни и не дают финал.
+                    highestUnlockedLevel = CampaignRules.frontier(campaign, migratedState),
                 )
                 preferences[campaignProgressKey] = json.encodeToString(CampaignProgressDto.fromCore(saved))
                 preferences.remove(legacyLevelsKey)
@@ -194,6 +224,26 @@ class ProgressRepository(
             }
             readCampaign(committed)
         }
+    }
+
+    /** Старый v2 без identity принимается только если все его слова есть в этой кампании. */
+    private fun compatibleUnidentifiedV2(dto: CampaignProgressDto, campaign: Campaign): Boolean {
+        val words = campaign.levels.map { it.word }.toSet()
+        val size = campaign.levels.size
+        return dto.highestUnlockedLevel in 1..size &&
+            (dto.lastVisitedLevel?.let { it in 1..size } ?: true) &&
+            dto.levels.keys.all { it in words }
+    }
+
+    /** Сохранить несовместимый v2 отдельно; повторный сброс не затирает прошлый архив. */
+    private fun archiveCampaignProgress(preferences: MutablePreferences, raw: String) {
+        var key = campaignProgressArchiveKey
+        var index = 1
+        while (preferences[key] != null && preferences[key] != raw) {
+            index++
+            key = stringPreferencesKey("campaignProgressV2Archive.$index")
+        }
+        preferences[key] = raw
     }
 
     /** Возвращает подтверждённый результат; UI не должен отдельно сохранять звёзды/доступ. */
@@ -265,11 +315,14 @@ class ProgressRepository(
         "Level is locked or unknown"
     }
 
-    private fun readCampaign(preferences: Preferences): CampaignProgress {
-        val raw = preferences[campaignProgressKey] ?: return CampaignProgress()
-        // Повреждённый или будущий формат не превращаем в пустое сохранение на записи.
-        return json.decodeFromString<CampaignProgressDto>(raw).toCore()
-    }
+    private fun readCampaign(preferences: Preferences): CampaignProgress =
+        readCampaignDto(preferences)?.toCore() ?: CampaignProgress()
+
+    private fun readCampaignDto(preferences: Preferences): CampaignProgressDto? =
+        preferences[campaignProgressKey]?.let { raw ->
+            // Повреждённый или будущий формат не превращаем в пустое сохранение на записи.
+            json.decodeFromString<CampaignProgressDto>(raw)
+        }
 
     private suspend fun <T> editCampaign(
         change: (CampaignProgress) -> Pair<CampaignProgress, T>,
@@ -355,6 +408,9 @@ class ProgressRepository(
             preferences.remove(levelAnswersKey)
             preferences.remove(legacyLevelsKey)
             preferences.remove(campaignProgressKey)
+            preferences.asMap().keys
+                .filter { it.name == campaignProgressArchiveKey.name || it.name.startsWith("${campaignProgressArchiveKey.name}.") }
+                .forEach { preferences.remove(it) }
         }
         Unit
     }

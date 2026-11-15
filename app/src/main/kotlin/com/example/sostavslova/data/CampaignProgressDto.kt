@@ -21,6 +21,8 @@ internal data class CampaignProgressDto(
     val seenExplanations: Set<String> = emptySet(),
     val finaleReached: Boolean = false,
     val finaleShown: Boolean = false,
+    val campaignId: String? = null,
+    val resetReason: String? = null,
 ) {
     fun toCore(): CampaignProgress {
         if (version != 2) throw SerializationException("Unsupported campaign progress version: $version")
@@ -31,6 +33,8 @@ internal data class CampaignProgressDto(
             seenExplanations = seenExplanations.map { TaskType.valueOf(it) }.toSet(),
             finaleReached = finaleReached,
             finaleShown = finaleShown,
+            campaignId = campaignId,
+            resetReason = resetReason,
         )
     }
 
@@ -42,6 +46,8 @@ internal data class CampaignProgressDto(
             seenExplanations = state.seenExplanations.map { it.name }.toSet(),
             finaleReached = state.finaleReached,
             finaleShown = state.finaleShown,
+            campaignId = state.campaignId,
+            resetReason = state.resetReason,
         )
     }
 }

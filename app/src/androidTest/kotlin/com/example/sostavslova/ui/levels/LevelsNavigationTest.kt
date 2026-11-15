@@ -26,13 +26,14 @@ class LevelsNavigationTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_card_1").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("level_card_1").assertIsEnabled()
         compose.onNodeWithTag("level_card_2").assertIsNotEnabled()
-        val all = container.levelsRepository.getLevels()
-        compose.onNodeWithTag("levels_grid").performScrollToKey(all.last().word)
-        compose.onNodeWithTag("level_card_30").assertIsDisplayed()
+        val campaign = requireNotNull(container.levelsRepository.getCampaign())
+        assertEquals(15, campaign.levels.size)
+        compose.onNodeWithTag("levels_grid").performScrollToKey(campaign.levels.last().word)
+        compose.onNodeWithTag("level_card_15").assertIsDisplayed()
         compose.activityRule.scenario.recreate()
-        compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_card_30").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithTag("level_card_30").assertIsDisplayed()
-        compose.onNodeWithTag("levels_grid").performScrollToKey(all.first().word)
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_card_15").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("level_card_15").assertIsDisplayed()
+        compose.onNodeWithTag("levels_grid").performScrollToKey(campaign.levels.first().word)
         compose.onNodeWithTag("level_card_1").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("вы отгадали 0", substring = true).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("game_screen").assertIsDisplayed()

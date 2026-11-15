@@ -3,6 +3,7 @@ package com.example.sostavslova.di
 import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.example.sostavslova.BuildConfig
 import com.example.sostavslova.data.DefinitionsRepository
 import com.example.sostavslova.data.LevelsRepository
 import com.example.sostavslova.data.ProgressRepository
@@ -34,6 +35,7 @@ class AppContainer(
             // Check presence separately: an existing but unreadable/damaged v2 must never become v1.
             if ("campaign.json" in appContext.assets.list("").orEmpty()) readAsset("campaign.json") else null
         },
+        expectedCampaignSha256 = if (readCampaign == null) BuildConfig.CAMPAIGN_SHA256.takeIf { it.isNotBlank() } else null,
     )
     val definitionsRepository: DefinitionsRepository = definitions ?: SqliteDefinitionsRepository(appContext)
 

@@ -6,6 +6,8 @@ data class Campaign(
     val levels: List<CampaignLevel>,
     val version: Int = 2,
     val countMinLength: Int = 4,
+    /** SHA-256 байтов установленного campaign.json; уникальная идентичность сохранения. */
+    val contentSha256: String? = null,
 ) {
     val maxStars: Int get() = levels.sumOf { it.maxStars }
 }

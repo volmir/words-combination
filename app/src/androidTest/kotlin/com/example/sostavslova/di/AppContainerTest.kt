@@ -3,6 +3,7 @@ package com.example.sostavslova.di
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.WordsApplication
+import com.example.sostavslova.BuildConfig
 import com.example.sostavslova.data.LoadState
 import com.example.sostavslova.data.miniCampaignJson
 import kotlinx.coroutines.cancel
@@ -54,7 +55,10 @@ class AppContainerTest {
         assertSame(container.levelsRepository, application.container.levelsRepository)
         assertSame(container.definitionsRepository, application.container.definitionsRepository)
         assertSame(container.progressRepository, application.container.progressRepository)
-        assertNull(container.levelsRepository.getCampaign())
+        val campaign = requireNotNull(container.levelsRepository.getCampaign())
+        assertEquals(15, campaign.levels.size)
+        assertEquals(49, campaign.maxStars)
+        assertEquals(BuildConfig.CAMPAIGN_SHA256, campaign.contentSha256)
         assertEquals(30, container.levelsRepository.getLevels().size)
         container.wordRepository.ensureLoaded()
         assertTrue((container.wordRepository.state.value as LoadState.Ready).wordCount > 0)

@@ -19,6 +19,10 @@ data class CampaignProgress(
     val finaleShown: Boolean = false,
     val lastVisitedLevel: Int? = null,
     val seenExplanations: Set<TaskType> = emptySet(),
+    /** SHA-256 кампании, к которой относится этот снимок; null — сохранение до появления ID. */
+    val campaignId: String? = null,
+    /** Диагностическая метка явного сброса при несовместимой кампании; UI её не показывает. */
+    val resetReason: String? = null,
 )
 
 data class CampaignSummary(
@@ -111,6 +115,18 @@ object CampaignRules {
             highestUnlockedLevel = frontier,
             finaleReached = progress.finaleReached || (last && passed),
         )
+    }
+
+    /**
+     * Граница по новому порядку кампании: только непрерывно пройденные уровни.
+     * Используется миграцией, чтобы старые флаги/номера не открывали чужие уровни.
+     */
+    fun frontier(campaign: Campaign, progress: CampaignProgress): Int {
+        var frontier = 1
+        while (frontier < campaign.levels.size && isPassed(campaign.levels[frontier - 1], progress)) {
+            frontier++
+        }
+        return frontier
     }
 
     /** До финала пропускает пройденные по R, после финала ищет недобор до M. */

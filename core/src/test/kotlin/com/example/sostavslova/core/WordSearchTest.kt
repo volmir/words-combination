@@ -68,7 +68,8 @@ class WordSearchTest {
     @Test
     fun acceptanceCriteriaStage7() {
         val r = search.searchNormalized("демонстрация")
-        assertEquals(455, r.total)
+        // Точное число из установленного очищенного словаря short15 (20 106 слов).
+        assertEquals(390, r.total)
         for ((length, words) in r.byLength) {
             assertEquals(words.sorted(), words, "Слова длины $length должны быть отсортированы по алфавиту")
         }

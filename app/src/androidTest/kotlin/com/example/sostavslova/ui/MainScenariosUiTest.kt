@@ -53,7 +53,18 @@ class MainScenariosUiTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_screen").fetchSemanticsNodes().isNotEmpty() &&
             compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
     }
-    private suspend fun source() = container.levelsRepository.getLevels().first().word
+    private suspend fun source() = container.levelsRepository.getCampaign()?.levels?.first()?.word
+        ?: container.levelsRepository.getLevels().first().word
+
+    /** Ответ, который есть в текущем производственном исходнике; v1 оставлен как запасной стенд. */
+    private fun validAnswer(source: String) = if (source == "чемпионство") "нос" else "пар"
+    private fun invalidAnswer(source: String) = if (source == "чемпионство") "пар" else "нос"
+
+    private suspend fun foundAnswers(source: String): List<String> =
+        container.levelsRepository.getCampaign()?.let { campaign ->
+            container.progressRepository.observeCampaignProgress().first()
+                .levels[source]?.found.orEmpty()
+        } ?: container.progressRepository.levelAnswers(source)
 
     private fun answerWord(word: String) {
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement(word)
@@ -66,14 +77,16 @@ class MainScenariosUiTest {
     @Test
     fun levelAnswerIsSavedAndScoreUpdated() = runTest {
         startLevel()
-        val game = container.wordRepository.startGame(source())
+        val source = source()
+        val game = container.wordRepository.startGame(source)
         awaitText("вы отгадали 0", substring = true)
-        assertTrue("пар" in game.allWords)
+        val valid = validAnswer(source)
+        assertTrue(valid in game.allWords)
 
-        answerWord("пар")
+        answerWord(valid)
         awaitText("Правильно!")
         awaitText("вы отгадали 1", substring = true)
-        assertEquals(listOf("пар"), container.progressRepository.levelAnswers(source()))
+        assertEquals(listOf(valid), foundAnswers(source))
     }
 
     /**
@@ -82,14 +95,16 @@ class MainScenariosUiTest {
     @Test
     fun scenario2_incorrectWordNotFoundAndRepeatedWordAlreadyFound() = runTest {
         startLevel()
-        answerWord("пар")
+        val source = source()
+        val valid = validAnswer(source)
+        answerWord(valid)
         awaitText("Правильно!")
 
-        answerWord("нос")
-        awaitText("Слово нос не найдено!")
+        answerWord(invalidAnswer(source))
+        awaitText("Слово ${invalidAnswer(source)} не найдено!")
 
-        answerWord("пар")
-        awaitText("Вы уже разгадали слово пар")
+        answerWord(valid)
+        awaitText("Вы уже разгадали слово $valid")
     }
 
     /**
@@ -98,11 +113,13 @@ class MainScenariosUiTest {
     @Test
     fun scenario3_hintDoesNotRevealUnfoundWords() = runTest {
         startLevel()
-        answerWord("пар")
+        val source = source()
+        val valid = validAnswer(source)
+        answerWord(valid)
         awaitText("Правильно!")
 
-        val found = container.progressRepository.levelAnswers(source())
-        val allBuildable = container.wordRepository.search(source())?.words ?: emptyList()
+        val found = foundAnswers(source)
+        val allBuildable = container.wordRepository.search(source)?.words ?: emptyList()
         val unrevealedWords = (allBuildable - found).filter { it.length >= 3 }
         assertTrue("Должны быть неотгаданные слова", unrevealedWords.isNotEmpty())
 
@@ -134,13 +151,15 @@ class MainScenariosUiTest {
 
     @Test
     fun backToMapAndReopenPreservesAnswers() = runTest {
-        startLevel(); answerWord("пар"); awaitText("Правильно!")
+        val source = source()
+        val valid = validAnswer(source)
+        startLevel(); answerWord(valid); awaitText("Правильно!")
         compose.onNodeWithText("Завершить игру").assertDoesNotExist()
         compose.onNodeWithTag("game_back").performClick()
         compose.onNodeWithTag("levels_screen").assertIsDisplayed()
         startLevel()
         awaitText("вы отгадали 1", substring = true)
-        assertEquals(listOf("пар"), container.progressRepository.levelAnswers(source()))
+        assertEquals(listOf(valid), foundAnswers(source))
     }
 
     /**

@@ -13,7 +13,12 @@ object TestData {
     val manifest: JSONObject by lazy { JSONObject(text("manifest.json")) }
     val golden: JSONObject by lazy { JSONObject(text("golden_search.json")) }
     val campaign: Campaign? by lazy {
-        if (manifest.has("campaign_source")) CampaignDatasetAudit.decode(JSONObject(text("campaign.json"))) else null
+        if (manifest.has("campaign_source")) CampaignDatasetAudit.decode(JSONObject(text("campaign.json")))
+            .copy(contentSha256 = manifest.getJSONObject("campaign_source").optString("sha256").takeIf { it.isNotBlank() })
+        else null
+    }
+    val campaignProfile: String? by lazy {
+        manifest.optJSONObject("campaign_source")?.optString("profile")?.takeIf { it.isNotBlank() }
     }
     val currentSourceWords: Set<String> get() = campaign?.levels?.map { it.word }?.toSet()
         ?: levels.map { it.word }.toSet()

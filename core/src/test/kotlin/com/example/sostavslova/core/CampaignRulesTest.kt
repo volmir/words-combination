@@ -77,6 +77,21 @@ class CampaignRulesTest {
         })
     }
 
+    @Test fun frontierUsesOnlyContiguousPassedLevelsInNewOrder() {
+        val campaign = mini()
+        assertEquals(1, CampaignRules.frontier(campaign, CampaignProgress()))
+        val first = earn(campaign, CampaignProgress(), 1, 3)
+        assertEquals(2, CampaignRules.frontier(campaign, first))
+        val second = earn(campaign, first, 2, 3)
+        assertEquals(3, CampaignRules.frontier(campaign, second))
+        val all = earn(campaign, second, 3, 3)
+        assertEquals(3, CampaignRules.frontier(campaign, all))
+        // Звёзды дальнего уровня без прохождения предыдущего не открывают чужой уровень.
+        assertEquals(1, CampaignRules.frontier(campaign,
+            CampaignProgress(levels = mapOf(campaign.levels[2].word to CampaignLevelProgress(
+                completedTaskIds = campaign.levels[2].tasks.map { it.id }.toSet())))))
+    }
+
     @Test fun newCampaignOpensOnlyFirstAndRejectsClosedOrInvalidRoutes() {
         val campaign = mini()
         val progress = CampaignProgress()

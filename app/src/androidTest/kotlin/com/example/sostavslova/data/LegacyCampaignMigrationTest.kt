@@ -47,6 +47,7 @@ class LegacyCampaignMigrationTest {
     private lateinit var store: ControlledStore
     private lateinit var repository: ProgressRepository
     private val v2 = stringPreferencesKey("campaignProgressV2")
+    private val archive = stringPreferencesKey("campaignProgressV2Archive")
     private val current = stringPreferencesKey("currentGame")
     private val progress = stringPreferencesKey("levelProgress")
     private val answers = stringPreferencesKey("levelAnswers")
@@ -131,22 +132,22 @@ class LegacyCampaignMigrationTest {
             currentGame = """{"word":"рекуперация","found":["перец"]}""",
         )
         val saved = migrate(campaign("аспирантура", "опровержение"))
-        assertEquals(2, saved.highestUnlockedLevel)
+        assertEquals(1, saved.highestUnlockedLevel)
         assertTrue(saved.levels.isEmpty())
         assertFalse(saved.finaleReached)
         assertLegacyRemoved()
     }
 
-    @Test fun frontierUsesHistoricalPredecessorEvenWhenWordWasRemovedAndCapsAtNewSize() = runTest {
-        seed(levelProgress = """{"селитроварня":{"completed":true}}""")
+    @Test fun oldV1FlagsDoNotUnlockShortCampaignWithoutTransferredStars() = runTest {
+        seed(levelProgress = """{"селитроварня":{"completed":true},"пудлинговка":{"completed":true}}""")
         val target = campaign("аспирантура", "опровержение", "рекуперация", "хлопкопункт")
-        assertEquals(4, migrate(target).highestUnlockedLevel)
+        assertEquals(1, migrate(target).highestUnlockedLevel)
     }
 
-    @Test fun flagsAloneKeepAccessButCannotBecomeV2StarsOrFinale() = runTest {
+    @Test fun flagsAloneKeepV1ButCannotBecomeV2StarsOrAccess() = runTest {
         seed(levelProgress = """{"рекуперация":{"completed":true,"wordsTask":true,"lettersTask":true},"пудлинговка":{"completed":true}}""")
         val saved = migrate()
-        assertEquals(3, saved.highestUnlockedLevel)
+        assertEquals(1, saved.highestUnlockedLevel)
         assertTrue(saved.levels.isEmpty())
         assertEquals(0, CampaignRules.summary(campaign, saved).stars)
         assertFalse(saved.finaleReached)
@@ -160,7 +161,8 @@ class LegacyCampaignMigrationTest {
             currentGame = """{"word":"хлопкопункт","found":["пункт"]}""",
         )
         val saved = migrate()
-        assertEquals(1, saved.highestUnlockedLevel)
+        // Уровень 1 действительно получил две звезды по перенесённым словам.
+        assertEquals(2, saved.highestUnlockedLevel)
         assertEquals(2, saved.levels.getValue("хлопкопункт").found.size)
         assertEquals(2, saved.levels.getValue("рекуперация").completedTaskIds.size)
     }
@@ -200,7 +202,7 @@ class LegacyCampaignMigrationTest {
         )
         val saved = migrate()
         assertEquals(listOf("река", "каре"), saved.levels.getValue("рекуперация").found)
-        assertEquals(3, saved.highestUnlockedLevel)
+        assertEquals(1, saved.highestUnlockedLevel)
         assertTrue(saved.seenExplanations.isEmpty())
     }
 
@@ -294,7 +296,8 @@ class LegacyCampaignMigrationTest {
         assertTrue(runCatching { repository.markCampaignExplanationSeen(TaskType.T1) }.isFailure)
         assertTrue(runCatching { repository.submitCampaignAnswer(campaign, 1, "каре", index) }.isFailure)
         assertEquals(before, store.data.first())
-        assertEquals(2, migrate().highestUnlockedLevel)
+        // Старый completed без ответов не даёт ни одной звезды в новой кампании.
+        assertEquals(1, migrate().highestUnlockedLevel)
     }
 
     @Test fun successfulMigrationIsIdempotentAcrossRestartAndKeepsExistingV2AsAuthority() = runTest {
@@ -381,6 +384,64 @@ class LegacyCampaignMigrationTest {
         val before = store.data.first()
         assertEquals(CampaignProgress(), migrate())
         assertEquals(before, store.data.first())
+    }
+
+    @Test fun v2ForAnotherCampaignIsArchivedResetAndV1PayloadIsKept() = runTest {
+        val old = """{"version":2,"campaignId":"old-30","highestUnlockedLevel":30,"finaleReached":true,"levels":{"чужое":{"found":["кот"],"completedTaskIds":["old"]}}}"""
+        val v1 = """{"пудлинговка":{"completed":true}}"""
+        seed(levelProgress = v1)
+        store.edit { it[v2] = old }
+        val target = campaign("рекуперация", "опровержение").copy(contentSha256 = "new-campaign-sha")
+        val saved = migrate(target)
+        assertEquals("new-campaign-sha", saved.campaignId)
+        assertTrue(saved.levels.isEmpty())
+        assertEquals(1, saved.highestUnlockedLevel)
+        assertFalse(saved.finaleReached)
+        assertFalse(saved.finaleShown)
+        assertNotNull(saved.resetReason)
+        assertTrue(requireNotNull(saved.resetReason).startsWith("campaign-mismatch:"))
+        assertEquals(old, store.data.first()[archive])
+        // Отдельное v1-сохранение не удаляется и не подмешивается в чужую кампанию.
+        assertEquals(v1, store.data.first()[progress])
+        assertEquals(saved, migrate(target))
+    }
+
+    @Test fun unidentifiedV2AdoptsIdentityOnlyWhenEveryKeyBelongsToCampaignAndRecomputesFrontier() = runTest {
+        val raw = """{"version":2,"highestUnlockedLevel":3,"finaleReached":true,"finaleShown":true,"levels":{"рекуперация":{"found":["каре"],"completedTaskIds":["count","initial"]}}}"""
+        store.edit { it[v2] = raw }
+        val target = campaign("рекуперация", "опровержение", "хлопкопункт").copy(contentSha256 = "short15-sha")
+        val saved = migrate(target)
+        assertEquals("short15-sha", saved.campaignId)
+        // Уровень 1 пройден двумя ответами, следующий — нет: 15-й не открывается.
+        assertEquals(2, saved.highestUnlockedLevel)
+        assertFalse(saved.finaleReached)
+        assertFalse(saved.finaleShown)
+        assertEquals(setOf("count", "initial"), saved.levels.getValue("рекуперация").completedTaskIds)
+        assertNull(store.data.first()[archive])
+        assertEquals(saved, migrate(target))
+    }
+
+    @Test fun unidentifiedV2WithForeignWordsIsResetAndArchived() = runTest {
+        val old = """{"version":2,"highestUnlockedLevel":2,"levels":{"чужое":{"found":["кот"]}}}"""
+        store.edit { it[v2] = old }
+        val saved = migrate(campaign("рекуперация", "опровержение").copy(contentSha256 = "short15-sha"))
+        assertEquals("short15-sha", saved.campaignId)
+        assertTrue(saved.levels.isEmpty())
+        assertEquals(1, saved.highestUnlockedLevel)
+        assertTrue(requireNotNull(saved.resetReason).startsWith("campaign-mismatch:unidentified-v2"))
+        assertEquals(old, store.data.first()[archive])
+    }
+
+    @Test fun sameIdentityKeepsSavedStarsAndFrontier() = runTest {
+        val target = campaign("рекуперация", "опровержение").copy(contentSha256 = "same-sha")
+        val raw = """{"version":2,"campaignId":"same-sha","highestUnlockedLevel":2,"levels":{"рекуперация":{"found":["каре"],"completedTaskIds":["count","initial"]}}}"""
+        store.edit { it[v2] = raw }
+        val saved = migrate(target)
+        assertEquals("same-sha", saved.campaignId)
+        assertEquals(2, saved.highestUnlockedLevel)
+        assertEquals(setOf("count", "initial"), saved.levels.getValue("рекуперация").completedTaskIds)
+        assertNull(saved.resetReason)
+        assertNull(store.data.first()[archive])
     }
 
     private class ControlledStore(private val delegate: DataStore<Preferences>) : DataStore<Preferences> {

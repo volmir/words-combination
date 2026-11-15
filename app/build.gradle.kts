@@ -15,6 +15,30 @@ plugins {
 val hasDefinitions = true
 val dictionaryData = rootProject.layout.projectDirectory.dir("data")
 
+fun sha256(file: File): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    file.inputStream().use { input ->
+        val buffer = ByteArray(65536)
+        while (true) {
+            val size = input.read(buffer)
+            if (size < 0) break
+            digest.update(buffer, 0, size)
+        }
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
+}
+
+// SHA установленной кампании попадает в BuildConfig, чтобы androidTest проверял
+// реально упакованный asset, а не только исходный data/.
+val installedManifest: Map<*, *>? = runCatching {
+    JsonSlurper().parse(dictionaryData.file("manifest.json").asFile) as Map<*, *>
+}.getOrNull()
+val campaignSha256: String =
+    ((installedManifest?.get("campaign_source") as? Map<*, *>)?.get("sha256") as? String).orEmpty()
+val wordsSha256: String = (installedManifest?.get("sha256_words_txt") as? String).orEmpty()
+val definitionsSha256: String =
+    ((installedManifest?.get("definitions") as? Map<*, *>)?.get("sha256") as? String).orEmpty()
+
 val verifyDefinitionsAudit = tasks.register<Exec>("verifyDefinitionsAudit") {
     description = "Блокирует release при наличии базы определений без пройденного ручного аудита."
     group = "verification"
@@ -27,23 +51,12 @@ tasks.matching { it.name in setOf("preReleaseBuild", "assembleRelease", "bundleR
 }
 
 val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
-    description = "Проверяет происхождение и хэши словаря, уровней и включённых определений."
+    description = "Проверяет происхождение и хэши словаря, уровней, кампании и включённых определений."
     group = "verification"
     inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("word_sources.jsonl.gz"), dictionaryData.file("levels.json"))
+    inputs.files(dictionaryData.file("campaign.json"))
     inputs.files(dictionaryData.file("definitions.db"))
     doLast {
-        fun sha256(file: File): String {
-            val digest = MessageDigest.getInstance("SHA-256")
-            file.inputStream().use { input ->
-                val buffer = ByteArray(65536)
-                while (true) {
-                    val size = input.read(buffer)
-                    if (size < 0) break
-                    digest.update(buffer, 0, size)
-                }
-            }
-            return digest.digest().joinToString("") { "%02x".format(it) }
-        }
         val manifest = JsonSlurper().parse(dictionaryData.file("manifest.json").asFile) as Map<*, *>
         val source = manifest["source"] as? Map<*, *>
         check(manifest["schema"] == "dictionary-provenance-v1" && source?.get("license") == "CC-BY-SA-4.0") {
@@ -56,6 +69,20 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
         check(sha256(dictionaryData.file("levels.json").asFile) == manifest["sha256_levels_json"] &&
             (manifest["levels_source"] as? Map<*, *>)?.get("license") == "MIT") {
             "Уровни изменены после генерации либо отсутствует их происхождение."
+        }
+        val campaignSource = manifest["campaign_source"] as? Map<*, *>
+        val campaignFile = dictionaryData.file("campaign.json").asFile
+        check(campaignFile.isFile && campaignSource?.get("profile") == "short15-release-v1" &&
+            campaignSource?.get("sha256") == sha256(campaignFile) && campaignSource?.get("levels") == 15 &&
+            campaignSource?.get("max_stars") == 49) {
+            "Кампания отсутствует или не совпадает с manifest.campaign_source: установите проверенный short15-пакет."
+        }
+        val campaignLevels = (JsonSlurper().parse(campaignFile) as? Map<*, *>)?.get("levels") as? List<*>
+        val campaignStars = campaignLevels?.sumOf { level ->
+            ((level as? Map<*, *>)?.get("tasks") as? List<*>)?.size ?: 0
+        } ?: 0
+        check(campaignLevels?.size == 15 && campaignStars == 49) {
+            "campaign.json должен содержать 15 уровней и 49 заданий/звёзд."
         }
         val database = dictionaryData.file("definitions.db").asFile
         if (hasDefinitions || database.exists()) {
@@ -80,6 +107,9 @@ android {
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("boolean", "HAS_DEFINITIONS", hasDefinitions.toString())
+        buildConfigField("String", "CAMPAIGN_SHA256", "\"$campaignSha256\"")
+        buildConfigField("String", "WORDS_SHA256", "\"$wordsSha256\"")
+        buildConfigField("String", "DEFINITIONS_SHA256", "\"$definitionsSha256\"")
     }
 
     signingConfigs {
@@ -129,11 +159,11 @@ kotlin {
 }
 
 val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
-    description = "Копирует сгенерированные словари и опциональные определения в assets."
+    description = "Копирует сгенерированные словари, кампанию и опциональные определения в assets."
     group = "build"
     dependsOn(verifyDictionaryLicenses)
     from(dictionaryData) {
-        include("words.txt", "levels.json", "word_sources.jsonl.gz")
+        include("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz")
         if (hasDefinitions) include("definitions.db")
     }
     from(rootProject.layout.projectDirectory.dir("legal")) {
@@ -141,7 +171,19 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
     }
     into(layout.projectDirectory.dir("src/main/assets"))
     preserve {
-        exclude("words.txt", "levels.json", "word_sources.jsonl.gz", "definitions.db", "THIRD_PARTY_NOTICES.txt", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
+        exclude("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz", "definitions.db", "THIRD_PARTY_NOTICES.txt", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
+    }
+    doLast {
+        val manifest = JsonSlurper().parse(dictionaryData.file("manifest.json").asFile) as Map<*, *>
+        val definitions = manifest["definitions"] as? Map<*, *>
+        val assets = layout.projectDirectory.dir("src/main/assets").asFile
+        check(sha256(File(assets, "campaign.json")) == (manifest["campaign_source"] as? Map<*, *>)?.get("sha256")) {
+            "Скопированный campaign.json не совпадает с manifest.campaign_source."
+        }
+        check(sha256(File(assets, "words.txt")) == manifest["sha256_words_txt"] &&
+            sha256(File(assets, "definitions.db")) == definitions?.get("sha256")) {
+            "Скопированные словарь или определения не совпадают с manifest."
+        }
     }
 }
 

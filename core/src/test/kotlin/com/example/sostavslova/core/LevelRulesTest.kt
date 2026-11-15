@@ -18,7 +18,7 @@ class LevelRulesTest {
     fun everyLevelIsReachable() {
         val campaign = TestData.campaign
         if (campaign != null) {
-            val errors = ProductionCampaignValidator.validate(campaign)
+            val errors = ProductionCampaignValidator.validate(campaign, TestData.campaignProfile)
             assertTrue(errors.isEmpty(), errors.joinToString())
             for (level in campaign.levels) {
                 assertTrue(TestData.index.contains(level.word), "нет исходника v2 ${level.word}")

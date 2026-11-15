@@ -6,8 +6,11 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.core.Alphabet
 import com.example.sostavslova.core.CampaignValidator
 import com.example.sostavslova.core.CampaignTask
+import com.example.sostavslova.core.ProductionCampaignValidator
 import com.example.sostavslova.core.TaskType
+import com.example.sostavslova.BuildConfig
 import java.io.IOException
+import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -20,6 +23,9 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class LevelsRepositoryTest {
+    private fun sha256(value: ByteArray) = MessageDigest.getInstance("SHA-256").digest(value)
+        .joinToString("") { "%02x".format(it) }
+
     @Test
     fun miniV2IsValidatedAndCachedAcrossConcurrentMainCallers() = runTest {
         val reads = AtomicInteger()
@@ -42,6 +48,7 @@ class LevelsRepositoryTest {
         assertEquals(2, campaign.levels.size)
         assertEquals(4, campaign.countMinLength)
         assertEquals(7, campaign.maxStars)
+        assertEquals(sha256(miniCampaignJson.toByteArray()), campaign.contentSha256)
         assertTrue(CampaignValidator.validate(campaign).isEmpty())
         assertEquals(TaskType.entries.toSet(), campaign.levels.flatMap { it.tasks }.map { it.type }.toSet())
         assertEquals(listOf("рот", "торт"), (campaign.levels.last().tasks.first() as CampaignTask.T6).words)
@@ -92,6 +99,37 @@ class LevelsRepositoryTest {
         } catch (error: IOException) {
             assertEquals("read failure", error.message)
         }
+    }
+
+    @Test
+    fun expectedCampaignHashRejectsWrongAsset() = runTest {
+        val repository = LevelsRepository(
+            readLevels = { error("Must not read v1") },
+            readCampaign = { miniCampaignJson },
+            expectedCampaignSha256 = "0".repeat(64),
+        )
+        assertTrue(runCatching { repository.getCampaign() }.exceptionOrNull() is IllegalArgumentException)
+    }
+
+    @Test
+    fun loadsInstalledShort15CampaignAndMatchesBuildHash() = runTest {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        fun asset(name: String) = context.assets.open(name).bufferedReader().use { it.readText() }
+        fun bytes(name: String) = context.assets.open(name).use { it.readBytes() }
+        val repository = LevelsRepository(
+            readLevels = { error("Campaign must not read v1") },
+            readCampaign = { asset("campaign.json") },
+        )
+        val campaign = requireNotNull(repository.getCampaign())
+        assertEquals(15, campaign.levels.size)
+        assertEquals(49, campaign.maxStars)
+        assertEquals(listOf(3, 2, 3, 2, 3, 2), campaign.stages.map { it.lastLevel - it.firstLevel + 1 })
+        assertEquals(TaskType.entries.toSet(), campaign.levels.flatMap { it.tasks }.map { it.type }.toSet())
+        assertEquals(BuildConfig.CAMPAIGN_SHA256, campaign.contentSha256)
+        assertEquals(BuildConfig.CAMPAIGN_SHA256, sha256(bytes("campaign.json")))
+        assertEquals(BuildConfig.WORDS_SHA256, sha256(bytes("words.txt")))
+        assertEquals(BuildConfig.DEFINITIONS_SHA256, sha256(bytes("definitions.db")))
+        assertTrue(ProductionCampaignValidator.validate(campaign, "short15-release-v1").isEmpty())
     }
 
     @Test
