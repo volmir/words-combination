@@ -42,15 +42,15 @@
     "codex": {
       "cheap": {
         "light": "gpt-5.6-luna",
-        "standard": "gpt-5.6-luna",
-        "heavy": "gpt-5.6-luna"
+        "standard": "gpt-6.1-sol",
+        "heavy": "gpt-6.1-sol"
       }
     },
     "opencode": {
       "paid": {
         "light": "opencode/muse-ember-1.0#low",
         "standard": "opencode/deepseek-v4.1-flash#max",
-        "heavy": "opencode/deepseek-v4-pro#max"
+        "heavy": "opencode/deepseek-v4.1-flash#max"
       },
       "cheap": {
         "light": "opencode/muse-ember-1.0#low",
