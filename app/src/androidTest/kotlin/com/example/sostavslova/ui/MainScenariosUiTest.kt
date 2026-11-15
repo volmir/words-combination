@@ -177,7 +177,8 @@ class MainScenariosUiTest {
             compose.onAllNodesWithTag("level_card_1").fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithTag("level_card_1").assertIsEnabled()
-        compose.onNodeWithTag("level_card_2").assertIsNotEnabled()
+        compose.onNodeWithTag("level_card_2").assertIsEnabled()
+            .assertTextContains("Закрыт", substring = true)
     }
 
 }

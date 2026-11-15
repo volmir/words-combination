@@ -39,6 +39,12 @@ class CampaignMapUiTest {
         } }
         compose.onNodeWithTag("levels_progress").assertTextEquals("Звёзд 0 из 10 · пройдено 0 из 2")
         compose.onNodeWithTag("levels_stage_1").assertTextEquals("Разминка · уровни 1–2")
+        compose.onNodeWithTag("level_card_1")
+            .assertTextContains("Открыт", substring = true)
+            .assertTextContains("Рекомендуемый уровень", substring = true)
+        compose.onNodeWithTag("level_card_2").assertTextContains("Закрыт", substring = true)
+        compose.onAllNodesWithText("Для прохождения", substring = true).assertCountEquals(0)
+        compose.onAllNodesWithText("Можно добрать", substring = true).assertCountEquals(0)
         compose.onNodeWithTag("levels_continue").performClick()
         compose.runOnIdle { assertEquals("слово1", selected) }
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово2")
@@ -56,7 +62,7 @@ class CampaignMapUiTest {
         compose.onNodeWithTag("levels_continue").performClick()
         compose.runOnIdle { assertEquals("слово2", selected) }
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово1")
-        compose.onNodeWithText("Можно добрать ещё 3 звезды").assertExists()
+        compose.onNodeWithTag("level_card_1").assertTextContains("Пройден", substring = true)
         compose.onNodeWithTag("level_card_1").performClick()
         compose.runOnIdle { assertEquals("слово1", selected) }
         compose.runOnIdle { state.value = state.value.copy(finaleReached = true,
@@ -65,9 +71,12 @@ class CampaignMapUiTest {
         compose.onNodeWithTag("levels_grid").performScrollToKey("levels.header")
         compose.onNodeWithTag("levels_finale_banner").assertTextContains("Финал", substring = true)
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово2")
+        compose.onNodeWithTag("level_card_2")
+            .assertTextContains("Пройден", substring = true)
+            .assertTextContains("Рекомендуемый уровень", substring = true)
         compose.onNodeWithContentDescription("Корона: финал кампании достигнут").assertExists()
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово1")
-        compose.onNodeWithText("Все звёзды собраны", substring = false).assertExists()
+        compose.onNodeWithTag("level_card_1").assertTextContains("Все звёзды", substring = true)
         compose.onNodeWithTag("level_card_1").performClick()
         compose.runOnIdle {
             assertEquals("слово1", selected)

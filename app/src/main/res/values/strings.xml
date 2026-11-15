@@ -120,10 +120,9 @@
     <string name="levels_master">Мастер — все звёзды собраны!</string>
     <string name="level_crown">Корона: финал кампании достигнут</string>
     <string name="level_open">Открыт</string>
-    <string name="level_passed">Порог достигнут</string>
-    <string name="level_all_stars">Все звёзды собраны</string>
-    <string name="level_threshold">Для прохождения: %1$d %2$s</string>
-    <string name="level_available_stars">Можно добрать ещё %1$d %2$s</string>
+    <string name="level_passed">Пройден</string>
+    <string name="level_all_stars">Все звёзды</string>
+    <string name="level_status_locked">Закрыт</string>
     <string name="level_recommended">Рекомендуемый уровень</string>
     <string name="level_unlock_requirement">Для открытия наберите на уровне %1$d %2$d %3$s.</string>
     <string name="star_one">звезду</string>

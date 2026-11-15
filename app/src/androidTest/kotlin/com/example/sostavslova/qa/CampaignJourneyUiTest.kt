@@ -149,7 +149,7 @@ class CampaignJourneyUiTest {
         for (number in 2..3) {
             compose.onNodeWithTag("levels_grid").performScrollToNode(hasTestTag("level_card_$number"))
             compose.onNodeWithTag("level_card_$number")
-                .assertTextContains("Уровень недоступен", substring = true).performClick()
+                .assertTextContains("Закрыт", substring = true).performClick()
             compose.onNodeWithText("Для открытия наберите на уровне ${number - 1}", substring = true).assertExists()
             compose.onNodeWithTag("game_screen").assertDoesNotExist()
             compose.onNodeWithText("Закрыть").performClick()

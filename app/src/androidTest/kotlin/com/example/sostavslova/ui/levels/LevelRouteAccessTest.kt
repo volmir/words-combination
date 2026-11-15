@@ -51,7 +51,8 @@ class LevelRouteAccessTest {
     @Test fun closedDeepLinkReturnsToMapAndAvailableLinkOpensGame() {
         compose.runOnIdle { nav.navigate(Uri.parse("sostavslova://level/2")) }
         awaitMapMessage("Этот уровень ещё закрыт. Пройдите предыдущий уровень.")
-        compose.onNodeWithTag("level_card_2").assertIsNotEnabled()
+        compose.onNodeWithTag("level_card_2").assertIsEnabled()
+            .assertTextContains("Закрыт", substring = true)
         compose.runOnIdle { nav.navigate(Uri.parse("sostavslova://level/1")) }
         compose.waitUntil(10_000) { compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("game_screen").assertIsDisplayed()

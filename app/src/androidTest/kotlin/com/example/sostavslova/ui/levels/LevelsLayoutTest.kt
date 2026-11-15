@@ -16,10 +16,10 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
-import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.LevelProgress
+import com.example.sostavslova.core.Stage
 import com.example.sostavslova.ui.theme.WordsTheme
-import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -32,13 +32,20 @@ class LevelsLayoutTest(private val width: Int, private val fontScale: Float) {
 
     @Test fun levelsWrapKeep48DpTargetsShowSavedStarsAndUseAdaptiveGrid() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val json = JSONArray(context.assets.open("levels.json").bufferedReader().use { it.readText() })
-        val items = List(json.length()) { i ->
-            val row = json.getJSONObject(i)
-            LevelUiState(Level(row.getInt("index"), row.getString("word"), row.getInt("answers"),
-                row.getInt("words"), row.getString("letter").single(), row.getInt("letterCount")), LevelProgress(), i == 0)
+        val campaign = JSONObject(context.assets.open("campaign.json").bufferedReader().use { it.readText() })
+        val levelsJson = campaign.getJSONArray("levels")
+        val items = List(levelsJson.length()) { i ->
+            val row = levelsJson.getJSONObject(i)
+            LevelUiState(row.getInt("number"), row.getString("word"), LevelProgress(),
+                unlocked = i == 0, campaignStars = 0, maxStars = row.getJSONArray("tasks").length(),
+                requiredStars = row.getInt("requiredStars"), stage = row.getInt("stage"))
         }
-        val state = mutableStateOf(LevelsUiState(loading = false, levels = items))
+        val stagesJson = campaign.getJSONArray("stages")
+        val stages = List(stagesJson.length()) { i ->
+            val row = stagesJson.getJSONObject(i)
+            Stage(row.getInt("number"), row.getInt("firstLevel"), row.getInt("lastLevel"))
+        }
+        val state = mutableStateOf(LevelsUiState(loading = false, levels = items, stages = stages))
         var selected = ""
         compose.setContent {
             val density = LocalDensity.current.density
@@ -51,7 +58,11 @@ class LevelsLayoutTest(private val width: Int, private val fontScale: Float) {
             }
         }
         compose.onNodeWithTag("level_card_1").assertIsEnabled()
-        compose.onNodeWithTag("level_card_2").assertIsNotEnabled()
+            .assertTextContains("Открыт", substring = true)
+        compose.onNodeWithTag("level_card_2").assertIsEnabled()
+            .assertTextContains("Закрыт", substring = true)
+        compose.onAllNodesWithText("Для прохождения", substring = true).assertCountEquals(0)
+        compose.onAllNodesWithText("Можно добрать", substring = true).assertCountEquals(0)
         val first = compose.onNodeWithTag("level_card_1").fetchSemanticsNode().boundsInRoot
         val second = compose.onNodeWithTag("level_card_2").fetchSemanticsNode().boundsInRoot
         if (width < 600) assertTrue(second.top > first.top)
@@ -59,16 +70,21 @@ class LevelsLayoutTest(private val width: Int, private val fontScale: Float) {
         checkLayout()
         if (width < 600) {
             compose.onNodeWithTag("level_card_1").performClick()
-            compose.runOnIdle { assertEquals("рекуперация", selected) }
+            compose.runOnIdle { assertEquals("чемпионство", selected) }
         }
         compose.runOnIdle { state.value = state.value.copy(levels = items.mapIndexed { i, item ->
-            if (i == 0) item.copy(progress = LevelProgress(true, true, true))
+            if (i == 0) item.copy(campaignStars = item.maxStars)
             else if (i == 1) item.copy(unlocked = true) else item
         }) }
-        compose.onNodeWithTag("level_card_1").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Звёзды: 3 из 3"))
+        compose.onNodeWithTag("level_card_1").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Звёзды: 1 из 1"))
+            .assertTextContains("Все звёзды", substring = true)
         compose.onNodeWithTag("level_card_2").assertIsEnabled()
+            .assertTextContains("Открыт", substring = true)
+        compose.onNodeWithTag("levels_grid").performScrollToKey("stage_6")
+        compose.onNodeWithTag("levels_stage_6").assertTextEquals("Мастер · уровни 14–15")
         compose.onNodeWithTag("levels_grid").performScrollToKey(items.last().word)
-        compose.onNodeWithTag("level_card_30").assertExists().assertIsNotEnabled()
+        compose.onNodeWithTag("level_card_15").assertExists()
+        compose.onAllNodesWithTag("level_card_16").assertCountEquals(0)
         checkLayout()
     }
 

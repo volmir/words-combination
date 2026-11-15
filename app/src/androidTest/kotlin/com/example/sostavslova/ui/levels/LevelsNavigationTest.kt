@@ -25,7 +25,12 @@ class LevelsNavigationTest {
     @Test fun drawerOpensLevelsScrollSurvivesRecreationAndSelectionOpensRealGame() = runTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_card_1").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("level_card_1").assertIsEnabled()
-        compose.onNodeWithTag("level_card_2").assertIsNotEnabled()
+        compose.onNodeWithTag("level_card_2").assertIsEnabled()
+            .assertTextContains("Закрыт", substring = true)
+        compose.onNodeWithTag("level_card_2").performClick()
+        compose.onNodeWithText("Для открытия наберите на уровне 1 1 звезду.").assertExists()
+        compose.onNodeWithTag("game_screen").assertDoesNotExist()
+        compose.onNodeWithText("Закрыть").performClick()
         val campaign = requireNotNull(container.levelsRepository.getCampaign())
         assertEquals(15, campaign.levels.size)
         compose.onNodeWithTag("levels_grid").performScrollToKey(campaign.levels.last().word)

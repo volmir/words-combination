@@ -178,7 +178,7 @@ private fun stageName(number: Int): String = stringResource(when (number) {
 private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Unit) {
     val stars = stringResource(R.string.level_stars_progress, item.stars, item.maxStars)
     val status = stringResource(when {
-        !item.unlocked -> R.string.level_locked
+        !item.unlocked -> R.string.level_status_locked
         item.stars == item.maxStars -> R.string.level_all_stars
         item.stars >= item.requiredStars -> R.string.level_passed
         else -> R.string.level_open
@@ -196,12 +196,9 @@ private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Uni
                 if (!item.unlocked) LockIcon()
                 if (item.crowned) Icon(painterResource(R.drawable.ic_crown), stringResource(R.string.level_crown), Modifier.size(24.dp))
             }
-            if (item.campaignStars == null) StarsRow(item.progress) else StarsRow(item.stars, item.maxStars)
-            if (item.campaignStars != null) {
+            if (item.campaignStars == null) StarsRow(item.progress) else {
+                StarsRow(item.stars, item.maxStars)
                 Text(status)
-                Text(stringResource(R.string.level_threshold, item.requiredStars, starForm(item.requiredStars)))
-                val remaining = item.maxStars - item.stars
-                if (remaining > 0) Text(stringResource(R.string.level_available_stars, remaining, starForm(remaining)))
                 if (item.recommended) Text(stringResource(R.string.level_recommended))
             }
         }
