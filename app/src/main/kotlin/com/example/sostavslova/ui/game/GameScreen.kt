@@ -152,8 +152,6 @@ fun GameScreen(
                         if (state.level != null) StarsRow(state.levelProgress, onClick = { onDialog(GameDialog.Tasks) })
                     }
                 }
-                state.message?.let { GameBanner(it) }
-                notice?.let { GameBanner(it) }
                 Well {
                     WordInputRow(stringResource(R.string.your_answer), state.input, onInputChanged,
                         stringResource(R.string.check_answer), {
@@ -163,6 +161,17 @@ fun GameScreen(
                         }, enabled = state.canPlay, inputEnabled = !state.loading && !state.returnLevels,
                         focusRequester = focus)
                     if (state.busy) GameLoading(stringResource(R.string.game_saving))
+                }
+                // Feedback stays in flow directly under the input: heightIn reserves
+                // space for a single short banner (no jump on first message) while
+                // still growing for long/multi-line text, 200% font scale, or
+                // message + notice shown together, without covering input/buttons.
+                Column(
+                    Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("game_feedback"),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    state.message?.let { GameBanner(it) }
+                    notice?.let { GameBanner(it) }
                 }
                 if (current != null) {
                     var tasksExpanded by rememberSaveable(current.level.number, current.level.word) { mutableStateOf(false) }
