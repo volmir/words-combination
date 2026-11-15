@@ -59,7 +59,8 @@ class MainScenariosUiTest {
 
     /** Ответ, который есть в текущем производственном исходнике; v1 оставлен как запасной стенд. */
     private fun validAnswer(source: String) = if (source == "чемпионство") "нос" else "пар"
-    private fun invalidAnswer(source: String) = if (source == "чемпионство") "пар" else "нос"
+    // Заведомо отсутствующее в словаре слово для проверки ветки NOT_FOUND.
+    private fun unknownAnswer() = "щщщ"
 
     private suspend fun foundAnswers(source: String): List<String> =
         container.levelsRepository.getCampaign()?.let { campaign ->
@@ -91,7 +92,8 @@ class MainScenariosUiTest {
     }
 
     /**
-     * Сценарий 2: Неверное слово → «Слово … не найдено!»; повтор верного → «Вы уже разгадали слово …».
+     * Сценарий 2: Неизвестное слово → «Слово … не распознано словарём»;
+     * повтор верного → «Вы уже разгадали слово …».
      */
     @Test
     fun scenario2_incorrectWordNotFoundAndRepeatedWordAlreadyFound() = runTest {
@@ -101,8 +103,9 @@ class MainScenariosUiTest {
         answerWord(valid)
         awaitText("Правильно!")
 
-        answerWord(invalidAnswer(source))
-        awaitText("Слово ${invalidAnswer(source)} не найдено!")
+        val unknown = unknownAnswer()
+        answerWord(unknown)
+        awaitText("Слово «$unknown» не распознано словарём")
 
         answerWord(valid)
         awaitText("Вы уже разгадали слово $valid")
@@ -124,7 +127,7 @@ class MainScenariosUiTest {
         val unrevealedWords = (allBuildable - found).filter { it.length >= 3 }
         assertTrue("Должны быть неотгаданные слова", unrevealedWords.isNotEmpty())
 
-        compose.onNodeWithText("Показать подсказку").performScrollTo().performClick()
+        compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
         compose.waitUntil(10_000) {
             compose.onAllNodesWithTag("game_hint").fetchSemanticsNodes().isNotEmpty()
         }

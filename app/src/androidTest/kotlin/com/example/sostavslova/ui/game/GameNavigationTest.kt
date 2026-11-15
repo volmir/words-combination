@@ -34,7 +34,9 @@ class GameNavigationTest {
     private suspend fun source() = container.levelsRepository.getCampaign()?.levels?.first()?.word
         ?: container.levelsRepository.getLevels().first().word
     private fun validAnswer(source: String) = if (source == "чемпионство") "нос" else "пар"
-    private fun invalidAnswer(source: String) = if (source == "чемпионство") "пар" else "нос"
+    // Заведомо отсутствующее в словаре слово: реальное «пар» даёт отказ по буквам,
+    // а не проверяемую здесь ветку «слово не распознано».
+    private fun unknownAnswer() = "щщщ"
     private suspend fun foundAnswers(source: String): List<String> =
         container.levelsRepository.getCampaign()?.let { campaign ->
             container.progressRepository.observeCampaignProgress().first()
@@ -65,7 +67,8 @@ class GameNavigationTest {
         awaitText("Найдено 1 из")
         answer(valid.uppercase()); awaitText("Вы уже разгадали слово $valid")
         answer("пaр"); awaitText("Введите слово длиной не менее 3-х символов")
-        answer(invalidAnswer(source)); awaitText("Слово ${invalidAnswer(source)} не найдено!")
+        val unknown = unknownAnswer()
+        answer(unknown); awaitText("Слово «$unknown» не распознано словарём")
         compose.onNodeWithText("Статистика").performScrollTo().performClick()
         compose.onNodeWithText("Статистика по слову", substring = true).assertIsDisplayed()
         val total = container.wordRepository.startGame(source).total
@@ -82,7 +85,7 @@ class GameNavigationTest {
         val source = source()
         val valid = validAnswer(source)
         start(); answer(valid); awaitText("Правильно!")
-        compose.onNodeWithText("Показать подсказку").performScrollTo().performClick()
+        compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_hint").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("game_hint").performScrollTo().assertIsDisplayed()
         back()
@@ -108,7 +111,7 @@ class GameNavigationTest {
         val source = source()
         val valid = validAnswer(source)
         start(); answer(valid); awaitText("Правильно!")
-        compose.onNodeWithText("Показать подсказку").performScrollTo().performClick()
+        compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_hint").fetchSemanticsNodes().isNotEmpty() }
         fun hintText() = compose.onAllNodes(hasAnyAncestor(hasTestTag("game_hint")), useUnmergedTree = true)
             .fetchSemanticsNodes().flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }

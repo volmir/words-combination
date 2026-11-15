@@ -24,18 +24,35 @@ import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.ui.theme.WordsColors
 
 @Composable
-fun StarsRow(progress: LevelProgress, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
-    StarsRow(listOf(progress.completed, progress.wordsTask, progress.lettersTask), modifier, onClick)
+fun StarsRow(
+    progress: LevelProgress,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    label: String? = null,
+) {
+    StarsRow(listOf(progress.completed, progress.wordsTask, progress.lettersTask), modifier, onClick, label)
 }
 
 @Composable
-fun StarsRow(stars: Int, maxStars: Int, modifier: Modifier = Modifier) {
-    StarsRow(List(maxStars) { it < stars }, modifier)
+fun StarsRow(
+    stars: Int,
+    maxStars: Int,
+    modifier: Modifier = Modifier,
+    label: String? = null,
+) {
+    StarsRow(List(maxStars) { it < stars }, modifier, null, label)
 }
 
 @Composable
-private fun StarsRow(positions: List<Boolean>, modifier: Modifier, onClick: (() -> Unit)? = null) {
-    val title = stringResource(R.string.tasks)
+private fun StarsRow(
+    positions: List<Boolean>,
+    modifier: Modifier,
+    onClick: (() -> Unit)? = null,
+    label: String? = null,
+) {
+    // Кликабельный ряд открывает задания, поэтому по умолчанию называется «Задания».
+    // На карте кампании тот же ряд только показывает прогресс и называется «Звёзды».
+    val title = label ?: stringResource(R.string.tasks)
     val description = pluralStringResource(R.plurals.level_stars_progress, positions.size,
         positions.count { it }, positions.size)
     val interactive = if (onClick != null) {

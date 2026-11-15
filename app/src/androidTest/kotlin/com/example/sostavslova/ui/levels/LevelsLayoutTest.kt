@@ -60,8 +60,11 @@ class LevelsLayoutTest(private val width: Int, private val fontScale: Float) {
         }
         compose.onNodeWithTag("level_card_1").assertIsEnabled()
             .assertTextContains("Открыт", substring = true)
+            .assert(hasContentDescription("Звёзды"))
         compose.onNodeWithTag("level_card_2").assertIsEnabled()
             .assertTextContains("Закрыт", substring = true)
+        // Ряд звёзд на карте только показывает прогресс: «Задания» здесь вводит в заблуждение.
+        compose.onAllNodesWithContentDescription("Задания").assertCountEquals(0)
         compose.onAllNodesWithText("Для прохождения", substring = true).assertCountEquals(0)
         compose.onAllNodesWithText("Можно добрать", substring = true).assertCountEquals(0)
         val first = compose.onNodeWithTag("level_card_1").fetchSemanticsNode().boundsInRoot

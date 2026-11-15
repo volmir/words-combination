@@ -7,6 +7,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
@@ -108,6 +109,8 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
                 }
             }
         }
+        compose.onNodeWithTag("game_hint")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
         compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Ступень 2 из 4")
         compose.onNodeWithText("Животные").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Синтетическое безопасное описание").performScrollTo().assertIsDisplayed()

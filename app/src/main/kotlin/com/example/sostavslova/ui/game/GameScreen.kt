@@ -37,6 +37,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.SpanStyle
@@ -209,7 +211,8 @@ fun GameScreen(
                 }
                 if (state.hintLoading) GameLoading(stringResource(R.string.hint_loading))
                 state.hint?.let { hint ->
-                    Column(Modifier.testTag("game_hint"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.testTag("game_hint").semantics { liveRegion = LiveRegionMode.Polite },
+                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.hint_title), style = MaterialTheme.typography.titleMedium)
                         if (hint.definitions.isEmpty()) Text(stringResource(R.string.hint_fallback,
                             hint.length, RussianPlural.form(hint.length,
@@ -225,7 +228,8 @@ fun GameScreen(
                     }
                 }
                 if (state.campaignHints.isNotEmpty()) {
-                    Column(Modifier.testTag("game_hint"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.testTag("game_hint").semantics { liveRegion = LiveRegionMode.Polite },
+                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.hint_title), style = MaterialTheme.typography.titleMedium)
                         Text(stringResource(R.string.hint_stage, state.campaignHints.size,
                             state.campaignLevel?.hints?.ladder?.steps?.size ?: 0), Modifier.testTag("game_hint_stage"),

@@ -252,6 +252,12 @@ class GameViewModel(
         val game = before.game ?: return
         if (!before.canPlay) return
         val raw = before.input
+        // Латиница, цифры и знаки после нормализации дают пустую строку. Раньше
+        // такая отправка молча ничего не делала, и поле казалось сломанным.
+        if (Alphabet.normalize(raw).isEmpty()) {
+            mutableState.update { it.copy(message = GameMessage(R.string.answer_empty, type = AlertType.Danger)) }
+            return
+        }
         mutableState.update { it.copy(busy = true) }
         operation = viewModelScope.launch {
             try {
@@ -261,7 +267,10 @@ class GameViewModel(
                 val submitted = campaignAnswer?.submission
                 val submission = submitted?.let { com.example.sostavslova.core.Submission(it.evaluation.state.game, it.result) }
                     ?: withContext(computationDispatcher) { game.submit(raw, words.requireIndex()) }
-                if (submission.result == AnswerResult.EMPTY) return@launch
+                if (submission.result == AnswerResult.EMPTY) {
+                    mutableState.update { it.copy(message = GameMessage(R.string.answer_empty, type = AlertType.Danger)) }
+                    return@launch
+                }
                 val next = submission.state
                 var stars = before.levelProgress
                 if (submission.result == AnswerResult.CORRECT) {

@@ -107,13 +107,15 @@ class GameViewModelTest {
         assertEquals("", model.uiState.value.input)
     }
 
-    @Test fun emptySubmissionDoesNothingAndLongInputIsKeptWhole() = runTest {
+    @Test fun emptyOrNonRussianSubmissionExplainsItselfAndLongInputIsKeptWhole() = runTest {
         seed("портал")
         val handle = SavedStateHandle(mapOf("index" to route))
         val model = model(handle); model.ready()
         val before = saved()
         val state = model.answer("123--")
-        assertNull(state.message)
+        // Нормализация выбрасывает латиницу/цифры; молчаливый no-op выглядел как
+        // сломанная кнопка. Пользователь должен увидеть, что нужны русские буквы.
+        assertEquals(R.string.answer_empty, state.message?.text)
         assertEquals("123--", state.input)
         assertEquals(before, saved())
         withContext(Dispatchers.Main) { model.onInputChanged("аб") }

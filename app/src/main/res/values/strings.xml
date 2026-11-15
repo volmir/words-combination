@@ -19,6 +19,7 @@
     <string name="definitions_unavailable">Определения недоступны в этой версии</string>
     <string name="enter_word">Введите слово:</string>
     <string name="your_answer">Ваш ответ:</string>
+    <string name="source_word_description">Исходное слово: %1$s</string>
     <string name="check_answer">Проверить</string>
     <string name="correct_answer">Правильно!</string>
     <string name="no_combinations">Комбинации слов не найдены!</string>
@@ -53,6 +54,7 @@
     <string name="answer_count_few">буквы</string>
     <string name="answer_count_many">букв</string>
     <string name="answer_same_as_source">Это и есть исходное слово</string>
+    <string name="answer_empty">Введите слово русскими буквами</string>
     <string name="all_words_found">Вы отгадали все слова!</string>
     <string name="star_received">Получена звезда!</string>
     <string name="hint_all_found">Все слова уже найдены</string>
@@ -121,6 +123,7 @@
     <string name="levels_finale">Финал кампании достигнут! Можно вернуться за оставшимися звёздами.</string>
     <string name="levels_master">Мастер — все звёзды собраны!</string>
     <string name="level_crown">Корона: финал кампании достигнут</string>
+    <string name="level_stars_label">Звёзды</string>
     <string name="level_open">Открыт</string>
     <string name="level_passed">Пройден</string>
     <string name="level_all_stars">Все звёзды</string>

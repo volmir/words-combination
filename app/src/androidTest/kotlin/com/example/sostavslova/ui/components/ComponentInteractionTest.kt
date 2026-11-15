@@ -99,6 +99,12 @@ class ComponentInteractionTest {
     }
 
     @Test
+    fun sourceWordIsAnnouncedAsOnePhraseInsteadOfSeparateLetters() {
+        compose.setContent { WordsTheme { LetterTiles("портал") } }
+        compose.onNodeWithContentDescription("Исходное слово: портал").assertExists()
+    }
+
+    @Test
     fun wordLinkInvokesCallbackWithOriginalWord() {
         var selected: String? = null
         compose.setContent { WordsTheme { WordLinks(listOf("пар", "порт"), { selected = it }) } }
@@ -135,6 +141,6 @@ class ComponentInteractionTest {
         compose.onNodeWithText("Авторы — участники русского Викисловаря", substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Kaikki.org / Wiktextract", substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("CC BY-SA 4.0", substring = true).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("литературные примеры не включены", substring = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Литературные примеры исключены", substring = true).performScrollTo().assertIsDisplayed()
     }
 }
