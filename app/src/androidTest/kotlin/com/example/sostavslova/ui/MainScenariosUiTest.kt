@@ -80,13 +80,13 @@ class MainScenariosUiTest {
         startLevel()
         val source = source()
         val game = container.wordRepository.startGame(source)
-        awaitText("вы отгадали 0", substring = true)
+        awaitText("Найдено 0 из", substring = true)
         val valid = validAnswer(source)
         assertTrue(valid in game.allWords)
 
         answerWord(valid)
         awaitText("Правильно!")
-        awaitText("вы отгадали 1", substring = true)
+        awaitText("Найдено 1 из", substring = true)
         assertEquals(listOf(valid), foundAnswers(source))
     }
 
@@ -159,7 +159,7 @@ class MainScenariosUiTest {
         compose.onNodeWithTag("game_back").performClick()
         compose.onNodeWithTag("levels_screen").assertIsDisplayed()
         startLevel()
-        awaitText("вы отгадали 1", substring = true)
+        awaitText("Найдено 1 из", substring = true)
         assertEquals(listOf(valid), foundAnswers(source))
     }
 

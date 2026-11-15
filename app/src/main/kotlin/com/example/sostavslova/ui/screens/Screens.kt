@@ -23,11 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.example.sostavslova.BuildConfig
 import com.example.sostavslova.R
@@ -78,8 +74,6 @@ fun RulesScreen() {
                     R.string.rules_item_4,
                     R.string.rules_item_5,
                     R.string.rules_item_6,
-                    R.string.rules_item_7,
-                    R.string.rules_item_8,
                 )
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -148,17 +142,9 @@ fun AboutScreen() {
 
             val count = wordCount
             val countText = if (count != null) {
-                val wordsForm = RussianPlural.words(count)
-                buildAnnotatedString {
-                    append("Всего в базе игры: ")
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("$count $wordsForm")
-                    }
-                }
+                stringResource(R.string.about_words_count, count, RussianPlural.words(count))
             } else {
-                buildAnnotatedString {
-                    append(stringResource(R.string.about_words_loading))
-                }
+                stringResource(R.string.about_words_loading)
             }
 
             Text(

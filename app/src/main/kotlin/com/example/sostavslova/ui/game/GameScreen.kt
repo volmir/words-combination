@@ -139,15 +139,18 @@ fun GameScreen(
                     LetterTiles(game.word)
                     val starsDescription = pluralStringResource(R.plurals.level_stars_progress,
                         current.level.maxStars, current.completedTaskIds.size, current.level.maxStars)
+                    val required = current.level.requiredStars
+                    val requiredWord = RussianPlural.form(required,
+                        stringResource(R.string.star_one), stringResource(R.string.star_few),
+                        stringResource(R.string.star_many))
                     Text(stringResource(if (current.level.number == state.totalLevels) R.string.game_level_final_threshold
-                        else R.string.game_level_threshold, current.completedTaskIds.size,
-                        current.level.maxStars, current.level.requiredStars),
+                        else R.string.game_level_threshold, required, requiredWord),
                         Modifier.testTag("level_difficulty").semantics { stateDescription = starsDescription },
                         style = MaterialTheme.typography.bodyMedium)
                 } else {
                     LetterTiles(game.word)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.game_counts, game.total, RussianPlural.words(game.total), game.foundCount),
+                        Text(stringResource(R.string.game_counts, game.foundCount, game.total, RussianPlural.words(game.total)),
                             style = MaterialTheme.typography.bodyMedium)
                         if (state.level != null) StarsRow(state.levelProgress, onClick = { onDialog(GameDialog.Tasks) })
                     }
@@ -187,7 +190,7 @@ fun GameScreen(
                         }
                     }
                     if (tasksExpanded) CampaignTasks(state)
-                    Text(stringResource(R.string.game_counts, game.total, RussianPlural.words(game.total), game.foundCount),
+                    Text(stringResource(R.string.game_counts, game.foundCount, game.total, RussianPlural.words(game.total)),
                         style = MaterialTheme.typography.bodyMedium)
                 }
                 Text(stringResource(R.string.found_words), style = MaterialTheme.typography.titleMedium)

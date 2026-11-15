@@ -47,7 +47,7 @@ class GameNavigationTest {
     }
     private fun start() {
         compose.onNodeWithTag("level_card_1").performClick()
-        awaitText("вы отгадали 0")
+        awaitText("Найдено 0 из")
     }
     private fun answer(raw: String) {
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement(raw)
@@ -62,7 +62,7 @@ class GameNavigationTest {
         answer(valid); awaitText("Правильно!")
         compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsFocused()
         assertEquals(listOf(valid), foundAnswers(source))
-        awaitText("вы отгадали 1")
+        awaitText("Найдено 1 из")
         answer(valid.uppercase()); awaitText("Вы уже разгадали слово $valid")
         answer("пaр"); awaitText("Введите слово длиной не менее 3-х символов")
         answer(invalidAnswer(source)); awaitText("Слово ${invalidAnswer(source)} не найдено!")
@@ -96,11 +96,11 @@ class GameNavigationTest {
         start(); answer(valid); awaitText("Правильно!")
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("ЧеРнОвИк")
         compose.activityRule.scenario.recreate()
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("вы отгадали 1", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Найдено 1 из", substring = true).fetchSemanticsNodes().isNotEmpty() }
         compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("ЧеРнОвИк")
         back()
         compose.onNodeWithTag("level_card_1").performClick()
-        awaitText("вы отгадали 1")
+        awaitText("Найдено 1 из")
         assertEquals(listOf(valid), foundAnswers(source))
     }
 
