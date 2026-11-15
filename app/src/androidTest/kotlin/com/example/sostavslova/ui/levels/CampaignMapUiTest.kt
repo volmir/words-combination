@@ -122,6 +122,34 @@ class CampaignMapUiTest {
         compose.onNodeWithTag("levels_welcome_confirm").assertTextEquals("Понятно")
     }
 
+    @Test fun loadingShowsNeutralSpaceWithoutFakeCardsThenErrorRetryAndSuccess() {
+        val state = mutableStateOf(LevelsUiState(loading = true, showWelcome = true))
+        var retries = 0
+        compose.setContent { WordsTheme {
+            LevelsScreen(state.value, {}, { retries++ }, onWelcomeShown = {})
+        } }
+        compose.onNodeWithTag("levels_screen").assertIsDisplayed()
+        compose.onAllNodesWithText("Загружаем уровни…").assertCountEquals(0)
+        compose.onAllNodesWithTag("level_card_1").assertCountEquals(0)
+        compose.onAllNodesWithTag("levels_grid").assertCountEquals(0)
+        compose.onAllNodesWithTag("levels_welcome").assertCountEquals(0)
+
+        compose.runOnIdle { state.value = state.value.copy(loading = false, loadError = true) }
+        compose.onNodeWithText("Не удалось загрузить уровни. Попробуйте ещё раз.").assertIsDisplayed()
+        compose.onNodeWithTag("levels_retry").assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals(1, retries) }
+        compose.onAllNodesWithTag("level_card_1").assertCountEquals(0)
+
+        compose.runOnIdle { state.value = state.value.copy(loading = true, loadError = false) }
+        compose.onAllNodesWithTag("level_card_1").assertCountEquals(0)
+
+        compose.runOnIdle {
+            state.value = state.value.copy(loading = false, levels = listOf(level(1, recommended = true)),
+                stages = listOf(Stage(1, 1, 1)), recommendedLevel = 1)
+        }
+        compose.onNodeWithTag("level_card_1").assertIsDisplayed()
+    }
+
     @Test fun initialRecommendationScrollsOnceAndUpdatesDoNotMoveMap() {
         val state = mutableStateOf(LevelsUiState(loading = false,
             levels = (1..12).map { level(it, recommended = it == 10) },

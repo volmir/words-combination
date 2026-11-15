@@ -23,7 +23,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -128,18 +127,9 @@ fun LevelsScreen(
         )
     }
     BoxWithConstraints(Modifier.fillMaxSize().testTag("levels_screen"), contentAlignment = Alignment.TopCenter) {
-        // До загрузки данных не измеряем пустую сетку: она сбросила бы восстановленную позицию прокрутки.
-        if (state.loading && state.levels.isEmpty()) {
-            Column(Modifier.widthIn(max = 600.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(R.string.levels_title), Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
-                Well { Text(stringResource(R.string.choose_level), style = MaterialTheme.typography.bodyLarge) }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                    Text(stringResource(R.string.levels_loading))
-                }
-            }
-            return@BoxWithConstraints
-        }
+        // До загрузки данных показываем нейтральный фон без ложных карточек и измерения пустой сетки:
+        // она сбросила бы восстановленную позицию прокрутки. Приветствие тоже ждёт настоящей карты.
+        if (state.loading && state.levels.isEmpty()) return@BoxWithConstraints
         val columns = if (maxWidth < 600.dp) GridCells.Fixed(1) else GridCells.Adaptive(220.dp)
         LazyVerticalGrid(columns, Modifier.widthIn(max = 600.dp).fillMaxSize().testTag("levels_grid"),
             state = scroll, contentPadding = PaddingValues(16.dp),
@@ -164,7 +154,7 @@ fun LevelsScreen(
                     }
                     if (state.loadError) {
                         AlertBanner(AlertType.Danger, stringResource(R.string.levels_load_error))
-                        OutlinedButton(onRetry, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.retry)) }
+                        OutlinedButton(onRetry, Modifier.heightIn(min = 48.dp).testTag("levels_retry")) { Text(stringResource(R.string.retry)) }
                     }
                     if (state.message != 0) AlertBanner(AlertType.Warning, stringResource(state.message))
                 }

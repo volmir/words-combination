@@ -10,10 +10,8 @@
     <string name="word_too_long">Введите слово длиной не более 30-ти символов</string>
     <string name="retry">Повторить</string>
     <string name="levels_title">Прохождение уровней игры</string>
-    <string name="choose_level">Выберите доступный уровень:</string>
     <string name="level_button">%1$d. %2$s</string>
     <string name="level_locked">Уровень недоступен</string>
-    <string name="levels_loading">Загружаем уровни…</string>
     <string name="levels_load_error">Не удалось загрузить уровни. Попробуйте ещё раз.</string>
     <string name="welcome_message">Добро пожаловать в „Составь слова“! Составляйте слова из букв исходного слова, выполняйте задания, получайте звёзды и открывайте новые уровни. Выберите первый доступный уровень — прогресс сохраняется автоматически</string>
     <string name="welcome_confirm">Понятно</string>
