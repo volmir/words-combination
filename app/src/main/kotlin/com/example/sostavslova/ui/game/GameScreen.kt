@@ -162,7 +162,7 @@ fun GameScreen(
                             focus.requestFocus()
                             keyboard?.show()
                         }, enabled = state.canPlay, inputEnabled = !state.loading && !state.returnLevels,
-                        focusRequester = focus)
+                        maxLength = null, focusRequester = focus)
                     if (state.busy) GameLoading(stringResource(R.string.game_saving))
                 }
                 // Feedback stays in flow directly under the input: heightIn reserves

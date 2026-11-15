@@ -107,16 +107,26 @@ class GameViewModelTest {
         assertEquals("", model.uiState.value.input)
     }
 
-    @Test fun emptySubmissionDoesNothingAndInputIsLimitedTo30() = runTest {
+    @Test fun emptySubmissionDoesNothingAndLongInputIsKeptWhole() = runTest {
         seed("портал")
-        val model = model(); model.ready()
+        val handle = SavedStateHandle(mapOf("index" to route))
+        val model = model(handle); model.ready()
         val before = saved()
         val state = model.answer("123--")
         assertNull(state.message)
         assertEquals("123--", state.input)
         assertEquals(before, saved())
-        withContext(Dispatchers.Main) { model.onInputChanged("а".repeat(31)) }
-        assertEquals(30, model.uiState.value.input.length)
+        withContext(Dispatchers.Main) { model.onInputChanged("аб") }
+        assertEquals("аб", model.uiState.value.input)
+        val tooShort = model.answer("аб")
+        assertEquals(R.string.word_too_short, tooShort.message?.text)
+
+        val long = "а".repeat(31)
+        withContext(Dispatchers.Main) { model.onInputChanged(long) }
+        assertEquals(long, model.uiState.value.input)
+        val snapshot = withContext(Dispatchers.Main) { handle.keys().associateWith { handle.get<Any?>(it) } }
+        val restored = model(SavedStateHandle(snapshot))
+        assertEquals(long, restored.ready().input)
     }
 
     @Test fun firstStarsEmitEventsAndFinishedIsAnEventOnlyOnce() = runTest {
@@ -746,19 +756,73 @@ class GameViewModelTest {
         assertNull(withTimeoutOrNull(200) { model.events.first() })
     }
 
-    @Test fun firstLevelOfMasterStageExplainsBothRotatingNewTypesOnce() = runTest {
-        val json = miniCampaignJson.replace("\"number\": 1, \"firstLevel\"", "\"number\": 6, \"firstLevel\"")
-            .replace("\"stage\": 1", "\"stage\": 6")
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { json })
+    @Test fun newTaskTypesAreExplainedAtTheirFirstActualLevelAndNeverRepeat() = runTest {
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { firstAppearanceCampaignJson() })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
-        val first = model(wordRepository = campaignWords, levelRepository = campaignLevels)
-        val state = first.ready()
-        assertTrue(com.example.sostavslova.core.TaskType.T6 in state.explanations)
-        assertTrue(com.example.sostavslova.core.TaskType.T7 in state.explanations)
-        withContext(Dispatchers.Main) { first.onDismissExplanations() }
-        assertTrue(first.uiState.value.explanations.isEmpty())
-        val recreated = model(wordRepository = campaignWords, levelRepository = campaignLevels).ready()
-        assertTrue(recreated.explanations.isEmpty())
+        val campaign = requireNotNull(campaignLevels.getCampaign())
+        val seeded = org.json.JSONObject().put("version", 2).put("highestUnlockedLevel", 15)
+        val savedLevels = org.json.JSONObject()
+        campaign.levels.take(14).forEach { level ->
+            savedLevels.put(level.word, org.json.JSONObject().put("completedTaskIds",
+                org.json.JSONArray(level.tasks.map { it.id })))
+        }
+        seeded.put("levels", savedLevels)
+        store.edit { it[androidx.datastore.preferences.core.stringPreferencesKey("campaignProgressV2")] = seeded.toString() }
+
+        val fourteenth = model(SavedStateHandle(mapOf("index" to "14")),
+            wordRepository = campaignWords, levelRepository = campaignLevels)
+        val first = fourteenth.ready()
+        assertEquals(listOf(com.example.sostavslova.core.TaskType.T6), first.explanations)
+        assertEquals(setOf(com.example.sostavslova.core.TaskType.T6),
+            progress.observeCampaignProgress().first().seenExplanations)
+        withContext(Dispatchers.Main) { fourteenth.onDismissExplanations() }
+        assertTrue(fourteenth.uiState.value.explanations.isEmpty())
+
+        val reopened = model(SavedStateHandle(mapOf("index" to "14")),
+            wordRepository = campaignWords, levelRepository = campaignLevels).ready()
+        assertTrue(reopened.explanations.isEmpty())
+
+        val fifteenth = model(SavedStateHandle(mapOf("index" to "15")),
+            wordRepository = campaignWords, levelRepository = campaignLevels)
+        val last = fifteenth.ready()
+        assertEquals(listOf(com.example.sostavslova.core.TaskType.T7), last.explanations)
+        assertEquals(setOf(com.example.sostavslova.core.TaskType.T6, com.example.sostavslova.core.TaskType.T7),
+            progress.observeCampaignProgress().first().seenExplanations)
+
+        val lastAgain = model(SavedStateHandle(mapOf("index" to "15")),
+            wordRepository = campaignWords, levelRepository = campaignLevels).ready()
+        assertTrue(lastAgain.explanations.isEmpty())
+    }
+
+    /** 15 уровней: T1 знаком с первого уровня, T6 впервые на 14, T7 — на 15. */
+    private fun firstAppearanceCampaignJson(): String {
+        val suffixes = "бвгдзлмнпсфхцчшщ"
+        val levels = (1..15).joinToString(",") { number ->
+            val word = "картотека" + suffixes[number - 1]
+            val stage = when {
+                number <= 3 -> 1
+                number <= 5 -> 2
+                number <= 8 -> 3
+                number <= 10 -> 4
+                number <= 13 -> 5
+                else -> 6
+            }
+            val tasks = when (number) {
+                14 -> """{"id":"count14","type":"T1","n":1},
+                    {"id":"theme14","type":"T6","category":"test","n":1,"words":["кот"]}"""
+                15 -> """{"id":"count15","type":"T1","n":1},
+                    {"id":"contains15","type":"T7","letter":"р","n":1}"""
+                else -> """{"id":"count$number","type":"T1","n":1}"""
+            }
+            """{"number":$number,"word":"$word","stage":$stage,"requiredStars":1,"tasks":[$tasks]}"""
+        }
+        val stages = """[{"number":1,"firstLevel":1,"lastLevel":3},
+            {"number":2,"firstLevel":4,"lastLevel":5},
+            {"number":3,"firstLevel":6,"lastLevel":8},
+            {"number":4,"firstLevel":9,"lastLevel":10},
+            {"number":5,"firstLevel":11,"lastLevel":13},
+            {"number":6,"firstLevel":14,"lastLevel":15}]"""
+        return """{"version":2,"countMinLength":4,"stages":$stages,"levels":[$levels]}"""
     }
 
 }

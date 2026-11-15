@@ -45,6 +45,7 @@ fun WordInputRow(
     imeAction: ImeAction = ImeAction.Done,
     enabled: Boolean = true,
     inputEnabled: Boolean = enabled,
+    maxLength: Int? = Alphabet.MAX_WORD_LENGTH,
     onLengthExceeded: ((String) -> Unit)? = null,
     focusRequester: FocusRequester? = null,
 ) {
@@ -57,10 +58,11 @@ fun WordInputRow(
                 OutlinedTextField(
                     value = value,
                     onValueChange = {
-                        if (it.length > Alphabet.MAX_WORD_LENGTH && onLengthExceeded != null) {
-                            onLengthExceeded(it)
+                        if (maxLength != null && it.length > maxLength) {
+                            if (onLengthExceeded != null) onLengthExceeded(it)
+                            else onValueChange(it.take(maxLength))
                         } else {
-                            onValueChange(it.take(Alphabet.MAX_WORD_LENGTH))
+                            onValueChange(it)
                         }
                     },
                     modifier = fieldModifier.then(if (focusRequester == null) Modifier else Modifier.focusRequester(focusRequester))

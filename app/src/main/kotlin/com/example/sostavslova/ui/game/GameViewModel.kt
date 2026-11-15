@@ -163,14 +163,13 @@ class GameViewModel(
                 if (loadedCampaign != null) {
                     progress.visitCampaignLevel(loadedCampaign, requireNotNull(number))
                     val active = requireNotNull(current)
-                    val stage = loadedCampaign.stages.first { it.number == active.level.stage }
-                    // На входе в этап 6 знакомим с обоими новыми типами, независимо от ротации.
-                    val introduced = if (active.level.number == stage.firstLevel) {
-                        loadedCampaign.levels.filter { it.stage == stage.number }.flatMap { it.tasks }
-                            .map { it.type }.distinct().filter { type ->
-                                loadedCampaign.levels.none { it.stage < stage.number && it.tasks.any { task -> task.type == type } }
-                            }
-                    } else emptyList()
+                    // Поясняем тип ровно при его первом фактическом появлении в кампании.
+                    // Ротация внутри этапа не должна показывать урок раньше нужного уровня.
+                    val introduced = active.level.tasks.map { it.type }.distinct().filter { type ->
+                        loadedCampaign.levels.none { earlier ->
+                            earlier.number < active.level.number && earlier.tasks.any { task -> task.type == type }
+                        }
+                    }
                     val explanations = introduced.filter { progress.markCampaignExplanationSeen(it) }
                     val riddles = loadRiddles(active)
                     mutableState.update { it.copy(totalLevels = loadedCampaign.levels.size,
@@ -242,9 +241,10 @@ class GameViewModel(
     }
 
     fun onInputChanged(raw: String) {
-        val value = raw.take(Alphabet.MAX_WORD_LENGTH)
-        savedState[INPUT] = value
-        mutableState.update { it.copy(input = value, message = null) }
+        // Правильный ответ не длиннее исходника (≤ MAX_WORD_LENGTH), поэтому
+        // произвольный ввод не обрезаем: скрытая потеря последних символов недопустима.
+        savedState[INPUT] = raw
+        mutableState.update { it.copy(input = raw, message = null) }
     }
 
     fun onSubmit() {

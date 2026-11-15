@@ -156,6 +156,26 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("кот")
     }
 
+    @Test fun longInputIsNotTruncatedAndKeepsAccessibleLabel() {
+        val state = mutableStateOf(initial)
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+                WordsTheme {
+                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
+                        GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {}, {}, {}, {})
+                    }
+                }
+            }
+        }
+        val input = compose.onNode(hasSetTextAction())
+        val long = "а".repeat(31)
+        input.performScrollTo().performTextInput(long)
+        input.assertTextEquals(long)
+        input.assert(hasContentDescription("Ваш ответ:"))
+        input.performImeAction()
+        input.assertIsFocused()
+    }
+
     @Test fun riddlePreviewMovesToNextUnsolvedAndDisappearsWhenAllSolved() {
         val riddles = listOf(
             RiddleUiState("Первая безопасная загадка", 3, "К", solved = true),
