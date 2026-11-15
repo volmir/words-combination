@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.MainActivity
 import com.example.sostavslova.WordsApplication
+import com.example.sostavslova.ui.dismissWelcomeIfShown
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -24,6 +25,7 @@ class LevelsNavigationTest {
 
     @Test fun drawerOpensLevelsScrollSurvivesRecreationAndSelectionOpensRealGame() = runTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_card_1").fetchSemanticsNodes().isNotEmpty() }
+        compose.dismissWelcomeIfShown()
         compose.onNodeWithTag("level_card_1").assertIsEnabled()
         compose.onNodeWithTag("level_card_2").assertIsEnabled()
             .assertTextContains("Закрыт", substring = true)
@@ -37,6 +39,7 @@ class LevelsNavigationTest {
         compose.onNodeWithTag("level_card_15").assertIsDisplayed()
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_card_15").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("levels_welcome").assertDoesNotExist()
         compose.onNodeWithTag("level_card_15").assertIsDisplayed()
         compose.onNodeWithTag("levels_grid").performScrollToKey(campaign.levels.first().word)
         compose.onNodeWithTag("level_card_1").performClick()
@@ -51,6 +54,7 @@ class LevelsNavigationTest {
         }
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
         compose.onNodeWithTag("levels_screen").assertIsDisplayed()
+        compose.onNodeWithTag("levels_welcome").assertDoesNotExist()
         compose.onNodeWithTag("level_card_1").assertIsEnabled()
     }
 }

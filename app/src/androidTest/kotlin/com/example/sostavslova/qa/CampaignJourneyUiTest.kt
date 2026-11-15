@@ -26,6 +26,7 @@ import com.example.sostavslova.di.AppContainer
 import com.example.sostavslova.di.LocalAppContainer
 import com.example.sostavslova.nav.WordsNavHost
 import com.example.sostavslova.ui.WordsApp
+import com.example.sostavslova.ui.dismissWelcomeIfShown
 import com.example.sostavslova.ui.findActivity
 import com.example.sostavslova.ui.theme.WordsTheme
 import java.io.File
@@ -76,6 +77,7 @@ class CampaignJourneyUiTest {
             } }
         }
         awaitTag("level_card_1")
+        compose.dismissWelcomeIfShown()
     }
 
     @After fun close() = runTest {
@@ -140,6 +142,7 @@ class CampaignJourneyUiTest {
         assertNotSame(old.progressRepository, container.progressRepository)
         compose.runOnIdle { mounted.value = container }
         awaitTag("level_card_1")
+        compose.dismissWelcomeIfShown()
     }
 
     @Test fun newInstallToFinaleRestartAndAllStars() = runTest {

@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.MainActivity
 import com.example.sostavslova.WordsApplication
+import com.example.sostavslova.ui.dismissWelcomeIfShown
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -27,6 +28,7 @@ class GameNavigationTest {
         container.progressRepository.clearAll()
         container.wordRepository.ensureLoaded()
         compose.waitUntil(10_000) { compose.onNodeWithTag("level_card_1").isEnabled() }
+        compose.dismissWelcomeIfShown()
     }
     @After fun tearDown() = runTest { container.progressRepository.clearAll() }
     private suspend fun source() = container.levelsRepository.getCampaign()?.levels?.first()?.word

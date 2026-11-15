@@ -31,6 +31,7 @@ class MainScenariosUiTest {
         container.progressRepository.clearAll()
         container.wordRepository.ensureLoaded()
         compose.waitUntil(10_000) { compose.onNodeWithTag("level_card_1").isEnabled() }
+        compose.dismissWelcomeIfShown()
     }
 
     @After

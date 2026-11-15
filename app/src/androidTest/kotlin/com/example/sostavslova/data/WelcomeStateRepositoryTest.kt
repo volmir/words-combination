@@ -147,6 +147,15 @@ class WelcomeStateRepositoryTest {
         assertEquals(2, CampaignRules.stars(level, saved))
     }
 
+    @Test fun clearingAppDataOnFreshInstallRequestsShowAgain() = runTest {
+        restart(InstallEvidence.FRESH_INSTALL, localState = false)
+        assertEquals(WelcomeState.SHOW, repository.resolveWelcomeState())
+        assertTrue(repository.markWelcomeDone())
+        repository.clearAll()
+        assertNull(store.data.first()[welcome])
+        assertEquals(WelcomeState.SHOW, repository.resolveWelcomeState())
+    }
+
     @Test fun concurrentDoneMarksAreAtomicAndOnlyFirstChangesState() = runTest {
         restart(InstallEvidence.FRESH_INSTALL, localState = false)
         assertEquals(WelcomeState.SHOW, repository.resolveWelcomeState())

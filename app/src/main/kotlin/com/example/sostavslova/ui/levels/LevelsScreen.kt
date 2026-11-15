@@ -74,11 +74,19 @@ fun LevelsRoute(notice: Int = 0, onOpenGame: (Int) -> Unit) {
             onOpenGame(index)
         }
     }
-    LevelsScreen(state.copy(message = if (notice != 0) notice else state.message), model::onSelectLevel, model::load, model::dismissLockedRequirement)
+    LevelsScreen(state.copy(message = if (notice != 0) notice else state.message), model::onSelectLevel, model::load,
+        model::dismissLockedRequirement, model::onWelcomeShown, model::dismissWelcome)
 }
 
 @Composable
-fun LevelsScreen(state: LevelsUiState, onSelectLevel: (String) -> Unit, onRetry: () -> Unit, onDismissLocked: () -> Unit = {}) {
+fun LevelsScreen(
+    state: LevelsUiState,
+    onSelectLevel: (String) -> Unit,
+    onRetry: () -> Unit,
+    onDismissLocked: () -> Unit = {},
+    onWelcomeShown: () -> Unit = {},
+    onWelcomeDismiss: () -> Unit = {},
+) {
     val scroll = rememberLazyGridState()
     var positioned by rememberSaveable { mutableStateOf(false) }
     // Only the first loaded snapshot positions the map. Progress emissions keep the user's scroll.
@@ -97,6 +105,27 @@ fun LevelsScreen(state: LevelsUiState, onSelectLevel: (String) -> Unit, onRetry:
             title = { Text(stringResource(R.string.level_locked)) },
             text = { Text(stringResource(R.string.level_unlock_requirement, previous, required, starForm(required))) },
             confirmButton = { TextButton(onDismissLocked) { Text(stringResource(R.string.close_dialog)) } })
+    }
+    val mapReady = !state.loading && !state.loadError && state.levels.isNotEmpty()
+    // DONE фиксируется сразу после композиции диалога, а не после нажатия «Понятно».
+    LaunchedEffect(state.showWelcome, mapReady) {
+        if (state.showWelcome && mapReady) onWelcomeShown()
+    }
+    if (state.showWelcome && mapReady) {
+        AlertDialog(
+            onDismissRequest = onWelcomeDismiss,
+            modifier = Modifier.testTag("levels_welcome"),
+            text = {
+                Text(stringResource(R.string.welcome_message),
+                    Modifier.verticalScroll(rememberScrollState()).testTag("levels_welcome_text"))
+            },
+            confirmButton = {
+                TextButton(onClick = onWelcomeDismiss,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("levels_welcome_confirm")) {
+                    Text(stringResource(R.string.welcome_confirm))
+                }
+            },
+        )
     }
     BoxWithConstraints(Modifier.fillMaxSize().testTag("levels_screen"), contentAlignment = Alignment.TopCenter) {
         // До загрузки данных не измеряем пустую сетку: она сбросила бы восстановленную позицию прокрутки.

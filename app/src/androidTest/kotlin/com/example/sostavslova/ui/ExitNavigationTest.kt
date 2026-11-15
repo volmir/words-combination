@@ -7,11 +7,16 @@ import com.example.sostavslova.MainActivity
 import com.example.sostavslova.WordsApplication
 import kotlinx.coroutines.Job
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
 class ExitNavigationTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    @Before fun setUp() {
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_card_1").fetchSemanticsNodes().isNotEmpty() }
+        compose.dismissWelcomeIfShown()
+    }
     private fun back() = compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
 
     @Test fun drawerBackClosesDrawerAndDialogSurvivesRecreationWithCancel() {

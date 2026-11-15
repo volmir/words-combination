@@ -87,6 +87,41 @@ class CampaignMapUiTest {
         compose.onNodeWithTag("levels_finale_banner").assertTextEquals("Мастер — все звёзды собраны!")
     }
 
+    @Test fun welcomeWaitsForReadyMapAndIsPresentedOncePerState() {
+        val state = mutableStateOf(LevelsUiState(loading = true, showWelcome = true))
+        var presented = 0
+        compose.setContent { WordsTheme {
+            LevelsScreen(state.value, {}, {}, onWelcomeShown = { presented++ })
+        } }
+        compose.waitForIdle()
+        assertEquals(0, presented)
+        compose.onNodeWithTag("levels_welcome").assertDoesNotExist()
+
+        compose.runOnIdle { state.value = state.value.copy(loading = false, loadError = true) }
+        compose.waitForIdle()
+        assertEquals(0, presented)
+        compose.onNodeWithTag("levels_welcome").assertDoesNotExist()
+
+        compose.runOnIdle { state.value = state.value.copy(loadError = false, levels = emptyList()) }
+        compose.waitForIdle()
+        assertEquals(0, presented)
+        compose.onNodeWithTag("levels_welcome").assertDoesNotExist()
+
+        compose.runOnIdle { state.value = state.value.copy(levels = listOf(level(1))) }
+        compose.waitForIdle()
+        assertEquals(1, presented)
+        compose.onNodeWithTag("levels_welcome").assertIsDisplayed()
+        compose.onNodeWithTag("levels_welcome_text").assertTextEquals(
+            "Добро пожаловать в „Составь слова“! Составляйте слова из букв исходного слова, " +
+                "выполняйте задания, получайте звёзды и открывайте новые уровни. " +
+                "Выберите первый доступный уровень — прогресс сохраняется автоматически",
+        )
+        compose.runOnIdle { state.value = state.value.copy(recommendedLevel = 2) }
+        compose.waitForIdle()
+        assertEquals(1, presented)
+        compose.onNodeWithTag("levels_welcome_confirm").assertTextEquals("Понятно")
+    }
+
     @Test fun initialRecommendationScrollsOnceAndUpdatesDoNotMoveMap() {
         val state = mutableStateOf(LevelsUiState(loading = false,
             levels = (1..12).map { level(it, recommended = it == 10) },

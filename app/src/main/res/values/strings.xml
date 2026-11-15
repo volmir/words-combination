@@ -15,6 +15,8 @@
     <string name="level_locked">Уровень недоступен</string>
     <string name="levels_loading">Загружаем уровни…</string>
     <string name="levels_load_error">Не удалось загрузить уровни. Попробуйте ещё раз.</string>
+    <string name="welcome_message">Добро пожаловать в „Составь слова“! Составляйте слова из букв исходного слова, выполняйте задания, получайте звёзды и открывайте новые уровни. Выберите первый доступный уровень — прогресс сохраняется автоматически</string>
+    <string name="welcome_confirm">Понятно</string>
     <string name="level_start_error">Не удалось начать уровень. Попробуйте ещё раз.</string>
     <string name="definitions_unavailable">Определения недоступны в этой версии</string>
     <string name="enter_word">Введите слово:</string>

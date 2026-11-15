@@ -8,6 +8,7 @@ import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.CampaignSummary
 import com.example.sostavslova.core.Stage
 import com.example.sostavslova.core.CampaignProgress
+import com.example.sostavslova.core.WelcomeState
 import com.example.sostavslova.data.LevelRouteRules
 import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.LevelProgress
@@ -44,6 +45,9 @@ data class LevelsUiState(
     val levels: List<LevelUiState> = emptyList(),
     val openLevel: Int? = null,
     @param:StringRes val message: Int = 0,
+    /** Приветствие показывается один раз и только после появления настоящих карточек. */
+    val showWelcome: Boolean = false,
+    val welcomePresented: Boolean = false,
 ) {
     val canSelect: Boolean get() = !loading && !loadError && openLevel == null
 }
@@ -56,6 +60,7 @@ class LevelsViewModel(
     private val mutableState = MutableStateFlow(LevelsUiState())
     val uiState = mutableState.asStateFlow()
     private var loadJob: Job? = null
+    private var welcomeResolved = false
 
     init { load() }
 
@@ -75,9 +80,10 @@ class LevelsViewModel(
                                 CampaignRules.stars(level, saved), level.maxStars, level.requiredStars, level.stage,
                                 recommended == level.number, saved.finaleReached && level.number == campaign.levels.last().number)
                         }
+                        val showWelcome = if (items.isNotEmpty()) resolveWelcomeAfterReady() else false
                         mutableState.update { it.copy(loading = false, levels = items, stages = campaign.stages,
                             summary = CampaignRules.summary(campaign, saved), recommendedLevel = recommended,
-                            finaleReached = saved.finaleReached) }
+                            finaleReached = saved.finaleReached, showWelcome = it.showWelcome || showWelcome) }
                     }
                 } else {
                     val all = levels.getLevels()
@@ -87,12 +93,49 @@ class LevelsViewModel(
                             LevelUiState(level, saved[level.word] ?: LevelProgress(),
                                 LevelRouteRules.isUnlocked(level.index, null, CampaignProgress(), all, saved))
                         }
-                        mutableState.update { it.copy(loading = false, levels = items) }
+                        val showWelcome = if (items.isNotEmpty()) resolveWelcomeAfterReady() else false
+                        mutableState.update { it.copy(loading = false, levels = items,
+                            showWelcome = it.showWelcome || showWelcome) }
                     }
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { mutableState.update { it.copy(loading = false, loadError = true) } }
         }
+    }
+
+    /**
+     * Вызывается экраном после фактической композиции диалога, не по нажатию.
+     * Ошибка записи не должна превращать уже загруженную карту в ошибку.
+     */
+    fun onWelcomeShown() {
+        val state = mutableState.value
+        if (!state.showWelcome || state.welcomePresented || state.loading || state.loadError ||
+            state.levels.isEmpty()) return
+        mutableState.update { it.copy(welcomePresented = true) }
+        viewModelScope.launch {
+            try {
+                progress.markWelcomeDone()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // Следующий запуск повторит показ, если DONE не успел сохраниться.
+            }
+        }
+    }
+
+    fun dismissWelcome() { mutableState.update { it.copy(showWelcome = false) } }
+
+    private suspend fun resolveWelcomeAfterReady(): Boolean {
+        if (welcomeResolved) return false
+        welcomeResolved = true
+        val resolved = try {
+            progress.resolveWelcomeState()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            WelcomeState.UNKNOWN
+        }
+        return resolved == WelcomeState.SHOW
     }
 
     fun onSelectLevel(word: String) {
