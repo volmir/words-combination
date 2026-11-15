@@ -2,6 +2,7 @@ package com.example.sostavslova.ui.game
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,17 +28,42 @@ internal fun CampaignTasks(state: GameUiState) {
                     Column(Modifier.testTag("level_riddle_${index + 1}"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(stringResource(R.string.game_riddle_number, index + 1), style = MaterialTheme.typography.titleSmall)
                         Text(stringResource(if (riddle.solved) R.string.game_riddle_solved else R.string.game_riddle_pending))
-                        if (riddle.text != null) {
-                            Text(riddle.text)
-                            if (riddle.wiktionary) Text(stringResource(R.string.hint_definition_source), style = MaterialTheme.typography.bodySmall)
-                        } else {
-                            Text(stringResource(R.string.hint_fallback, riddle.length, letterForm(riddle.length), riddle.firstLetter))
-                            if (com.example.sostavslova.BuildConfig.DEBUG) Text(stringResource(R.string.game_riddle_fallback), style = MaterialTheme.typography.bodySmall)
-                        }
+                        RiddleText(riddle)
                     }
                 }
             }
         }
+    }
+}
+
+// Безопасный текст ближайшей нерешённой загадки остаётся рядом с вводом,
+// пока полный список заданий свёрнут. Ответ и скрытые буквы сюда не попадают.
+@Composable
+internal fun CampaignRiddlePreview(state: GameUiState) {
+    val current = state.campaignLevel ?: return
+    val next = current.level.tasks.asSequence()
+        .filterIsInstance<CampaignTask.T4>()
+        .flatMap { task ->
+            state.riddles[task.id].orEmpty().asSequence().withIndex()
+                .filter { !it.value.solved }
+                .map { it.index to it.value }
+        }
+        .firstOrNull() ?: return
+    val (index, riddle) = next
+    Column(Modifier.fillMaxWidth().testTag("game_riddle_preview"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(R.string.game_riddle_number, index + 1), style = MaterialTheme.typography.titleSmall)
+        RiddleText(riddle)
+    }
+}
+
+@Composable
+private fun RiddleText(riddle: RiddleUiState) {
+    if (riddle.text != null) {
+        Text(riddle.text)
+        if (riddle.wiktionary) Text(stringResource(R.string.hint_definition_source), style = MaterialTheme.typography.bodySmall)
+    } else {
+        Text(stringResource(R.string.hint_fallback, riddle.length, letterForm(riddle.length), riddle.firstLetter))
+        if (com.example.sostavslova.BuildConfig.DEBUG) Text(stringResource(R.string.game_riddle_fallback), style = MaterialTheme.typography.bodySmall)
     }
 }
 

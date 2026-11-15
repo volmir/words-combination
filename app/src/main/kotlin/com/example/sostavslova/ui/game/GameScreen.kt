@@ -165,6 +165,19 @@ fun GameScreen(
                     if (state.busy) GameLoading(stringResource(R.string.game_saving))
                 }
                 if (current != null) {
+                    var tasksExpanded by rememberSaveable(current.level.number, current.level.word) { mutableStateOf(false) }
+                    if (!tasksExpanded) CampaignRiddlePreview(state)
+                    TextButton({ tasksExpanded = !tasksExpanded },
+                        Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("game_tasks_toggle")) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.game_tasks_summary, current.completedTaskIds.size,
+                                current.level.tasks.size), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(if (tasksExpanded) R.string.game_group_close else R.string.game_group_open),
+                                style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                    if (tasksExpanded) CampaignTasks(state)
                     Text(stringResource(R.string.game_counts, game.total, RussianPlural.words(game.total), game.foundCount),
                         style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic))
                 }
@@ -229,7 +242,6 @@ fun GameScreen(
                     if (state.level != null || state.campaignLevel != null) GameAction(stringResource(R.string.tasks), state.canPlay,
                         { onDialog(GameDialog.Tasks) }, R.drawable.ic_star_outline)
                 }
-                if (current != null) CampaignTasks(state)
             }
         }
     }

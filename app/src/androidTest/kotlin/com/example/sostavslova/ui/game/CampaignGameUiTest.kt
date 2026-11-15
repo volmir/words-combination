@@ -56,6 +56,11 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         }
         compose.onNodeWithTag("level_header").assertTextEquals("Мастер · уровень 30 из 30")
         compose.onNodeWithTag("level_difficulty").assertTextContains("Для финала", substring = true)
+        compose.onNodeWithTag("level_task_t1").assertDoesNotExist()
+        compose.onNodeWithTag("game_riddle_preview").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Загадка 2").assertExists()
+        compose.onNodeWithText("Слово из 4 букв, начинается на «К»").assertExists()
+        compose.onNodeWithTag("game_tasks_toggle").performScrollTo().performClick()
         TaskType.entries.forEach { type ->
             compose.onNodeWithTag("level_task_${type.name.lowercase()}").performScrollTo().assertExists()
             assertTextFits()
@@ -117,6 +122,70 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         compose.onNodeWithTag("game_hint_budget").performScrollTo()
             .assertTextContains("Каждые 4 найденных слова", substring = true)
         assertTextFits()
+    }
+
+    @Test fun tasksToggleKeepsInputAndStartsCollapsedForAnotherLevel() {
+        val state = mutableStateOf(initial)
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+                WordsTheme {
+                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
+                        GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {}, {}, {}, {})
+                    }
+                }
+            }
+        }
+        compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("кот")
+        compose.onNodeWithTag("game_riddle_preview").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("game_tasks_toggle").performScrollTo().performClick()
+        compose.onNodeWithTag("level_task_t4").performScrollTo().assertExists()
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("кот")
+        compose.onNodeWithTag("game_tasks_toggle").performScrollTo().performClick()
+        compose.onNodeWithTag("level_task_t4").assertDoesNotExist()
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("кот")
+        compose.onNodeWithTag("game_tasks_toggle").performScrollTo().performClick()
+        compose.onNodeWithTag("level_task_t4").performScrollTo().assertExists()
+        compose.runOnIdle {
+            state.value = state.value.copy(
+                campaignLevel = evaluated.state.copy(level = evaluated.state.level.copy(number = 8,
+                    word = "поздравление", tasks = listOf(CampaignTask.T1("count", 1)))),
+                taskProgress = emptyList(), riddles = emptyMap())
+        }
+        compose.onNodeWithTag("level_task_t1").assertDoesNotExist()
+        compose.onNodeWithTag("game_riddle_preview").assertDoesNotExist()
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("кот")
+    }
+
+    @Test fun riddlePreviewMovesToNextUnsolvedAndDisappearsWhenAllSolved() {
+        val riddles = listOf(
+            RiddleUiState("Первая безопасная загадка", 3, "К", solved = true),
+            RiddleUiState(null, 4, "К"),
+            RiddleUiState(null, 6, "К"))
+        val state = mutableStateOf(initial.copy(riddles = mapOf("riddles" to riddles)))
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+                WordsTheme {
+                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
+                        GameScreen(state.value, {}, {}, {}, {}, {}, {}, {})
+                    }
+                }
+            }
+        }
+        compose.onNodeWithTag("game_riddle_preview").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Загадка 2").assertExists()
+        compose.onNodeWithText("Слово из 4 букв, начинается на «К»").assertExists()
+        compose.onNodeWithText("Первая безопасная загадка").assertDoesNotExist()
+        compose.runOnIdle {
+            state.value = state.value.copy(riddles = mapOf("riddles" to riddles.mapIndexed { index, riddle ->
+                if (index == 1) riddle.copy(solved = true) else riddle
+            }))
+        }
+        compose.onNodeWithText("Загадка 3").assertExists()
+        compose.onNodeWithText("Слово из 6 букв, начинается на «К»").assertExists()
+        compose.runOnIdle {
+            state.value = state.value.copy(riddles = mapOf("riddles" to riddles.map { it.copy(solved = true) }))
+        }
+        compose.onNodeWithTag("game_riddle_preview").assertDoesNotExist()
     }
 
     @Test fun finaleSurvivesScreenRestorationAndBothActionsFit() {
