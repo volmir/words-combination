@@ -1,0 +1,4 @@
+# Журнал задач
+
+- [PRE-01] ✓ 2026-11-16T20:01:50+00:00 — Исправить конфигурацию debug и release-подписи — ИТОГ: Конфигурация подписи уже соответствовала требованиям PRE-01; это подтверждено проверками. Дополнена [инструкция владельца](/var/www/words-combination/docs/RELEASE_SIGNING.md): создание и хранение ключа, fingerprint, стратегия developer-signed reproducible APK для GitHub и будущего F-Droid.
+<!-- orchestrator:v1 {"id": "PRE-01", "fingerprint": "edc2e202296142812103ae1ccb6770ae5323bd252d0f06c2d93b3e2bde70360d", "date": "2026-11-16T20:01:50+00:00", "gate": "passed", "manual": false, "summary": "ИТОГ: Конфигурация подписи уже соответствовала требованиям PRE-01; это подтверждено проверками. Дополнена [инструкция владельца](/var/www/words-combination/docs/RELEASE_SIGNING.md): создание и хранение ключа, fingerprint, стратегия developer-signed reproducible APK для GitHub и будущего F-Droid.", "model": "gpt-6.1-sol", "effort": "high"} -->
