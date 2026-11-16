@@ -56,8 +56,9 @@ bash orchestrator/run.sh
 
 ## Бэкенды
 
-Ключ `backend` в `config.json` выбирает агента: `"codex"` (по умолчанию)
-или `"opencode"`. На один запуск бэкенд можно переключить флагом
+Ключ `backend` в `config.json` выбирает агента: `"codex"` (встроенное
+значение по умолчанию) или `"opencode"`; в этом репозитории `config.json`
+выбирает `opencode`. На один запуск бэкенд можно переключить флагом
 `--backend codex|opencode` — он перекрывает конфиг; отдельный конфиг-файл
 для этого не нужен, секции моделей обоих бэкендов живут в одном конфиге.
 Промпт для обоих подаётся через stdin; настройки берутся только из
@@ -65,9 +66,9 @@ bash orchestrator/run.sh
 
 | | Codex | OpenCode |
 |---|---|---|
-| Команда | `codex exec [--model …] -c model_reasoning_effort=… --sandbox … -` | `opencode run --agent build --format json [--model …]` |
+| Команда | `codex exec [--model …] -c model_reasoning_effort=… -c approval_policy="never" --sandbox … -` | `opencode run --agent build --format json [--model …]` |
 | Финальный ответ | `--output-last-message` | Поле `part.text` последнего text-event потока `--format json` |
-| Права на файлы | `sandbox` из конфига (`read-only`/`workspace-write`/`danger-full-access`) | `permissions` в `opencode.json` целевого проекта; оркестратор не передаёт ни песочницу, ни `--auto` |
+| Права на файлы | `sandbox` из конфига (`read-only`/`workspace-write`/`danger-full-access`); подтверждения отключены (`approval_policy="never"`) | `permissions` в `opencode.json` целевого проекта; оркестратор не передаёт ни песочницу, ни `--auto` |
 | Модели | секция `models.codex`; наборы `model_sets.codex` | секция `models.opencode`; наборы `model_sets.opencode` |
 | Настройка reasoning | ключи `efforts` | суффикс `#variant` в строке модели; ключ `efforts` игнорируется с предупреждением |
 
@@ -121,18 +122,19 @@ bash orchestrator/run.sh --config orchestrator/opencode.config.json
 
 ```json
 "model_sets": {
-  "codex": {
-    "cheap": { "light": "…", "standard": "…", "heavy": "…" }
-  },
   "opencode": {
-    "paid": { "light": "…", "standard": "…", "heavy": "…" }
+    "free": {
+      "light": "opencode/glm-5.3-flash-free",
+      "standard": "opencode/glm-5.3-flash-free#max",
+      "heavy": "opencode/beam-free#max"
+    }
   }
 }
 ```
 
 ```bash
-bash orchestrator/run.sh --backend codex --models cheap
-bash orchestrator/run.sh --backend opencode --models paid --dry-run
+bash orchestrator/run.sh --backend opencode --models free
+bash orchestrator/run.sh --backend opencode --models free --dry-run
 ```
 
 Набор обязан содержать все три tier — `light`, `standard` и `heavy` — с
@@ -140,14 +142,16 @@ bash orchestrator/run.sh --backend opencode --models paid --dry-run
 запуск; без флага используются модели по умолчанию. Флаг берёт набор из
 секции своего бэкенда: `--backend codex` ищет `model_sets.codex`, `--backend
 opencode` — `model_sets.opencode`. Неизвестное имя набора — ошибка со списком
-доступных наборов этого бэкенда.
+доступных наборов этого бэкенда. В текущем `config.json` описан только
+`opencode.free`; для Codex наборы не заданы — добавьте `model_sets.codex`,
+если нужен отдельный набор.
 
 Незавершённая задача продолжается с моделями, сохранёнными в контрольной
 точке: `--models` применяется к следующим задачам, а о расхождении
 печатается предупреждение. Чтобы сменить набор и для неё, завершите задачу
 или удалите контрольную точку.
 
-### Два варианта запуска ИИ-обработки (LEX)
+### Запуск ИИ-обработки (LEX)
 
 Задачи SEL-R01…SEL-R04 и DATA-01 не только правят код, но и запрашивают
 ИИ-решения по словам. Исполнитель этих запросов задаётся отдельной секцией
@@ -155,25 +159,33 @@ opencode` — `model_sets.opencode`. Неизвестное имя набора 
 
 ```json
 "semantic": {
-  "codex":    { "provider": "codex",    "model": "gpt-6.1-sol",                     "cache": ".local/data01-cache" },
-  "opencode": { "provider": "opencode", "model": "opencode/deepseek-v4.1-flash#max",  "cache": ".local/data01-oc-cache" }
+  "codex":    { "provider": "codex",    "model": "gpt-6.1-sol",                     "cache": ".local/data01-codex-cache" },
+  "opencode": { "provider": "opencode", "model": "opencode/deepseek-v4.1-flash#max",  "cache": ".local/data01-opencode-cache" }
 }
 ```
 
-| Вариант | Команда запуска | Агент | ИИ-оценки LEX | Кэш решений |
+| Вариант | Команда запуска | Агент: light / standard–heavy | ИИ-оценки LEX | Кэш решений |
 |---|---|---|---|---|
-| 1. Codex (дешёвый) | `bash orchestrator/run.sh --backend codex --models cheap` | `gpt-5.6-luna` | `codex` / `gpt-6.1-sol` | `.local/data01-cache` |
-| 2. OpenCode (дешёвый) | `bash orchestrator/run.sh --backend opencode --models cheap` | `deepseek-v4.1-flash#max` | `opencode` / `opencode/deepseek-v4.1-flash#max` | `.local/data01-oc-cache` |
+| 1. Codex | `bash orchestrator/run.sh --backend codex` | `gpt-5.6-luna` / `gpt-6.1-sol` | `codex` / `gpt-6.1-sol` | `.local/data01-codex-cache` |
+| 2. OpenCode | `bash orchestrator/run.sh --backend opencode` | `opencode/muse-ember-1.0#medium` / `opencode/deepseek-v4.1-flash#max` | `opencode` / `opencode/deepseek-v4.1-flash#max` | `.local/data01-opencode-cache` |
+| 3. OpenCode, набор `free` | `bash orchestrator/run.sh --backend opencode --models free` | `opencode/glm-5.3-flash-free` / `opencode/glm-5.3-flash-free#max`, `opencode/beam-free#max` | тот же профиль `opencode` | `.local/data01-opencode-cache` |
+
+`--models` меняет только модели агента. Семантический профиль, провайдер,
+модель LEX и каталог кэша остаются прежними: набор `free` не переключает
+ИИ-оценки на бесплатную модель.
 
 Точные команды для локального запуска (без публикации результатов; `push`
 по умолчанию включён через `config.json → push: true`):
 
 ```bash
-# 1. Агент Codex (дешёвый набор), ИИ-оценки через Codex
-bash orchestrator/run.sh --backend codex --models cheap --no-push
+# 1. Агент Codex, ИИ-оценки через Codex
+bash orchestrator/run.sh --backend codex --no-push
 
-# 2. Агент OpenCode (дешёвый набор), ИИ-оценки через OpenCode
-bash orchestrator/run.sh --backend opencode --models cheap --no-push
+# 2. Агент OpenCode на моделях по умолчанию, ИИ-оценки через OpenCode
+bash orchestrator/run.sh --backend opencode --no-push
+
+# 3. Агент OpenCode на бесплатном наборе, ИИ-оценки через OpenCode
+bash orchestrator/run.sh --backend opencode --models free --no-push
 ```
 
 Без `--no-push` те же команды выполнят push после каждой завершённой задачи.
@@ -187,15 +199,23 @@ bash orchestrator/run.sh --backend opencode --models cheap --no-push
 | `CATEGORY_MODEL` | `semantic.<backend>.model` |
 | `SEMANTIC_CACHE` | абсолютный путь к `semantic.<backend>.cache` |
 
+Секция `semantic` необязательна: без неё оркестратор не выставляет эти
+переменные, а `--list` и `--dry-run` печатают «не заданы». Очередям без
+ИИ-оценок она не нужна. Задачам SEL/DATA она необходима: их обработчики
+без `CATEGORY_MODEL` (или явного `--model`) завершаются ошибкой.
+
 Задачи не выбирают провайдера сами: агент подставляет эти значения в вызовы
-обработчиков, поэтому кэш решений не смешивается между моделями. Проверить
-выбор без запусков:
+обработчиков, поэтому кэш решений не смешивается между моделями. При смене
+пути кэша уже накопленные решения по прежнему каталогу не видны: перенесите
+каталог или оставьте старый путь. Проверить выбор без запусков:
 
 ```bash
-bash orchestrator/run.sh --backend codex --models cheap --dry-run
-# ИИ-оценки LEX: codex / gpt-6.1-sol; кэш .local/data01-cache
-bash orchestrator/run.sh --backend opencode --models cheap --dry-run
-# ИИ-оценки LEX: opencode / opencode/deepseek-v4.1-flash#max; кэш .local/data01-oc-cache
+bash orchestrator/run.sh --backend codex --dry-run
+# ИИ-оценки LEX: codex / gpt-6.1-sol; кэш .local/data01-codex-cache
+bash orchestrator/run.sh --backend opencode --dry-run
+# ИИ-оценки LEX: opencode / opencode/deepseek-v4.1-flash#max; кэш .local/data01-opencode-cache
+bash orchestrator/run.sh --backend opencode --models free --dry-run
+# агент на free-моделях; ИИ-оценки LEX те же, что и без --models
 ```
 
 Значения `semantic` можно переопределить только в `config.json`; флаг
@@ -203,11 +223,11 @@ bash orchestrator/run.sh --backend opencode --models cheap --dry-run
 продолжение SEL-R01…SEL-R04 или DATA-01 после остановки) — вариант 1 (Codex):
 
 ```bash
-CATEGORY_PROVIDER=codex CATEGORY_MODEL=gpt-6.1-sol SEMANTIC_CACHE="$PWD/.local/data01-cache" \
+CATEGORY_PROVIDER=codex CATEGORY_MODEL=gpt-6.1-sol SEMANTIC_CACHE="$PWD/.local/data01-codex-cache" \
 python3 tools/prepare_v2.py prepare --selective \
   --dump .local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz \
   --frequency-list .local/frequency/frequencywords-2018-ru/ru_full.txt \
-  --provider codex --model gpt-6.1-sol --cache .local/data01-cache \
+  --provider codex --model gpt-6.1-sol --cache .local/data01-codex-cache \
   --package .local/v2-package \
   --max-new-decisions 400 --max-batches 20 --time-budget 900 \
   --total-new-decisions 400 --total-time-budget 2700 \
@@ -218,12 +238,12 @@ python3 tools/prepare_v2.py prepare --selective \
 
 ```bash
 CATEGORY_PROVIDER=opencode CATEGORY_MODEL='opencode/deepseek-v4.1-flash#max' \
-SEMANTIC_CACHE="$PWD/.local/data01-oc-cache" \
+SEMANTIC_CACHE="$PWD/.local/data01-opencode-cache" \
 python3 tools/prepare_v2.py prepare --selective \
   --dump .local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz \
   --frequency-list .local/frequency/frequencywords-2018-ru/ru_full.txt \
   --provider opencode --model 'opencode/deepseek-v4.1-flash#max' \
-  --cache .local/data01-oc-cache \
+  --cache .local/data01-opencode-cache \
   --package .local/v2-package \
   --max-new-decisions 400 --max-batches 20 --time-budget 900 \
   --total-new-decisions 400 --total-time-budget 2700 \
@@ -239,11 +259,11 @@ python3 tools/prepare_v2.py prepare --selective \
 ```bash
 CATEGORY_PROVIDER=codex CATEGORY_MODEL=gpt-6.1-sol \
 python3 tools/classify_word_categories.py --provider codex --model gpt-6.1-sol \
-  --cache .local/data01-cache/categories --allow-network
+  --cache .local/data01-codex-cache/categories --allow-network
 CATEGORY_PROVIDER=opencode CATEGORY_MODEL='opencode/deepseek-v4.1-flash#max' \
 python3 tools/assess_word_suitability.py --provider opencode \
   --model 'opencode/deepseek-v4.1-flash#max' \
-  --cache .local/data01-oc-cache/suitability --allow-network
+  --cache .local/data01-opencode-cache/suitability --allow-network
 ```
 
 ### Подготовить права агента
@@ -251,7 +271,11 @@ python3 tools/assess_word_suitability.py --provider opencode \
 Права на файлы и команды у бэкендов настраиваются по-разному:
 
 - **Codex**: ключ `sandbox` в `config.json` — `read-only`,
-  `workspace-write` (по умолчанию) или `danger-full-access`.
+  `workspace-write` или `danger-full-access` (по умолчанию). Режим
+  `approval_policy="never"` задаётся оркестратором постоянно: у `codex exec`
+  нет флага `--ask-for-approval`, он есть только у интерактивного TUI,
+  поэтому подтверждения отключаются через `-c`. Агент не останавливается
+  на запросах доступа к файлам и запуска команд.
 - **OpenCode**: файл `opencode.json` в корне целевого проекта; оркестратор
   не передаёт песочницу и не запускает агента с `--auto`. Минимальный
   пример:
@@ -276,7 +300,7 @@ bash orchestrator/run.sh --dry-run
 ```
 
 В колонке MODEL/EFFORT видно модель активного бэкенда для каждого tier
-(например, `opencode/glm-5.3-flash-free/medium`), а также команды gate
+(например, `opencode/muse-ember-1.0#medium`), а также команды gate
 и число повторов. Строка `ИИ-оценки LEX` показывает провайдера, модель и
 каталог кэша, которые получат задачи SEL-R01…SEL-R04 и DATA-01. Запусков,
 изменений и Git-операций при этом нет.
@@ -312,7 +336,7 @@ bash orchestrator/run.sh --push             # явно включить push п�
 bash orchestrator/run.sh --no-push          # явно отключить push на этот запуск
 bash orchestrator/run.sh --check full       # только проверки проекта
 bash orchestrator/run.sh --help             # справка по очереди и проверкам
-bash orchestrator/run.sh --backend opencode --models paid   # платный набор моделей OpenCode
+bash orchestrator/run.sh --backend opencode --models free   # бесплатный набор моделей OpenCode
 ```
 
 `--only`, `--from` и `--mark-done` взаимоисключающие; неизвестный ID — ошибка.
@@ -457,7 +481,7 @@ gate: bash orchestrator/run.sh --check full && bash orchestrator/run.sh --check 
 | `remote` | `origin` | Remote для необязательного push |
 | `push` | `true` | Выполнять push после каждой завершённой задачи |
 | `codex_bin` / `opencode_bin` | `codex` / `opencode` | Имя программы или путь к CLI |
-| `sandbox` | `workspace-write` | Песочница агента Codex (для opencode не используется) |
+| `sandbox` | `danger-full-access` | Песочница агента Codex (для opencode не используется); подтверждения всегда отключены |
 | `gate_base` | `[]` | Префикс команды проверки массивом аргументов |
 | `checks` | `{}` | Профили `--check`: «профиль → массив shell-команд» |
 | `task_timeout` | `14400` | Секунд на один запуск агента |
@@ -472,7 +496,12 @@ gate: bash orchestrator/run.sh --check full && bash orchestrator/run.sh --check 
 
 В `models` используйте ключи `light`, `standard`, `heavy` внутри секции
 активного бэкенда; выберите модели, доступные вашему аккаунту. Пустая строка
-переключает tier на модель из настроек самого CLI.
+переключает tier на модель из настроек самого CLI. Встроенные умолчания
+модуля: Codex — `gpt-5.6-luna` для `light` и `gpt-6.1-sol` для `standard` и
+`heavy`; OpenCode — бесплатные `opencode/glm-5.3-flash-free` и
+`opencode/beam-free`. Текущий `config.json` переопределяет OpenCode на
+`opencode/muse-ember-1.0#medium` (`light`) и `opencode/deepseek-v4.1-flash#max`
+(`standard` и `heavy`); те же значения записаны в набор `free`.
 
 ## Новая пачка задач: очистить и заполнить заново
 
@@ -609,18 +638,20 @@ Ctrl+C, SIGTERM и таймаут останавливают активную г
 Проверки контрольных сумм и Git-ветки обнаруживают случайную правку
 служебных файлов, но не являются изоляцией от враждебного агента.
 Просматривайте diff и историю перед слиянием. Gate — доверенная команда
-пользователя; она выполняется с правами хостового пользователя. Права
-агента определяются выбранной песочницей (Codex: `sandbox`; OpenCode:
-`permissions` в `opencode.json` проекта); полный доступ используйте только
-в подходящей изолированной среде. Настройки доверия и hooks самого CLI
-остаются действующими.
+пользователя; она выполняется с правами хостового пользователя. Codex
+запускается автономно: `approval_policy="never"` и песочница `sandbox`
+(по умолчанию `danger-full-access`), то есть агент меняет файлы и запускает
+программы без подтверждений. Права OpenCode определяет `permissions`
+в `opencode.json` проекта. Автономный режим используйте только в подходящей
+изолированной среде. Настройки доверия и hooks самого CLI остаются
+действующими.
 
 Оркестратор не запускает субагентов, не выполняет merge/deploy и не
 исправляет Git-конфликты автоматически. Следуйте `AGENTS.md` целевого
 проекта; `examples/AGENTS.md` — необязательный шаблон для объединения
 с вашими правилами.
 
-Используемые CLI-флаги сверены с `codex-cli 0.167.0-alpha.4` (`codex exec
+Используемые CLI-флаги сверены с `codex-cli 0.167.1` (`codex exec
 --help`) и `opencode run` (поток `--format json`). Запуски с настоящими
 моделями в проверку комплекта не входили; пример живого прогона —
 `VALIDATION.md`.

@@ -308,14 +308,21 @@ class FixtureTests(unittest.TestCase):
                 module.load_config(config)
             self.assertNotIn('efforts', stderr.getvalue())
 
-    def test_codex_command_is_byte_identical_to_previous_version(self):
-        config = {'backend': 'codex', 'codex_bin': 'codex', 'sandbox': 'workspace-write'}
+    def test_codex_command_is_autonomous(self):
+        config = {'backend': 'codex', 'codex_bin': 'codex', 'sandbox': 'danger-full-access'}
         command = module.agent_start_command(config, 'm-1', 'high', Path('last.md'))
-        self.assertEqual(command, ['codex', 'exec', '--model', 'm-1', '-c', 'model_reasoning_effort="high"',
-                                   '--sandbox', 'workspace-write', '--output-last-message', 'last.md', '-'])
+        self.assertEqual(command, ['codex', 'exec', '--model', 'm-1',
+                                   '-c', 'model_reasoning_effort="high"',
+                                   '-c', 'approval_policy="never"',
+                                   '--sandbox', 'danger-full-access',
+                                   '--output-last-message', 'last.md', '-'])
         command = module.agent_start_command(config, '', 'low', Path('last.md'))
-        self.assertEqual(command, ['codex', 'exec', '-c', 'model_reasoning_effort="low"',
-                                   '--sandbox', 'workspace-write', '--output-last-message', 'last.md', '-'])
+        self.assertEqual(command, ['codex', 'exec',
+                                   '-c', 'model_reasoning_effort="low"',
+                                   '-c', 'approval_policy="never"',
+                                   '--sandbox', 'danger-full-access',
+                                   '--output-last-message', 'last.md', '-'])
+        self.assertEqual(module.DEFAULTS['sandbox'], 'danger-full-access')
 
     def test_opencode_command_shape(self):
         config = {'backend': 'opencode', 'opencode_bin': 'opencode'}

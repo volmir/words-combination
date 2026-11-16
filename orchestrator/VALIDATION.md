@@ -44,3 +44,28 @@
 
 Живой прогон с настоящим OpenCode в этом прогоне не выполнялся; модуль
 продолжает незавершённую задачу DATA-01 через флаг `--backend opencode --models paid`.
+
+## 2026-11-16: автономный Codex и обновление моделей
+
+Записи выше относятся к состоянию 2026-11-13 и остаются историческими.
+
+- Codex запускается автономно: `-c approval_policy="never"` и песочница
+  `danger-full-access` по умолчанию. У `codex exec` нет флага
+  `--ask-for-approval`, он есть только у интерактивного TUI; `-c` проверен
+  на `codex-cli 0.167.1` (в шапке прогона `approval: never`).
+- `models.opencode`: `opencode/muse-ember-1.0#medium` для `light`,
+  `opencode/deepseek-v4.1-flash#max` для `standard` и `heavy`. Бесплатные
+  модели вынесены в `model_sets.opencode.free`; наборов `paid` и `cheap`
+  в конфиге больше нет, поэтому прежние команды с этими именами завершаются
+  ошибкой со списком доступных наборов.
+- `semantic` использует раздельные кэши `.local/data01-codex-cache`
+  и `.local/data01-opencode-cache`. Каталоги на диске не переименовывались:
+  прежние `.local/data01-cache` и `.local/data01-oc-cache` остаются
+  отдельными; при необходимости перенесите их вручную.
+- Идентификаторы моделей и варианты (`#medium`, `#max`) сверены с каталогом
+  провайдера OpenCode; `load_config` принимает `config.json` и
+  `examples/config.example.json`; `--dry-run` для Codex, OpenCode и набора
+  `free` печатает новые модели и кэши.
+- `bash orchestrator/run.sh --check orchestrator` — **90 тестов, OK**.
+- Не проверено: живой прогон Codex (на момент проверки действовал лимит
+  аккаунта) и реальные LEX-вызовы с новыми моделями.

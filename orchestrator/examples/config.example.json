@@ -7,7 +7,7 @@
   "push": true,
   "codex_bin": "codex",
   "opencode_bin": "opencode",
-  "sandbox": "workspace-write",
+  "sandbox": "danger-full-access",
   "gate_base": [],
   "task_timeout": 14400,
   "gate_timeout": 7200,
@@ -21,17 +21,17 @@
       "heavy": "gpt-6.1-sol"
     },
     "opencode": {
-      "light": "opencode/glm-5.3-flash-free",
-      "standard": "opencode/glm-5.3-flash-free#max",
-      "heavy": "opencode/beam-free#max"
+      "light": "opencode/muse-ember-1.0#medium",
+      "standard": "opencode/deepseek-v4.1-flash#max",
+      "heavy": "opencode/deepseek-v4.1-flash#max"
     }
   },
   "model_sets": {
     "opencode": {
-      "paid": {
-        "light": "opencode/muse-ember-1.0#low",
-        "standard": "opencode/deepseek-v4.1-flash#max",
-        "heavy": "opencode/deepseek-v4-pro#max"
+      "free": {
+        "light": "opencode/glm-5.3-flash-free",
+        "standard": "opencode/glm-5.3-flash-free#max",
+        "heavy": "opencode/beam-free#max"
       }
     }
   },

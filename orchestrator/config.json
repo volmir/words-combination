@@ -7,7 +7,7 @@
   "backend": "opencode",
   "codex_bin": "codex",
   "opencode_bin": "opencode",
-  "sandbox": "workspace-write",
+  "sandbox": "danger-full-access",
   "gate_base": [],
   "checks": {
     "tools": ["python3 -m unittest discover -s tools/tests"],
@@ -33,29 +33,17 @@
       "heavy": "gpt-6.1-sol"
     },
     "opencode": {
-      "light": "opencode/glm-5.3-flash-free",
-      "standard": "opencode/glm-5.3-flash-free#max",
-      "heavy": "opencode/beam-free#max"
+      "light": "opencode/muse-ember-1.0#medium",
+      "standard": "opencode/deepseek-v4.1-flash#max",
+      "heavy": "opencode/deepseek-v4.1-flash#max"
     }
   },
   "model_sets": {
-    "codex": {
-      "cheap": {
-        "light": "gpt-5.6-luna",
-        "standard": "gpt-6.1-sol",
-        "heavy": "gpt-6.1-sol"
-      }
-    },
     "opencode": {
-      "paid": {
-        "light": "opencode/muse-ember-1.0#low",
-        "standard": "opencode/deepseek-v4.1-flash#max",
-        "heavy": "opencode/deepseek-v4.1-flash#max"
-      },
-      "cheap": {
-        "light": "opencode/muse-ember-1.0#low",
-        "standard": "opencode/deepseek-v4.1-flash#max",
-        "heavy": "opencode/deepseek-v4.1-flash#max"
+      "free": {
+        "light": "opencode/glm-5.3-flash-free",
+        "standard": "opencode/glm-5.3-flash-free#max",
+        "heavy": "opencode/beam-free#max"
       }
     }
   },
@@ -63,12 +51,12 @@
     "codex": {
       "provider": "codex",
       "model": "gpt-6.1-sol",
-      "cache": ".local/data01-cache"
+      "cache": ".local/data01-codex-cache"
     },
     "opencode": {
       "provider": "opencode",
       "model": "opencode/deepseek-v4.1-flash#max",
-      "cache": ".local/data01-oc-cache"
+      "cache": ".local/data01-opencode-cache"
     }
   },
   "efforts": {

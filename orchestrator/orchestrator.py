@@ -121,7 +121,7 @@ DEFAULTS = {
     "tasks_file": "orchestrator/TASKS.md", "progress_file": "orchestrator/PROGRESS.md",
     "branch": "auto/tasks", "remote": "origin", "push": True,
     "backend": "codex", "codex_bin": "codex", "opencode_bin": "opencode",
-    "sandbox": "workspace-write", "gate_base": [], "checks": {},
+    "sandbox": "danger-full-access", "gate_base": [], "checks": {},
     "task_timeout": 14400, "gate_timeout": 7200, "git_timeout": 120,
     "restart_retries": 3, "retry_delay": 30,
     "models": {"codex": dict(CODEX_MODEL_DEFAULTS), "opencode": dict(OPENCODE_MODEL_DEFAULTS)},
@@ -349,8 +349,12 @@ def tail(path, limit=12000):
 def agent_start_command(config, model, effort, last):
     """Команда запуска агента; промпт для обоих бэкендов подаётся через stdin (run_logged).
 
-    Для codex команда байт-в-байт прежняя. Для opencode права задаёт `permissions`
-    в opencode.json целевого проекта: оркестратор не передаёт ни песочницу, ни --auto.
+    Codex запускается автономно: `approval_policy="never"` задаётся через `-c`,
+    потому что у `codex exec` нет флага `--ask-for-approval` (он есть только
+    у интерактивного TUI). Без этого агент останавливается на запросах
+    подтверждения файловых операций и команд, а не выполняет задание.
+    Для opencode права задаёт `permissions` в opencode.json целевого проекта:
+    оркестратор не передаёт ни песочницу, ни --auto.
     Пустая строка модели = модель из настроек CLI.
     """
     if config["backend"] == "codex":
@@ -358,6 +362,7 @@ def agent_start_command(config, model, effort, last):
         if model:
             command += ["--model", model]
         return [*command, "-c", "model_reasoning_effort=" + json.dumps(effort),
+                "-c", "approval_policy=" + json.dumps("never"),
                 "--sandbox", config["sandbox"], "--output-last-message", str(last), "-"]
     command = [config["opencode_bin"], "run", "--agent", "build", "--format", "json"]
     if model:
