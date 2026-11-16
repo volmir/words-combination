@@ -128,8 +128,9 @@ class MainScenariosUiTest {
         assertTrue("Должны быть неотгаданные слова", unrevealedWords.isNotEmpty())
 
         compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
+        val hintTag = if (container.levelsRepository.getCampaign() != null) "game_hint_part_1" else "game_hint"
         compose.waitUntil(10_000) {
-            compose.onAllNodesWithTag("game_hint").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithTag(hintTag).fetchSemanticsNodes().isNotEmpty()
         }
         val hintNode = compose.onNodeWithTag("game_hint").performScrollTo()
         hintNode.assertIsDisplayed()

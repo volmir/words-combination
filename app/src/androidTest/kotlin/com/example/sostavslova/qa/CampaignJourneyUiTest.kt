@@ -176,7 +176,7 @@ class CampaignJourneyUiTest {
         restart()
         assertEquals(hinted, saved())
         open(1, explanationExpected = false)
-        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Ступень 4 из 5")
+        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 4 из 5 частей")
         val campaign = requireNotNull(container.levelsRepository.getCampaign())
         val current = requireNotNull(CampaignRules.openLevel(campaign, saved(), 1, container.wordRepository.requireIndex()))
         assertEquals(4, HintRules.budget(current).remaining)
@@ -252,7 +252,7 @@ class CampaignJourneyUiTest {
         compose.onNodeWithText("Слово из 3 букв, начинается на «К»").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("кот").assertDoesNotExist()
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled().performClick()
-        awaitTag("game_hint_stage")
+        awaitTag("game_hint_part_1")
         val hints = saved().levels.getValue("картотека").hints
         assertEquals(0, hints.paidUnits)
         answer("кот", 1)

@@ -55,6 +55,10 @@ class GameNavigationTest {
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement(raw)
         compose.onNode(hasSetTextAction()).performImeAction()
     }
+    private suspend fun awaitOpenedHint() {
+        val tag = if (container.levelsRepository.getCampaign() != null) "game_hint_part_1" else "game_hint"
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+    }
     private fun back() = compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
 
     @Test fun levelAnswersStatisticsAndNonInteractiveFoundWordsRemainAvailable() = runTest {
@@ -89,7 +93,7 @@ class GameNavigationTest {
         val valid = validAnswer(source)
         start(); answer(valid); awaitText("Правильно!")
         compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
-        compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_hint").fetchSemanticsNodes().isNotEmpty() }
+        awaitOpenedHint()
         compose.onNodeWithTag("game_hint").performScrollTo().assertIsDisplayed()
         back()
         compose.onNodeWithTag("levels_screen").assertExists()
@@ -124,7 +128,7 @@ class GameNavigationTest {
         val valid = validAnswer(source)
         start(); answer(valid); awaitText("Правильно!")
         compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
-        compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_hint").fetchSemanticsNodes().isNotEmpty() }
+        awaitOpenedHint()
         fun hintText() = compose.onAllNodes(hasAnyAncestor(hasTestTag("game_hint")), useUnmergedTree = true)
             .fetchSemanticsNodes().flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }
         val hint = hintText()
@@ -137,7 +141,7 @@ class GameNavigationTest {
             assertEquals(hint, hintText())
         }
         compose.activityRule.scenario.recreate()
-        compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_hint").fetchSemanticsNodes().isNotEmpty() }
+        awaitOpenedHint()
         compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("ЧеРнОвИк")
         assertEquals(hint, hintText())
         assertEquals(saved, foundAnswers(source))

@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -39,6 +40,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.SpanStyle
@@ -178,6 +180,28 @@ fun GameScreen(
                 }
                 if (current != null) {
                     CampaignTasks(state)
+                    CampaignHint(state, onHint)
+                } else {
+                    if (state.hintLoading) GameLoading(stringResource(R.string.hint_loading))
+                    state.hint?.let { hint ->
+                        Column(Modifier.testTag("game_hint").semantics { liveRegion = LiveRegionMode.Polite },
+                            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(stringResource(R.string.hint_title), style = MaterialTheme.typography.titleMedium)
+                            if (hint.definitions.isEmpty()) Text(stringResource(R.string.hint_fallback,
+                                hint.length, RussianPlural.form(hint.length,
+                                    stringResource(R.string.hint_letter_genitive_one),
+                                    stringResource(R.string.hint_letter_genitive_many),
+                                    stringResource(R.string.hint_letter_genitive_many)), hint.firstLetter))
+                            else {
+                                hint.definitions.forEach { DefinitionBlock(it, labelWord = null) }
+                                if (hint.definitions.any { it.origin == "wiktionary" }) {
+                                    Text(stringResource(R.string.hint_definition_source), style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                    }
+                    GameAction(stringResource(R.string.show_hint), state.canPlay && !state.hintLoading,
+                        onHint, R.drawable.ic_help, "game_hint_button")
                 }
                 Text(stringResource(R.string.found_words), style = MaterialTheme.typography.titleMedium)
                 if (current != null) {
@@ -197,54 +221,7 @@ fun GameScreen(
                         if (expanded) FoundWords(found)
                     }
                 }
-                if (state.hintLoading) GameLoading(stringResource(R.string.hint_loading))
-                state.hint?.let { hint ->
-                    Column(Modifier.testTag("game_hint").semantics { liveRegion = LiveRegionMode.Polite },
-                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.hint_title), style = MaterialTheme.typography.titleMedium)
-                        if (hint.definitions.isEmpty()) Text(stringResource(R.string.hint_fallback,
-                            hint.length, RussianPlural.form(hint.length,
-                                stringResource(R.string.hint_letter_genitive_one),
-                                stringResource(R.string.hint_letter_genitive_many),
-                                stringResource(R.string.hint_letter_genitive_many)), hint.firstLetter))
-                        else {
-                            hint.definitions.forEach { DefinitionBlock(it, labelWord = null) }
-                            if (hint.definitions.any { it.origin == "wiktionary" }) {
-                                Text(stringResource(R.string.hint_definition_source), style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
-                }
-                if (state.campaignHints.isNotEmpty()) {
-                    Column(Modifier.testTag("game_hint").semantics { liveRegion = LiveRegionMode.Polite },
-                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.hint_title), style = MaterialTheme.typography.titleMedium)
-                        Text(stringResource(R.string.hint_stage, state.campaignHints.size,
-                            state.campaignLevel?.hints?.ladder?.steps?.size ?: 0), Modifier.testTag("game_hint_stage"),
-                            style = MaterialTheme.typography.bodyLarge)
-                        state.campaignHints.forEach { step ->
-                            step.text?.let { Text(it, style = MaterialTheme.typography.bodyLarge) }
-                            step.length?.let { length -> Text(stringResource(R.string.hint_length, length,
-                                RussianPlural.form(length, stringResource(R.string.hint_letter_genitive_one),
-                                    stringResource(R.string.hint_letter_genitive_many), stringResource(R.string.hint_letter_genitive_many)))) }
-                            if (step.wiktionary) Text(stringResource(R.string.hint_definition_source), style = MaterialTheme.typography.bodySmall)
-                        }
-                        if (state.hintFallback) {
-                            Text(stringResource(R.string.hint_letters_available), style = MaterialTheme.typography.bodySmall)
-                            if (com.example.sostavslova.BuildConfig.DEBUG) Text(stringResource(R.string.hint_metadata_unavailable),
-                                style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                }
-                if (state.campaignLevel != null && state.hintRemaining == 0 && state.hintCost != 0) {
-                    Text(stringResource(R.string.hint_budget_exhausted), Modifier.testTag("game_hint_budget"),
-                    style = MaterialTheme.typography.bodyMedium)
-                }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    GameAction(if (state.campaignLevel == null) stringResource(R.string.show_hint)
-                        else stringResource(R.string.hint_action, state.hintCost ?: 0, state.hintRemaining),
-                        state.canPlay && !state.hintLoading && (state.campaignLevel == null ||
-                            (state.hintCost != null && (state.hintCost == 0 || state.hintRemaining > 0))), onHint, R.drawable.ic_help, "game_hint_button")
                     GameAction(stringResource(R.string.statistics), state.canPlay, { onDialog(GameDialog.Statistics) }, R.drawable.ic_statistics)
                     if (state.level != null && state.campaignLevel == null) GameAction(stringResource(R.string.tasks), state.canPlay,
                         { onDialog(GameDialog.Tasks) }, R.drawable.ic_star_outline)
@@ -307,6 +284,60 @@ fun GameScreen(
             }
         }
         null -> Unit
+    }
+}
+
+/** Read the current snapshot only: no local accumulation or cached target across restoration. */
+@Composable
+private fun CampaignHint(state: GameUiState, onHint: () -> Unit) {
+    val current = state.campaignLevel ?: return
+    val ladder = current.hints.ladder
+    val total = ladder.steps.size
+    val shown = if (com.example.sostavslova.core.HintRules.currentStep(current) != null) ladder.shown else emptyList()
+    val complete = shown.isNotEmpty() && shown.size == total
+    val cost = state.hintCost
+    Well(Modifier.testTag("game_hint").semantics { liveRegion = LiveRegionMode.Polite }) {
+        Text(if (total == 0) stringResource(R.string.hint_unopened)
+            else stringResource(R.string.hint_stage, shown.size, total),
+            Modifier.testTag("game_hint_stage").semantics { heading() },
+            style = MaterialTheme.typography.titleMedium)
+        shown.forEachIndexed { index, step ->
+            val partDescription = stringResource(R.string.hint_part_description, index + 1, total)
+            Column(Modifier.fillMaxWidth().testTag("game_hint_part_${index + 1}")
+                .semantics(mergeDescendants = true) { stateDescription = partDescription },
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.hint_part, index + 1), style = MaterialTheme.typography.titleSmall)
+                step.text?.let { Text(it, style = MaterialTheme.typography.bodyLarge) }
+                step.length?.let { length ->
+                    Text(stringResource(R.string.hint_length, length,
+                        RussianPlural.form(length, stringResource(R.string.hint_letter_genitive_one),
+                            stringResource(R.string.hint_letter_genitive_many), stringResource(R.string.hint_letter_genitive_many))),
+                        style = MaterialTheme.typography.bodyLarge)
+                }
+                if (step.wiktionary && step.text != null) {
+                    Text(stringResource(R.string.hint_definition_source), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            HorizontalDivider()
+        }
+        if (state.hintFallback && shown.isNotEmpty()) {
+            Text(stringResource(R.string.hint_letters_available), style = MaterialTheme.typography.bodySmall)
+            if (com.example.sostavslova.BuildConfig.DEBUG) Text(stringResource(R.string.hint_metadata_unavailable),
+                style = MaterialTheme.typography.bodySmall)
+        }
+        if (state.hintLoading) Text(stringResource(R.string.hint_loading), style = MaterialTheme.typography.bodyMedium)
+        val explanation = when {
+            complete -> R.string.hint_ladder_complete
+            cost == null -> R.string.hint_all_found
+            cost > state.hintRemaining -> R.string.hint_budget_exhausted
+            else -> null
+        }
+        explanation?.let { Text(stringResource(it), Modifier.testTag("game_hint_budget"),
+            style = MaterialTheme.typography.bodyMedium) }
+        GameAction(if (cost == null) stringResource(R.string.hint_action_unavailable, state.hintRemaining)
+            else stringResource(R.string.hint_action, cost, state.hintRemaining),
+            state.canPlay && !complete && cost != null && cost <= state.hintRemaining,
+            onHint, R.drawable.ic_help, "game_hint_button")
     }
 }
 

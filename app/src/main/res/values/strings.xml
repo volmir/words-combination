@@ -209,8 +209,12 @@
     <string name="game_category_other">Другие общеупотребительные понятия</string>
     <string name="game_letter_one">буква</string>
     <string name="game_letter_few">буквы</string>
-    <string name="hint_stage">Ступень %1$d из %2$d</string>
-    <string name="hint_action">Подсказка · цена %1$d · осталось %2$d</string>
+    <string name="hint_stage">Подсказка · открыто %1$d из %2$d частей</string>
+    <string name="hint_unopened">Подсказка · откройте первую часть</string>
+    <string name="hint_part">Часть %1$d</string>
+    <string name="hint_part_description">Часть %1$d из %2$d</string>
+    <string name="hint_action_unavailable">Открыть следующую часть · недоступно · осталось %1$d</string>
+    <string name="hint_action">Открыть следующую часть · цена %1$d · осталось %2$d</string>
     <string name="hint_letters_available">Доступны подсказки по буквам.</string>
     <string name="hint_metadata_unavailable">Тема или определение недоступны. Эти шаги пропущены без расхода.</string>
     <string name="drawer_exit">Выход</string>
