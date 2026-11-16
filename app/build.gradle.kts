@@ -201,7 +201,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.example.sostavslova.WordsTestRunner"
         buildConfigField("boolean", "HAS_DEFINITIONS", hasDefinitions.toString())
         buildConfigField("String", "CAMPAIGN_SHA256", "\"$campaignSha256\"")
         buildConfigField("String", "WORDS_SHA256", "\"$wordsSha256\"")
