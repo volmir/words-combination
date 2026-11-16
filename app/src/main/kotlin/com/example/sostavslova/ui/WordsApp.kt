@@ -107,6 +107,7 @@ fun WordsApp() {
                         scope.launch { drawerState.close() }
                     },
                 ) { destination ->
+                    if (inLevel) navController.returnToLevels(saveLevelState = true)
                     navController.navigate(destination.route) {
                         popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                         launchSingleTop = true

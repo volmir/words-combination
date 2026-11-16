@@ -38,6 +38,11 @@ fun WordsTopBar(onBack: (() -> Unit)? = null, onOpenMenu: () -> Unit) {
                 Icon(painterResource(if (onBack != null) R.drawable.ic_arrow_back else R.drawable.ic_menu),
                     stringResource(if (onBack != null) R.string.back_to_levels else R.string.open_menu))
             }
+            if (onBack != null) {
+                IconButton(onClick = onOpenMenu, modifier = Modifier.size(48.dp).testTag("app_menu")) {
+                    Icon(painterResource(R.drawable.ic_menu), stringResource(R.string.open_menu))
+                }
+            }
             Text(
                 stringResource(R.string.top_bar_title),
                 modifier = Modifier.weight(1f).padding(end = 12.dp),

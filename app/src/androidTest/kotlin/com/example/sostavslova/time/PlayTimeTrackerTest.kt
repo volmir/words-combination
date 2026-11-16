@@ -85,6 +85,23 @@ class PlayTimeTrackerTest {
                 com.example.sostavslova.core.CampaignLevelProgress(completedTaskIds =
                     campaign.levels.single { it.number == level }.tasks.take(stars).map { it.id }.toSet())))
 
+    @Test fun timePageRemainsReadOnlyAcrossLongStayAndReturnToMap() = runTest {
+        val f = Fixture(this)
+        f.open()
+        advanceTimeBy(1234)
+        f.tracker.setRoute("time", null)
+        f.tracker.awaitSaved()
+        val saved = f.store.records.toMap()
+        val calls = f.store.calls.toList()
+        advanceTimeBy(172_800_000)
+        f.tracker.setRoute("time", null)
+        f.tracker.setRoute("levels", null)
+        f.tracker.awaitSaved()
+        assertEquals(1234L, f.store.total())
+        assertEquals(saved, f.store.records)
+        assertEquals(calls, f.store.calls)
+    }
+
     @Test fun uiRerenderCannotAwardStarsOrMilestones() = runTest {
         val f = Fixture(this); f.open()
         advanceTimeBy(10)

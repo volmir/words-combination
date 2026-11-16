@@ -66,6 +66,7 @@ fun WordsNavHost(navController: NavHostController, modifier: Modifier = Modifier
             }
             GameRoute(entry.id) { message, saveLevelState -> navController.returnToLevels(message, saveLevelState) }
         }
+        composable(Destination.Time.route) { com.example.sostavslova.ui.time.TimeRoute() }
         composable(Destination.Rules.route) { RulesScreen() }
         composable(Destination.About.route) { AboutScreen() }
     }

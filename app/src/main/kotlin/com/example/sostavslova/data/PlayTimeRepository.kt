@@ -59,14 +59,16 @@ class PlayTimeRepository(private val dataStore: DataStore<Preferences>) : PlayTi
     suspend fun snapshot(campaign: Campaign): Map<Int, LevelPlayTime> = observe(campaign).first()
 
     /** Чтение статистики не выполняет edit/initialize и не создаёт записей. */
-    fun observeStatistics(campaign: Campaign): Flow<CampaignTimeSummary> = observe(campaign).map { records ->
+    fun observeStatistics(campaign: Campaign): Flow<CampaignTimeSummary> = observe(campaign)
+        .map { records -> statistics(campaign, records) }.flowOn(Dispatchers.Default)
+
+    internal fun statistics(campaign: Campaign, records: Map<Int, LevelPlayTime>): CampaignTimeSummary =
         CampaignTimeStatistics.aggregate(campaign, CampaignTimeSnapshot(identity(campaign),
             campaign.levels.associate { level ->
                 val time = records.getValue(level.number)
                 level.number to LevelTimeMeasurement(level.word, time.cumulativeActiveMs, time.lastSequence > 0,
                     time.timeToRMs, time.timeToFullMs)
             }))
-    }.flowOn(Dispatchers.Default)
 
     /**
      * Обязателен до первого сегмента. starsBeforeTracking — реальные звёзды из
