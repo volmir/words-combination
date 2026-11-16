@@ -134,8 +134,10 @@ bash ./gradlew :app:assembleDebug
 # Выходной файл: app/build/outputs/apk/debug/app-debug.apk
 
 # 3. Сборка релизного APK с R8 minification и сжатием ресурсов
+# Только после отдельного разрешения владельца; настройка подписи — docs/RELEASE_SIGNING.md.
 bash ./gradlew :app:assembleRelease
-# После успешной сборки: app/build/outputs/apk/release/app-release.apk
+# С ключом: app/build/outputs/apk/release/app-release.apk
+# Без ключа: app-release-unsigned.apk — НЕ для публикации или установки.
 
 # 4. Сборка релизного Android App Bundle для публикации
 bash ./gradlew :app:bundleRelease
@@ -146,6 +148,8 @@ bash ./gradlew :app:connectedDebugAndroidTest
 ```
 
 Проверка `verifyDefinitionsAudit` по-прежнему отказывает без ручного аудита: определения имеют временную политику `wiktionary-provisional-v1`, `audit.passed=false`, и строгий вызов `python3 tools/build_game_data.py --check-release --out data` завершается кодом 2. Техническая pre-release сборка разрешена явным решением владельца от 2026-11-15 через `sostavslova.release.allowUnauditedDefinitions=true` в `gradle.properties`; она печатает предупреждение, не меняет `audit.passed` и не разрешает публикацию. Строку удалить после ручного аудита. Для проверки данных без сборки APK доступны `bash ./gradlew :app:verifyDictionaryLicenses :app:syncDictionaryAssets`.
+
+Debug использует штатную отладочную подпись AGP и не требует `debug.keystore` в корне проекта. Отдельная release-подпись, локальные секреты и проверка сертификата APK описаны в [инструкции](docs/RELEASE_SIGNING.md). Наличие ключа не заменяет лицензионные проверки и разрешение владельца на публикацию.
 
 ### Оркестратор задач разработки
 

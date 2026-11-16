@@ -2,6 +2,10 @@ import com.android.build.api.artifact.SingleArtifact
 import groovy.json.JsonSlurper
 import groovy.json.JsonOutput
 import java.security.MessageDigest
+import java.security.KeyStore
+import java.security.cert.X509Certificate
+import java.util.Properties
+import javax.naming.ldap.LdapName
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.TransformerFactory
 import javax.xml.transform.dom.DOMSource
@@ -15,6 +19,62 @@ plugins {
 
 val hasDefinitions = true
 val dictionaryData = rootProject.layout.projectDirectory.dir("data")
+
+// Только локальные секреты. Переменные окружения имеют приоритет для каждого поля.
+val releaseProperties = Properties().apply {
+    val localFile = rootProject.file("keystore.properties")
+    if (localFile.isFile) localFile.inputStream().use { load(it) }
+}
+fun releaseSigningValue(property: String, environment: String): String? =
+    providers.environmentVariable(environment).orNull ?: releaseProperties.getProperty(property)
+
+val releaseStorePath = releaseSigningValue("storeFile", "SOSTAVSLOVA_RELEASE_STORE_FILE")
+val releaseStorePassword = releaseSigningValue("storePassword", "SOSTAVSLOVA_RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = releaseSigningValue("keyAlias", "SOSTAVSLOVA_RELEASE_KEY_ALIAS")
+val releaseKeyPassword = releaseSigningValue("keyPassword", "SOSTAVSLOVA_RELEASE_KEY_PASSWORD")
+val releaseSigningValues = listOf(releaseStorePath, releaseStorePassword, releaseKeyAlias, releaseKeyPassword)
+val releaseSigningConfigured = releaseSigningValues.all { !it.isNullOrBlank() }
+val releaseKeystore = releaseStorePath?.takeIf { it.isNotBlank() }?.let { rootProject.file(it) }
+
+val verifyReleaseSigning = tasks.register("verifyReleaseSigning") {
+    group = "verification"
+    description = "Проверяет отдельный release-ключ без сборки APK и вывода секретов."
+    doLast {
+        if (releaseSigningValues.all { it == null }) {
+            logger.warn("Release-ключ не настроен: артефакт будет НЕПОДПИСАННЫМ, НЕ предназначен для публикации или установки.")
+        } else {
+            check(releaseSigningConfigured) {
+                "Неполная release-подпись: задайте все четыре поля в keystore.properties или SOSTAVSLOVA_RELEASE_*; значения скрыты."
+            }
+            val store = requireNotNull(releaseKeystore)
+            check(store.isFile) { "Release-keystore недоступен; путь и секреты скрыты." }
+            check(!store.name.equals("debug.keystore", ignoreCase = true) &&
+                !releaseKeyAlias.equals("androiddebugkey", ignoreCase = true)) {
+                "Debug-keystore или debug-alias запрещён для release."
+            }
+            val password = releaseStorePassword.orEmpty().toCharArray()
+            val keystore = try {
+                KeyStore.getInstance(store, password)
+            } catch (_: Exception) {
+                throw GradleException("Не удалось открыть release-keystore; проверьте файл и пароль. Значения скрыты.")
+            } finally {
+                password.fill('\u0000')
+            }
+            check(keystore.isKeyEntry(releaseKeyAlias)) { "Release-alias не содержит ключ; значение скрыто." }
+            val certificate = keystore.getCertificate(releaseKeyAlias) as? X509Certificate
+            check(certificate != null) { "Нет X.509-сертификата release-ключа." }
+            check(LdapName(certificate.subjectX500Principal.name).rdns.none {
+                it.type.equals("CN", ignoreCase = true) && it.value.toString().equals("Android Debug", ignoreCase = true)
+            }) { "Отладочный сертификат Android Debug запрещён для release, включая переименованный ключ." }
+        }
+    }
+}
+
+tasks.matching {
+    it.name in setOf("preReleaseBuild", "validateSigningRelease", "assembleRelease", "bundleRelease")
+}.configureEach {
+    dependsOn(verifyReleaseSigning)
+}
 
 fun sha256(file: File): String {
     val digest = MessageDigest.getInstance("SHA-256")
@@ -149,18 +209,18 @@ android {
     }
 
     signingConfigs {
-        create("debugConfig") {
-            storeFile = file("${rootDir}/debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+        if (releaseSigningConfigured) {
+            create("release") {
+                storeFile = releaseKeystore
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
         }
     }
 
     buildTypes {
-        debug {
-            signingConfig = signingConfigs.getByName("debugConfig")
-        }
+        // debug использует штатные keystore и signingConfig Android Gradle Plugin.
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -168,7 +228,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            signingConfig = signingConfigs.getByName("debugConfig")
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
