@@ -18,7 +18,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import com.example.sostavslova.BuildConfig
 import com.example.sostavslova.R
 import com.example.sostavslova.nav.Destination
 import com.example.sostavslova.ui.theme.WordsColors
@@ -38,9 +37,6 @@ fun WordsDrawer(
                 style = MaterialTheme.typography.titleMedium,
             )
             DrawerItem(Destination.Levels, currentRoute, onNavigate)
-            if (BuildConfig.HAS_DEFINITIONS) {
-                DrawerItem(Destination.WordMeaning, currentRoute, onNavigate)
-            }
             DrawerSection(R.string.nav_about)
             DrawerItem(Destination.Rules, currentRoute, onNavigate)
             DrawerItem(Destination.About, currentRoute, onNavigate)

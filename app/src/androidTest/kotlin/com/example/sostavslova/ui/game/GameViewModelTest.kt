@@ -241,17 +241,28 @@ class GameViewModelTest {
         assertEquals(1, hint.definitions.size)
     }
 
-    @Test fun definitionDialogLoadsOnlyFoundWordAndWorksWithoutDefinitions() = runTest {
+    @Test fun statisticsAndTasksDoNotLoadWordDefinitionsOrChangeProgress() = runTest {
         seed("портал", listOf("пар"))
-        val model = model(); model.ready()
-        withContext(Dispatchers.Main) { model.onDefinition("тор") }
-        assertNull(model.uiState.value.dialog)
-        withContext(Dispatchers.Main) { model.onDefinition("пар") }
-        val state = model.await { it.dialog == GameDialog.Definition && !it.definitionLoading }
-        assertFalse(state.definitionsAvailable)
-        assertEquals("пар", state.definitionWord)
-        withContext(Dispatchers.Main) { model.onDismissDialog() }
-        assertNull(model.uiState.value.dialog)
+        val reads = AtomicInteger()
+        val meanings = object : DefinitionsRepository {
+            override suspend fun isAvailable(): Boolean { reads.incrementAndGet(); return true }
+            override suspend fun definitionsFor(word: String): List<Definition> {
+                reads.incrementAndGet()
+                return emptyList()
+            }
+        }
+        val model = model(meanings = meanings); model.ready()
+        val before = model.uiState.value.game
+        val saved = saved()
+        for (dialog in GameDialog.entries) {
+            withContext(Dispatchers.Main) { model.onDialog(dialog) }
+            assertEquals(dialog, model.uiState.value.dialog)
+            assertEquals(before, model.uiState.value.game)
+            withContext(Dispatchers.Main) { model.onDismissDialog() }
+            assertNull(model.uiState.value.dialog)
+        }
+        assertEquals(saved, saved())
+        assertEquals(0, reads.get())
     }
 
     @Test fun saveFailureKeepsAnswerRetryableAndDoesNotFinishOrDoubleWrite() = runTest {

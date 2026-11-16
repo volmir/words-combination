@@ -59,13 +59,12 @@ import com.example.sostavslova.core.LevelRules
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.ui.components.AlertBanner
 import com.example.sostavslova.ui.components.DefinitionBlock
-import com.example.sostavslova.ui.components.DefinitionDialog
 import com.example.sostavslova.ui.components.LetterTiles
 import com.example.sostavslova.ui.components.StarsRow
 import com.example.sostavslova.ui.components.StatsTable
 import com.example.sostavslova.ui.components.Well
 import com.example.sostavslova.ui.components.WordInputRow
-import com.example.sostavslova.ui.components.WordLinks
+import com.example.sostavslova.ui.components.FoundWords
 import com.example.sostavslova.ui.components.WordsDialog
 import com.example.sostavslova.ui.theme.WordsColors
 import com.example.sostavslova.ui.theme.WordsControlShape
@@ -101,7 +100,7 @@ fun GameRoute(onReturnLevels: (Int) -> Unit) {
         }
     }
     LaunchedEffect(state.returnLevels) { if (state.returnLevels) onReturnLevels(state.levelsMessage) }
-    GameScreen(state, model::onInputChanged, model::onSubmit, model::onHint, model::onDefinition,
+    GameScreen(state, model::onInputChanged, model::onSubmit, model::onHint,
         model::onDialog, model::onDismissDialog, model::onRetry, notice, model::onDismissExplanations, model::onCloseFinale)
 }
 
@@ -111,7 +110,6 @@ fun GameScreen(
     onInputChanged: (String) -> Unit,
     onSubmit: () -> Unit,
     onHint: () -> Unit,
-    onDefinition: (String) -> Unit,
     onDialog: (GameDialog) -> Unit,
     onDismissDialog: () -> Unit,
     onRetry: () -> Unit,
@@ -206,7 +204,7 @@ fun GameScreen(
                                 found.size, stringResource(if (expanded) R.string.game_group_close else R.string.game_group_open)),
                                 style = MaterialTheme.typography.bodyLarge)
                         }
-                        if (expanded) WordLinks(found, onDefinition)
+                        if (expanded) FoundWords(found)
                     }
                 }
                 if (state.hintLoading) GameLoading(stringResource(R.string.hint_loading))
@@ -323,12 +321,6 @@ fun GameScreen(
                 CloseDialogButton(onDismissDialog)
             }
         }
-        GameDialog.Definition -> if (state.definitionLoading) {
-            WordsDialog(stringResource(R.string.nav_word_meaning), onDismissDialog) {
-                GameLoading(stringResource(R.string.definition_loading))
-                CloseDialogButton(onDismissDialog)
-            }
-        } else DefinitionDialog(state.definitionWord, state.definitions, onDismissDialog, state.definitionsAvailable)
         null -> Unit
     }
 }

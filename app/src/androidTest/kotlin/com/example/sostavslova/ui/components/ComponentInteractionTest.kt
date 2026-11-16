@@ -16,7 +16,6 @@ import com.example.sostavslova.R
 import com.example.sostavslova.data.Definition
 import com.example.sostavslova.core.LengthStat
 import com.example.sostavslova.core.Statistics
-import com.example.sostavslova.BuildConfig
 import com.example.sostavslova.nav.Destination
 import com.example.sostavslova.ui.theme.WordsTheme
 import com.example.sostavslova.ui.screens.AboutScreen
@@ -40,11 +39,11 @@ class ComponentInteractionTest {
         compose.runOnIdle { assertEquals(Destination.Rules, selected) }
         compose.onNode(hasText("Об игре") and hasClickAction()).performScrollTo().performClick()
         compose.runOnIdle { assertEquals(Destination.About, selected) }
-        if (BuildConfig.HAS_DEFINITIONS) {
-            compose.onNodeWithText("Значение слова").performScrollTo().performClick()
-            compose.runOnIdle { assertEquals(Destination.WordMeaning, selected) }
-        } else {
-            compose.onNodeWithText("Значение слова").assertDoesNotExist()
+        compose.onNodeWithText("Значение слова").assertDoesNotExist()
+        compose.onNodeWithText("Поиск слов").assertDoesNotExist()
+        compose.onNodeWithText("Словарь").assertDoesNotExist()
+        compose.runOnIdle {
+            assertEquals(setOf("levels", "level/{index}", "rules", "about"), Destination.entries.map { it.route }.toSet())
         }
     }
 
@@ -71,18 +70,6 @@ class ComponentInteractionTest {
     }
 
     @Test
-    fun definitionDialogShowsUnavailableMode() {
-        compose.setContent { WordsTheme { DefinitionDialog("портал", emptyList(), {}, definitionsAvailable = false) } }
-        compose.onNodeWithText("Определения недоступны в этой версии").assertIsDisplayed()
-    }
-
-    @Test
-    fun definitionDialogShowsMissingWordMode() {
-        compose.setContent { WordsTheme { DefinitionDialog("портал", emptyList(), {}, definitionsAvailable = true) } }
-        compose.onNodeWithText("Значение слова не найдено").assertIsDisplayed()
-    }
-
-    @Test
     fun definitionKeepsAngleBracketsNewlinesAndCanHideWordLabel() {
         val text = "<органы управления>\nВторая строка"
         compose.setContent { WordsTheme { DefinitionBlock(Definition("портал", text), labelWord = null) } }
@@ -105,11 +92,10 @@ class ComponentInteractionTest {
     }
 
     @Test
-    fun wordLinkInvokesCallbackWithOriginalWord() {
-        var selected: String? = null
-        compose.setContent { WordsTheme { WordLinks(listOf("пар", "порт"), { selected = it }) } }
-        compose.onNodeWithText("порт").performClick()
-        compose.runOnIdle { assertEquals("порт", selected) }
+    fun foundWordsAreDisplayedWithoutClickActions() {
+        compose.setContent { WordsTheme { FoundWords(listOf("пар", "порт")) } }
+        compose.onNodeWithText("пар").assertIsDisplayed().assertHasNoClickAction()
+        compose.onNodeWithText("порт").assertIsDisplayed().assertHasNoClickAction()
     }
 
     @Test

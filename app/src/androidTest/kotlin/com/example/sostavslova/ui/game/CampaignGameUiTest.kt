@@ -44,12 +44,11 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
 
     @Test fun allSevenTasksRiddlesGroupsAndStatisticsAtDifferentSizes() {
         val state = mutableStateOf(initial)
-        var selected = ""
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
                 WordsTheme {
                     Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, {}, {}, {}, { selected = it }, { state.value = state.value.copy(dialog = it) },
+                        GameScreen(state.value, {}, {}, {}, { state.value = state.value.copy(dialog = it) },
                             { state.value = state.value.copy(dialog = null) }, {})
                     }
                 }
@@ -80,8 +79,10 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         assertFalse(text.contains("https://"))
         compose.onNodeWithText("кот").assertDoesNotExist()
         compose.onNodeWithTag("level_found_group_3").performScrollTo().performClick()
-        compose.onNodeWithText("кот").performScrollTo().performClick()
-        assertEquals("кот", selected)
+        compose.onNodeWithText("кот").performScrollTo().assertIsDisplayed().assertHasNoClickAction()
+        compose.onNodeWithText("кот").performTouchInput { click() }
+        compose.onNodeWithText("Значение слова").assertDoesNotExist()
+        compose.runOnIdle { assertNull(state.value.dialog) }
         compose.onNodeWithTag("level_found_group_3").performScrollTo().performClick()
         compose.onNodeWithText("кот").assertDoesNotExist()
         compose.onNodeWithText("Статистика").performScrollTo().performClick()
@@ -104,7 +105,7 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
                 WordsTheme {
                     Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, {}, {}, { clicks++ }, {}, {}, {}, {})
+                        GameScreen(state.value, {}, {}, { clicks++ }, {}, {}, {})
                     }
                 }
             }
@@ -133,7 +134,7 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
                 WordsTheme {
                     Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {}, {}, {}, {})
+                        GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {}, {}, {})
                     }
                 }
             }
@@ -165,7 +166,7 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
                 WordsTheme {
                     Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {}, {}, {}, {})
+                        GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {}, {}, {})
                     }
                 }
             }
@@ -182,21 +183,23 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
     @Test fun riddlePreviewMovesToNextUnsolvedAndDisappearsWhenAllSolved() {
         val riddles = listOf(
             RiddleUiState("Первая безопасная загадка", 3, "К", solved = true),
-            RiddleUiState(null, 4, "К"),
+            RiddleUiState("Синтетическая смысловая загадка", 4, "К", wiktionary = true),
             RiddleUiState(null, 6, "К"))
         val state = mutableStateOf(initial.copy(riddles = mapOf("riddles" to riddles)))
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
                 WordsTheme {
                     Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, {}, {}, {}, {}, {}, {}, {})
+                        GameScreen(state.value, {}, {}, {}, {}, {}, {})
                     }
                 }
             }
         }
         compose.onNodeWithTag("game_riddle_preview").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Загадка 2").assertExists()
-        compose.onNodeWithText("Слово из 4 букв, начинается на «К»").assertExists()
+        compose.onNodeWithText("Синтетическая смысловая загадка").assertIsDisplayed()
+        compose.onNodeWithText("Викисловарь · CC BY-SA 4.0. Скрыты ответ и однокоренные слова.").assertExists()
+        compose.onNodeWithText("крот").assertDoesNotExist()
         compose.onNodeWithText("Первая безопасная загадка").assertDoesNotExist()
         compose.runOnIdle {
             state.value = state.value.copy(riddles = mapOf("riddles" to riddles.mapIndexed { index, riddle ->
@@ -220,7 +223,7 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
                 WordsTheme {
                     Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, {}, {}, {}, {}, {}, {}, {}, onCloseFinale = { toLevels ->
+                        GameScreen(state.value, {}, {}, {}, {}, {}, {}, onCloseFinale = { toLevels ->
                             actions.add(toLevels)
                             state.value = state.value.copy(finaleSummary = null)
                         })

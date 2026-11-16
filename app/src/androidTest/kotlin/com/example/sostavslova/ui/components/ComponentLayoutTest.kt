@@ -92,12 +92,11 @@ class ComponentLayoutTest(private val exampleName: String, private val fontScale
 
 /** Фикстуры принадлежат тестам и не включаются в приложение. */
 private enum class ComponentExample {
-    WELL, WORD_INPUT, LETTERS, STARS, LINKS, ALERTS, STATISTICS, DEFINITION, DEFINITION_DIALOG, TOP_BAR, DRAWER;
+    WELL, WORD_INPUT, LETTERS, STARS, FOUND_WORDS, ALERTS, STATISTICS, DEFINITION, TOP_BAR, DRAWER;
 
     @Composable
     fun Render() {
         when (this) {
-            DEFINITION_DIALOG -> DefinitionDialog("портал", listOf(definition()), {}, definitionsAvailable = true)
             TOP_BAR -> WordsTopBar {}
             DRAWER -> WordsDrawer(Destination.Levels.route) {}
             else -> Surface {
@@ -113,7 +112,7 @@ private enum class ComponentExample {
                             LetterTiles("электроэнцефалографический")
                         }
                         STARS -> StarsRow(LevelProgress(completed = true, wordsTask = true), onClick = {})
-                        LINKS -> WordLinks(listOf("пар", "порт", "тропа"), {})
+                        FOUND_WORDS -> FoundWords(listOf("пар", "порт", "тропа"))
                         ALERTS -> {
                             AlertBanner(AlertType.Success, "Правильно!")
                             AlertBanner(AlertType.Info, "Найденные слова")

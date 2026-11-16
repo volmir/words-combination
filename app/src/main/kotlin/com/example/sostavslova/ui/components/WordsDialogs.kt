@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -17,43 +16,19 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import com.example.sostavslova.BuildConfig
-import com.example.sostavslova.R
-import com.example.sostavslova.data.Definition
 import com.example.sostavslova.ui.theme.WordsCardShape
 import com.example.sostavslova.ui.theme.WordsColors
-
-@Composable
-fun DefinitionDialog(
-    word: String,
-    definitions: List<Definition>,
-    onDismiss: () -> Unit,
-    definitionsAvailable: Boolean = BuildConfig.HAS_DEFINITIONS,
-) {
-    WordsDialog(stringResource(R.string.nav_word_meaning), onDismiss) {
-        when {
-            !definitionsAvailable -> Text(stringResource(R.string.definitions_unavailable), style = MaterialTheme.typography.bodyLarge)
-            definitions.isEmpty() -> Text(stringResource(R.string.definition_not_found), style = MaterialTheme.typography.bodyLarge)
-            else -> definitions.forEach { DefinitionBlock(it, labelWord = it.display.ifEmpty { word }) }
-        }
-        TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp)) {
-            Text(stringResource(R.string.close_dialog), style = MaterialTheme.typography.bodyLarge)
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

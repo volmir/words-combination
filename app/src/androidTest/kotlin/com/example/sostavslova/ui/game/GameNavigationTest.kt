@@ -57,7 +57,7 @@ class GameNavigationTest {
     }
     private fun back() = compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
 
-    @Test fun levelAnswersStatisticsAndDefinitionsRemainAvailable() = runTest {
+    @Test fun levelAnswersStatisticsAndNonInteractiveFoundWordsRemainAvailable() = runTest {
         start()
         val source = source()
         val valid = validAnswer(source)
@@ -75,10 +75,13 @@ class GameNavigationTest {
         compose.onNodeWithText("1 / $total").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Закрыть").performScrollTo().performClick()
         compose.onNodeWithTag("level_found_group_3").performScrollTo().performClick()
-        compose.onNodeWithText(valid).performScrollTo().performClick()
-        val meaning = container.definitionsRepository.definitionsFor(valid).first().text
-        compose.waitUntil(10_000) { compose.onAllNodesWithText(meaning, substring = true).fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText(meaning, substring = true).assertIsDisplayed()
+        compose.onNodeWithText(valid).performScrollTo().assertIsDisplayed().assertHasNoClickAction()
+        compose.onNodeWithText(valid).performTouchInput { click() }
+        compose.onNodeWithText("Значение слова").assertDoesNotExist()
+        compose.onNodeWithTag("game_screen").assertExists()
+        assertEquals(listOf(valid), foundAnswers(source))
+        compose.onNodeWithTag("level_found_group_3").performScrollTo().performClick()
+        compose.onNodeWithText(valid).assertDoesNotExist()
     }
 
     @Test fun hintAndBackKeepSavedAnswers() = runTest {

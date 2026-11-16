@@ -57,7 +57,7 @@ data class GameMessage(@param:StringRes val text: Int, val word: String? = null,
     val missingLetter: com.example.sostavslova.core.MissingLetter? = null,
     val type: AlertType = AlertType.Info)
 
-enum class GameDialog { Statistics, Tasks, Definition }
+enum class GameDialog { Statistics, Tasks }
 
 data class GameHint(val length: Int, val firstLetter: String, val definitions: List<Definition>)
 
@@ -90,10 +90,6 @@ data class GameUiState(
     val hintFallback: Boolean = false,
     val hintLoading: Boolean = false,
     val dialog: GameDialog? = null,
-    val definitionWord: String = "",
-    val definitions: List<Definition> = emptyList(),
-    val definitionsAvailable: Boolean = false,
-    val definitionLoading: Boolean = false,
     val returnLevels: Boolean = false,
     @param:StringRes val levelsMessage: Int = 0,
 ) {
@@ -120,7 +116,6 @@ class GameViewModel(
     private var sessionJob: Job? = null
     private var operation: Job? = null
     private var hintJob: Job? = null
-    private var definitionJob: Job? = null
     private var hintSequence = 0L
 
     private var campaign: Campaign? = null
@@ -472,31 +467,14 @@ class GameViewModel(
 
     fun onDismissExplanations() { mutableState.update { it.copy(explanations = emptyList()) } }
 
-    fun onDefinition(selected: String) {
-        if (selected !in uiState.value.game?.found.orEmpty()) return
-        definitionJob?.cancel()
-        mutableState.update { it.copy(dialog = GameDialog.Definition, definitionWord = selected,
-            definitions = emptyList(), definitionLoading = true, definitionsAvailable = false) }
-        definitionJob = viewModelScope.launch {
-            try {
-                val available = definitions.isAvailable()
-                val found = if (available) definitions.definitionsFor(selected) else emptyList()
-                mutableState.update { it.copy(definitionsAvailable = available, definitions = found) }
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { mutableState.update { it.copy(definitionsAvailable = false) } }
-            finally { mutableState.update { it.copy(definitionLoading = false) } }
-        }
-    }
-
     fun onDialog(dialog: GameDialog) {
-        if (!uiState.value.canPlay || dialog == GameDialog.Definition) return
+        if (!uiState.value.canPlay) return
         if (dialog == GameDialog.Tasks && uiState.value.level == null && uiState.value.campaignLevel == null) return
         mutableState.update { it.copy(dialog = dialog) }
     }
 
     fun onDismissDialog() {
-        definitionJob?.cancel()
-        mutableState.update { it.copy(dialog = null, definitionLoading = false) }
+        mutableState.update { it.copy(dialog = null) }
     }
 
     private fun leave(@StringRes message: Int = 0) {

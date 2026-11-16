@@ -4,10 +4,8 @@
     <string name="top_bar_title">✎ Составь слова</string>
     <string name="open_menu">Открыть меню</string>
     <string name="nav_levels">Прохождение</string>
-    <string name="nav_word_meaning">Значение слова</string>
     <string name="nav_rules">Правила</string>
     <string name="nav_about">Об игре</string>
-    <string name="word_too_long">Введите слово длиной не более 30-ти символов</string>
     <string name="retry">Повторить</string>
     <string name="levels_title">Прохождение уровней игры</string>
     <string name="level_button">%1$d. %2$s</string>
@@ -17,7 +15,6 @@
     <string name="welcome_confirm">Понятно</string>
     <string name="level_start_error">Не удалось начать уровень. Попробуйте ещё раз.</string>
     <string name="definitions_unavailable">Определения недоступны в этой версии</string>
-    <string name="enter_word">Введите слово:</string>
     <string name="your_answer">Ваш ответ:</string>
     <string name="source_word_description">Исходное слово: %1$s</string>
     <string name="check_answer">Проверить</string>
@@ -26,7 +23,6 @@
     <string name="word_too_short">Введите слово длиной не менее 3-х символов</string>
     <string name="found_words">Найденные слова:</string>
     <string name="tasks">Задания</string>
-    <string name="show_word_meaning">Значение слова «%1$s»</string>
     <string name="stats_letters">Кол-во букв в слове</string>
     <string name="stats_found_total">Отгадано / Всего</string>
     <string name="stats_percent" formatted="false">Процент, %</string>
@@ -35,7 +31,6 @@
     <string name="stats_number">%1$d</string>
     <string name="definition_separator">\u0020-\u0020</string>
     <string name="definition_antonym_prefix">противоп.\u0020</string>
-    <string name="definition_not_found">Значение слова не найдено</string>
     <string name="close_dialog">Закрыть</string>
     <string name="definition_source">Источник: %1$s</string>
     <string name="about_definitions_heading">Словарь и определения</string>
@@ -76,11 +71,8 @@
     <string name="game_loading">Восстанавливаем игру…</string>
     <string name="game_saving">Сохраняем ответ…</string>
     <string name="hint_loading">Готовим подсказку…</string>
-    <string name="definition_loading">Загружаем значение слова…</string>
     <string name="game_load_error">Не удалось восстановить игру. Попробуйте ещё раз.</string>
     <string name="game_save_error">Не удалось сохранить прогресс. Попробуйте ещё раз.</string>
-    <string name="search_button">Поиск</string>
-    <string name="nothing_found">Ничего не найдено</string>
 
     <!-- Правила -->
     <string name="rules_title">Правила игры</string>
@@ -111,7 +103,6 @@
     <string name="hint_length">Слово из %1$d %2$s</string>
     <string name="hint_budget_exhausted">Подсказки закончились. Каждые 4 найденных слова дают ещё одну подсказку.</string>
     <string name="hint_ladder_complete">Все шаги этой подсказки уже показаны.</string>
-    <string name="word_input_invalid">Введите корректное слово</string>
     <string name="levels_campaign_progress">Звёзд %1$d из %2$d · пройдено %3$d из %4$d</string>
     <string name="levels_continue">Продолжить</string>
     <string name="levels_stage">%1$s · уровни %2$d–%3$d</string>

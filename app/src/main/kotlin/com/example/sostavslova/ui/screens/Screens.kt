@@ -35,9 +35,6 @@ import com.example.sostavslova.ui.theme.WordsCardShape
 import com.example.sostavslova.ui.theme.WordsColors
 
 @Composable
-fun WordMeaningScreen() = com.example.sostavslova.ui.meaning.WordMeaningRoute()
-
-@Composable
 fun RulesScreen() {
     Column(
         modifier = Modifier
