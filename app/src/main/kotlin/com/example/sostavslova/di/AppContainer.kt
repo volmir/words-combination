@@ -6,6 +6,7 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import com.example.sostavslova.BuildConfig
 import com.example.sostavslova.data.DefinitionsRepository
 import com.example.sostavslova.data.LevelsRepository
+import com.example.sostavslova.data.PlayTimeRepository
 import com.example.sostavslova.data.ProgressRepository
 import com.example.sostavslova.data.SqliteDefinitionsRepository
 import com.example.sostavslova.data.WordRepository
@@ -61,6 +62,16 @@ class AppContainer(
             dataStore = progressDataStore,
             installEvidence = appContext::readInstallEvidence,
             hadLocalStateAtStartup = hadLocalStateAtStartup,
+        )
+    }
+
+    // Независимый файл: записи времени не участвуют в writeMutex/awaitSaved прогресса.
+    val playTimeRepository: PlayTimeRepository by lazy {
+        PlayTimeRepository(
+            PreferenceDataStoreFactory.create(
+                scope = CoroutineScope(applicationScope.coroutineContext + Dispatchers.IO),
+                produceFile = { appContext.preferencesDataStoreFile("play_time") },
+            ),
         )
     }
 
