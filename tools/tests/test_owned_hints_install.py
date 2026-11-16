@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from tools import build_owned_hints as owned
 from tools.owned_hints import sha
@@ -24,6 +25,23 @@ class OwnedHintsInstallTest(unittest.TestCase):
         self.data.mkdir()
         for name in ('campaign.json', 'words.txt', 'manifest.json', 'definitions.db'):
             shutil.copyfile(ROOT / 'data' / name, self.data / name)
+        # Keep evidence local, so pending-state tests remain valid after the
+        # real owner approves the installed package. Never alter docs/ in tests.
+        docs = Path(self.temp.name) / 'docs'
+        docs.mkdir()
+        self.candidate = docs / 'owned_hints.json'
+        for name in ('owned_hints.json', 'OWN_HINTS_OWNER_APPROVAL.json', 'OWN_HINTS_MANUAL_AUDIT.json'):
+            source = ROOT / 'docs' / name
+            if source.exists():
+                shutil.copyfile(source, docs / name)
+        context = patch.object(owned, 'CANDIDATE', self.candidate)
+        context.start()
+        self.addCleanup(context.stop)
+
+    def install_pending_fixture(self):
+        for name in ('OWN_HINTS_OWNER_APPROVAL.json', 'OWN_HINTS_MANUAL_AUDIT.json'):
+            (self.candidate.parent / name).unlink(missing_ok=True)
+        owned.install(self.data)
 
     def test_rebuild_is_byte_identical_with_no_imported_columns_or_free_pages(self):
         before = {name: sha(self.data / name) for name in ('campaign.json', 'words.txt', 'definitions.db', 'manifest.json')}
@@ -72,6 +90,7 @@ class OwnedHintsInstallTest(unittest.TestCase):
                 owned.inputs(self.data, path)
 
     def test_release_waiver_never_bypasses_owned_only_or_coverage_check(self):
+        self.install_pending_fixture()
         with self.assertRaisesRegex(ValueError, 'не утверждены'):
             require_release_audit(self.data)
         with self.assertRaisesRegex(ValueError, 'waiver недопустим'):
@@ -129,9 +148,15 @@ class OwnedHintsInstallTest(unittest.TestCase):
                 owned.inputs(self.data, index_path=path)
 
     def test_standalone_release_cli_rejects_waiver_for_pending_owned_hints(self):
-        result = subprocess.run([sys.executable, str(ROOT / 'tools/build_game_data.py'), '--check-release',
+        self.install_pending_fixture()
+        # The subprocess uses the same isolated evidence directory as this test.
+        script = ('import runpy, sys; from pathlib import Path; '
+                  'from tools import build_owned_hints as owned; '
+                  'owned.CANDIDATE = Path(sys.argv.pop(1)); '
+                  'runpy.run_module("tools.build_game_data", run_name="__main__")')
+        result = subprocess.run([sys.executable, '-c', script, str(self.candidate), '--check-release',
                                  '--out', str(self.data), '--allow-unaudited-release'],
-                                cwd=self.temp.name, capture_output=True, text=True)
+                                cwd=ROOT, capture_output=True, text=True)
         self.assertEqual(2, result.returncode, result.stderr)
         self.assertIn('waiver недопустим', result.stderr)
 

@@ -1,0 +1,326 @@
+{
+  "schema": "owned-hints-human-audit",
+  "version": 1,
+  "reviewer": "Project Owner",
+  "reviewed_on": "2026-11-16",
+  "candidate_sha256": "061633244ec968aeec2e0dc50aca1b61ecb8ca735590c5510938ab5085b711b0",
+  "campaign_sha256": "1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e",
+  "database_sha256": "73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d",
+  "owner_approval_sha256": "50ea8dd86af6a32a13165e21378273b9734557f6980cc5ccea518a7d04e3e128",
+  "checked": 39,
+  "bad": 0,
+  "entries": [
+    {
+      "word": "абсурд",
+      "hint_sha256": "e2efbf01bf923200692659d45530a88902e3c2c4ae04aeb6a9678e3b100badf9",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "адресок",
+      "hint_sha256": "55f01b4291c8b0e709b5179c305686159c957ea827aac1f15cbd8c93b9f6a74f",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "акробат",
+      "hint_sha256": "edc207dad910d030c69ea67744d1bed8b7ba10fd0ebfbc99243ec535220724cc",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "актриса",
+      "hint_sha256": "0e23d043cd216793cad179f686489b22dad8c7ef1ed691107b3fc94f614d3c08",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "акционер",
+      "hint_sha256": "38514653f500060085047b6f23e745eb6eace1751bb23c53e85cc81d9d79f520",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "антитело",
+      "hint_sha256": "e2df1e442421754bcaabb564609b9fc6146cf3930d33d47cbe2916dbb22b79f5",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "артист",
+      "hint_sha256": "c9b8984c48c407ef2dc4ec36b51d3fed57f63f9cc03fb6468cb4c4d9f682671f",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "артистка",
+      "hint_sha256": "1f10195dfd31faa9747e7a34816850af20e61fe4bfe0f8aca7d598befc471faf",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "астрал",
+      "hint_sha256": "da6d6601a8a29bea69e4b261d1b74a79642ba6dd5232a6526f63fe2e6d6062dd",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "астролог",
+      "hint_sha256": "26560e1a27e3c5e16c3541e5d35194b97d159c50cf6e8ac10ec3bc79f2470bfa",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "банк",
+      "hint_sha256": "e71b218c912a04ca552dbfeaf0f53364f244e2d54cc2ce85074aff006499f006",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "банкир",
+      "hint_sha256": "983a20533c2dbd3ed851c9ecd162d38194c3d9283db50fe43edf130487e2332b",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "бариста",
+      "hint_sha256": "45346be453a00c735a32fd51d93f42db2dee32ce50493947d95cbddce5e61228",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "батрак",
+      "hint_sha256": "a1ea1585547625d74b2ffafd4907b0758198550ccf61be2ed0915bd933cd0c63",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "билет",
+      "hint_sha256": "00502b29f77c4bd856879ddad25596a677dea728f2d2eeb40ed3846b2cd7b19c",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "бонна",
+      "hint_sha256": "a0cab7811d17ad121b8083388666613b57f9e5305f0e63b90981f983de7250c0",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "бортник",
+      "hint_sha256": "3dc41cd9af40a1a7568bd1e8a6bb13f95081022e956c22f961ec2353da98d53b",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "ботаник",
+      "hint_sha256": "b8bc7ffd1b7b8f87a68af4c52d32f7fa53585513cc0d6421c093f3d7b51bc97a",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "верзила",
+      "hint_sha256": "12f639be8541b1484c285d867a18cc25c0274125971d38bf4e920e111027078d",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "вероника",
+      "hint_sha256": "ea86e2d357cfffc9f8c9f06c9e549e33cc79430ab6ff604e8686631479660bd4",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "весна",
+      "hint_sha256": "357cb5a9f1881845a26205b2117681d9e0b2f8a615834325f06fe95a6a137415",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "дантист",
+      "hint_sha256": "ebfe2f0ef62735935f19779e1be2930f6688793abd7c85bc436e4cd93f41a681",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "десерт",
+      "hint_sha256": "e7307e9c64fac5fdd5da64700faf03741d8338424bb3dedb0d47c48148baf25e",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "диакон",
+      "hint_sha256": "d75fd0b0df6f11af959eb79ca6a34cf3aeef8f8d943a235d21d354480e2cab5e",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "диктор",
+      "hint_sha256": "5f6885df2d6800f946e4e2641cf4f31a7049286c28f9891a5162a1a3acb884c6",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "канонир",
+      "hint_sha256": "7ba22e686835706685e6cf1e4cb6130679d57506ff64ac2243176b9712d8ca5a",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "кантор",
+      "hint_sha256": "e375a8fbd908c4bf4e8463970f75f60f751e32fe7544a8c6502d1165976b904e",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "каратист",
+      "hint_sha256": "fd893db46082234ef983f4e7420595fdb9cd51474abbd16031e185f152601d70",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "километр",
+      "hint_sha256": "272acb0a7b75e1cab2ea3a18bb3377bb4e79e1ea8f5ec9e2c5bdbdd756a29052",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "ковер",
+      "hint_sha256": "4a5fb5c8dd965c6067347b14dbdb9601b29ea04281c2a7f14ce051aa790b5583",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "отель",
+      "hint_sha256": "f7a395314daf41b746fbb6d1442bcbee21fcad27379d7334e7e2b1dbe6088d69",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "проблема",
+      "hint_sha256": "4629da32dc874ff607338f51251180043822b630c800451f46437c7b9f17c3f0",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "работа",
+      "hint_sha256": "ee22f3cf344a6476c1adbf8b75ac01c723597ef74c155a77ddb461be7ca4cd2f",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "радист",
+      "hint_sha256": "b5f3aa5e2219933e132a3f51ff97be1b651781797bcedf00f28a4c0f02786a05",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "санитар",
+      "hint_sha256": "c9e81f810dff9a564051e7fc30fae7f010348669e915319a0d33b63989dc190e",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "стадион",
+      "hint_sha256": "8d643e46c877d5fbbef47aaec75ac72fbf968753586a6d3642159d4eb07ad669",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "таксатор",
+      "hint_sha256": "41a23136ad7a1c5b3c613ccdf44e5916af93903ae4ebfbb69b1cfeedfb2216ad",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "танкист",
+      "hint_sha256": "c9bd0d188caea5fe5b308be58d3b71f8554f1495e94c919ea6604e07f81cf11d",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "утро",
+      "hint_sha256": "6c22f6109217d8603e9589ccc112b9fd96d99238c875240c585ab9dc09ca456b",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    }
+  ]
+}

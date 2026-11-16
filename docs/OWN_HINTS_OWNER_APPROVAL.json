@@ -1,0 +1,16 @@
+{
+  "schema": "owned-hints-owner-approval",
+  "version": 1,
+  "candidate_path": "docs/owned_hints.json",
+  "candidate_sha256": "061633244ec968aeec2e0dc50aca1b61ecb8ca735590c5510938ab5085b711b0",
+  "campaign_sha256": "1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e",
+  "expected_unique_hints": 39,
+  "expected_role_bindings": 40,
+  "license": "CC0-1.0",
+  "owner_reviewed_all_39": true,
+  "owner_confirms_rights": true,
+  "owner_approves_exact_texts": true,
+  "owner_approves_cc0_dedication": true,
+  "approved_on": "2026-11-16",
+  "decision": "approved"
+}

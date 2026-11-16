@@ -242,8 +242,16 @@ class InstalledShort15Test(unittest.TestCase):
         self.assertEqual(manifest["campaign_source"]["sha256"], payload["snapshot"]["campaign_sha256"])
         self.assertEqual(0, payload["snapshot"]["rights"]["wiktionary_definitions"])
         self.assertEqual(39, payload["snapshot"]["rights"]["own_definitions"])
-        self.assertFalse(payload["snapshot"]["rights"]["audit_passed"])
-        self.assertFalse(payload["snapshot"]["rights"]["rights_review_passed"])
+        # Installed evidence may progress from pending to approved. Compare the
+        # export with independently validated evidence, not a historical state.
+        from tools.owned_hints_rights import owner_decision, publication_fields
+        candidate = ROOT / "docs/owned_hints.json"
+        campaign = ROOT / "data/campaign.json"
+        evidence = publication_fields(candidate, campaign, digest(ROOT / "data/definitions.db"),
+                                      owner_decision(candidate, campaign))
+        self.assertEqual(evidence["audit"]["passed"], payload["snapshot"]["rights"]["audit_passed"])
+        self.assertEqual(evidence["rights_review"]["passed"],
+                         payload["snapshot"]["rights"]["rights_review_passed"])
 
 
 if __name__ == "__main__":
