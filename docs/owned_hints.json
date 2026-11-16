@@ -1,0 +1,764 @@
+{
+  "schema": "owned-game-hints",
+  "version": 1,
+  "campaign_sha256": "1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e",
+  "status": "candidate-not-installed",
+  "provenance": "newly-authored-for-game",
+  "license_review": "pending-owner-approval",
+  "proposed_license": "CC0-1.0",
+  "authoring_inputs": [
+    "word",
+    "part_of_speech=noun",
+    "task_type",
+    "general-linguistic-knowledge"
+  ],
+  "entries": [
+    {
+      "word": "абсурд",
+      "normalized": "абсурд",
+      "part_of_speech": "noun",
+      "hint": "Мысль или ситуация, в которой всё настолько нелепо, что здравый смысл бессилен.",
+      "roles": [
+        {
+          "level": 6,
+          "task_id": "l06-t3",
+          "type": "T3",
+          "selection_source": "campaign.hintTarget"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Отвлечённое понятие; возможен ответ «нелепость», но он не составим из исходника.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "адресок",
+      "normalized": "адресок",
+      "part_of_speech": "noun",
+      "hint": "Разговорное название записи с улицей, домом и квартирой, по которой можно найти человека.",
+      "roles": [
+        {
+          "level": 11,
+          "task_id": "l11-t3",
+          "type": "T3",
+          "selection_source": "campaign.hintTarget"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Уменьшительная форма уже назначена кампанией; замена цели вне этой задачи.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "акробат",
+      "normalized": "акробат",
+      "part_of_speech": "noun",
+      "hint": "Цирковой исполнитель, который делает сальто, стойки на руках и сложные прыжки.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Специализация в цирке; не только гимнастика.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "актриса",
+      "normalized": "актриса",
+      "part_of_speech": "noun",
+      "hint": "Женщина, которая играет роли в кино или театральных спектаклях.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Пол нужен для различения существительных; без оценки способностей.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "акционер",
+      "normalized": "акционер",
+      "part_of_speech": "noun",
+      "hint": "Владелец доли компании в виде ценных бумаг, дающих право на часть её прибыли.",
+      "roles": [
+        {
+          "level": 10,
+          "task_id": "l10-t3",
+          "type": "T3",
+          "selection_source": "campaign.hintTarget"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Выбрано значение участника компании; производное «акция» не используется.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "антитело",
+      "normalized": "антитело",
+      "part_of_speech": "noun",
+      "hint": "Защитный белок иммунной системы, который узнаёт определённый чужеродный объект и связывается с ним.",
+      "roles": [
+        {
+          "level": 15,
+          "task_id": "l15-t3",
+          "type": "T3",
+          "selection_source": "campaign.hintTarget"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Белок, не клетка; медицинских советов нет.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "артист",
+      "normalized": "артист",
+      "part_of_speech": "noun",
+      "hint": "Мужчина, который профессионально выступает перед публикой на сцене или в цирке.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t4",
+          "type": "T4",
+          "selection_source": "campaign.targets"
+        },
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "T4 и T6; широкая профессия, возможны более узкие синонимы.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "артистка",
+      "normalized": "артистка",
+      "part_of_speech": "noun",
+      "hint": "Женщина, которая профессионально выступает перед публикой на сцене или в цирке.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Широкая профессия; более узкая «актриса» тоже допустима в T6.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "астрал",
+      "normalized": "астрал",
+      "part_of_speech": "noun",
+      "hint": "В оккультных представлениях — невидимый мир, куда душа якобы попадает отдельно от тела.",
+      "roles": [
+        {
+          "level": 7,
+          "task_id": "l07-t3",
+          "type": "T3",
+          "selection_source": "campaign.hintTarget"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Оккультное представление, не научный факт.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "астролог",
+      "normalized": "астролог",
+      "part_of_speech": "noun",
+      "hint": "Составляет гороскопы и пытается предсказывать судьбу по расположению небесных светил.",
+      "roles": [
+        {
+          "level": 9,
+          "task_id": "l09-t3",
+          "type": "T3",
+          "selection_source": "campaign.hintTarget"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Описана практика, научная достоверность не утверждается.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "банк",
+      "normalized": "банк",
+      "part_of_speech": "noun",
+      "hint": "Финансовая организация, где открывают счета, хранят вклады и выдают кредиты.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t4",
+          "type": "T4",
+          "selection_source": "campaign.targets"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Не стеклянная ёмкость и не набор данных.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "банкир",
+      "normalized": "банкир",
+      "part_of_speech": "noun",
+      "hint": "Владелец или руководитель организации, принимающей вклады и выдающей кредиты.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Не рядовой кассир; родственное название организации опущено.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "бариста",
+      "normalized": "бариста",
+      "part_of_speech": "noun",
+      "hint": "Готовит эспрессо и капучино за стойкой кофейни, настраивая помол и подачу пара.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Не бармен; специализация на кофе.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "батрак",
+      "normalized": "батрак",
+      "part_of_speech": "noun",
+      "hint": "В прошлом — наёмный сельский труженик, выполнявший тяжёлые дела в чужом хозяйстве.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Историческая профессия уже входит в полный T6; текст прямо указывает эпоху.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "билет",
+      "normalized": "билет",
+      "part_of_speech": "noun",
+      "hint": "Бумажный или электронный документ, с которым зрителя пропускают на спектакль.",
+      "roles": [
+        {
+          "level": 12,
+          "task_id": "l12-t4",
+          "type": "T4",
+          "selection_source": "campaign.targets"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Выбран вход в театр, не экзаменационный лист.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "бонна",
+      "normalized": "бонна",
+      "part_of_speech": "noun",
+      "hint": "В старых обеспеченных семьях — наёмная воспитательница маленьких детей, часто иностранка.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Историческое занятие; не современная универсальная няня.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "бортник",
+      "normalized": "бортник",
+      "part_of_speech": "noun",
+      "hint": "Лесной пчеловод, который добывает мёд из дупел деревьев.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Традиционное занятие; родственные названия дупла не используются.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "ботаник",
+      "normalized": "ботаник",
+      "part_of_speech": "noun",
+      "hint": "Учёный, который исследует растения: их строение, развитие и разнообразие.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Научная профессия; исключено школьное прозвище.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "верзила",
+      "normalized": "верзила",
+      "part_of_speech": "noun",
+      "hint": "Так в разговоре называют очень высокого и крупного человека.",
+      "roles": [
+        {
+          "level": 8,
+          "task_id": "l08-t3",
+          "type": "T3",
+          "selection_source": "campaign.hintTarget"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Разговорное слово; описание без насмешки.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "вероника",
+      "normalized": "вероника",
+      "part_of_speech": "noun",
+      "hint": "Невысокая трава с мелкими синими цветками, собранными в длинные узкие кисти.",
+      "roles": [
+        {
+          "level": 13,
+          "task_id": "l13-t3",
+          "type": "T3",
+          "selection_source": "campaign.hintTarget"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Растение, не женское имя; ботаническая точность требует ручной проверки.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "весна",
+      "normalized": "весна",
+      "part_of_speech": "noun",
+      "hint": "Сезон пробуждения природы: снег сходит, появляются первые листья, а дни становятся длиннее.",
+      "roles": [
+        {
+          "level": 13,
+          "task_id": "l13-t4",
+          "type": "T4",
+          "selection_source": "campaign.targets"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Сезон в привычном российском климате. После сигнала о дословном совпадении текст заново составлен без чтения совпавшего фрагмента.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "дантист",
+      "normalized": "дантист",
+      "part_of_speech": "noun",
+      "hint": "Специалист, к которому приходят лечить зубы и ставить пломбы.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Понятное бытовое значение, не юридическая квалификация врача.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "десерт",
+      "normalized": "десерт",
+      "part_of_speech": "noun",
+      "hint": "Сладкое блюдо, которое подают в конце обеда, например мороженое.",
+      "roles": [
+        {
+          "level": 11,
+          "task_id": "l11-t4",
+          "type": "T4",
+          "selection_source": "campaign.targets"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Не весь приём пищи, а завершающее блюдо.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "диакон",
+      "normalized": "диакон",
+      "part_of_speech": "noun",
+      "hint": "В православном храме помогает священнику во время службы, но сам не совершает таинства.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Церковный сан; уже включён владельцем в professions.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "диктор",
+      "normalized": "диктор",
+      "part_of_speech": "noun",
+      "hint": "Читает подготовленные новости и объявления в эфире радио или телевидения.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Не автор репортажа; профессиональное чтение.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "канонир",
+      "normalized": "канонир",
+      "part_of_speech": "noun",
+      "hint": "Старинное название солдата, который заряжает пушку и стреляет из неё.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Историческое военное занятие; не каноник.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "кантор",
+      "normalized": "кантор",
+      "part_of_speech": "noun",
+      "hint": "Руководит церковным хором или ведёт пение во время богослужения.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Выбрано религиозное музыкальное занятие; традиции различаются.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "каратист",
+      "normalized": "каратист",
+      "part_of_speech": "noun",
+      "hint": "Спортсмен, который отрабатывает удары руками и ногами и выступает в кумите и ката.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Названия дисциплин помогают отличить от боксёра; вид спорта не назван.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "километр",
+      "normalized": "километр",
+      "part_of_speech": "noun",
+      "hint": "Единица пути: примерно столько взрослый человек проходит за двенадцать минут обычным шагом.",
+      "roles": [
+        {
+          "level": 12,
+          "task_id": "l12-t3",
+          "type": "T3",
+          "selection_source": "campaign.hintTarget"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Приблизительный бытовой ориентир для 1 км; оба корня сложного ответа исключены. Нужна ручная проверка понятности.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "ковер",
+      "normalized": "ковер",
+      "part_of_speech": "noun",
+      "hint": "Мягкое узорчатое полотно, которым застилают пол в комнате.",
+      "roles": [
+        {
+          "level": 13,
+          "task_id": "l13-t4",
+          "type": "T4",
+          "selection_source": "campaign.targets"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Нормализация ё→е; предмет интерьера.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "отель",
+      "normalized": "отель",
+      "part_of_speech": "noun",
+      "hint": "Здание, где путешественникам сдают комнаты для ночлега на несколько дней.",
+      "roles": [
+        {
+          "level": 11,
+          "task_id": "l11-t4",
+          "type": "T4",
+          "selection_source": "campaign.targets"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Синоним «гостиница» не составим из исходника.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "проблема",
+      "normalized": "проблема",
+      "part_of_speech": "noun",
+      "hint": "Трудный вопрос или затруднение, для которого пока не найдено решение.",
+      "roles": [
+        {
+          "level": 12,
+          "task_id": "l12-t4",
+          "type": "T4",
+          "selection_source": "campaign.targets"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Общеупотребительное затруднение; широкий смысл.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "работа",
+      "normalized": "работа",
+      "part_of_speech": "noun",
+      "hint": "Занятие, за которое сотрудник получает зарплату.",
+      "roles": [
+        {
+          "level": 9,
+          "task_id": "l09-t4",
+          "type": "T4",
+          "selection_source": "campaign.targets"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Общеупотребительное значение оплачиваемого занятия.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "радист",
+      "normalized": "радист",
+      "part_of_speech": "noun",
+      "hint": "Обеспечивает связь, передавая и принимая сообщения с помощью антенны и передатчика.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Родственное название канала связи опущено.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "санитар",
+      "normalized": "санитар",
+      "part_of_speech": "noun",
+      "hint": "Помогает ухаживать за больными, переносит пациентов и поддерживает чистоту в палатах.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Вспомогательный медицинский персонал; без обесценивания труда.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "стадион",
+      "normalized": "стадион",
+      "part_of_speech": "noun",
+      "hint": "Спортивное сооружение с полем и трибунами для зрителей вокруг него.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t4",
+          "type": "T4",
+          "selection_source": "campaign.targets"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Выбрана спортивная площадка с трибунами.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "таксатор",
+      "normalized": "таксатор",
+      "part_of_speech": "noun",
+      "hint": "Специалист, который обследует лес и рассчитывает запас древесины на участке.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Выбрана лесная специальность; не водитель такси.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "танкист",
+      "normalized": "танкист",
+      "part_of_speech": "noun",
+      "hint": "Военнослужащий в экипаже бронированной гусеничной машины с пушкой.",
+      "roles": [
+        {
+          "level": 14,
+          "task_id": "l14-t6",
+          "type": "T6",
+          "selection_source": "campaign.words"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Название боевой машины опущено, чтобы не раскрывать корень.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "утро",
+      "normalized": "утро",
+      "part_of_speech": "noun",
+      "hint": "Часть суток после ночи, когда обычно просыпаются и умываются.",
+      "roles": [
+        {
+          "level": 10,
+          "task_id": "l10-t4",
+          "type": "T4",
+          "selection_source": "campaign.targets"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Время суток. После автоматической проверки родства убрано «завтракают»; старые тексты при правке не использовались.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    }
+  ]
+}
