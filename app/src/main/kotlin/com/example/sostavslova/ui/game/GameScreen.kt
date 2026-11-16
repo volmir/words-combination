@@ -331,11 +331,8 @@ private fun GameBanner(message: GameMessage) {
     val text = if (missing == null) {
         if (message.word == null) stringResource(message.text) else stringResource(message.text, message.word)
     } else {
-        stringResource(message.text, message.word.orEmpty(), missing.letter, missing.available,
-            RussianPlural.form(missing.available, stringResource(R.string.answer_count_one),
-                stringResource(R.string.answer_count_few), stringResource(R.string.answer_count_many)),
-            missing.required, RussianPlural.form(missing.required, stringResource(R.string.answer_count_one),
-                stringResource(R.string.answer_count_few), stringResource(R.string.answer_count_many)))
+        stringResource(message.text, message.word.orEmpty(), missing.letter.uppercaseChar().toString(),
+            missing.available, missing.required)
     }
     AlertBanner(message.type, text)
 }

@@ -62,6 +62,25 @@ class CampaignProgressRepositoryTest {
         ))
     })
 
+    @Test fun missingLettersKeepExactDetailsAndDoNotChangeSavedProgress() = runTest {
+        val exactIndex = WordIndex(listOf("бык", "тир", "ветеран"))
+        val fixture = Campaign(listOf(Stage(1, 1, 1)), listOf(
+            CampaignLevel(1, "вегетарианец", 1, 1, listOf(CampaignTask.T1("count", 1))),
+        ))
+        repository.migrateCampaign(fixture, exactIndex)
+        val before = store.data.first()
+        repeat(2) {
+            val result = repository.submitCampaignAnswerWithTransitions(fixture, 1, "бык", exactIndex)
+            assertEquals(AnswerResult.LETTERS_MISSING, result.submission.result)
+            assertEquals(com.example.sostavslova.core.MissingLetter('б', 0, 1), result.submission.missingLetter)
+            assertFalse(result.submission.probabilistic)
+            assertTrue(result.submission.evaluation.state.game.found.isEmpty())
+            assertTrue(result.submission.evaluation.newlyCompletedTaskIds.isEmpty())
+            assertFalse(result.openedNextLevel)
+            assertEquals(before, store.data.first())
+        }
+    }
+
     @Before fun setUp() {
         directory = temporaryFolder.newFolder()
         openStore()

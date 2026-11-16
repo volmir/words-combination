@@ -27,6 +27,7 @@ import com.example.sostavslova.data.LevelRouteRules
 import com.example.sostavslova.core.Alphabet
 import com.example.sostavslova.core.AnswerResult
 import com.example.sostavslova.core.DefinitionHint
+import com.example.sostavslova.core.Submission
 import com.example.sostavslova.core.GameState
 import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.LevelProgress
@@ -56,6 +57,26 @@ import kotlinx.coroutines.withContext
 data class GameMessage(@param:StringRes val text: Int, val word: String? = null,
     val missingLetter: com.example.sostavslova.core.MissingLetter? = null,
     val type: AlertType = AlertType.Info)
+
+/** Формулировка отказа сохраняет различие точного словаря и вероятного совпадения. */
+internal fun submissionMessage(submission: Submission, answer: String, threeLetterCampaignAnswer: Boolean = false): GameMessage? {
+    return when (submission.result) {
+        AnswerResult.CORRECT -> GameMessage(if (threeLetterCampaignAnswer)
+            R.string.correct_three_letter_answer else R.string.correct_answer, type = AlertType.Success)
+        AnswerResult.ALREADY_FOUND -> GameMessage(R.string.answer_already_found, answer)
+        AnswerResult.NOT_FOUND -> GameMessage(R.string.answer_unknown, answer, type = AlertType.Danger)
+        AnswerResult.NOT_COUNTED -> GameMessage(R.string.answer_not_counted, answer, type = AlertType.Danger)
+        AnswerResult.LETTERS_MISSING -> {
+            val missing = submission.missingLetter
+            if (missing == null) GameMessage(R.string.answer_letters_missing_error, type = AlertType.Danger)
+            else GameMessage(if (submission.probabilistic) R.string.answer_letters_missing_probable
+                else R.string.answer_letters_missing, answer, missing, AlertType.Danger)
+        }
+        AnswerResult.TOO_SHORT -> GameMessage(R.string.word_too_short, type = AlertType.Danger)
+        AnswerResult.SAME_AS_SOURCE -> GameMessage(R.string.answer_same_as_source)
+        AnswerResult.EMPTY -> null
+    }
+}
 
 enum class GameDialog { Statistics, Tasks }
 
@@ -260,7 +281,7 @@ class GameViewModel(
                 val campaignAnswer = if (activeCampaign == null) null else progress.submitCampaignAnswerWithTransitions(
                     activeCampaign, requireNotNull(before.campaignLevel).level.number, raw, words.requireIndex())
                 val submitted = campaignAnswer?.submission
-                val submission = submitted?.let { com.example.sostavslova.core.Submission(it.evaluation.state.game, it.result) }
+                val submission = submitted?.let { Submission(it.evaluation.state.game, it.result, it.missingLetter, it.probabilistic) }
                     ?: withContext(computationDispatcher) { game.submit(raw, words.requireIndex()) }
                 if (submission.result == AnswerResult.EMPTY) {
                     mutableState.update { it.copy(message = GameMessage(R.string.answer_empty, type = AlertType.Danger)) }
@@ -280,20 +301,8 @@ class GameViewModel(
                     next.found.all { it in state.game?.found.orEmpty() }
                 }
                 val answer = Alphabet.normalize(raw)
-                val message = when (submission.result) {
-                    AnswerResult.CORRECT -> GameMessage(if (activeCampaign != null && Alphabet.normalize(raw).length == 3)
-                        R.string.correct_three_letter_answer else R.string.correct_answer, type = AlertType.Success)
-                    AnswerResult.ALREADY_FOUND -> GameMessage(R.string.answer_already_found, answer)
-                    AnswerResult.NOT_FOUND -> GameMessage(R.string.answer_unknown, answer, type = AlertType.Danger)
-                    AnswerResult.NOT_COUNTED -> GameMessage(R.string.answer_not_counted, answer, type = AlertType.Danger)
-                    AnswerResult.LETTERS_MISSING -> {
-                        val missing = submission.missingLetter ?: return@launch
-                        GameMessage(R.string.answer_letters_missing, answer, missing, AlertType.Danger)
-                    }
-                    AnswerResult.TOO_SHORT -> GameMessage(R.string.word_too_short, type = AlertType.Danger)
-                    AnswerResult.SAME_AS_SOURCE -> GameMessage(R.string.answer_same_as_source)
-                    AnswerResult.EMPTY -> null
-                }
+                val message = submissionMessage(submission, answer,
+                    threeLetterCampaignAnswer = activeCampaign != null && answer.length == 3)
                 if (uiState.value.input == raw) {
                     savedState[INPUT] = ""
                     mutableState.update { it.copy(input = "") }

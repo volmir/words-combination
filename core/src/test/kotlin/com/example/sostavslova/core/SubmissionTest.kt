@@ -26,6 +26,37 @@ class SubmissionTest {
         return assertNotNull(KnownWords.read(bytes))
     }
 
+    @Test fun productionDictionaryBullOnVegetarianPreservesFirstDeficitThroughTasks() {
+        assertTrue(TestData.index.contains("бык"))
+        val game = GameState.start("вегетарианец", TestData.index)
+        val direct = game.submit("бык", TestData.index)
+        assertEquals(AnswerResult.LETTERS_MISSING, direct.result)
+        assertEquals(MissingLetter('б', 0, 1), direct.missingLetter)
+        assertFalse(direct.probabilistic)
+        val current = CurrentCampaignLevel(
+            CampaignLevel(1, game.word, 1, 1, listOf(CampaignTask.T1("count", 1))), game,
+        )
+        repeat(2) {
+            val task = TaskRules.submit(current, " БЫК ", 4, TestData.index)
+            assertEquals(direct.result, task.result)
+            assertEquals(direct.missingLetter, task.missingLetter)
+            assertEquals(direct.probabilistic, task.probabilistic)
+            assertEquals(current, task.evaluation.state)
+            assertTrue(task.evaluation.newlyCompletedTaskIds.isEmpty())
+        }
+    }
+
+    @Test fun tasksPreserveProbabilisticRejectionDetails() {
+        val current = CurrentCampaignLevel(
+            CampaignLevel(1, game.word, 1, 1, listOf(CampaignTask.T1("count", 1))), game,
+        )
+        val submission = TaskRules.submit(current, "ыыыыы", 4, index, filter(true))
+        assertEquals(AnswerResult.LETTERS_MISSING, submission.result)
+        assertEquals(MissingLetter('ы', 0, 5), submission.missingLetter)
+        assertTrue(submission.probabilistic)
+        assertEquals(current, submission.evaluation.state)
+    }
+
     @Test fun absentLetterHasExactCounts() {
         val submission = game.submit(" БЫК! ", index)
         assertEquals(AnswerResult.LETTERS_MISSING, submission.result)

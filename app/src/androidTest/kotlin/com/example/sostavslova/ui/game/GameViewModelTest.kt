@@ -93,6 +93,37 @@ class GameViewModelTest {
         withTimeout(10_000) { events.first() }
     }
 
+    @Test fun campaignMissingLettersReachMessageAndRepeatedSubmitDoesNotLeaveBusy() = runTest {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val exactWords = WordRepository({ context.assets.open("words.txt").bufferedReader().use { it.readText() } })
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = {
+            """{"version":2,"countMinLength":4,
+                "stages":[{"number":1,"firstLevel":1,"lastLevel":1}],
+                "levels":[{"number":1,"word":"вегетарианец","stage":1,"requiredStars":1,
+                "tasks":[{"id":"count","type":"T1","n":1}]}]}"""
+        })
+        val model = model(wordRepository = exactWords, levelRepository = campaignLevels)
+        val initial = model.ready()
+        repeat(2) {
+            val state = model.answer("бык")
+            assertEquals(R.string.answer_letters_missing, state.message?.text)
+            assertEquals("бык", state.message?.word)
+            assertEquals(com.example.sostavslova.core.MissingLetter('б', 0, 1), state.message?.missingLetter)
+            assertFalse(state.busy)
+            assertTrue(state.canPlay)
+            assertEquals(initial.game, state.game)
+            assertEquals(initial.campaignLevel, state.campaignLevel)
+        }
+        assertEquals(R.string.answer_unknown, model.answer("ыыыыы").message?.text)
+        assertEquals(R.string.word_too_short, model.answer("ве").message?.text)
+        assertEquals(R.string.answer_same_as_source, model.answer("вегетарианец").message?.text)
+        assertEquals(R.string.correct_three_letter_answer, model.answer("тир").message?.text)
+        assertEquals(R.string.answer_already_found, model.answer("тир").message?.text)
+        assertEquals(listOf("тир"), model.uiState.value.game?.found)
+        assertEquals(0, model.uiState.value.campaignLevel?.completedTaskIds?.size)
+        assertFalse(model.uiState.value.busy)
+    }
+
     @Test fun correctRepeatIncorrectAndLatinLetterFollowCoreAndPersistOnlyCorrectAnswers() = runTest {
         seed("портал")
         val model = model(); model.ready()

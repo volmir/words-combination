@@ -45,7 +45,9 @@
     <string name="answer_already_found">Вы уже разгадали слово %1$s</string>
     <string name="answer_unknown">Слово «%1$s» не распознано словарём</string>
     <string name="answer_not_counted">Слово «%1$s» есть в словаре, но не входит в игровой набор</string>
-    <string name="answer_letters_missing">В слове «%1$s» не хватает буквы «%2$s»: доступно %3$d %4$s, требуется %5$d %6$s</string>
+    <string name="answer_letters_missing">Слово „%1$s“ есть в словаре, но его нельзя составить из букв этого уровня. Не хватает буквы „%2$s“: есть %3$d, нужно %4$d</string>
+    <string name="answer_letters_missing_probable">Слово „%1$s“ нельзя составить из букв этого уровня. Не хватает буквы „%2$s“: есть %3$d, нужно %4$d</string>
+    <string name="answer_letters_missing_error">Слово нельзя составить из букв этого уровня. Не удалось определить недостающую букву. Попробуйте другое слово.</string>
     <string name="answer_count_one">буква</string>
     <string name="answer_count_few">буквы</string>
     <string name="answer_count_many">букв</string>
