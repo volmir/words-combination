@@ -127,6 +127,37 @@ class FoundWordsSectionTest(private val width: Int, private val fontScale: Float
         assertTextFits()
     }
 
+    @Test fun largestInstalledLevelKeepsStatisticsReachableWithEveryGroupExpanded() {
+        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        val campaign = com.example.sostavslova.data.CampaignJson.decode(
+            context.assets.open("campaign.json").bufferedReader().use { it.readText() })
+        val index = com.example.sostavslova.core.WordIndex(
+            context.assets.open("words.txt").bufferedReader().use { it.readLines() })
+        val games = campaign.levels.map { it to GameState.start(it.word, index) }
+        val (level, initial) = games.maxBy { it.second.total }
+        val game = initial.copy(found = initial.allWords)
+        assertTrue("Stress fixture must contain at least 600 words", game.foundCount >= 600)
+        val snapshot = GameUiState(loading = false, game = game, statistics = game.statistics(),
+            totalLevels = campaign.levels.size, campaignLevel = CurrentCampaignLevel(level, game))
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+                WordsTheme { Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
+                    GameScreen(snapshot, {}, {}, {}, {}, {}, {})
+                } }
+            }
+        }
+        for ((length, found) in game.found.groupBy { it.length }.toSortedMap()) {
+            compose.onNodeWithTag("level_found_group_$length").performScrollTo().performClick()
+            compose.onNodeWithText(found.last()).performScrollTo().assertIsDisplayed().assertHasNoClickAction()
+        }
+        compose.onNodeWithTag("game_word_statistics").performScrollTo().assertIsDisplayed().assertHasClickAction()
+        compose.onNodeWithText("Значение слова").assertDoesNotExist()
+        for (length in game.found.map { it.length }.distinct()) {
+            compose.onNodeWithTag("level_found_group_$length").performScrollTo().performClick()
+            compose.onNodeWithTag("game_found_words_$length").assertDoesNotExist()
+        }
+    }
+
     private fun sectionActions() = compose.onAllNodes(hasClickAction() and hasAnyAncestor(hasTestTag("game_found_words")))
 
     private fun assertTextFits() {
@@ -144,8 +175,8 @@ class FoundWordsSectionTest(private val width: Int, private val fontScale: Float
 
     companion object {
         @JvmStatic @Parameterized.Parameters(name = "width={0}, font={1}, legacy={2}")
-        fun sizes(): List<Array<Any>> = listOf(320, 360).flatMap { width ->
-            listOf(1f, 2f).flatMap { scale -> listOf(false, true).map { legacy -> arrayOf<Any>(width, scale, legacy) } }
+        fun sizes(): List<Array<Any>> = listOf(320, 360, 400).flatMap { width ->
+            listOf(1f, 1.5f, 2f).flatMap { scale -> listOf(false, true).map { legacy -> arrayOf<Any>(width, scale, legacy) } }
         }
     }
 }

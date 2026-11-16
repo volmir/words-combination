@@ -49,6 +49,11 @@ class GameNavigationTest {
     }
     private fun start() {
         compose.onNodeWithTag("level_card_1").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_tasks_summary").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitForIdle()
+        if (compose.onAllNodesWithText("Новые задания этапа").fetchSemanticsNodes().isNotEmpty()) {
+            compose.onNodeWithText("Закрыть").performClick()
+        }
         awaitText("Найденные слова · 0 из")
     }
     private fun answer(raw: String) {
@@ -104,6 +109,8 @@ class GameNavigationTest {
         val source = source()
         val valid = validAnswer(source)
         start(); answer(valid); awaitText("Правильно!")
+        compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
+        awaitOpenedHint()
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("ЧеРнОвИк")
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Найденные слова · 1 из", substring = true).fetchSemanticsNodes().isNotEmpty() }
@@ -111,6 +118,8 @@ class GameNavigationTest {
         back()
         compose.onNodeWithTag("level_card_1").performClick()
         awaitText("Найденные слова · 1 из")
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("ЧеРнОвИк")
+        awaitOpenedHint()
         assertEquals(listOf(valid), foundAnswers(source))
         container.levelsRepository.getCampaign()?.levels?.first()?.let { level ->
             val saved = container.progressRepository.observeCampaignProgress().first().levels[source]
@@ -121,6 +130,41 @@ class GameNavigationTest {
                 compose.onNodeWithTag("level_task_${task.type.name.lowercase()}").assertExists()
             }
         }
+        val beforeReturn = container.progressRepository.observeCampaignProgress().first()
+        compose.onNodeWithTag("game_back").performClick()
+        compose.onNodeWithTag("level_card_1").performClick()
+        awaitText("Найденные слова · 1 из")
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("ЧеРнОвИк")
+        awaitOpenedHint()
+        assertEquals(beforeReturn, container.progressRepository.observeCampaignProgress().first())
+    }
+
+    @Test fun mapRecreationKeepsDraftsSeparateForDifferentLevels() = runTest {
+        val campaign = requireNotNull(container.levelsRepository.getCampaign())
+        com.example.sostavslova.core.TaskType.entries.forEach {
+            container.progressRepository.markCampaignExplanationSeen(it)
+        }
+        val index = container.wordRepository.requireIndex()
+        for (word in container.wordRepository.startGame(campaign.levels.first().word).allWords) {
+            container.progressRepository.submitCampaignAnswerWithTransitions(campaign, 1, word, index)
+        }
+        compose.waitUntil(10_000) { compose.onNodeWithTag("level_card_2").isEnabled() }
+        for ((number, draft) in listOf(1 to "Первый черновик", 2 to "Второй черновик")) {
+            compose.onNodeWithTag("level_card_$number").performScrollTo().performClick()
+            compose.waitUntil(10_000) { compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
+            compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement(draft)
+            compose.onNodeWithTag("game_back").performClick()
+        }
+        val saved = container.progressRepository.observeCampaignProgress().first()
+        compose.activityRule.scenario.recreate()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_card_1").fetchSemanticsNodes().isNotEmpty() }
+        for ((number, draft) in listOf(1 to "Первый черновик", 2 to "Второй черновик")) {
+            compose.onNodeWithTag("level_card_$number").performScrollTo().performClick()
+            compose.waitUntil(10_000) { compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
+            compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals(draft)
+            back()
+        }
+        assertEquals(saved, container.progressRepository.observeCampaignProgress().first())
     }
 
     @Test fun repeatedResumeAndRotationKeepHintAnswersAndDraft() = runTest {

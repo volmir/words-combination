@@ -73,8 +73,8 @@ import java.util.Locale
 import kotlinx.coroutines.delay
 
 @Composable
-fun GameRoute(onReturnLevels: (Int) -> Unit) {
-    BackHandler { onReturnLevels(0) }
+fun GameRoute(onReturnLevels: (Int, Boolean) -> Unit) {
+    BackHandler { onReturnLevels(0, true) }
     val container = appContainer()
     val factory = remember(container) {
         viewModelFactory { initializer {
@@ -100,7 +100,7 @@ fun GameRoute(onReturnLevels: (Int) -> Unit) {
             } finally { notice = null }
         }
     }
-    LaunchedEffect(state.returnLevels) { if (state.returnLevels) onReturnLevels(state.levelsMessage) }
+    LaunchedEffect(state.returnLevels) { if (state.returnLevels) onReturnLevels(state.levelsMessage, false) }
     GameScreen(state, model::onInputChanged, model::onSubmit, model::onHint,
         model::onDialog, model::onDismissDialog, model::onRetry, notice, model::onDismissExplanations, model::onCloseFinale)
 }

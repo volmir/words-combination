@@ -94,7 +94,7 @@ fun WordsApp() {
                         Text(stringResource(R.string.exit_press_back_again))
                     }
                 },
-                topBar = { WordsTopBar(onBack = if (inLevel) ({ navController.returnToLevels() }) else null) {
+                topBar = { WordsTopBar(onBack = if (inLevel) ({ navController.returnToLevels(saveLevelState = true) }) else null) {
                     scope.launch { drawerState.open() }
                 } },
             ) { innerPadding ->

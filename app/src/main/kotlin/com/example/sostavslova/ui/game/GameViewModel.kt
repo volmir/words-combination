@@ -490,8 +490,8 @@ class GameViewModel(
         mutableState.update { it.copy(loading = false, returnLevels = true, levelsMessage = message) }
     }
 
-    private companion object {
-        const val INPUT = "game.input"
-        const val SOURCE = "game.source"
+    companion object {
+        internal const val INPUT = "game.input"
+        internal const val SOURCE = "game.source"
     }
 }

@@ -393,6 +393,8 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
 
     companion object {
         @JvmStatic @Parameterized.Parameters(name = "width={0}, font={1}")
-        fun sizes(): List<Array<Any>> = listOf(arrayOf(320, 2f), arrayOf(360, 1f), arrayOf(360, 2f), arrayOf(840, 1f))
+        fun sizes(): List<Array<Any>> = listOf(320, 360, 400).flatMap { width ->
+            listOf(1f, 1.5f, 2f).map { scale -> arrayOf<Any>(width, scale) }
+        } + listOf(arrayOf<Any>(840, 1f))
     }
 }
