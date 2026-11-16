@@ -3,6 +3,10 @@ package com.example.sostavslova.ui.game
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,43 +22,37 @@ import com.example.sostavslova.core.TaskType
 @Composable
 internal fun CampaignTasks(state: GameUiState) {
     val current = state.campaignLevel ?: return
-    for (task in current.level.tasks) {
-        val progress = state.taskProgress.firstOrNull { it.id == task.id }
-        Column(Modifier.testTag("level_task_${task.type.name.lowercase()}"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            TaskRow(taskTitle(task), task.id in current.completedTaskIds)
-            Text(stringResource(R.string.game_task_progress, progress?.current ?: 0, progress?.target ?: 1),
-                style = MaterialTheme.typography.bodyMedium)
-            if (task is CampaignTask.T4) {
-                state.riddles[task.id].orEmpty().forEachIndexed { index, riddle ->
-                    Column(Modifier.testTag("level_riddle_${index + 1}"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(stringResource(R.string.game_riddle_number, index + 1), style = MaterialTheme.typography.titleSmall)
-                        Text(stringResource(if (riddle.solved) R.string.game_riddle_solved else R.string.game_riddle_pending),
-                            style = MaterialTheme.typography.bodyMedium)
-                        RiddleText(riddle)
+    Column(Modifier.fillMaxWidth().testTag("game_tasks"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(stringResource(R.string.game_tasks_summary,
+            current.level.tasks.count { it.id in current.completedTaskIds }, current.level.tasks.size),
+            Modifier.testTag("game_tasks_summary").semantics { heading() },
+            style = MaterialTheme.typography.titleMedium)
+        for (task in current.level.tasks) {
+            val progress = state.taskProgress.firstOrNull { it.id == task.id }
+            val done = task.id in current.completedTaskIds
+            HorizontalDivider()
+            Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                .testTag("level_task_${task.type.name.lowercase()}"),
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                TaskRow(taskTitle(task), done)
+                Text(stringResource(R.string.game_task_progress, progress?.current ?: 0, progress?.target ?: 1),
+                    style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(if (done) R.string.game_task_done else R.string.game_task_pending),
+                    style = MaterialTheme.typography.bodyMedium)
+                if (task is CampaignTask.T4) {
+                    state.riddles[task.id].orEmpty().forEachIndexed { index, riddle ->
+                        Column(Modifier.fillMaxWidth().padding(start = 12.dp)
+                            .testTag("level_riddle_${index + 1}"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(stringResource(R.string.game_riddle_number, index + 1), style = MaterialTheme.typography.bodyLarge)
+                            Text(stringResource(if (riddle.solved) R.string.game_riddle_solved else R.string.game_riddle_pending),
+                                style = MaterialTheme.typography.bodyMedium)
+                            RiddleText(riddle)
+                        }
                     }
                 }
             }
         }
-    }
-}
-
-// Безопасный текст ближайшей нерешённой загадки остаётся рядом с вводом,
-// пока полный список заданий свёрнут. Ответ и скрытые буквы сюда не попадают.
-@Composable
-internal fun CampaignRiddlePreview(state: GameUiState) {
-    val current = state.campaignLevel ?: return
-    val next = current.level.tasks.asSequence()
-        .filterIsInstance<CampaignTask.T4>()
-        .flatMap { task ->
-            state.riddles[task.id].orEmpty().asSequence().withIndex()
-                .filter { !it.value.solved }
-                .map { it.index to it.value }
-        }
-        .firstOrNull() ?: return
-    val (index, riddle) = next
-    Column(Modifier.fillMaxWidth().testTag("game_riddle_preview"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(stringResource(R.string.game_riddle_number, index + 1), style = MaterialTheme.typography.titleSmall)
-        RiddleText(riddle)
+        HorizontalDivider()
     }
 }
 

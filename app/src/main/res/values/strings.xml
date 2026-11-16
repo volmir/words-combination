@@ -131,6 +131,8 @@
     <string name="game_level_threshold">Для открытия: нужно %1$d %2$s</string>
     <string name="game_level_final_threshold">Для финала: нужно %1$d %2$s</string>
     <string name="game_task_progress">Выполнено: %1$d из %2$d</string>
+    <string name="game_task_done">Выполнено</string>
+    <string name="game_task_pending">В работе</string>
     <string name="game_tasks_summary">Задания · %1$d из %2$d</string>
     <string name="game_task_t1">Наберите %1$d %2$s длиной от 4 букв</string>
     <string name="game_task_t2">Найдите %1$d %2$s на букву «%3$s» длиной от 4 букв</string>

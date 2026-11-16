@@ -56,14 +56,26 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         }
         compose.onNodeWithTag("level_header").assertTextEquals("Мастер · уровень 30 из 30")
         compose.onNodeWithTag("level_difficulty").assertTextContains("Для финала", substring = true)
-        compose.onNodeWithTag("level_task_t1").assertDoesNotExist()
-        compose.onNodeWithTag("game_riddle_preview").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Загадка 2").assertExists()
-        compose.onNodeWithText("Слово из 4 букв, начинается на «К»").assertExists()
-        compose.onNodeWithTag("game_tasks_toggle").performScrollTo().performClick()
+        compose.onNodeWithTag("game_tasks_summary").performScrollTo()
+            .assertTextEquals("Задания · ${evaluated.state.completedTaskIds.size} из ${tasks.size}")
+        compose.onNodeWithTag("game_tasks_toggle").assertDoesNotExist()
+        compose.onNodeWithTag("game_riddle_preview").assertDoesNotExist()
+        compose.onNodeWithText("Задания").assertDoesNotExist()
         TaskType.entries.forEach { type ->
             compose.onNodeWithTag("level_task_${type.name.lowercase()}").performScrollTo().assertExists()
+            val task = tasks.single { it.type == type }
+            val progress = evaluated.progress.single { it.id == task.id }
+            compose.onNode(hasText("Выполнено: ${progress.current} из ${progress.target}") and
+                hasAnyAncestor(hasTestTag("level_task_${type.name.lowercase()}"))).assertExists()
+            compose.onNodeWithTag("level_task_${type.name.lowercase()}").onChildren()
+                .filter(hasText(if (task.id in evaluated.state.completedTaskIds) "Выполнено" else "В работе"))
+                .assertCountEquals(1)
             assertTextFits()
+        }
+        compose.onNodeWithTag("game_tasks_summary").assert(SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit))
+        compose.onAllNodes(hasClickAction(), useUnmergedTree = true).fetchSemanticsNodes().forEach { node ->
+            val minimum = 48f * compose.density.density - 1f
+            assertTrue(node.size.toString(), node.size.width >= minimum && node.size.height >= minimum)
         }
         compose.onNodeWithText("Найдите 1 слово по теме «Животные»").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("level_riddle_1").onChildren().filter(hasText("Разгадана")).assertCountEquals(1)
@@ -76,6 +88,7 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
                 it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
         }.joinToString("\n")
         assertFalse(text.contains("крот", ignoreCase = true))
+        assertFalse(text.contains("карта", ignoreCase = true))
         assertFalse(text.contains("https://"))
         compose.onNodeWithText("кот").assertDoesNotExist()
         compose.onNodeWithTag("level_found_group_3").performScrollTo().performClick()
@@ -90,6 +103,30 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         compose.onNodeWithText("Осталось").assertExists()
         compose.onNodeWithText("Взято шагов подсказок: 0 · потрачено единиц: 0").performScrollTo().assertIsDisplayed()
         assertTextFits()
+    }
+
+    @Test fun installedCampaignTasksMatchEveryLevelWithoutOpeningAnotherList() {
+        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        val campaign = com.example.sostavslova.data.CampaignJson.decode(
+            context.assets.open("campaign.json").bufferedReader().use { it.readText() })
+        fun ui(level: CampaignLevel): GameUiState {
+            val game = GameState(level.word, emptyList(), emptyList())
+            val evaluated = TaskRules.evaluate(CurrentCampaignLevel(level, game), campaign.countMinLength)
+            return GameUiState(loading = false, game = game, campaignLevel = evaluated.state,
+                taskProgress = evaluated.progress, totalLevels = campaign.levels.size)
+        }
+        val state = mutableStateOf(ui(campaign.levels.first()))
+        compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, {}, {}, {}, {}) } }
+        for (level in campaign.levels) {
+            compose.runOnIdle { state.value = ui(level) }
+            compose.onNodeWithTag("game_tasks_summary").assertTextEquals("Задания · 0 из ${level.tasks.size}")
+            TaskType.entries.forEach { type ->
+                compose.onAllNodesWithTag("level_task_${type.name.lowercase()}")
+                    .assertCountEquals(level.tasks.count { it.type == type })
+            }
+            compose.onNodeWithTag("game_tasks_toggle").assertDoesNotExist()
+            compose.onNodeWithText("Задания").assertDoesNotExist()
+        }
     }
 
     @Test fun accumulatedHintStepsCostAndZeroBudgetAreVisible() {
@@ -128,7 +165,7 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         assertTextFits()
     }
 
-    @Test fun tasksToggleKeepsInputAndStartsCollapsedForAnotherLevel() {
+    @Test fun tasksStayVisibleAcrossUpdatesAndLevelChangesWithoutClearingInput() {
         val state = mutableStateOf(initial)
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
@@ -140,22 +177,20 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
             }
         }
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("кот")
-        compose.onNodeWithTag("game_riddle_preview").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag("game_tasks_toggle").performScrollTo().performClick()
         compose.onNodeWithTag("level_task_t4").performScrollTo().assertExists()
         compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("кот")
-        compose.onNodeWithTag("game_tasks_toggle").performScrollTo().performClick()
-        compose.onNodeWithTag("level_task_t4").assertDoesNotExist()
+        compose.runOnIdle { state.value = state.value.copy(message = GameMessage(com.example.sostavslova.R.string.correct_answer)) }
+        compose.onNodeWithTag("level_task_t6").performScrollTo().assertExists()
+        compose.onNodeWithTag("level_task_t7").performScrollTo().assertExists()
         compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("кот")
-        compose.onNodeWithTag("game_tasks_toggle").performScrollTo().performClick()
-        compose.onNodeWithTag("level_task_t4").performScrollTo().assertExists()
         compose.runOnIdle {
             state.value = state.value.copy(
                 campaignLevel = evaluated.state.copy(level = evaluated.state.level.copy(number = 8,
                     word = "поздравление", tasks = listOf(CampaignTask.T1("count", 1)))),
                 taskProgress = emptyList(), riddles = emptyMap())
         }
-        compose.onNodeWithTag("level_task_t1").assertDoesNotExist()
+        compose.onNodeWithTag("level_task_t1").performScrollTo().assertExists()
+        compose.onNodeWithTag("level_task_t4").assertDoesNotExist()
         compose.onNodeWithTag("game_riddle_preview").assertDoesNotExist()
         compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("кот")
     }
@@ -180,7 +215,7 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         input.assertIsFocused()
     }
 
-    @Test fun riddlePreviewMovesToNextUnsolvedAndDisappearsWhenAllSolved() {
+    @Test fun riddlesRemainUnderTaskAndReflectSolvedUpdates() {
         val riddles = listOf(
             RiddleUiState("Первая безопасная загадка", 3, "К", solved = true),
             RiddleUiState("Синтетическая смысловая загадка", 4, "К", wiktionary = true),
@@ -195,23 +230,26 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
                 }
             }
         }
-        compose.onNodeWithTag("game_riddle_preview").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Загадка 2").assertExists()
-        compose.onNodeWithText("Синтетическая смысловая загадка").assertIsDisplayed()
+        compose.onNodeWithTag("game_riddle_preview").assertDoesNotExist()
+        compose.onNodeWithText("Синтетическая смысловая загадка").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Викисловарь · CC BY-SA 4.0. Скрыты ответ и однокоренные слова.").assertExists()
         compose.onNodeWithText("крот").assertDoesNotExist()
-        compose.onNodeWithText("Первая безопасная загадка").assertDoesNotExist()
+        compose.onNodeWithText("Первая безопасная загадка").assertExists()
+        compose.onAllNodesWithText("Ещё не разгадана").assertCountEquals(2)
         compose.runOnIdle {
             state.value = state.value.copy(riddles = mapOf("riddles" to riddles.mapIndexed { index, riddle ->
                 if (index == 1) riddle.copy(solved = true) else riddle
             }))
         }
+        compose.onAllNodesWithText("Разгадана").assertCountEquals(2)
         compose.onNodeWithText("Загадка 3").assertExists()
         compose.onNodeWithText("Слово из 6 букв, начинается на «К»").assertExists()
         compose.runOnIdle {
             state.value = state.value.copy(riddles = mapOf("riddles" to riddles.map { it.copy(solved = true) }))
         }
         compose.onNodeWithTag("game_riddle_preview").assertDoesNotExist()
+        compose.onAllNodesWithText("Разгадана").assertCountEquals(3)
+        compose.onNodeWithTag("level_task_t4").assertExists()
     }
 
     @Test fun finaleSurvivesScreenRestorationAndBothActionsFit() {
@@ -267,6 +305,6 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
 
     companion object {
         @JvmStatic @Parameterized.Parameters(name = "width={0}, font={1}")
-        fun sizes(): List<Array<Any>> = listOf(arrayOf(320, 2f), arrayOf(360, 1f), arrayOf(840, 1f))
+        fun sizes(): List<Array<Any>> = listOf(arrayOf(320, 2f), arrayOf(360, 1f), arrayOf(360, 2f), arrayOf(840, 1f))
     }
 }

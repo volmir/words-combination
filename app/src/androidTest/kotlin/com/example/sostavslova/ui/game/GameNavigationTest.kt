@@ -108,6 +108,15 @@ class GameNavigationTest {
         compose.onNodeWithTag("level_card_1").performClick()
         awaitText("Найдено 1 из")
         assertEquals(listOf(valid), foundAnswers(source))
+        container.levelsRepository.getCampaign()?.levels?.first()?.let { level ->
+            val saved = container.progressRepository.observeCampaignProgress().first().levels[source]
+            val completed = level.tasks.count { it.id in saved?.completedTaskIds.orEmpty() }
+            compose.onNodeWithTag("game_tasks_summary").performScrollTo()
+                .assertTextEquals("Задания · $completed из ${level.tasks.size}")
+            level.tasks.forEach { task ->
+                compose.onNodeWithTag("level_task_${task.type.name.lowercase()}").assertExists()
+            }
+        }
     }
 
     @Test fun repeatedResumeAndRotationKeepHintAnswersAndDraft() = runTest {

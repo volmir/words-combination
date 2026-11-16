@@ -177,23 +177,13 @@ fun GameScreen(
                     notice?.let { GameBanner(it) }
                 }
                 if (current != null) {
-                    var tasksExpanded by rememberSaveable(current.level.number, current.level.word) { mutableStateOf(false) }
-                    if (!tasksExpanded) CampaignRiddlePreview(state)
-                    TextButton({ tasksExpanded = !tasksExpanded },
-                        Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("game_tasks_toggle")) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.game_tasks_summary, current.completedTaskIds.size,
-                                current.level.tasks.size), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                            Text(stringResource(if (tasksExpanded) R.string.game_group_close else R.string.game_group_open),
-                                style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                    if (tasksExpanded) CampaignTasks(state)
+                    CampaignTasks(state)
+                }
+                Text(stringResource(R.string.found_words), style = MaterialTheme.typography.titleMedium)
+                if (current != null) {
                     Text(stringResource(R.string.game_counts, game.foundCount, game.total, RussianPlural.words(game.total)),
                         style = MaterialTheme.typography.bodyMedium)
                 }
-                Text(stringResource(R.string.found_words), style = MaterialTheme.typography.titleMedium)
                 for ((length, found) in game.found.groupBy { it.length }.toSortedMap()) {
                     var expanded by rememberSaveable(game.word, length) { mutableStateOf(false) }
                     Column {
@@ -256,7 +246,7 @@ fun GameScreen(
                         state.canPlay && !state.hintLoading && (state.campaignLevel == null ||
                             (state.hintCost != null && (state.hintCost == 0 || state.hintRemaining > 0))), onHint, R.drawable.ic_help, "game_hint_button")
                     GameAction(stringResource(R.string.statistics), state.canPlay, { onDialog(GameDialog.Statistics) }, R.drawable.ic_statistics)
-                    if (state.level != null || state.campaignLevel != null) GameAction(stringResource(R.string.tasks), state.canPlay,
+                    if (state.level != null && state.campaignLevel == null) GameAction(stringResource(R.string.tasks), state.canPlay,
                         { onDialog(GameDialog.Tasks) }, R.drawable.ic_star_outline)
                 }
             }
@@ -304,12 +294,7 @@ fun GameScreen(
                 CloseDialogButton(onDismissDialog)
             }
         }
-        GameDialog.Tasks -> if (state.campaignLevel != null) {
-            WordsDialog(stringResource(R.string.tasks), onDismissDialog) {
-                CampaignTasks(state)
-                CloseDialogButton(onDismissDialog)
-            }
-        } else state.level?.let { level ->
+        GameDialog.Tasks -> if (state.campaignLevel == null) state.level?.let { level ->
             val found = state.game?.found.orEmpty()
             WordsDialog(stringResource(R.string.tasks), onDismissDialog) {
                 val remaining = LevelRules.remainingToComplete(level, found)
