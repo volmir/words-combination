@@ -29,7 +29,7 @@ Python release-аудит проходят. При выполнении той �
 | SQLite, используемый Python | 3.37.2 (`sqlite3.sqlite_version`) |
 | SQLite source id в Python | `2022-01-06 13:25:41 872ba256cbf61d9290b571c0e6d82a20c224ca3ad82971edc46b29818d5dalt1` |
 | Системный CLI | `/usr/bin/sqlite3`, 3.37.2, тот же source id |
-| CLI из Android SDK | `/home/vladimir/.local/share/words-combination/android-sdk/platform-tools/sqlite3`, 3.50.6, 64-bit |
+| CLI из Android SDK | `<PROJECT_ROOT>/android-sdk/platform-tools/sqlite3`, 3.50.6, 64-bit |
 | SQLite source id SDK CLI | `2025-09-22 18:50:24 9cc554372371e07bf01d8070a64d461ac85b91be6eef0e642ed129a0c7fa8105` |
 | SQLite 3.40.1 | **NOT RUN**: отдельная среда этой версии не была доступна для проверки |
 | Python, связанный с SQLite 3.50.6 | **NOT RUN**: второй Python runtime не использовался; выполнен SQL replay через CLI |
@@ -44,7 +44,7 @@ SDK CLI возвращает пустой список compile options; один
 ## Выполненные команды и метод
 
 Команды запускались из корня проекта. `pwd` разрешает путь проекта как
-`/home/vladimir/www/words-combination` (путь задания `/var/www/words-combination`).
+`<PROJECT_ROOT>` (путь задания `/var/www/words-combination`).
 
 ```bash
 git rev-parse HEAD
@@ -301,7 +301,7 @@ finally:
     sqlite3.connect = original_connect
 sql = '\n'.join(s.rstrip().rstrip(';') + ';' for s in statements) + '\n'
 (TEMP / 'generation.sql').write_text(sql, encoding='utf-8')
-cli = '/home/vladimir/.local/share/words-combination/android-sdk/platform-tools/sqlite3'
+cli = '<PROJECT_ROOT>/android-sdk/platform-tools/sqlite3'
 for name in ('cli.db', 'cli-repeat.db'):
     subprocess.run([cli, '-batch', '-bail', str(TEMP / name)], input=sql, text=True, check=True)
 for name, binary, prefix in (
