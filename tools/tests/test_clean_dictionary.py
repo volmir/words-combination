@@ -35,6 +35,20 @@ class CleanupTest(unittest.TestCase):
         ranks = {w: {"frequency": frequencies.get(w, 500), "freq_rank": 1} for w in records}
         return clean.decide(records, ranks, self.config, set(protected))
 
+    def test_short15_reviewed_nouns_need_real_safe_noun_senses(self):
+        records = self.records(article("акмеист", "филол. Синтетический деятель."),
+                               article("атомист"), article("менталист"), article("кот"))
+        result = self.decide(records, {"акмеист": 0, "атомист": 1})
+        self.assertEqual("keep", result["акмеист"]["decision"])
+        self.assertEqual("keep", result["атомист"]["decision"])
+        self.assertEqual("exclude", result["менталист"]["decision"])
+        self.assertTrue(all(r["decision"] == "exclude" for r in result["менталист"]["roles"].values()))
+        for bad in (article("атомист", pos="verb"),
+                    article("атомист", "диал. Синтетический предмет."),
+                    article("акмеист", "неизв. Синтетический предмет.")):
+            self.assertNotEqual("keep", self.decide(self.records(bad))[bad["word"]]["decision"])
+        self.assertEqual("review", self.decide(self.records(article("кот")), {"кот": 0})["кот"]["decision"])
+
     def test_labels_in_glosses_are_sense_specific_and_mentions_do_not_exclude(self):
         records = self.records(article("котик", "уменьш.-ласк. к предмет"),
             article("старина", "устар., разг. Синтетическое значение."),

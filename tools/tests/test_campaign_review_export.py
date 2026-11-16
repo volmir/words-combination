@@ -223,21 +223,24 @@ class ExportSyntheticTest(unittest.TestCase):
 
 @unittest.skipUnless((ROOT / "data/campaign.json").is_file(), "installed short15 data is absent")
 class InstalledShort15Test(unittest.TestCase):
-    def test_installed_campaign_has_15_levels_49_tasks_and_t6_six_candidates(self):
+    def test_installed_campaign_has_15_levels_49_tasks_and_t6_twenty_candidates(self):
         payload = review.export(ROOT)
         self.assertEqual(15, len(payload["overview"]))
         self.assertEqual(49, len(payload["tasks"]))
         self.assertEqual(49, sum(row["M"] for row in payload["overview"]))
         task = next(row for row in payload["tasks"] if row["task_id"] == "l14-t6")
-        self.assertEqual(5, task["n"])
-        self.assertEqual(6, task["target_count"])
-        self.assertEqual(6, task["recounted_count"])
+        self.assertEqual(4, task["n"])
+        self.assertEqual(20, task["target_count"])
+        self.assertEqual(20, task["recounted_count"])
         self.assertEqual(
-            ["артист", "артистка", "банкир", "бариста", "батрак", "радист"],
+            sorted(["артист", "артистка", "банкир", "бариста", "батрак", "радист",
+                    "акробат", "актриса", "ботаник", "дантист", "диктор", "санитар",
+                    "танкист", "каратист", "бортник", "канонир", "таксатор", "диакон",
+                    "бонна", "кантор"]),
             task["targets"].split(", "))
         manifest = json.loads((ROOT / "data/manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["campaign_source"]["sha256"], payload["snapshot"]["campaign_sha256"])
-        self.assertEqual(31351, payload["snapshot"]["rights"]["wiktionary_definitions"])
+        self.assertEqual(31369, payload["snapshot"]["rights"]["wiktionary_definitions"])
         self.assertFalse(payload["snapshot"]["rights"]["audit_passed"])
         self.assertFalse(payload["snapshot"]["rights"]["rights_review_passed"])
 

@@ -177,10 +177,10 @@ object Short15CampaignValidator {
         Row(14, 14, listOf(TaskType.T1, TaskType.T2, TaskType.T4, TaskType.T5, TaskType.T6), 4),
         Row(15, 15, listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T5, TaskType.T7), 4),
     )
-    private val t1 = listOf(10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40)
-    private val t2 = listOf(5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
-    private val t3 = listOf(6, 6, 6, 7, 7, 7, 8, 8, 9)
-    private val t5 = listOf(5, 5, 6, 7, 8)
+    private val t1 = listOf(9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24)
+    private val t2 = listOf(3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7)
+    private val t3 = listOf(6, 6, 6, 7, 7, 7, 8, 8, 8)
+    private val t5 = listOf(5, 5, 6, 7, 7)
 
     fun validate(campaign: Campaign): List<CampaignValidationError> = buildList {
         addAll(CampaignValidator.validate(campaign))
@@ -229,9 +229,9 @@ object Short15CampaignValidator {
                         error("t5_min_length", "Expected minLength=${t5.getOrNull(t5Index - 1)}", level, task)
                     is CampaignTask.T6 -> {
                         if (task.category != "professions") error("t6_theme", "Expected professions", level, task)
-                        if (task.n != 5) error("t6_n", "Expected n=5", level, task)
+                        if (task.n != 4) error("t6_n", "Expected n=4", level, task)
                     }
-                    is CampaignTask.T7 -> if (task.n != 10) error("t7_n", "Expected n=10", level, task)
+                    is CampaignTask.T7 -> if (task.n != 8) error("t7_n", "Expected n=8", level, task)
                 }
             }
         }

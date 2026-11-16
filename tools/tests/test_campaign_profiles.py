@@ -24,7 +24,7 @@ class CampaignProfilesTest(unittest.TestCase):
                          [sum(1 for p in plan if p['stage'] == number) for number in range(1, 7)])
         self.assertEqual([1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4],
                          [row['requiredStars'] for row in plan])
-        self.assertEqual([10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40],
+        self.assertEqual([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24],
                          [p['tasks'][0]['n'] for p in plan])
         self.assertEqual([f'T{i}' for i in range(1, 8)],
                          sorted({t['type'] for row in plan for t in row['tasks']}))
@@ -41,12 +41,12 @@ class CampaignProfilesTest(unittest.TestCase):
         t5 = [t['minLength'] for row in plan for t in row['tasks'] if t['type'] == 'T5']
         t6 = [t for row in plan for t in row['tasks'] if t['type'] == 'T6']
         t7 = [t for row in plan for t in row['tasks'] if t['type'] == 'T7']
-        self.assertEqual([5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], t2)
-        self.assertEqual([6, 6, 6, 7, 7, 7, 8, 8, 9], t3)
+        self.assertEqual([3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7], t2)
+        self.assertEqual([6, 6, 6, 7, 7, 7, 8, 8, 8], t3)
         self.assertEqual([1, 1, 2, 2, 2, 3], t4)
-        self.assertEqual([5, 5, 6, 7, 8], t5)
-        self.assertEqual([{'id': 'l14-t6', 'type': 'T6', 'n': 5, 'category': 'professions', 'introduce': True}], t6)
-        self.assertEqual([{'id': 'l15-t7', 'type': 'T7', 'n': 10, 'introduce': True}], t7)
+        self.assertEqual([5, 5, 6, 7, 7], t5)
+        self.assertEqual([{'id': 'l14-t6', 'type': 'T6', 'n': 4, 'category': 'professions', 'introduce': True}], t6)
+        self.assertEqual([{'id': 'l15-t7', 'type': 'T7', 'n': 8, 'introduce': True}], t7)
 
     def test_effective_selection_and_simulation_configs_are_derived_from_profile(self):
         base_selection = generation.selection.load_config()
@@ -57,8 +57,8 @@ class CampaignProfilesTest(unittest.TestCase):
         self.assertEqual((3, 5), (selected['retain_min'], selected['retain_max']))
         self.assertEqual((.07, .30), (selected['mean_jaccard_max'], selected['max_jaccard_max']))
         self.assertFalse(selected['alphabet_required'])
-        self.assertEqual(9, selected['planning']['long_min_length'])
-        self.assertEqual(8, selected['planning']['suffix_min_length'])
+        self.assertEqual(8, selected['planning']['long_min_length'])
+        self.assertEqual(7, selected['planning']['suffix_min_length'])
         self.assertEqual('short15-release-v1', selected['profile_id'])
         self.assertEqual(profiles.digest(self.profile), selected['profile_sha256'])
 
@@ -74,7 +74,7 @@ class CampaignProfilesTest(unittest.TestCase):
         self.assertEqual(1, profiles.reserve_size(self.profile, 15, 1, 'T5'))
         self.assertEqual(5, profiles.reserve_size(self.profile, 14, 5, 'T6'))
         self.assertEqual(5, profiles.t6_reserve(self.profile))
-        self.assertEqual(['ок', 'ка', 'ние', 'ик', 'ина'], profiles.t5_endings(self.profile))
+        self.assertEqual(['ок', 'ка', 'ние', 'ик', 'ист'], profiles.t5_endings(self.profile))
 
     def test_legacy_thirty_profile_is_still_the_default(self):
         plan = generation.schedule(generation.load_config())
@@ -106,6 +106,22 @@ class CampaignProfilesTest(unittest.TestCase):
         broken['max_stars'] = 50
         with self.assertRaises(ValueError):
             profiles.validate_profile(broken)
+
+    def test_former_short15_parameters_are_rejected(self):
+        former = {
+            't1_minimum': [10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40],
+            't2_minimum': {'first': 4, 'values': [5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]},
+            't3_min_lengths': [6, 6, 6, 7, 7, 7, 8, 8, 9],
+            't5_min_lengths': [5, 5, 6, 7, 8],
+            't5_endings': ['ок', 'ка', 'ние', 'ик', 'ина'],
+            't6': dict(self.profile['t6'], n=5),
+            't7': {'n': 10},
+        }
+        for key, value in former.items():
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                broken = deepcopy(self.profile)
+                broken[key] = value
+                profiles.validate_profile(broken)
 
     def test_profile_file_sha_is_stable_and_recorded(self):
         first = profiles.profiles_file_sha256()

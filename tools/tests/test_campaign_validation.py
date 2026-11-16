@@ -44,13 +44,13 @@ def fixture():
 def short15_fixture():
     """Synthetic 15-level campaign; tags make recognizable answer sets disjoint."""
     profile = profiles.get('short15-release-v1')
-    core = 'картотеканич'
+    core = 'картотеканис'
     tags = [ch for ch in audit.ALPHABET if ch not in core][:15]
     counts = [42, 44, 54, 73, 80, 103, 112, 116, 134, 156, 168, 190, 199, 221, 215]
-    endings = {11: 'ок', 12: 'ка', 13: 'ние', 14: 'ик', 15: 'ина'}
+    endings = {11: 'ок', 12: 'ка', 13: 'ние', 14: 'ик', 15: 'ист'}
     prefixes = {
         'ок': ['рт', 'тр'], 'ка': ['ртое', 'тоер'], 'ние': ['рт', 'тр'],
-        'ик': ['рата', 'тара'], 'ина': ['рток', 'трок'],
+        'ик': ['рата', 'тара'], 'ист': ['рток', 'трок'],
     }
     plan = generation.schedule(generation.load_config(), profile)
     sources = [core + tag for tag in tags]
@@ -97,9 +97,9 @@ def short15_fixture():
             elif kind == 'T5':
                 task = dict(id=key, type=kind, minLength=planned['minLength'], ending=ending)
             elif kind == 'T6':
-                task = dict(id=key, type=kind, category='professions', n=5, words=sorted(pool))
+                task = dict(id=key, type=kind, category='professions', n=planned['n'], words=sorted(pool))
             elif kind == 'T7':
-                task = dict(id=key, type=kind, n=10, letter=tag)
+                task = dict(id=key, type=kind, n=planned['n'], letter=tag)
             else:
                 raise AssertionError(kind)
             tasks.append(task)

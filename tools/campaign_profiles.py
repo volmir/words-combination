@@ -144,19 +144,19 @@ def validate_profile(profile):
         # T3 финала живёт на уровне 15 (документалист), T4 — на уровне 14
         # (контрабандист): на контрабандисте нет цели T3 длины 9 с подсказкой.
         raise ValueError('Уровень 14 обязан нести T6 и T4, уровень 15 — T7 и T3, по 5 различных типов')
-    if profile.get('t1_minimum') != [10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40]:
+    if profile.get('t1_minimum') != [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24]:
         raise ValueError('Неверный ряд T1 minimum')
     t2 = profile['t2_minimum']
-    if t2.get('first') != 4 or t2.get('values') != [5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]:
+    if t2.get('first') != 4 or t2.get('values') != [3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7]:
         raise ValueError('Неверный ряд T2 minimum для уровней 4..15')
-    if profile.get('t3_min_lengths') != [6, 6, 6, 7, 7, 7, 8, 8, 9]:
+    if profile.get('t3_min_lengths') != [6, 6, 6, 7, 7, 7, 8, 8, 8]:
         raise ValueError('Неверные ориентировочные длины T3')
     if profile.get('t4_riddles_by_stage') != {'4': 1, '5': 2, '6': 3}:
         raise ValueError('Неверное число целей T4 по этапам')
-    if profile.get('t5_min_lengths') != [5, 5, 6, 7, 8]:
+    if profile.get('t5_min_lengths') != [5, 5, 6, 7, 7]:
         raise ValueError('Неверные длины T5')
-    if profile.get('t5_endings') != ['ок', 'ка', 'ние', 'ик', 'ина']:
-        raise ValueError('T5 15K обязан использовать окончания [ок, ка, ние, ик, ина]')
+    if profile.get('t5_endings') != ['ок', 'ка', 'ние', 'ик', 'ист']:
+        raise ValueError('T5 15K обязан использовать окончания [ок, ка, ние, ик, ист]')
     t4 = profile.get('t4') or {}
     if (t4.get('min_length') != 4 or t4.get('max_frequency_rank') != 5000 or
             t4.get('min_hint_length') != 20):
@@ -167,14 +167,14 @@ def validate_profile(profile):
                 for w in allowed)):
         raise ValueError('T4 обязан иметь 11 уникальных канонических целей 15K')
     t6 = profile.get('t6') or {}
-    if t6.get('n') != 5 or t6.get('reserve_min') != 5 or not isinstance(t6.get('category'), str) or not t6['category'].strip():
-        raise ValueError('T6 обязан требовать n=5, резерв 5 и реальную тему профессий')
+    if t6.get('n') != 4 or t6.get('reserve_min') != 5 or not isinstance(t6.get('category'), str) or not t6['category'].strip():
+        raise ValueError('T6 обязан требовать n=4, резерв 5 и реальную тему профессий')
     categories = json.loads(CATEGORIES.read_text(encoding='utf-8'))
     if t6['category'] not in categories:
         raise ValueError('Тема T6 отсутствует в tools/categories.json: ' + t6['category'])
     t7 = profile.get('t7') or {}
-    if t7.get('n') != 10:
-        raise ValueError('T7 обязан требовать n=10')
+    if t7.get('n') != 8:
+        raise ValueError('T7 обязан требовать n=8')
     jaccard = profile.get('jaccard') or {}
     if not jaccard.get('mean_max') == 0.07 or not jaccard.get('max_max') == 0.30 or jaccard.get('pairs') != 105:
         raise ValueError('Нужны raw Jaccard mean<=0.07, max<=0.30 на 105 парах')

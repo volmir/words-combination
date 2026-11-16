@@ -161,10 +161,10 @@ class CampaignTest {
     private fun short15(): Campaign {
         val base = "картотека"
         val sources = Alphabet.LETTERS.take(15).map { base + it }
-        val t1 = listOf(10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40)
-        val t2 = listOf(5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
-        val t3 = listOf(6, 6, 6, 7, 7, 7, 8, 8, 9)
-        val t5 = listOf(5, 5, 6, 7, 8)
+        val t1 = listOf(9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24)
+        val t2 = listOf(3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7)
+        val t3 = listOf(6, 6, 6, 7, 7, 7, 8, 8, 8)
+        val t5 = listOf(5, 5, 6, 7, 7)
         val t3Targets = listOf("картет", "ракета", "карета", "картека", "артотек", "картоет",
             "картотек", "артотека", "картоетка")
         val t4Targets = listOf("кот", "ток", "рак", "карта", "катер", "тетка",
@@ -198,8 +198,8 @@ class CampaignTest {
                         CampaignTask.T4(id, (0 until count).map { t4Targets[t4Index++] })
                     }
                     TaskType.T5 -> CampaignTask.T5(id, endings[t5Index], t5[t5Index++])
-                    TaskType.T6 -> CampaignTask.T6(id, "professions", 5, t6Words)
-                    TaskType.T7 -> CampaignTask.T7(id, 'к', 10)
+                    TaskType.T6 -> CampaignTask.T6(id, "professions", 4, t6Words)
+                    TaskType.T7 -> CampaignTask.T7(id, 'к', 8)
                 }
             }
             CampaignLevel(number, sources[number - 1], stage, row.second.second, tasks)
@@ -223,6 +223,31 @@ class CampaignTest {
         assertEquals(4, campaign.levels[14].requiredStars)
         assertEquals("short15-release-v1", ProductionCampaignProfile.SHORT15_RELEASE_V1.id)
         assertEquals("release-30", ProductionCampaignProfile.RELEASE_30.id)
+    }
+
+    @Test fun short15RejectsFormerAndIncorrectNumericContract() {
+        val campaign = short15()
+        val oldT1 = listOf(10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40)
+        val oldT2 = listOf(5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+        for (level in campaign.levels) for (task in level.tasks) {
+            val wrong: CampaignTask = when (task) {
+                is CampaignTask.T1 -> task.copy(n = oldT1[level.number - 1])
+                is CampaignTask.T2 -> task.copy(n = oldT2[level.number - 4])
+                is CampaignTask.T3 -> task.copy(minLength = task.minLength + 1)
+                is CampaignTask.T5 -> task.copy(minLength = task.minLength + 1)
+                is CampaignTask.T6 -> task.copy(n = 5)
+                is CampaignTask.T7 -> task.copy(n = 10)
+                is CampaignTask.T4 -> continue
+            }
+            val changed = campaign.copy(levels = campaign.levels.map { current ->
+                if (current.number == level.number) current.copy(tasks = current.tasks.map {
+                    if (it.id == task.id) wrong else it
+                }) else current
+            })
+            assertTrue(Short15CampaignValidator.validate(changed).any {
+                it.levelNumber == level.number && it.taskId == task.id
+            }, "Former/wrong parameter accepted: ${level.number} ${task.id}")
+        }
     }
 
     @Test fun short15AndLegacy30ProfilesRejectEachOther() {

@@ -167,15 +167,18 @@ def extract_records(dump, universe, config):
             record["sources"].append(provenance)
             record["forms"].extend(normalize_form(form["form"]) for form in entry.get("forms", [])
                                    if isinstance(form.get("form"), str) and dictionary.valid(normalize_form(form["form"])))
-            common_reasons, common_subject = field_labels(entry, config)
+            # Scoped label interpretation for reviewed lexemes; no global relaxation.
+            extra_labels = config.get("reviewed_nouns", {}).get(word, {}).get("specialist_labels", [])
+            word_config = dict(config, specialist_labels=config["specialist_labels"] + extra_labels)
+            common_reasons, common_subject = field_labels(entry, word_config)
             for sense_index, sense in enumerate(entry.get("senses", []) or [{}]):
-                reasons, subject = field_labels(sense, config)
+                reasons, subject = field_labels(sense, word_config)
                 reasons |= common_reasons
                 subject |= common_subject
                 references, bases = set(), set()
                 # glosses describe ONE sense; an unmarked continuation cannot rescue it.
                 for text in sense.get("glosses", []) or [""]:
-                    features = gloss_features(text, config)
+                    features = gloss_features(text, word_config)
                     reasons |= features["reasons"]
                     subject |= features["specialist"]
                     record["labels"].extend(features["labels"])
@@ -266,6 +269,14 @@ def decide(records, ranks, config, protected=()):
             decision = "keep"
         if decision == "keep" and word in config["lexicalized_abbreviations"] and any("abbreviation" in s["reasons"] for s in usable):
             exception.append(config["lexicalized_abbreviations"][word])
+        reviewed = config.get("reviewed_nouns", {}).get(word)
+        if (reviewed and dictionary.valid(word) and record["sources"] and usable
+                and set(reasons) <= set(reviewed["allow_reasons"])):
+            decision, reasons = "keep", []
+            exception.append(reviewed["reason"])
+        excluded = config.get("word_exclusions", {}).get(word)
+        if excluded:
+            decision, reasons, exception = "exclude", ["owner_word_exclusion"], [excluded]
         roles = {role: {"decision": decision, "reasons": list(reasons),
                         "exception": sorted(set(exception)) if decision == "keep" else []}
                  for role in ("answer", "source", "target")}
@@ -279,7 +290,7 @@ def decide(records, ranks, config, protected=()):
             roles["source"] = {"decision": "keep", "reasons": [],
                                "exception": [config["preferred_sources"][word]]}
         would_reject = []
-        if word in protected and reasons:
+        if word in protected and reasons and not excluded:
             if set(reasons) & {"invalid_word", "not_noun", "proper_name"}:
                 raise ValueError("Слово уровня нарушает жёсткие ограничения правил игры: " + word)
             would_reject = reasons

@@ -11,6 +11,7 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -109,6 +110,21 @@ class ImportInstalledCampaignTest(unittest.TestCase):
         data.mkdir(parents=True)
         for name in ("campaign.json", "words.txt", "definitions.db", "manifest.json"):
             shutil.copy2(ROOT / "data" / name, data / name)
+        # Keep T6_ADD/category-review coverage independent of editorial additions
+        # to the installed campaign. Only this temporary fixture is changed.
+        campaign = json.loads((data / "campaign.json").read_text(encoding="utf-8"))
+        task = next(task for level in campaign["levels"] for task in level["tasks"]
+                    if task["id"] == "l14-t6")
+        task["words"] = [word for word in task["words"] if word not in {"акробат", "диктор"}]
+        (data / "campaign.json").write_text(json.dumps(campaign, ensure_ascii=False), encoding="utf-8")
+        with sqlite3.connect(data / "definitions.db") as database:
+            database.executemany(
+                "UPDATE word_metadata SET category=?, category_source=? WHERE word=?",
+                [("sport", "synthetic:test", "акробат"), ("other", "synthetic:test", "диктор")])
+        manifest = json.loads((data / "manifest.json").read_text(encoding="utf-8"))
+        manifest["campaign_source"]["sha256"] = digest(data / "campaign.json")
+        manifest["definitions"]["sha256"] = digest(data / "definitions.db")
+        (data / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
         cls.original_campaign = (data / "campaign.json").read_bytes()
         cls.data_hashes = {name: digest(data / name) for name in
                            ("campaign.json", "words.txt", "definitions.db", "manifest.json")}
@@ -201,6 +217,13 @@ class ImportInstalledCampaignTest(unittest.TestCase):
                   "Нет такого слова", "не подтверждено", "https://example.org/word"]]
         with self.assertRaisesRegex(ValueError, "словаре"):
             self.run_import("unknown", extra)
+        self.assert_data_unchanged()
+
+    def test_t6_add_existing_word_is_rejected(self):
+        extra = [[14, "l14-t6", "T6", "", "T6_ADD", "артист",
+                  "Повтор профессии", "не подтверждено", "https://example.org/word"]]
+        with self.assertRaisesRegex(ValueError, "уже есть в T6"):
+            self.run_import("existing", extra)
         self.assert_data_unchanged()
 
     def test_t6_add_requires_evidence(self):

@@ -29,7 +29,7 @@
     "specialist_topics": ["chemistry", "entomology", "mathematics", "engineering"],
     "specialist_descriptions": ["^(?:органическое|неорганическое|химическое) соединение", "^(?:вид|род|семейство) .{0,80}(?:растений|животных|насекомых|моллюсков)", "^(?:инфекционное|хроническое|паразитарное) заболевание"],
     "reference_diminutive_suffixes": ["ица", "ишка", "ушка", "юшка", "очка", "ечка", "онка", "енка", "ик", "чик", "ок", "ек", "ец", "ка", "очечка"],
-    "policy_version": "sense-cleanup-v2.1",
+    "policy_version": "sense-cleanup-v2.2-short15-05",
     "restricted_labels": ["истор", "религ", "церк", "библ", "женск", "субстантивир", "субстант", "советск"],
     "productive_compound_prefixes": ["авиа", "агит", "воен", "гос", "глав", "парт", "полит", "пром", "проф", "рай", "рев", "сель", "сов", "соц", "спец", "тех"],
     "lexicalized_diminutives": {
@@ -54,6 +54,24 @@
       "прелюбодейка": "owner-excluded-source-and-target; docs/CAMPAIGN.md",
       "брудершафт": "owner-excluded-source-and-target; docs/CAMPAIGN.md",
       "праймериз": "owner-excluded-source-and-target; docs/CAMPAIGN.md"
+    },
+    "word_exclusions": {"менталист": "owner-excluded-all-roles; SHORT15-05"},
+    "reviewed_nouns": {
+      "акмеист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"], "specialist_labels": ["филол"]},
+      "атомист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},
+      "дуалист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},
+      "дуатлонист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},
+      "каноист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},
+      "меланист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},
+      "мелодист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},
+      "методист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},
+      "моделист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},
+      "колумнист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},
+      "талмудист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},
+      "анекдотист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},
+      "бортник": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},
+      "канонир": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},
+      "таксатор": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]}
     },
     "preferred_sources": {
       "хлопкопункт": "owner-preferred-source; requires-task-reachability; docs/CAMPAIGN.md",
