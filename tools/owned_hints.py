@@ -49,6 +49,11 @@ def validate(candidate, campaign, campaign_sha, words, metadata):
         if not condition:
             raise ValueError(message)
     require(candidate['schema'] == 'owned-game-hints' and candidate['version'] == 1, 'schema/version')
+    require(set(candidate) == {'schema', 'version', 'campaign_sha256', 'status', 'provenance',
+                               'license_review', 'proposed_license', 'authoring_inputs', 'entries'},
+            'Unexpected candidate fields')
+    require(candidate['authoring_inputs'] == ['word', 'part_of_speech=noun', 'task_type',
+                                             'general-linguistic-knowledge'], 'Authoring inputs')
     require(candidate['campaign_sha256'] == campaign_sha, 'Stale campaign SHA')
     require(candidate['status'] == 'candidate-not-installed', 'Candidate status')
     require(candidate['proposed_license'] == 'CC0-1.0', 'Proposed license')
@@ -61,6 +66,9 @@ def validate(candidate, campaign, campaign_sha, words, metadata):
     require(set(keys) == set(expected), 'Missing or extra semantic target')
     levels = {level['number']: level for level in campaign['levels']}
     for entry in entries:
+        require(set(entry) == {'word', 'normalized', 'part_of_speech', 'hint', 'roles', 'provenance',
+                              'license_review', 'review_note', 'owner_text_approval', 'owner_license_approval'},
+                'Unexpected entry fields')
         word, hint = entry['word'], entry['hint']
         require(word == norm(word) == entry['normalized'], 'Non-normalized word')
         require(word in words and len(word) >= 3, 'Word not in index: ' + word)

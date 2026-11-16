@@ -19,6 +19,7 @@ class OwnedHintsTest(unittest.TestCase):
                      owner_license_approval='pending', review_note='Синтетический пример.')
         candidate = dict(schema='owned-game-hints', version=1, campaign_sha256='fixture',
                          status='candidate-not-installed', proposed_license='CC0-1.0', entries=[entry],
+                         authoring_inputs=['word', 'part_of_speech=noun', 'task_type', 'general-linguistic-knowledge'],
                          provenance='newly-authored-for-game', license_review='pending-owner-approval')
         metadata = {'лампа': dict(category='objects', category_source='fixture:review', forms=[], related=[])}
         return candidate, campaign, metadata
@@ -33,6 +34,8 @@ class OwnedHintsTest(unittest.TestCase):
         changes = [
             lambda d: d.update(campaign_sha256='stale'),
             lambda d: d.update(version=9),
+            lambda d: d.update(hidden_definition='Синтетический посторонний текст.'),
+            lambda d: d['entries'][0].update(hidden_definition='Синтетический посторонний текст.'),
             lambda d: d['entries'].append(copy.deepcopy(d['entries'][0])),
             lambda d: d['entries'].clear(),
             lambda d: d['entries'][0].update(hint=''),

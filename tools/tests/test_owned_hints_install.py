@@ -102,6 +102,31 @@ class OwnedHintsInstallTest(unittest.TestCase):
         self.assertEqual('CC-BY-SA-4.0', index['license'])
         self.assertEqual([], index['screening']['suspicious_matches'])
 
+    def test_reduced_campaign_cannot_silently_reduce_required_t4_count(self):
+        candidate = json.loads(owned.CANDIDATE.read_text())
+        campaign = json.loads((self.data / 'campaign.json').read_text())
+        self.assertEqual(11, owned.coverage(candidate, campaign)['T4'])
+        level = next(l for l in campaign['levels'] if any(t['type'] == 'T4' for t in l['tasks']))
+        task = next(t for t in level['tasks'] if t['type'] == 'T4')
+        level['tasks'].remove(task)
+        for entry in candidate['entries']:
+            entry['roles'] = [r for r in entry['roles'] if r['task_id'] != task['id']]
+        candidate['entries'] = [e for e in candidate['entries'] if e['roles']]
+        with self.assertRaisesRegex(ValueError, 'exactly 11'):
+            owned.coverage(candidate, campaign)
+
+    def test_lexical_index_cannot_carry_hidden_prose_or_free_text_category_source(self):
+        index = json.loads(owned.INDEX.read_text())
+        altered = copy.deepcopy(index)
+        altered['hidden_prose'] = 'Синтетический посторонний текст.'
+        free_text = copy.deepcopy(index)
+        free_text['word_metadata']['артист']['category_source'] = 'Синтетическое описание из старого источника.'
+        for value in (altered, free_text):
+            path = Path(self.temp.name) / 'index.json'
+            path.write_text(json.dumps(value))
+            with self.assertRaises(ValueError):
+                owned.inputs(self.data, index_path=path)
+
     def test_standalone_release_cli_checks_minimal_data_with_existing_waiver(self):
         result = subprocess.run([sys.executable, str(ROOT / 'tools/build_game_data.py'), '--check-release',
                                  '--out', str(self.data), '--allow-unaudited-release'],

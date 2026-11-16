@@ -1,5 +1,6 @@
 import com.android.build.api.artifact.SingleArtifact
 import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
 import java.security.MessageDigest
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.TransformerFactory
@@ -64,7 +65,7 @@ tasks.matching { it.name in setOf("preReleaseBuild", "assembleRelease", "bundleR
 val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
     description = "Проверяет происхождение и хэши словаря, уровней, кампании и включённых определений."
     group = "verification"
-    dependsOn("verifyOwnedHints")
+    dependsOn("verifyOwnedHints", "verifyRuntimeNotices")
     inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("word_sources.jsonl.gz"), dictionaryData.file("levels.json"))
     inputs.files(dictionaryData.file("campaign.json"))
     inputs.files(dictionaryData.file("definitions.db"))
@@ -101,7 +102,7 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
             val definitions = manifest["definitions"] as? Map<*, *>
             check(database.isFile && definitions != null && definitions["sha256"] == sha256(database) &&
                 definitions["dictionary_words_sha256"] == manifest["sha256_words_txt"]) {
-                "База определений отсутствует, изменена или собрана для другого словаря. Пересоберите tools/build_local_definitions.py."
+                "База подсказок отсутствует, изменена или собрана для другого словаря. Пересоберите tools/build_owned_hints.py."
             }
         }
     }
@@ -112,6 +113,32 @@ tasks.register<Exec>("verifyOwnedHints") {
     group = "verification"
     workingDir(rootProject.projectDir)
     commandLine("python3", "tools/build_owned_hints.py", "--check")
+}
+
+// Local audit input only: absolute cache paths never enter the APK or legal/.
+tasks.register("exportRuntimeLicenseInputs") {
+    group = "verification"
+    description = "Экспортирует фактически разрешённые runtime-артефакты для проверки NOTICE."
+    doLast {
+        val profiles = listOf("debug", "release").associateWith { profile ->
+            configurations.getByName("${profile}RuntimeClasspath").resolvedConfiguration.resolvedArtifacts
+                .filter { it.moduleVersion.id.group != rootProject.group.toString() }
+                .map { artifact ->
+                    mapOf("artifact" to artifact.moduleVersion.id.toString(), "file" to artifact.file.absolutePath)
+                }.filter { (it["file"] as String).contains("/caches/modules-2/") }
+                .sortedBy { it["artifact"] }
+        }
+        val output = layout.buildDirectory.file("reports/licenses/runtime-inputs.json").get().asFile
+        output.parentFile.mkdirs()
+        output.writeText(JsonOutput.prettyPrint(JsonOutput.toJson(profiles)) + "\n")
+    }
+}
+
+tasks.register<Exec>("verifyRuntimeNotices") {
+    group = "verification"
+    dependsOn("exportRuntimeLicenseInputs")
+    workingDir(rootProject.projectDir)
+    commandLine("python3", "tools/build_library_notices.py", "--check")
 }
 
 android {
@@ -186,7 +213,7 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
         if (hasDefinitions) include("definitions.db")
     }
     from(rootProject.layout.projectDirectory.dir("legal")) {
-        include("THIRD_PARTY_NOTICES.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
+        include("THIRD_PARTY_NOTICES.txt", "Apache-2.0.txt", "CC-BY-SA-4.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
     }
     from(rootProject.layout.projectDirectory) {
         include("LICENSE")
@@ -199,6 +226,15 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
         val manifest = JsonSlurper().parse(dictionaryData.file("manifest.json").asFile) as Map<*, *>
         val definitions = manifest["definitions"] as? Map<*, *>
         val assets = layout.projectDirectory.dir("src/main/assets").asFile
+        val expectedAssets = setOf("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz",
+            "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt",
+            "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json") +
+            if (hasDefinitions) setOf("definitions.db") else emptySet()
+        val actualAssets = assets.walkTopDown().filter { it.isFile }
+            .map { it.relativeTo(assets).invariantSeparatorsPath }.toSet()
+        check(actualAssets == expectedAssets) {
+            "Непроверенные либо отсутствующие assets: ${(actualAssets - expectedAssets) + (expectedAssets - actualAssets)}"
+        }
         check(sha256(File(assets, "campaign.json")) == (manifest["campaign_source"] as? Map<*, *>)?.get("sha256")) {
             "Скопированный campaign.json не совпадает с manifest.campaign_source."
         }

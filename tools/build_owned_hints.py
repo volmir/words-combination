@@ -3,6 +3,7 @@
 import argparse
 from collections import Counter
 import json
+import re
 from pathlib import Path
 import sqlite3
 import shutil
@@ -20,6 +21,17 @@ POLICY = 'owned-minimal-hints-v1'
 INDEX = ROOT / 'tools/owned_hint_index.json'
 CANDIDATE = ROOT / 'docs/owned_hints.json'
 VERSION = 10
+EXPECTED_COVERAGE = dict(unique_targets=39, assignments=40, T3=9, T4=11, T6=20)
+
+
+def coverage(candidate, campaign):
+    roles = Counter(r['type'] for e in candidate['entries'] for r in e['roles'])
+    actual = dict(unique_targets=len(candidate['entries']), assignments=sum(roles.values()), **roles)
+    t4 = [t for level in campaign['levels'] for t in level['tasks'] if t['type'] == 'T4']
+    if (actual != EXPECTED_COVERAGE or len(t4) != 6 or
+            sum(len(t['targets']) for t in t4) != 11):
+        raise ValueError('LCH-02 whitelist requires 39 targets / 40 roles and exactly 11 covered T4')
+    return actual
 
 
 def extract_index(data, candidate_path, output, dump):
@@ -56,6 +68,9 @@ def inputs(data, candidate_path=CANDIDATE, index_path=INDEX):
     manifest = json.loads((data / 'manifest.json').read_text())
     campaign = json.loads((data / 'campaign.json').read_text())
     words = set((data / 'words.txt').read_text().splitlines())
+    if set(index) != {'schema', 'words_sha256', 'source_database_sha256', 'source_dump_sha256',
+                      'license', 'source', 'candidate_sha256', 'screening', 'word_metadata'}:
+        raise ValueError('Unexpected lexical index fields; no hidden prose permitted')
     if (manifest.get('sha256_words_txt') != sha(data / 'words.txt') or manifest.get('words') != len(words) or
             manifest.get('campaign_source', {}).get('sha256') != sha(data / 'campaign.json') or
             index['schema'] != 'owned-hint-category-index-v1' or index['license'] != 'CC-BY-SA-4.0' or
@@ -68,6 +83,10 @@ def inputs(data, candidate_path=CANDIDATE, index_path=INDEX):
     for word, info in compact.items():
         if (word not in words or set(info) != {'category', 'category_source', 'forms', 'related'} or
                 info['category'] not in taxonomy or
+                not re.fullmatch(r'(?:sense\.categories:[а-я]+|leading_label:[а-я]+|gloss_head:[a-z_]+|'
+                                 r'unknown:[a-z_]+|ai:[a-z0-9_:/\.\-#]+|owner:SHORT15-05:2026-11-16)'
+                                 r'(?:;(?:sense\.categories:[а-я]+|leading_label:[а-я]+|gloss_head:[a-z_]+))*',
+                                 info['category_source']) or
                 not all(isinstance(v, str) and v == v.lower().replace('ё', 'е') and v.isalpha()
                         for v in info['forms'] + info['related']) or
                 (info['category'] != 'other' and info['category_source'].startswith('unknown:'))):
@@ -75,6 +94,7 @@ def inputs(data, candidate_path=CANDIDATE, index_path=INDEX):
     metadata = {word: compact.get(word, dict(category='other', category_source='unknown:no_thematic_evidence',
                                             forms=[], related=[])) for word in sorted(words)}
     validate(candidate, campaign, sha(data / 'campaign.json'), words, metadata)
+    coverage(candidate, campaign)
     for level in campaign['levels']:
         for task in level['tasks']:
             if task['type'] == 'T6':
@@ -107,6 +127,9 @@ def verify(data, candidate_path=CANDIDATE, index_path=INDEX):
             block.get('counts') != dict(own=len(candidate['entries']), wiktionary=0) or
             block.get('coverage') != dict(words=len(candidate['entries']), total=len(metadata))):
         raise ValueError('Minimal descriptions manifest mismatch')
+    if (block.get('semantic_coverage') != coverage(candidate, json.loads((data / 'campaign.json').read_text())) or
+            block.get('publication_status') != 'draft-not-for-public-release'):
+        raise ValueError('Missing strict T4 coverage or draft publication status')
     # Byte equality with a fresh rebuild covers ALL columns/tables, including
     # notes/examples, SQLite free pages and word_metadata. No hidden old prose.
     with tempfile.TemporaryDirectory() as temp:
@@ -126,6 +149,8 @@ def install(data, candidate_path=CANDIDATE, index_path=INDEX):
         manifest['definitions'] = dict(rights_policy=POLICY, sha256=sha(output), user_version=VERSION,
             counts=dict(own=len(candidate['entries']), wiktionary=0),
             coverage=dict(words=len(candidate['entries']), total=len(metadata)),
+            semantic_coverage=coverage(candidate, json.loads((data / 'campaign.json').read_text())),
+            publication_status='draft-not-for-public-release',
             dictionary_words_sha256=sha(data / 'words.txt'),
             generator=dict(provider='local-owned-hints', candidate_sha256=sha(candidate_path),
                            category_index_sha256=sha(index_path)),
