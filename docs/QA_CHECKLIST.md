@@ -6,6 +6,11 @@
 
 ## Стенд
 
+Проверяемый APK имеет `applicationId` **`io.github.volmir.wordscombination`**.
+Прежний `com.aistudio.wordsgame.kymxpv` является другим Android-приложением для
+системы: установка нового APK не является обычным обновлением старого пакета,
+а его сохранения автоматически не переносятся.
+
 `app/src/androidTest/kotlin/com/example/sostavslova/qa/QaCampaign.kt` содержит
 синтетическую кампанию, восемь слов и определения без заимствованных статей.
 Через `AppContainer` внедряются `LevelsRepository`, `WordRepository`, фейковые

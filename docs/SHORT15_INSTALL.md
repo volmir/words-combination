@@ -1,5 +1,9 @@
 # SHORT15-03: установка пакета и smoke-test
 
+Для текущей сборки используйте пакет **`io.github.volmir.wordscombination`**.
+Прежний `com.aistudio.wordsgame.kymxpv` — другое Android-приложение; новый APK
+не обновляет его обычным способом и не получает его сохранения.
+
 ## Что установлено
 
 Источник — staged-пакет `build/reports/short15/package/`, прошедший GEN-04
@@ -25,11 +29,9 @@ python3 tools/install_short15_package.py --package build/reports/short15/package
 `verifyDictionaryLicenses` и `syncDictionaryAssets` проверяют эти хэши;
 `BuildConfig.CAMPAIGN_SHA256`, `WORDS_SHA256` и `DEFINITIONS_SHA256` доступны
 androidTest. `HAS_DEFINITIONS=true` оставлен без изменений; строгий
-`--check-release` продолжает отказывать, пока ручной аудит прав не пройден.
-Техническую release-сборку разрешает waiver владельца от 2026-11-15
-(`sostavslova.release.allowUnauditedDefinitions=true` в `gradle.properties`);
-он печатает предупреждение, оставляет `audit.passed=false` и не разрешает
-публикацию.
+Текущая БД содержит 39 собственных подсказок, 0 определений Wiktionary;
+`audit.passed=true` и `rights_review.passed=true`. Android QA на устройстве
+этим документом не считается выполненным.
 
 ## Откат
 

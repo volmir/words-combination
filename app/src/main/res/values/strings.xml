@@ -35,7 +35,7 @@
     <string name="about_definitions_heading">Словарь и определения</string>
     <string name="about_definitions_authors">Словарь, исходные сведения о категориях и формах слов взяты из русского Викисловаря. Авторы — участники русского Викисловаря.\nhttps://ru.wiktionary.org/</string>
     <string name="about_definitions_extraction">Машиночитаемая выгрузка: Kaikki.org / Wiktextract.\nhttps://kaikki.org/ruwiktionary/rawdata.html</string>
-    <string name="about_definitions_license">Для материалов Викисловаря указана лицензия Creative Commons «С указанием авторства — С сохранением условий» 4.0 Международная (CC BY-SA 4.0). Эта лицензия относится к словарным данным. Тексты толкований Викисловаря в сборку не входят.\nhttps://creativecommons.org/licenses/by-sa/4.0/</string>
+    <string name="about_definitions_license">Словарные данные и лексические материалы распространяются на применимой основе по Creative Commons «С указанием авторства — С сохранением условий» 4.0 Международная (CC BY-SA 4.0). Текстов толкований Викисловаря в текущей БД нет. 39 собственных подсказок кампании распространяются отдельно по CC0-1.0.\nhttps://creativecommons.org/licenses/by-sa/4.0/</string>
     <string name="about_definitions_changes">Обработка: отбор слов, нормализация ё→е, выделение категорий и форм слов. Словарные толкования и литературные примеры исключены. В подсказках ответ, его формы и распознанные однокоренные слова заменяются на ***.</string>
     <string name="about_definitions_history">Для каждого слова сохранён адрес исходной статьи. История статьи содержит сведения об авторах. Полный список адресов включён в приложение вместе со словарём.</string>
     <string name="about_code_heading">Программный код</string>
@@ -56,7 +56,7 @@
     <string name="star_received">Получена звезда!</string>
     <string name="hint_all_found">Все слова уже найдены</string>
     <string name="hint_title">Подсказка:</string>
-    <string name="hint_definition_source">Викисловарь · CC BY-SA 4.0. Скрыты ответ и однокоренные слова.</string>
+    <string name="hint_definition_source">Собственная подсказка · CC0-1.0. Скрыты ответ и однокоренные слова.</string>
     <string name="show_hint">Показать подсказку</string>
     <string name="hint_fallback">Слово из %1$d %2$s, начинается на «%3$s»</string>
     <string name="hint_letter_genitive_one">буквы</string>
