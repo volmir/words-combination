@@ -40,22 +40,12 @@ val wordsSha256: String = (installedManifest?.get("sha256_words_txt") as? String
 val definitionsSha256: String =
     ((installedManifest?.get("definitions") as? Map<*, *>)?.get("sha256") as? String).orEmpty()
 
-// SHORT15-04: решение владельца от 2026-11-15 — техническая pre-release сборка
-// допускается без ручного аудита прав определений. Это не подтверждает аудит:
-// audit.passed/rights_review.passed остаются false, публикация запрещена.
-val allowUnauditedDefinitions =
-    (providers.gradleProperty("sostavslova.release.allowUnauditedDefinitions").orNull ?: "false").toBoolean()
-
 val verifyDefinitionsAudit = tasks.register<Exec>("verifyDefinitionsAudit") {
-    description = "Не даёт выпустить неаудированные определения; waiver владельца допускает только техническую сборку."
+    description = "Требует решение владельца и отдельный полный ручной аудит подсказок; waiver недопустим."
     group = "verification"
     workingDir(rootProject.projectDir)
-    val waiver = allowUnauditedDefinitions
-    commandLine(buildList {
-        addAll(listOf("python3", "tools/build_game_data.py", "--check-release",
-            "--out", dictionaryData.asFile.absolutePath))
-        if (waiver) add("--allow-unaudited-release")
-    })
+    commandLine("python3", "tools/build_game_data.py", "--check-release",
+        "--out", dictionaryData.asFile.absolutePath)
 }
 
 tasks.matching { it.name in setOf("preReleaseBuild", "assembleRelease", "bundleRelease") }.configureEach {
@@ -146,7 +136,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.aistudio.wordsgame.kymxpv"
+        applicationId = "io.github.volmir.wordscombination"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

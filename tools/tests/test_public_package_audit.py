@@ -3,6 +3,7 @@ import gzip
 import hashlib
 import io
 from pathlib import Path
+import re
 import sqlite3
 import tempfile
 import unittest
@@ -12,6 +13,17 @@ from tools.audit_public_package import check_assets, version_markers, screen_leg
 
 
 class PublicPackageAuditTest(unittest.TestCase):
+    def test_release_application_id_is_owner_approved_and_namespace_is_preserved(self):
+        root = Path(__file__).resolve().parents[2]
+        gradle = (root / 'app/build.gradle.kts').read_text(encoding='utf-8')
+        default_config = re.search(r'defaultConfig\s*\{([^}]+)\}', gradle)
+        self.assertIsNotNone(default_config)
+        self.assertEqual(['io.github.volmir.wordscombination'],
+                         re.findall(r'^\s*applicationId\s*=\s*"([^"]+)"',
+                                    default_config.group(1), re.MULTILINE))
+        self.assertEqual(['com.example.sostavslova'],
+                         re.findall(r'^\s*namespace\s*=\s*"([^"]+)"', gradle, re.MULTILINE))
+
     def archive(self, assets):
         raw = io.BytesIO()
         with zipfile.ZipFile(raw, 'w') as archive:

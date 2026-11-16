@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 sys.path.insert(0, str(ROOT))
 from tools.owned_hints import validate, load_metadata, sha, compare_imported
+from tools.owned_hints_rights import owner_decision, database_metadata, publication_fields, exact
 from build_game_data import build_database, publish
 from game_data_providers import atomic_json
 
@@ -62,7 +63,8 @@ def extract_index(data, candidate_path, output, dump):
                             candidate_sha256=sha(candidate_path), screening=comparison, word_metadata=compact))
 
 
-def inputs(data, candidate_path=CANDIDATE, index_path=INDEX):
+def inputs(data, candidate_path=None, index_path=None):
+    candidate_path, index_path = candidate_path or CANDIDATE, index_path or INDEX
     candidate = json.loads(candidate_path.read_text())
     index = json.loads(index_path.read_text())
     manifest = json.loads((data / 'manifest.json').read_text())
@@ -105,31 +107,38 @@ def inputs(data, candidate_path=CANDIDATE, index_path=INDEX):
     return candidate, index, metadata, manifest
 
 
-def generate(data, output, candidate_path=CANDIDATE, index_path=INDEX):
+def generate(data, output, candidate_path=None, index_path=None):
+    candidate_path, index_path = candidate_path or CANDIDATE, index_path or INDEX
     candidate, index, metadata, manifest = inputs(data, candidate_path, index_path)
+    decision = owner_decision(candidate_path, data / 'campaign.json')
     rows = [dict(word=e['word'], display=e['word'], text=e['hint'], source='', origin='own',
                  category=metadata[e['word']]['category'], guessable=1) for e in candidate['entries']]
     build_database(output, rows, metadata, dict(rights_policy=POLICY,
-                   own_license='<ЛИЦЕНЗИЯ — решает владелец>',
+                   **database_metadata(decision),
                    dictionary_words_sha256=sha(data / 'words.txt'), candidate_sha256=sha(candidate_path),
                    category_index_sha256=sha(index_path)), VERSION)
     return candidate, index, metadata, manifest
 
 
-def verify(data, candidate_path=CANDIDATE, index_path=INDEX):
+def definitions_block(data, database, candidate_path, index_path, candidate, metadata):
+    decision = owner_decision(candidate_path, data / 'campaign.json')
+    return dict(rights_policy=POLICY, sha256=sha(database), user_version=VERSION,
+        counts=dict(own=len(candidate['entries']), wiktionary=0),
+        coverage=dict(words=len(candidate['entries']), total=len(metadata)),
+        semantic_coverage=coverage(candidate, json.loads((data / 'campaign.json').read_text())),
+        dictionary_words_sha256=sha(data / 'words.txt'),
+        generator=dict(provider='local-owned-hints', candidate_sha256=sha(candidate_path),
+                       category_index_sha256=sha(index_path)),
+        **publication_fields(candidate_path, data / 'campaign.json', sha(database), decision))
+
+
+def verify(data, candidate_path=None, index_path=None):
+    candidate_path, index_path = candidate_path or CANDIDATE, index_path or INDEX
     candidate, index, metadata, manifest = inputs(data, candidate_path, index_path)
     block = manifest.get('definitions', {})
-    if (block.get('rights_policy') != POLICY or block.get('sha256') != sha(data / 'definitions.db') or
-            block.get('user_version') != VERSION or
-            block.get('generator') != dict(provider='local-owned-hints', candidate_sha256=sha(candidate_path),
-                                           category_index_sha256=sha(index_path)) or
-            block.get('dictionary_words_sha256') != sha(data / 'words.txt') or
-            block.get('counts') != dict(own=len(candidate['entries']), wiktionary=0) or
-            block.get('coverage') != dict(words=len(candidate['entries']), total=len(metadata))):
-        raise ValueError('Minimal descriptions manifest mismatch')
-    if (block.get('semantic_coverage') != coverage(candidate, json.loads((data / 'campaign.json').read_text())) or
-            block.get('publication_status') != 'draft-not-for-public-release'):
-        raise ValueError('Missing strict T4 coverage or draft publication status')
+    expected_block = definitions_block(data, data / 'definitions.db', candidate_path, index_path, candidate, metadata)
+    if not exact(block, expected_block):
+        raise ValueError('Owned hints manifest differs from verified evidence/state')
     # Byte equality with a fresh rebuild covers ALL columns/tables, including
     # notes/examples, SQLite free pages and word_metadata. No hidden old prose.
     with tempfile.TemporaryDirectory() as temp:
@@ -138,25 +147,16 @@ def verify(data, candidate_path=CANDIDATE, index_path=INDEX):
         if sha(expected) != block['sha256']:
             raise ValueError('Database differs from reproducible owned-only build')
     return dict(own=len(candidate['entries']), wiktionary=0, t4=sum(r['type'] == 'T4' for e in candidate['entries'] for r in e['roles']),
-                category_index_sha256=sha(index_path))
+                category_index_sha256=sha(index_path), publication_status=expected_block['publication_status'])
 
 
-def install(data, candidate_path=CANDIDATE, index_path=INDEX):
+def install(data, candidate_path=None, index_path=None):
+    candidate_path, index_path = candidate_path or CANDIDATE, index_path or INDEX
     # Read and validate every input before replacing installed files.
     with tempfile.TemporaryDirectory() as temp:
         output = Path(temp) / 'definitions.db'
         candidate, index, metadata, manifest = generate(data, output, candidate_path, index_path)
-        manifest['definitions'] = dict(rights_policy=POLICY, sha256=sha(output), user_version=VERSION,
-            counts=dict(own=len(candidate['entries']), wiktionary=0),
-            coverage=dict(words=len(candidate['entries']), total=len(metadata)),
-            semantic_coverage=coverage(candidate, json.loads((data / 'campaign.json').read_text())),
-            publication_status='draft-not-for-public-release',
-            dictionary_words_sha256=sha(data / 'words.txt'),
-            generator=dict(provider='local-owned-hints', candidate_sha256=sha(candidate_path),
-                           category_index_sha256=sha(index_path)),
-            audit=dict(passed=False), rights_review=dict(passed=False, status='pending-owner-approval',
-                                                         replacement_required=False),
-            own_license='<ЛИЦЕНЗИЯ — решает владелец>')
+        manifest['definitions'] = definitions_block(data, output, candidate_path, index_path, candidate, metadata)
         staging = Path(temp)
         for name in ('words.txt', 'campaign.json'):
             shutil.copyfile(data / name, staging / name)

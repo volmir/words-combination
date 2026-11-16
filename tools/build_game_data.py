@@ -25,6 +25,7 @@ from game_data_quality import definition_issues, fold, normalize_form, tokens
 from prepare_frequency import resolve_frequency_list
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))  # Shared tools.* validators also work from any CLI cwd.
 TOOLS = ROOT / "tools"
 REJECT_CODES = {"not_noun", "proper_name", "abbreviation", "form_variant", "diminutive", "obsolete",
                 "dialect", "jargon", "slang", "neologism", "rare", "narrow_term", "compound", "offensive",
@@ -570,7 +571,7 @@ def publish(candidate, output, artifacts=ARTIFACTS, *, expected_manifest_sha256=
             except json.JSONDecodeError:
                 current_policy = None
             if current_policy == 'owned-minimal-hints-v1':
-                from build_owned_hints import verify
+                from tools.build_owned_hints import verify
                 verify(candidate)
         if expected_manifest_sha256 is not None:
             current = output / "manifest.json"
@@ -678,19 +679,13 @@ def require_release_audit(output, overrides=TOOLS / "overrides", config=TOOLS / 
     if block.get("sha256") != digest:
         raise ValueError("Release заблокирован: definitions.db изменена после генерации manifest")
     if block.get('rights_policy') == 'owned-minimal-hints-v1':
-        from build_owned_hints import verify
-        verify(output)  # Owned-only bytes and ALL mandatory T4; waiver cannot skip this.
-        count = block['counts']['own']
-        approved = (audit.get('passed') is True and audit.get('database_sha256') == digest and
-                    audit.get('checked') == count and audit.get('bad') == 0 and
-                    block.get('rights_review', {}).get('passed') is True and
-                    block.get('own_license') not in (None, '', '<ЛИЦЕНЗИЯ — решает владелец>'))
-        if approved:
+        from tools.build_owned_hints import verify
+        # Same evidence/state validator as install and verifyOwnedHints, including
+        # both human documents and reproducible owned-only database bytes.
+        verified = verify(output)
+        if verified['publication_status'] == 'approved':
             return {'release_audit': 'ok', 'publishable': True}
-        if not allow_unaudited:
-            raise ValueError('Release заблокирован: тексты и лицензия собственных подсказок не утверждены владельцем')
-        return {'release_audit': 'owner-waiver-unaudited', 'publishable': False,
-                'findings': ['Тексты/лицензия ожидают утверждения владельца; публикация запрещена']}
+        raise ValueError('Release заблокирован: тексты/лицензия не утверждены владельцем либо не пройден полный ручной аудит; waiver недопустим')
     findings = []
     if block.get("rights_policy") not in {"own-generated-v1", "hybrid-v1"}:
         findings.append("политика прав %s не подтверждена" % block.get("rights_policy"))
