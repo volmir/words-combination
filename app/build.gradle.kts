@@ -146,7 +146,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.aistudio.wordsgame.kymxpv"
+        applicationId = "io.github.volmir.wordscombination"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

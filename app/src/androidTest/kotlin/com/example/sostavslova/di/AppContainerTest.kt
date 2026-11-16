@@ -49,6 +49,7 @@ class AppContainerTest {
     @Test
     fun applicationOwnsOneContainerAndOneRepositoryOfEachKind() = runTest {
         val application = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as WordsApplication
+        assertEquals("io.github.volmir.wordscombination", application.packageName)
         val container = application.container
         assertSame(container, application.container)
         assertSame(container.wordRepository, application.container.wordRepository)
