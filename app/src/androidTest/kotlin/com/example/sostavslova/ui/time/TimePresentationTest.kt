@@ -20,6 +20,20 @@ class TimePresentationTest {
                     record.cumulativeActiveMs, record.lastSequence > 0, record.timeToRMs, record.timeToFullMs)
             })), records, progress)
 
+    @Test fun durationBoundariesTruncateSubsecondsWithoutWrappingHours() {
+        val cases = mapOf(
+            0L to listOf("0", "0", "0"),
+            999L to listOf("0", "0", "0"),
+            1000L to listOf("0", "0", "1"),
+            59_999L to listOf("0", "0", "59"),
+            60_000L to listOf("0", "1", "0"),
+            3_599_999L to listOf("0", "59", "59"),
+            3_600_000L to listOf("1", "0", "0"),
+            86_400_000L to listOf("24", "0", "0"),
+        )
+        cases.forEach { (ms, parts) -> assertEquals(parts, durationParts(BigInteger.valueOf(ms))) }
+    }
+
     @Test fun longDurationUsesTotalHoursIncludingBeyondLongSum() {
         assertEquals(listOf("27", "3", "5"), durationParts(BigInteger.valueOf(97_385_999)))
         assertEquals(listOf("0", "0", "0"), durationParts(BigInteger.ZERO))
