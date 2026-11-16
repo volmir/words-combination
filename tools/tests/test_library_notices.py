@@ -1,10 +1,12 @@
 import io
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 
-from tools.build_library_notices import archive_notices, pom_licenses
+from tools.build_library_notices import archive_notices, default_gradle_cache, pom_licenses
 
 
 class LibraryNoticesTest(unittest.TestCase):
@@ -37,3 +39,15 @@ class LibraryNoticesTest(unittest.TestCase):
         with zipfile.ZipFile(aar, 'w') as archive:
             archive.writestr('classes.jar', jar.getvalue())
         self.assertEqual([('classes.jar!META-INF/NOTICE', text)], archive_notices(aar.getvalue()))
+
+    def test_default_gradle_cache_respects_gradle_user_home(self):
+        with patch.dict(os.environ, {'GRADLE_USER_HOME': '/tmp/custom-gradle-home'}, clear=False):
+            self.assertEqual(
+                Path('/tmp/custom-gradle-home/caches/modules-2/files-2.1'),
+                default_gradle_cache(),
+            )
+        with patch.dict(os.environ, {'GRADLE_USER_HOME': ''}, clear=False):
+            self.assertEqual(
+                Path.home() / '.gradle/caches/modules-2/files-2.1',
+                default_gradle_cache(),
+            )

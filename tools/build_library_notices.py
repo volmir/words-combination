@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import zipfile
@@ -110,10 +111,16 @@ def generate(inputs, cache, legal):
             'LIBRARY_NOTICES.txt': notice}
 
 
+def default_gradle_cache():
+    gradle_home = os.environ.get('GRADLE_USER_HOME')
+    base = Path(gradle_home) if gradle_home else Path.home() / '.gradle'
+    return base / 'caches/modules-2/files-2.1'
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--inputs', type=Path, default=ROOT / 'app/build/reports/licenses/runtime-inputs.json')
-    parser.add_argument('--cache', type=Path, default=Path.home() / '.gradle/caches/modules-2/files-2.1')
+    parser.add_argument('--cache', type=Path, default=default_gradle_cache())
     parser.add_argument('--legal', type=Path, default=ROOT / 'legal')
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
