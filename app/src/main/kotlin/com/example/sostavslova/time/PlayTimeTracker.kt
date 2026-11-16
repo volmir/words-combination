@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-/** Только проверенный, загруженный снимок игры; stars получены после записи прогресса. */
+/** Загруженная игра; stars используются только как baseline при первом подключении. */
 data class PlayTimeTarget(val campaign: Campaign, val levelNumber: Int, val stars: Int) {
     private val level = campaign.levels.single { it.number == levelNumber }
     val identity: String = "${campaign.contentSha256}:$levelNumber:${level.word}"
@@ -124,7 +124,13 @@ class PlayTimeTracker(
 
     /** null — загрузка, ошибка, закрытый/несуществующий уровень; finished — финальный экран. */
     fun updateLevel(owner: String, snapshot: PlayTimeTarget?, finished: Boolean = false) = synchronized(lock) {
-        val target = snapshot?.let(::recordStars)
+        val target = snapshot?.let { initial ->
+            // Повторный рендер/восстановление UI не является событием получения звезды.
+            lastTargets[initial.identity] ?: initial.also {
+                lastTargets[it.identity] = it
+                enqueue(Command.Initialize(it))
+            }
+        }
         if (target == null) loaded.remove(owner) else loaded[owner] = target
         if (finished) finishedLevels.add(owner) else finishedLevels.remove(owner)
         reconcile()
@@ -142,11 +148,10 @@ class PlayTimeTracker(
     }
 
     private fun recordStars(snapshot: PlayTimeTarget): PlayTimeTarget {
-        val previous = lastTargets[snapshot.identity]
-        // Более старый UI-снимок не отменяет уже подтверждённый checkpoint.
-        val target = if (previous != null && snapshot.stars < previous.stars) snapshot.copy(stars = previous.stars) else snapshot
-        if (previous == null) enqueue(Command.Initialize(target))
-        if (previous != null && target.stars > previous.stars) {
+        val previous = checkNotNull(lastTargets[snapshot.identity]) { "Timing baseline required before committed progress" }
+        // Повторный/старый подтверждённый снимок не отменяет уже принятые звёзды.
+        val target = if (snapshot.stars < previous.stars) snapshot.copy(stars = previous.stars) else snapshot
+        if (target.stars > previous.stars) {
             // Сначала подтверждён прогресс, затем фиксируется время достижения звёзд.
             val duration = if (runningTarget?.identity == target.identity) counter.flush() ?: 0L else 0L
             enqueue(Command.Segment(target, duration))

@@ -13,8 +13,9 @@ class ActiveTimeCounter(private val monotonicMs: () -> Long) {
         val start = startTick ?: return null
         val end = monotonicMs()
         check(end >= start) { "Monotonic clock moved backwards" }
+        val duration = Math.subtractExact(end, start)
         startTick = end
-        return end - start
+        return duration
     }
 
     fun stop(): Long? {

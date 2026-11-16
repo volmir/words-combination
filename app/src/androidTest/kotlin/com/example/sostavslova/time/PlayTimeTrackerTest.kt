@@ -79,6 +79,60 @@ class PlayTimeTrackerTest {
         }
     }
 
+    private fun confirmed(stars: Int, level: Int = 1, sha: String? = campaign.contentSha256) =
+        com.example.sostavslova.core.CampaignProgress(campaignId = sha, levels = mapOf(
+            campaign.levels.single { it.number == level }.word to
+                com.example.sostavslova.core.CampaignLevelProgress(completedTaskIds =
+                    campaign.levels.single { it.number == level }.tasks.take(stars).map { it.id }.toSet())))
+
+    @Test fun uiRerenderCannotAwardStarsOrMilestones() = runTest {
+        val f = Fixture(this); f.open()
+        advanceTimeBy(10)
+        f.tracker.updateLevel("entry1", f.target(stars = 2))
+        advanceTimeBy(10)
+        f.tracker.stop(); f.tracker.awaitSaved()
+        val saved = f.store.records.getValue(1)
+        assertEquals(0, saved.lastStars)
+        assertNull(saved.timeToRMs)
+        assertNull(saved.timeToFullMs)
+        assertEquals(20L, saved.cumulativeActiveMs)
+    }
+
+    @Test fun rThenReturnThenFullUsesBothPeriodsAndDuplicateEventsDoNothing() = runTest {
+        val f = Fixture(this); f.open()
+        advanceTimeBy(10)
+        f.tracker.checkpointProgress(confirmed(1))
+        f.tracker.checkpointProgress(confirmed(1))
+        advanceTimeBy(5)
+        f.tracker.detachLevel("entry1")
+        f.tracker.setRoute("map", null)
+        advanceTimeBy(1000)
+        f.open(stars = 1)
+        advanceTimeBy(20)
+        f.tracker.checkpointProgress(confirmed(2))
+        f.tracker.checkpointProgress(confirmed(2))
+        f.tracker.awaitSaved()
+        val full = f.store.records.getValue(1)
+        assertEquals(10L, full.timeToRMs)
+        assertEquals(35L, full.timeToFullMs)
+        f.tracker.detachLevel("entry1")
+        f.open(stars = 2)
+        advanceTimeBy(7)
+        f.tracker.stop(); f.tracker.awaitSaved()
+        assertEquals(42L, f.store.total())
+        assertEquals(full.timeToRMs, f.store.records.getValue(1).timeToRMs)
+        assertEquals(full.timeToFullMs, f.store.records.getValue(1).timeToFullMs)
+    }
+
+    @Test fun otherCampaignCommitCannotAwardMilestone() = runTest {
+        val f = Fixture(this); f.open()
+        advanceTimeBy(10)
+        f.tracker.checkpointProgress(confirmed(2, sha = "b".repeat(64)))
+        f.tracker.stop(); f.tracker.awaitSaved()
+        assertNull(f.store.records.getValue(1).timeToRMs)
+        assertEquals(0, f.store.records.getValue(1).lastStars)
+    }
+
     @Test fun resumedPauseResumeAndDuplicateStopsExcludeBriefBackground() = runTest {
         val f = Fixture(this); f.open()
         advanceTimeBy(125)
@@ -199,8 +253,9 @@ class PlayTimeTrackerTest {
     @Test fun starCheckpointsContinueAndFinaleStopsWithFinalStars() = runTest {
         val f = Fixture(this); f.open()
         advanceTimeBy(10)
-        f.tracker.updateLevel("entry1", f.target(stars = 1))
+        f.tracker.checkpointProgress(confirmed(1))
         advanceTimeBy(20)
+        f.tracker.checkpointProgress(confirmed(2))
         f.tracker.updateLevel("entry1", f.target(stars = 2), finished = true)
         advanceTimeBy(1000)
         f.tracker.setActivityResumed(true) // final screen remains stopped
@@ -217,7 +272,7 @@ class PlayTimeTrackerTest {
         f.open("entry2", 2)
         f.tracker.detachLevel("entry1")
         advanceTimeBy(10)
-        f.tracker.updateLevel("entry1", f.target(stars = 1)) // accepted answer's durable snapshot arrives late
+        f.tracker.checkpointProgress(confirmed(1)) // accepted answer's durable callback arrives late
         advanceTimeBy(10)
         f.tracker.stop(); f.tracker.awaitSaved()
         assertEquals(10L, f.store.total(1))

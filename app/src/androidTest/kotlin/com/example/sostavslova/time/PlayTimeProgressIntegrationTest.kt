@@ -33,6 +33,71 @@ import org.junit.rules.TemporaryFolder
 class PlayTimeProgressIntegrationTest {
     @get:Rule val temporary = TemporaryFolder()
 
+    @Test fun savedStarsReachRThenFullAcrossTrackerRestartWithoutHistoricalReplays() = runTest {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        try {
+            fun store(name: String) = PreferenceDataStoreFactory.create(
+                storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer) {
+                    temporary.root.resolve(name).absolutePath.toPath()
+                }, scope = scope)
+            val campaign = Campaign(listOf(Stage(1, 1, 1)), listOf(
+                CampaignLevel(1, "картотека", 1, 1, listOf(
+                    CampaignTask.T1("count", 1), CampaignTask.T7("letter", 'т', 1)))
+            ), contentSha256 = "a".repeat(64))
+            val index = WordIndex(listOf("кора", "крот"))
+            val progressStore = store("progress.preferences_pb")
+            val time = PlayTimeRepository(store("time.preferences_pb"))
+            val clock = AtomicLong(0)
+            var tracker = PlayTimeTracker(time, scope, clock::get)
+            val progress = ProgressRepository(progressStore, onCampaignCommitted = { tracker.checkpointProgress(it) })
+            progress.migrateCampaign(campaign, index)
+            fun open(stars: Int) {
+                tracker.setRoute("entry", 1)
+                tracker.updateLevel("entry", PlayTimeTarget(campaign, 1, stars))
+                tracker.setLevelResumed("entry", true)
+                tracker.setActivityResumed(true)
+                tracker.setWindowFocused("activity", true)
+            }
+            open(0)
+            clock.set(10)
+            progress.submitCampaignAnswer(campaign, 1, "кора", index)
+            tracker.awaitSaved()
+            assertEquals(10L, time.snapshot(campaign).getValue(1).timeToRMs)
+            assertNull(time.snapshot(campaign).getValue(1).timeToFullMs)
+            clock.set(15)
+            tracker.detachLevel("entry")
+            tracker.awaitSaved()
+            tracker = PlayTimeTracker(time, scope, clock::get) // new process: no old tick/sequence
+            clock.set(1000)
+            open(1)
+            clock.set(1020)
+            progress.submitCampaignAnswer(campaign, 1, "крот", index)
+            tracker.awaitSaved()
+            val full = time.snapshot(campaign).getValue(1)
+            assertEquals(10L, full.timeToRMs)
+            assertEquals(35L, full.timeToFullMs)
+            val sequence = full.lastSequence
+            progress.submitCampaignAnswer(campaign, 1, "крот", index) // repeated answer
+            tracker.updateLevel("entry", PlayTimeTarget(campaign, 1, 2)) // repeated rendering
+            tracker.awaitSaved()
+            assertEquals(sequence, time.snapshot(campaign).getValue(1).lastSequence)
+            tracker.detachLevel("entry")
+            tracker.awaitSaved()
+            tracker = PlayTimeTracker(time, scope, clock::get)
+            open(2)
+            clock.set(1027)
+            tracker.stop()
+            tracker.awaitSaved()
+            val revisited = time.snapshot(campaign).getValue(1)
+            assertEquals(42L, revisited.cumulativeActiveMs)
+            assertEquals(full.timeToRMs, revisited.timeToRMs)
+            assertEquals(full.timeToFullMs, revisited.timeToFullMs)
+        } finally {
+            scope.cancel()
+            scope.coroutineContext.job.join()
+        }
+    }
+
     @Test fun exitWaitsForCancelledAnswerCommitThenForTimeCheckpoint() = runTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         try {

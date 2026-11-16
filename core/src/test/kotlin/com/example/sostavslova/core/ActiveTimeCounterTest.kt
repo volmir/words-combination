@@ -3,9 +3,23 @@ package com.example.sostavslova.core
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 class ActiveTimeCounterTest {
+    @Test fun backwardsAndOverflowingIntervalsCannotBecomeNegativeDurations() {
+        var tick = 10L
+        val counter = ActiveTimeCounter { tick }
+        counter.start()
+        tick = 9
+        assertFailsWith<IllegalStateException> { counter.flush() }
+        tick = 20
+        assertEquals(10L, counter.stop())
+        tick = Long.MIN_VALUE
+        counter.start()
+        tick = Long.MAX_VALUE
+        assertFailsWith<ArithmeticException> { counter.flush() }
+    }
     @Test fun pauseResumeAndRepeatedStopsNeverDoubleCount() {
         var tick = 100L
         val counter = ActiveTimeCounter { tick }

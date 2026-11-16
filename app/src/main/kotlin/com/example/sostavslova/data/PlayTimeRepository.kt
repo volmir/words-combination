@@ -6,6 +6,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.sostavslova.core.Campaign
 import com.example.sostavslova.core.CampaignLevel
+import com.example.sostavslova.core.CampaignTimeSnapshot
+import com.example.sostavslova.core.CampaignTimeStatistics
+import com.example.sostavslova.core.CampaignTimeSummary
+import com.example.sostavslova.core.LevelTimeMeasurement
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -54,9 +58,19 @@ class PlayTimeRepository(private val dataStore: DataStore<Preferences>) : PlayTi
 
     suspend fun snapshot(campaign: Campaign): Map<Int, LevelPlayTime> = observe(campaign).first()
 
+    /** Чтение статистики не выполняет edit/initialize и не создаёт записей. */
+    fun observeStatistics(campaign: Campaign): Flow<CampaignTimeSummary> = observe(campaign).map { records ->
+        CampaignTimeStatistics.aggregate(campaign, CampaignTimeSnapshot(identity(campaign),
+            campaign.levels.associate { level ->
+                val time = records.getValue(level.number)
+                level.number to LevelTimeMeasurement(level.word, time.cumulativeActiveMs, time.lastSequence > 0,
+                    time.timeToRMs, time.timeToFullMs)
+            }))
+    }.flowOn(Dispatchers.Default)
+
     /**
      * Обязателен до первого сегмента. starsBeforeTracking — реальные звёзды из
-     * сохранения на момент подключения таймера. Повторное открытие не меняет baseline.
+     * сохранения на момент подключения таймера. Повторное открытие не меняет замеры.
      * Уже достигнутые R/M помечаются accounted с null, а не рекордом 0 мс.
      */
     override suspend fun initialize(campaign: Campaign, levelNumber: Int, starsBeforeTracking: Int): LevelPlayTime {
@@ -72,6 +86,14 @@ class PlayTimeRepository(private val dataStore: DataStore<Preferences>) : PlayTi
                     lastStars = starsBeforeTracking,
                 )
                 preferences[key(campaign, level)] = json.encodeToString(initial)
+            } else if (starsBeforeTracking > previous.lastStars) {
+                // Например, процесс погиб между записью прогресса и checkpoint времени.
+                // При восстановлении неизвестно время достижения: порог учитываем без замера.
+                preferences[key(campaign, level)] = json.encodeToString(previous.copy(
+                    lastStars = starsBeforeTracking,
+                    rAccounted = previous.rAccounted || starsBeforeTracking >= level.requiredStars,
+                    fullAccounted = previous.fullAccounted || starsBeforeTracking >= level.maxStars,
+                ))
             }
         }
         return read(saved, campaign, level)

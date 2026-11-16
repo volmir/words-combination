@@ -1,8 +1,10 @@
 package com.example.sostavslova.data
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.okio.OkioStorage
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.PreferencesSerializer
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.sostavslova.core.CampaignRules
@@ -17,6 +19,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.job
 import kotlinx.coroutines.test.runTest
+import okio.FileSystem
+import okio.Path.Companion.toPath
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -41,7 +45,8 @@ class PlayTimeRepositoryTest {
 
     private fun open() {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        store = PreferenceDataStoreFactory.create(scope = scope, produceFile = { file })
+        store = PreferenceDataStoreFactory.create(scope = scope,
+            storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer) { file.absolutePath.toPath() })
         repository = PlayTimeRepository(store)
     }
 
@@ -100,6 +105,46 @@ class PlayTimeRepositoryTest {
         assertTrue(historicalFull.fullAccounted)
         assertNull(historicalFull.timeToRMs)
         assertNull(historicalFull.timeToFullMs)
+    }
+
+    @Test fun restoreAfterMissedCommitDoesNotInventHistoricalMilestones() = runTest {
+        repository.initialize(campaign, 1, 0)
+        repository.appendSegment(campaign, 1, 1, 10, 0)
+        close()
+        open()
+        val restored = repository.initialize(campaign, 1, 2)
+        assertTrue(restored.rAccounted)
+        assertNull(restored.timeToRMs)
+        assertEquals(10L, restored.cumulativeActiveMs)
+        val full = repository.appendSegment(campaign, 1, 2, 20, 5)
+        assertNull(full.timeToRMs)
+        assertEquals(30L, full.timeToFullMs)
+        val before = store.data.first()
+        repository.initialize(campaign, 1, 5)
+        repository.snapshot(campaign)
+        repository.observeStatistics(campaign).first()
+        assertEquals(before, store.data.first())
+        assertEquals(full, repository.snapshot(campaign).getValue(1))
+    }
+
+    @Test fun statisticsReadIsPureAndCampaignScoped() = runTest {
+        val readOnly = PlayTimeRepository(object : DataStore<Preferences> {
+            override val data = store.data
+            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences =
+                error("Statistics reading must never invoke a write")
+        })
+        val empty = store.data.first()
+        assertEquals(0, readOnly.observeStatistics(campaign).first().measuredLevelCount)
+        assertEquals(empty, store.data.first())
+        repository.initialize(campaign, 1, 0)
+        assertEquals(0, readOnly.observeStatistics(campaign).first().measuredLevelCount)
+        repository.appendSegment(campaign, 1, 1, 80, 2)
+        val before = store.data.first()
+        val stats = readOnly.observeStatistics(campaign).first()
+        assertEquals(java.math.BigInteger.valueOf(80), stats.screenActiveMs)
+        assertEquals(80L, stats.levels.first().timeToRMs)
+        assertEquals(0, readOnly.observeStatistics(campaign.copy(contentSha256 = "b".repeat(64))).first().measuredLevelCount)
+        assertEquals(before, store.data.first())
     }
 
     @Test fun zeroAllowedButNegativeOverflowAndInvalidOrderDoNotChangeDisk() = runTest {
@@ -197,7 +242,8 @@ class PlayTimeRepositoryTest {
 
     @Test fun timingAndExplicitClearLeaveLegacyWordsStarsHintsAndCampaignProgressUntouched() = runTest {
         val progressFile = File(temporaryFolder.newFolder(), "progress.preferences_pb")
-        val progressStore = PreferenceDataStoreFactory.create(scope = scope, produceFile = { progressFile })
+        val progressStore = PreferenceDataStoreFactory.create(scope = scope,
+            storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer) { progressFile.absolutePath.toPath() })
         val raw = """{"version":2,"levels":{"картотека":{"found":["карта"],"completedTaskIds":["count","initial"],"hints":{"shownSteps":1,"paidUnits":1,"ownedContentVersion":1}}}}"""
         progressStore.edit {
             it[stringPreferencesKey("campaignProgressV2")] = raw
