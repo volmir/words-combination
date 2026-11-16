@@ -98,7 +98,7 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         compose.runOnIdle { assertNull(state.value.dialog) }
         compose.onNodeWithTag("level_found_group_3").performScrollTo().performClick()
         compose.onNodeWithText("кот").assertDoesNotExist()
-        compose.onNodeWithText("Статистика").performScrollTo().performClick()
+        compose.onNodeWithText("Статистика слов").performScrollTo().performClick()
         compose.onNodeWithTag("level_stats").assertExists()
         compose.onNodeWithText("Осталось").assertExists()
         compose.onNodeWithText("Взято шагов подсказок: 0 · потрачено единиц: 0").performScrollTo().assertIsDisplayed()

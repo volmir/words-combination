@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -151,11 +150,7 @@ fun GameScreen(
                         style = MaterialTheme.typography.bodyMedium)
                 } else {
                     LetterTiles(game.word)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.game_counts, game.foundCount, game.total, RussianPlural.words(game.total)),
-                            style = MaterialTheme.typography.bodyMedium)
-                        if (state.level != null) StarsRow(state.levelProgress, onClick = { onDialog(GameDialog.Tasks) })
-                    }
+                    if (state.level != null) StarsRow(state.levelProgress, onClick = { onDialog(GameDialog.Tasks) })
                 }
                 Well {
                     WordInputRow(stringResource(R.string.your_answer), state.input, onInputChanged,
@@ -203,28 +198,37 @@ fun GameScreen(
                     GameAction(stringResource(R.string.show_hint), state.canPlay && !state.hintLoading,
                         onHint, R.drawable.ic_help, "game_hint_button")
                 }
-                Text(stringResource(R.string.found_words), style = MaterialTheme.typography.titleMedium)
-                if (current != null) {
-                    Text(stringResource(R.string.game_counts, game.foundCount, game.total, RussianPlural.words(game.total)),
-                        style = MaterialTheme.typography.bodyMedium)
-                }
-                for ((length, found) in game.found.groupBy { it.length }.toSortedMap()) {
-                    var expanded by rememberSaveable(game.word, length) { mutableStateOf(false) }
-                    Column {
-                        TextButton({ expanded = !expanded }, Modifier.testTag("level_found_group_$length").heightIn(min = 48.dp)) {
-                            Text(stringResource(R.string.game_found_group, length,
-                                RussianPlural.form(length, stringResource(R.string.game_letter_one),
-                                    stringResource(R.string.game_letter_few), stringResource(R.string.hint_letter_genitive_many)),
-                                found.size, stringResource(if (expanded) R.string.game_group_close else R.string.game_group_open)),
-                                style = MaterialTheme.typography.bodyLarge)
+                Column(Modifier.fillMaxWidth().testTag("game_found_words"),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HorizontalDivider()
+                    Text(stringResource(R.string.game_found_summary, game.foundCount, game.total),
+                        Modifier.testTag("game_found_summary").semantics { heading() },
+                        style = MaterialTheme.typography.titleMedium)
+                    for ((length, found) in game.found.groupBy { it.length }.toSortedMap()) {
+                        var expanded by rememberSaveable(game.word, length) { mutableStateOf(false) }
+                        val groupState = stringResource(if (expanded) R.string.game_group_expanded else R.string.game_group_collapsed)
+                        Column(Modifier.fillMaxWidth()) {
+                            TextButton({ expanded = !expanded }, Modifier.fillMaxWidth()
+                                .testTag("level_found_group_$length").heightIn(min = 48.dp)
+                                .semantics { stateDescription = groupState }) {
+                                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(stringResource(R.string.game_found_group, length,
+                                        RussianPlural.form(length, stringResource(R.string.game_letter_one),
+                                            stringResource(R.string.game_letter_few), stringResource(R.string.hint_letter_genitive_many)),
+                                        found.size, RussianPlural.words(found.size)),
+                                        style = MaterialTheme.typography.titleSmall)
+                                    Text(stringResource(if (expanded) R.string.game_group_close else R.string.game_group_open),
+                                        style = MaterialTheme.typography.labelLarge)
+                                }
+                            }
+                            if (expanded) FoundWords(found, Modifier.fillMaxWidth().testTag("game_found_words_$length"))
                         }
-                        if (expanded) FoundWords(found)
+                        HorizontalDivider()
                     }
-                }
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    GameAction(stringResource(R.string.statistics), state.canPlay, { onDialog(GameDialog.Statistics) }, R.drawable.ic_statistics)
-                    if (state.level != null && state.campaignLevel == null) GameAction(stringResource(R.string.tasks), state.canPlay,
-                        { onDialog(GameDialog.Tasks) }, R.drawable.ic_star_outline)
+                    TextButton({ onDialog(GameDialog.Statistics) }, enabled = state.canPlay,
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("game_word_statistics")) {
+                        Text(stringResource(R.string.game_word_statistics), style = MaterialTheme.typography.labelLarge)
+                    }
                 }
             }
         }

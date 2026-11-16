@@ -21,7 +21,6 @@
     <string name="correct_answer">Правильно!</string>
     <string name="no_combinations">Комбинации слов не найдены!</string>
     <string name="word_too_short">Введите слово длиной не менее 3-х символов</string>
-    <string name="found_words">Найденные слова:</string>
     <string name="tasks">Задания</string>
     <string name="stats_letters">Кол-во букв в слове</string>
     <string name="stats_found_total">Отгадано / Всего</string>
@@ -41,7 +40,7 @@
     <string name="about_definitions_history">Для каждого слова сохранён адрес исходной статьи. История статьи содержит сведения об авторах. Полный список адресов включён в приложение вместе со словарём.</string>
     <string name="about_code_heading">Программный код</string>
     <string name="about_code_sources">Программный код проекта «Составь слова» распространяется по лицензии MIT. Полный текст лицензии — в файле LICENSE в исходном репозитории и в составе APK.</string>
-    <string name="game_counts">Найдено %1$d из %2$d %3$s</string>
+    <string name="game_found_summary">Найденные слова · %1$d из %2$d</string>
     <string name="answer_already_found">Вы уже разгадали слово %1$s</string>
     <string name="answer_unknown">Слово «%1$s» не распознано словарём</string>
     <string name="answer_not_counted">Слово «%1$s» есть в словаре, но не входит в игровой набор</string>
@@ -62,7 +61,7 @@
     <string name="hint_fallback">Слово из %1$d %2$s, начинается на «%3$s»</string>
     <string name="hint_letter_genitive_one">буквы</string>
     <string name="hint_letter_genitive_many">букв</string>
-    <string name="statistics">Статистика</string>
+    <string name="game_word_statistics">Статистика слов</string>
     <string name="game_statistics_title">Статистика по слову \"%1$s\"</string>
     <string name="task_complete">Пройдите уровень</string>
     <string name="task_complete_remaining">Пройдите уровень (ещё %1$d %2$s)</string>
@@ -145,7 +144,9 @@
     <string name="game_riddle_solved">Разгадана</string>
     <string name="game_riddle_pending">Ещё не разгадана</string>
     <string name="game_riddle_fallback">Определение недоступно. Запасная загадка по буквам ведёт к тому же ответу и даёт ту же звезду.</string>
-    <string name="game_found_group">%1$d %2$s · найдено %3$d · %4$s</string>
+    <string name="game_found_group">%1$d %2$s · %3$d %4$s</string>
+    <string name="game_group_expanded">Раскрыта</string>
+    <string name="game_group_collapsed">Свёрнута</string>
     <string name="game_group_open">Раскрыть</string>
     <string name="game_group_close">Свернуть</string>
     <string name="game_stats_hints">Взято шагов подсказок: %1$d · потрачено единиц: %2$d</string>

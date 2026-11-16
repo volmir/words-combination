@@ -43,14 +43,14 @@ class LevelsNavigationTest {
         compose.onNodeWithTag("level_card_15").assertIsDisplayed()
         compose.onNodeWithTag("levels_grid").performScrollToKey(campaign.levels.first().word)
         compose.onNodeWithTag("level_card_1").performClick()
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("Найдено 0 из", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Найденные слова · 0 из", substring = true).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("game_screen").assertIsDisplayed()
         compose.onNodeWithContentDescription("К карте уровней").assertExists()
         repeat(2) {
             compose.onNodeWithTag("game_back").performClick()
             compose.onNodeWithTag("levels_screen").assertIsDisplayed()
             compose.onNodeWithTag("level_card_1").performClick()
-            compose.waitUntil(10_000) { compose.onAllNodesWithText("Найдено 0 из", substring = true).fetchSemanticsNodes().isNotEmpty() }
+            compose.waitUntil(10_000) { compose.onAllNodesWithText("Найденные слова · 0 из", substring = true).fetchSemanticsNodes().isNotEmpty() }
         }
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
         compose.onNodeWithTag("levels_screen").assertIsDisplayed()
