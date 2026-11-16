@@ -1,6 +1,8 @@
 package com.example.sostavslova.di
 
 import android.content.Context
+import android.os.SystemClock
+import android.util.Log
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.example.sostavslova.BuildConfig
@@ -11,6 +13,7 @@ import com.example.sostavslova.data.ProgressRepository
 import com.example.sostavslova.data.SqliteDefinitionsRepository
 import com.example.sostavslova.data.WordRepository
 import com.example.sostavslova.data.readInstallEvidence
+import com.example.sostavslova.time.PlayTimeTracker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -62,6 +65,7 @@ class AppContainer(
             dataStore = progressDataStore,
             installEvidence = appContext::readInstallEvidence,
             hadLocalStateAtStartup = hadLocalStateAtStartup,
+            onCampaignCommitted = { playTimeTracker.checkpointProgress(it) },
         )
     }
 
@@ -73,6 +77,19 @@ class AppContainer(
                 produceFile = { appContext.preferencesDataStoreFile("play_time") },
             ),
         )
+    }
+
+    val playTimeTracker: PlayTimeTracker by lazy {
+        PlayTimeTracker(playTimeRepository, applicationScope, SystemClock::elapsedRealtime) { failure ->
+            Log.e("PlayTimeTracker", "level=${failure.levelNumber} operation=${failure.operation} " +
+                "pendingMs=${failure.pendingActiveMs} error=${failure.errorType}")
+        }
+    }
+
+    suspend fun awaitSaved() {
+        playTimeTracker.setExiting(true)
+        progressRepository.awaitSaved()
+        playTimeTracker.awaitSaved()
     }
 
     private fun readAsset(name: String): String =

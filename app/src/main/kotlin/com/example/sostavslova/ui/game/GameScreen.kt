@@ -23,6 +23,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,6 +57,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.sostavslova.R
 import com.example.sostavslova.di.appContainer
+import com.example.sostavslova.time.observePlayTimeLifecycle
 import com.example.sostavslova.core.LevelRules
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.ui.components.AlertBanner
@@ -73,21 +75,31 @@ import java.util.Locale
 import kotlinx.coroutines.delay
 
 @Composable
-fun GameRoute(onReturnLevels: (Int, Boolean) -> Unit) {
+fun GameRoute(playTimeOwner: String, onReturnLevels: (Int, Boolean) -> Unit) {
     BackHandler { onReturnLevels(0, true) }
     val container = appContainer()
-    val factory = remember(container) {
+    val factory = remember(container, playTimeOwner) {
         viewModelFactory { initializer {
             GameViewModel(createSavedStateHandle(), container.wordRepository, container.levelsRepository,
                 container.progressRepository, container.definitionsRepository, container.random,
                 categoryText = { key -> com.example.sostavslova.data.CategoryNames.resource(key)?.let {
                     container.categoryName(it)
-                } })
+                } }, playTimeTracker = container.playTimeTracker, playTimeOwner = playTimeOwner)
         } }
     }
     val model: GameViewModel = viewModel(factory = factory)
     val state by model.uiState.collectAsStateWithLifecycle()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(model, lifecycle, playTimeOwner) {
+        model.syncPlayTime()
+        val dispose = observePlayTimeLifecycle(lifecycle) {
+            container.playTimeTracker.setLevelResumed(playTimeOwner, it)
+        }
+        onDispose {
+            dispose()
+            container.playTimeTracker.detachLevel(playTimeOwner)
+        }
+    }
     var notice by remember { mutableStateOf<GameMessage?>(null) }
     LaunchedEffect(model, lifecycle) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {

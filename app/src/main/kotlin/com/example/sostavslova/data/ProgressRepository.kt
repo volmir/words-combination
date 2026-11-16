@@ -73,6 +73,8 @@ class ProgressRepository(
     private val installEvidence: () -> InstallEvidence = { InstallEvidence.UNKNOWN },
     /** Снимок до первого обращения к DataStore: отличие старой установки от текущей сессии. */
     private val hadLocalStateAtStartup: Boolean = true,
+    /** Событие только после долговечной записи, до завершения trackOperation/awaitSaved. */
+    private val onCampaignCommitted: (CampaignProgress) -> Unit = {},
 ) {
     private val writeMutex = Mutex()
     private val operations = mutableSetOf<Job>()
@@ -388,7 +390,9 @@ class ProgressRepository(
                 }
                 result = changed
             }
-            checkNotNull(result).second
+            val committed = checkNotNull(result)
+            onCampaignCommitted(committed.first)
+            committed.second
         }
     }
 

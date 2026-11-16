@@ -37,6 +37,8 @@ import com.example.sostavslova.data.DefinitionsRepository
 import com.example.sostavslova.data.LevelsRepository
 import com.example.sostavslova.data.ProgressRepository
 import com.example.sostavslova.data.WordRepository
+import com.example.sostavslova.time.PlayTimeTarget
+import com.example.sostavslova.time.PlayTimeTracker
 import com.example.sostavslova.ui.components.AlertType
 import kotlin.random.Random
 import kotlinx.coroutines.CancellationException
@@ -126,6 +128,8 @@ class GameViewModel(
     private val random: Random = Random.Default,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val categoryText: (String) -> String? = { null },
+    private val playTimeTracker: PlayTimeTracker? = null,
+    private val playTimeOwner: String? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(GameUiState(input = savedState.get<String>(INPUT).orEmpty()))
     val uiState = mutableState.asStateFlow()
@@ -149,6 +153,7 @@ class GameViewModel(
         if (sessionJob?.isActive == true || uiState.value.returnLevels ||
             (uiState.value.game != null && !uiState.value.loadError)) return
         mutableState.update { it.copy(loading = true, loadError = false) }
+        syncPlayTime()
         sessionJob = viewModelScope.launch {
             try {
                 val number = levelNumber
@@ -221,6 +226,7 @@ class GameViewModel(
                 throw cancelled
             } catch (_: Exception) {
                 mutableState.update { it.copy(loading = false, loadError = true) }
+                syncPlayTime()
             }
         }
     }
@@ -254,6 +260,26 @@ class GameViewModel(
             } },
             hint = if (changed) null else it.hint,
             hintLoading = if (changed && campaign == null) false else it.hintLoading) }
+        syncPlayTime()
+    }
+
+    // Вызывается после подтверждённого снимка ProgressRepository, даже если UI уже ушёл.
+    // busy/hintLoading/игровые диалоги не останавливают время текущего уровня.
+    internal fun syncPlayTime() {
+        val tracker = playTimeTracker ?: return
+        val owner = playTimeOwner ?: return
+        val state = uiState.value
+        val current = state.campaignLevel
+        val activeCampaign = campaign
+        val target = if (activeCampaign != null && current != null && state.game != null &&
+            !state.loading && !state.loadError && !state.returnLevels) {
+            PlayTimeTarget(activeCampaign, current.level.number, current.completedTaskIds.size)
+        } else null
+        tracker.updateLevel(owner, target, finished = state.finaleSummary != null)
+    }
+
+    override fun onCleared() {
+        playTimeOwner?.let { playTimeTracker?.detachLevel(it) }
     }
 
     fun onInputChanged(raw: String) {
@@ -488,6 +514,7 @@ class GameViewModel(
 
     private fun leave(@StringRes message: Int = 0) {
         mutableState.update { it.copy(loading = false, returnLevels = true, levelsMessage = message) }
+        syncPlayTime()
     }
 
     companion object {

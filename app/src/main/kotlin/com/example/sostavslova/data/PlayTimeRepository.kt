@@ -37,7 +37,12 @@ data class LevelPlayTime(
  * данных не выдаются. Повторять неудачную запись следует с тем же sequence.
  * Этот слой не запускает таймер и не вычисляет/меняет игровой прогресс.
  */
-class PlayTimeRepository(private val dataStore: DataStore<Preferences>) {
+interface PlayTimeStore {
+    suspend fun initialize(campaign: Campaign, levelNumber: Int, starsBeforeTracking: Int): LevelPlayTime
+    suspend fun appendSegment(campaign: Campaign, levelNumber: Int, sequence: Long, activeMs: Long, starsAfter: Int): LevelPlayTime
+}
+
+class PlayTimeRepository(private val dataStore: DataStore<Preferences>) : PlayTimeStore {
     private val json = Json { encodeDefaults = true }
 
     fun observe(campaign: Campaign): Flow<Map<Int, LevelPlayTime>> {
@@ -54,7 +59,7 @@ class PlayTimeRepository(private val dataStore: DataStore<Preferences>) {
      * сохранения на момент подключения таймера. Повторное открытие не меняет baseline.
      * Уже достигнутые R/M помечаются accounted с null, а не рекордом 0 мс.
      */
-    suspend fun initialize(campaign: Campaign, levelNumber: Int, starsBeforeTracking: Int): LevelPlayTime {
+    override suspend fun initialize(campaign: Campaign, levelNumber: Int, starsBeforeTracking: Int): LevelPlayTime {
         val level = level(campaign, levelNumber)
         require(starsBeforeTracking in 0..level.maxStars)
         val saved = dataStore.edit { preferences ->
@@ -81,7 +86,7 @@ class PlayTimeRepository(private val dataStore: DataStore<Preferences>) {
      * Метод suspend завершается только после долговечной записи; отдельный awaitSaved
      * ProgressRepository к этому независимому файлу не относится.
      */
-    suspend fun appendSegment(
+    override suspend fun appendSegment(
         campaign: Campaign,
         levelNumber: Int,
         sequence: Long,

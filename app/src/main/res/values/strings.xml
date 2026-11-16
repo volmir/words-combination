@@ -226,4 +226,5 @@
     <string name="exit_confirm">Выйти</string>
     <string name="exit_cancel">Остаться</string>
     <string name="exit_press_back_again">Нажмите «Назад» ещё раз, чтобы выйти</string>
+    <string name="play_time_save_error">Не удалось сохранить время игры. Запись ожидает повторной попытки.</string>
 </resources>

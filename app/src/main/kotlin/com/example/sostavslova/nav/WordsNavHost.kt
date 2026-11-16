@@ -64,7 +64,7 @@ fun WordsNavHost(navController: NavHostController, modifier: Modifier = Modifier
                     entry.savedStateHandle[GameViewModel.SOURCE] = draft.getString(GameViewModel.SOURCE)
                 }
             }
-            GameRoute { message, saveLevelState -> navController.returnToLevels(message, saveLevelState) }
+            GameRoute(entry.id) { message, saveLevelState -> navController.returnToLevels(message, saveLevelState) }
         }
         composable(Destination.Rules.route) { RulesScreen() }
         composable(Destination.About.route) { AboutScreen() }

@@ -36,6 +36,7 @@ fun WordsDialog(title: String, onDismiss: () -> Unit, titleText: AnnotatedString
     val density = LocalDensity.current
     BasicAlertDialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         CompositionLocalProvider(LocalDensity provides density) {
+        com.example.sostavslova.time.PlayTimeWindowFocus()
         Box(Modifier.fillMaxSize().pointerInput(onDismiss) { detectTapGestures { onDismiss() } }.padding(24.dp), contentAlignment = Alignment.Center) {
             Surface(Modifier.widthIn(max = 560.dp).fillMaxWidth().pointerInput(Unit) { detectTapGestures {} }, shape = WordsCardShape, color = WordsColors.background, contentColor = WordsColors.text) {
                 Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
