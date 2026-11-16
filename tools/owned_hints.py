@@ -55,6 +55,8 @@ def validate(candidate, campaign, campaign_sha, words, metadata):
     require(candidate['authoring_inputs'] == ['word', 'part_of_speech=noun', 'task_type',
                                              'general-linguistic-knowledge'], 'Authoring inputs')
     require(candidate['campaign_sha256'] == campaign_sha, 'Stale campaign SHA')
+    # This immutable authoring snapshot stays pending even after approval.
+    # Rights are validated separately against its byte SHA, never edited here.
     require(candidate['status'] == 'candidate-not-installed', 'Candidate status')
     require(candidate['proposed_license'] == 'CC0-1.0', 'Proposed license')
     require(candidate['provenance'] == 'newly-authored-for-game', 'Candidate provenance')

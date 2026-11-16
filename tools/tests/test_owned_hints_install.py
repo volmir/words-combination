@@ -74,7 +74,8 @@ class OwnedHintsInstallTest(unittest.TestCase):
     def test_release_waiver_never_bypasses_owned_only_or_coverage_check(self):
         with self.assertRaisesRegex(ValueError, 'не утверждены'):
             require_release_audit(self.data)
-        self.assertFalse(require_release_audit(self.data, allow_unaudited=True)['publishable'])
+        with self.assertRaisesRegex(ValueError, 'waiver недопустим'):
+            require_release_audit(self.data, allow_unaudited=True)
         (self.data / 'definitions.db').unlink()
         with self.assertRaises(ValueError):
             require_release_audit(self.data, allow_unaudited=True)
@@ -127,12 +128,12 @@ class OwnedHintsInstallTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 owned.inputs(self.data, index_path=path)
 
-    def test_standalone_release_cli_checks_minimal_data_with_existing_waiver(self):
+    def test_standalone_release_cli_rejects_waiver_for_pending_owned_hints(self):
         result = subprocess.run([sys.executable, str(ROOT / 'tools/build_game_data.py'), '--check-release',
                                  '--out', str(self.data), '--allow-unaudited-release'],
                                 cwd=self.temp.name, capture_output=True, text=True)
-        self.assertEqual(0, result.returncode, result.stderr)
-        self.assertFalse(json.loads(result.stdout)['publishable'])
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertIn('waiver недопустим', result.stderr)
 
 
 if __name__ == '__main__':
