@@ -240,7 +240,8 @@ class InstalledShort15Test(unittest.TestCase):
             task["targets"].split(", "))
         manifest = json.loads((ROOT / "data/manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["campaign_source"]["sha256"], payload["snapshot"]["campaign_sha256"])
-        self.assertEqual(31369, payload["snapshot"]["rights"]["wiktionary_definitions"])
+        self.assertEqual(0, payload["snapshot"]["rights"]["wiktionary_definitions"])
+        self.assertEqual(39, payload["snapshot"]["rights"]["own_definitions"])
         self.assertFalse(payload["snapshot"]["rights"]["audit_passed"])
         self.assertFalse(payload["snapshot"]["rights"]["rights_review_passed"])
 

@@ -9,6 +9,25 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class HintRulesTest {
+    @Test fun upgradeDropsImportedStepsWithoutChangingBudgetTargetOrLetterProgress() {
+        val state = HintState(HintLadder(HintTarget("станция"), listOf(
+            HintStep(HintStage.THEME, "Транспорт"),
+            HintStep(HintStage.DEFINITION, "Синтетический прежний текст", wiktionary = true),
+            HintStep(HintStage.LENGTH, length = 7),
+            HintStep(HintStage.FIRST_LETTER, "с", revealedPositions = setOf(0)),
+            HintStep(HintStage.ANSWER, "станция"),
+        ), nextStepIndex = 4, revealedPositions = setOf(0)), shownSteps = 6, paidUnits = 3)
+        val migrated = state.withoutLegacyDefinitions()
+        assertEquals(state.ladder.target, migrated.ladder.target)
+        assertEquals(3, migrated.ladder.nextStepIndex)
+        assertEquals(setOf(0), migrated.ladder.revealedPositions)
+        assertEquals(6, migrated.shownSteps)
+        assertEquals(3, migrated.paidUnits)
+        assertTrue(migrated.ladder.steps.none { it.stage == HintStage.DEFINITION })
+        assertEquals(migrated, migrated.withoutLegacyDefinitions())
+        assertEquals(listOf(HintStage.THEME, HintStage.LENGTH, HintStage.FIRST_LETTER), migrated.ladder.shown.map { it.stage })
+        assertEquals(1, state.copy(ladder = state.ladder.copy(nextStepIndex = 1)).withoutLegacyDefinitions().ladder.nextStepIndex)
+    }
     private val source = "электростанция"
     private val words = listOf("кот", "крот", "торт", "рост", "рот", "ток", "нота", "елка", "колея", "станция")
     private val index = WordIndex(words)

@@ -119,4 +119,11 @@ data class HintState(
     val ladder: HintLadder = HintLadder(),
     val shownSteps: Int = 0,
     val paidUnits: Int = 0,
-)
+) {
+    /** Upgrade to owned hints: keep target, counters and every revealed letter. */
+    fun withoutLegacyDefinitions(): HintState {
+        val retained = ladder.steps.filter { it.stage != HintStage.DEFINITION }
+        val shown = ladder.steps.take(ladder.nextStepIndex).count { it.stage != HintStage.DEFINITION }
+        return copy(ladder = ladder.copy(steps = retained, nextStepIndex = shown))
+    }
+}

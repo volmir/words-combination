@@ -367,7 +367,7 @@ class GameViewModel(
                         catch (cancelled: CancellationException) { throw cancelled }
                         catch (_: Exception) { emptyList() }
                         val safe = withContext(computationDispatcher) {
-                            meanings.firstNotNullOfOrNull { definition ->
+                            meanings.filter { it.isOwnedHint }.firstNotNullOfOrNull { definition ->
                                 DefinitionHint.prepare(answer, definition.text, definition.forms, definition.related)?.let { text ->
                                     // Вспомогательные поля, в том числе URL, могут раскрывать ответ.
                                     definition.copy(display = "", text = text, source = "", notes = "", antonym = "", example = "",
@@ -405,7 +405,7 @@ class GameViewModel(
                 (campaignKey ?: key) to if (available) optional { definitions.definitionsFor(answer) }.orEmpty() else emptyList()
             }
             withContext(computationDispatcher) {
-                val safe = meanings.firstNotNullOfOrNull { meaning ->
+                val safe = meanings.filter { it.isOwnedHint }.firstNotNullOfOrNull { meaning ->
                     DefinitionHint.prepare(answer, meaning.text, meaning.forms, meaning.related)?.let { it to meaning }
                 }
                 HintWordData(
@@ -434,7 +434,7 @@ class GameViewModel(
                 catch (cancelled: CancellationException) { throw cancelled }
                 catch (_: Exception) { emptyList() } else emptyList()
                 val safe = withContext(computationDispatcher) {
-                    meanings.firstNotNullOfOrNull { meaning ->
+                    meanings.filter { it.isOwnedHint }.firstNotNullOfOrNull { meaning ->
                         HintText.clean(meaning.text)?.let { text ->
                             DefinitionHint.prepare(answer, text, meaning.forms, meaning.related)
                         }?.let { it to (meaning.origin == "wiktionary") }

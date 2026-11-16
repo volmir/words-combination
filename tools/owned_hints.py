@@ -202,6 +202,20 @@ def check(root=ROOT, write_docs=False):
     verify_installed(root/'data')
     paths = {name: root/'data'/name for name in ['campaign.json', 'words.txt', 'manifest.json', 'definitions.db']}
     hashes = {name: sha(path) for name, path in paths.items()}
+    manifest = json.loads(paths['manifest.json'].read_text(encoding='utf-8'))
+    if manifest.get('definitions', {}).get('rights_policy') == 'owned-minimal-hints-v1':
+        # LCH-02 documents are historical evidence bound to the previous DB.
+        # Current data is checked against the same authored candidate, lexical
+        # snapshot and recorded screening; never compare our text with itself.
+        from tools.build_owned_hints import verify, inputs
+        verify(root / 'data', root / 'docs/owned_hints.json', root / 'tools/owned_hint_index.json')
+        candidate, index, _, _ = inputs(root / 'data', root / 'docs/owned_hints.json', root / 'tools/owned_hint_index.json')
+        acceptance = (root / 'docs/CUR03_ACCEPTANCE.md').read_text(encoding='utf-8')
+        if index['source_database_sha256'] not in acceptance:
+            raise ValueError('Category snapshot not bound to CUR-03')
+        return dict(unique_targets=len(candidate['entries']), assignments=sum(len(e['roles']) for e in candidate['entries']),
+                    t4=sum(r['type'] == 'T4' for e in candidate['entries'] for r in e['roles']),
+                    campaign_sha256=hashes['campaign.json'], **index['screening'])
     # CUR-03 evidence is bound to this installed package, not an old workbook snapshot.
     acceptance = (root/'docs/CUR03_ACCEPTANCE.md').read_text(encoding='utf-8')
     if not all(value in acceptance for value in hashes.values()):

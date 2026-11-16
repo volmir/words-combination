@@ -1,11 +1,12 @@
 # Состояние проекта
 
-Снимок от **2026-11-16** после SHORT15-05 и PRIV-01. Приложение использует проверенную
+Снимок от **2026-11-16** после LCH-03 (кампания SHORT15-05 сохранена). Приложение использует проверенную
 short15-кампанию; исторические материалы v1 ниже не являются текущей картой.
 Контракт перехода — [CAMPAIGN.md](CAMPAIGN.md). Финальный gate, waiver владельца
 на техническую release-сборку, точные блокеры публикации и пути локальных APK —
 [SHORT15_RELEASE_GATE.md](SHORT15_RELEASE_GATE.md) (история SHORT15-04);
-новые данные и проверки — [SHORT15_05_REPORT.md](SHORT15_05_REPORT.md).
+данные кампании — [SHORT15_05_REPORT.md](SHORT15_05_REPORT.md);
+минимальные подсказки и текущие проверки — [LCH03_REPORT.md](LCH03_REPORT.md).
 
 ## Что реализовано
 
@@ -17,14 +18,19 @@ short15-кампанию; исторические материалы v1 ниж�
   `1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e`;
   это же значение записано в `manifest.campaign_source.sha256`, проверяется
   `verifyDictionaryLicenses`, попадает в APK и в `BuildConfig.CAMPAIGN_SHA256`.
-- Словарь и определения взяты из того же пакета: `words.txt`
-  `9c1aed9e0011e4173dffd0f4281832d821d4de90623d19273f7fc8e68c212489`,
-  `definitions.db` `406d127a444b02d9eaddb30e820dd7cadc200b967338554a552f81468ee6c097`.
-- **31 369 толкований для 20 117 из 20 120 слов**, SQLite `user_version=9`,
-  размер 17 240 064 байт. `HAS_DEFINITIONS=true` не менялся.
-- Подсказки используют `core/DefinitionHint`: формы, ближайшее родство,
-  эвристику корня и маску `***`. Пакет SHORT15-05 зафиксировал 18 002
-  пригодные подсказки и проверил T3/T4; тексты статей в `campaign.json` нет.
+- Словарь `words.txt` сохранён из SHORT15-05:
+  `9c1aed9e0011e4173dffd0f4281832d821d4de90623d19273f7fc8e68c212489`.
+- **39 собственных описаний, 0 сторонних толкований**, SQLite `user_version=10`,
+  размер 1 818 624 байта; `HAS_DEFINITIONS=true` сохранён. SHA БД:
+  `8e35a322b2d4f726191231aacb20948ee310fa8750609650ba605bc860599268`.
+  Генератор — `tools/build_owned_hints.py`; источник текстов — LCH-02.
+- Все 11 обязательных T4 имеют пригодные загадки. T3 принимает любой валидный
+  длинный ответ; T6 — любые четыре из всех 20 утверждённых профессий.
+  Категории отделены от текстов; источник и CC BY-SA 4.0 сохранены.
+- Подсказки используют `core/DefinitionHint`, бюджет и лестницу прежних правил.
+  Отсутствующее описание пропускается; старые определения из БД и сохранённых
+  лестниц не возвращаются в UI после upgrade. Кампания и её SHA не менялись,
+  найденные слова, звёзды и остальные ключи сохранений не удаляются.
 - Исторический `levels.json` (30 уровней v1, MIT) остаётся для синтетических
   тестов и восстановления старых сохранений, но не обслуживает карту short15.
 
@@ -46,21 +52,21 @@ short15-кампанию; исторические материалы v1 ниж�
 
 ## Проверки и ограничения
 
-Новые tools/core/license/debug-проверки выполнены в SHORT15-05. Lint, androidTest
-и технический release в таблице — результаты SHORT15-04; для SHORT15-05
-не запускались. Полный gate оркестратора выполняется внешним процессом.
+Текущие tools/core/license/compile/lint/release-проверки выполнены в LCH-03.
+assembleDebug ниже — исторический результат SHORT15-05; новый debug-APK здесь
+не собирался. Полный gate оркестратора выполняется внешним процессом.
 
 | Проверка | Последний результат |
 |---|---|
-| `python3 -m unittest discover tools/tests` | 448 тестов, OK после установки и исправления редакторских фикстур SHORT15-05 |
-| `bash ./gradlew --offline :core:test` | 137 тестов, 0 ошибок и падений |
+| `python3 -m unittest discover tools/tests` | 462 теста, OK (LCH-03) |
+| `bash ./gradlew --offline :core:test` | 142 теста, 0 ошибок и падений (LCH-03) |
 | `:app:verifyDictionaryLicenses` | Прошла: словарь, уровни, кампания, БД и manifest согласованы |
 | `:app:syncDictionaryAssets` | Прошла: скопированные assets совпадают с manifest |
 | `:app:compileDebugKotlin`, `:app:compileDebugAndroidTestKotlin` | Прошли |
-| `:app:lintDebug` | Прошла; 0 errors, 10 warnings |
-| `:app:assembleDebug` | Прошла; APK содержит `assets/campaign.json` с SHA `1734a333…` |
+| `:app:lintDebug` | Прошла; 0 errors, 9 warnings (LCH-03) |
+| `:app:assembleDebug` | История SHORT15-05; APK не содержит текущую минимальную БД |
 | `python3 tools/build_game_data.py --check-release --out data` | Код 2: строгий режим без waiver защищает публикацию |
-| `:app:assembleRelease` | Прошла по waiver владельца (2026-11-15): технический pre-release APK собран |
+| `:app:assembleRelease` | LCH-03: прошла по прежнему waiver владельца; SHA БД и кампании в APK проверены |
 | `tools/validate_campaign.py` на пакете SHORT15-05 до установки | `valid`, `installable=true`, `jvm_checked=true`, 41 ветка R, JVM 49/49 |
 | `:app:verifyDefinitionsAudit` | Предупреждение `owner-waiver-unaudited`, `publishable=false`; `audit.passed` остаётся `false` |
 | JVM-прогон `LegacyCampaignMigrationTest` | 27 из 27 (устаревшее ожидание исправлено, см. отчёт) |
@@ -71,15 +77,16 @@ short15-кампанию; исторические материалы v1 ниж�
 `.local/short15-05-rollback-data/` с `SHA256SUMS.rollback`
 (состояние перед SHORT15-05; первоначальный v1-откат также сохранён); в Git этот каталог
 не входит. Публикация по-прежнему заблокирована: `definitions.audit.passed=false`,
-`rights_review.passed=false`, политика `wiktionary-provisional-v1`, release
+`rights_review.passed=false`, политика `owned-minimal-hints-v1`, тексты и их лицензия ожидают решения владельца; release
 подписан debug-ключом, ручной smoke-test на телефоне не пройден. Debug APK и
 технический release APK не доказывают готовность к публикации.
 
-Готовый debug-APK SHORT15-05: `app/build/outputs/apk/debug/app-debug.apk`,
-SHA-256 `8250a70382e7063a075bb38c8c40c1ad5ae88e5a0a8099731ebbfbb519af0ade`. Словарь, кампания и БД внутри APK совпали с `data/`.
-Технический release-APK SHORT15-04 — исторический артефакт предыдущего набора;
-в SHORT15-05 release-сборка не запускалась. Строгий `--check-release` без waiver
-по-прежнему отказывает, ручной аудит остаётся непройденным.
+Текущий технический release-APK LCH-03:
+`app/build/outputs/apk/release/app-release.apk`. В нём проверены SHA БД
+`8e35a322…` и кампании `1734a333…`, совпадающие с data/.
+Debug-APK SHORT15-05 — исторический, содержит прежние толкования;
+перед установкой текущей версии нужен новый build. Строгий `--check-release`
+без waiver отказывает; лицензия собственных подсказок не назначена.
 
 ## Историческая v1-кампания (не текущая карта)
 
@@ -102,12 +109,12 @@ SHA-256 `8250a70382e7063a075bb38c8c40c1ad5ae88e5a0a8099731ebbfbb519af0ade`. Сл
 
 ## Как продолжать работу
 
-1. Установить `app/build/outputs/apk/debug/app-debug.apk` на устройство и
+1. Собрать актуальный debug-APK, установить на устройство и
    пройти чеклист smoke-test из [SHORT15_RELEASE_GATE.md](SHORT15_RELEASE_GATE.md)
    и [uiux/SHORT15_MANUAL_QA.md](uiux/SHORT15_MANUAL_QA.md): карта 15/6,
    T1–T7, подсказки, финал 4/5, мастер 49/49, повторный вход, обновление с v1
    и перезапуск. Без этого публичный release не разрешён.
-2. Перед публикацией провести ручной аудит прав определений, решить вопрос
+2. Перед публикацией утвердить 39 текстов, их лицензию и ручной аудит прав, решить вопрос
    ключей/applicationId и отдельно решить судьбу GEN-05. Собственная лицензия
    кода оформлена как MIT в PRIV-01; персональные данные удалены из новых
    пользовательских артефактов ([аудит приватности](PRIVACY_PUBLICATION_AUDIT.md)).

@@ -93,6 +93,37 @@ class CampaignProgressRepositoryTest {
     private suspend fun answer(word: String, level: Int = 1) =
         repository.submitCampaignAnswer(campaign, level, word, index)
 
+    @Test fun oldSavedDefinitionIsRemovedWithoutResettingWordsStarsOrHintCounters() = runTest {
+        val raw = """{"version":2,"highestUnlockedLevel":2,"lastVisitedLevel":1,"levels":{"картотека":{
+            "found":["крот"],"completedTaskIds":["count","initial"],"hints":{
+            "target":{"word":"торт","taskId":"riddle","taskType":"T4"},
+            "steps":[{"stage":"DEFINITION","text":"Синтетическое прежнее описание","wiktionary":false},
+                     {"stage":"LENGTH","length":4},
+                     {"stage":"FIRST_LETTER","text":"т","revealedPositions":[0]},
+                     {"stage":"ANSWER","text":"торт","revealedPositions":[0,1,2,3]}],
+            "nextStepIndex":3,"revealedPositions":[0],"shownSteps":7,"paidUnits":2}}}}"""
+        val unrelatedTime = androidx.datastore.preferences.core.longPreferencesKey("synthetic_play_time")
+        store.edit { it[key] = raw; it[unrelatedTime] = 1234L }
+        val migrated = snapshot()
+        val saved = migrated.levels.getValue("картотека")
+        assertEquals(listOf("крот"), saved.found)
+        assertEquals(setOf("count", "initial"), saved.completedTaskIds)
+        assertEquals(2, migrated.highestUnlockedLevel)
+        assertEquals(1, migrated.lastVisitedLevel)
+        assertEquals(7, saved.hints.shownSteps)
+        assertEquals(2, saved.hints.paidUnits)
+        assertEquals("торт", saved.hints.ladder.target?.word)
+        assertEquals(2, saved.hints.ladder.nextStepIndex)
+        assertEquals(setOf(0), saved.hints.ladder.revealedPositions)
+        assertTrue(saved.hints.ladder.steps.none { it.stage == com.example.sostavslova.core.HintStage.DEFINITION })
+        repository.markCampaignExplanationSeen(TaskType.T4) // Persist sanitized DTO.
+        assertFalse(checkNotNull(store.data.first()[key]).contains("Синтетическое прежнее описание"))
+        assertEquals(1234L, store.data.first()[unrelatedTime])
+        restart()
+        assertEquals(saved, snapshot().levels.getValue("картотека"))
+        assertEquals(1234L, store.data.first()[unrelatedTime])
+    }
+
     @Test fun oneAnswerPersistsSeveralStarsAndUnlockInOneTransactionAndOneSnapshot() = runTest {
         assertEquals(CampaignProgress(), snapshot())
         val result = answer(" КРОТ ")

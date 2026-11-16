@@ -64,6 +64,7 @@ tasks.matching { it.name in setOf("preReleaseBuild", "assembleRelease", "bundleR
 val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
     description = "Проверяет происхождение и хэши словаря, уровней, кампании и включённых определений."
     group = "verification"
+    dependsOn("verifyOwnedHints")
     inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("word_sources.jsonl.gz"), dictionaryData.file("levels.json"))
     inputs.files(dictionaryData.file("campaign.json"))
     inputs.files(dictionaryData.file("definitions.db"))
@@ -104,6 +105,13 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
             }
         }
     }
+}
+
+tasks.register<Exec>("verifyOwnedHints") {
+    description = "Проверяет воспроизводимость минимальных собственных подсказок и всех загадок T4."
+    group = "verification"
+    workingDir(rootProject.projectDir)
+    commandLine("python3", "tools/build_owned_hints.py", "--check")
 }
 
 android {

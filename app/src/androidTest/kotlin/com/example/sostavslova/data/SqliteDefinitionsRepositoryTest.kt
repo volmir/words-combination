@@ -72,10 +72,13 @@ class SqliteDefinitionsRepositoryTest {
     }
 
     @Test
-    fun realAssetIsAvailableAndBullHasDefinitions() = runTest {
+    fun realAssetContainsOnlyMinimalOwnedHints() = runTest {
         val repository = SqliteDefinitionsRepository(context, databaseName = databaseName).also { repositories.add(it) }
         assertTrue(repository.isAvailable())
-        assertTrue(repository.definitionsFor("бык").isNotEmpty())
+        assertTrue(repository.definitionsFor("бык").isEmpty())
+        assertTrue(repository.definitionsFor("артист").all { it.isOwnedHint })
+        assertEquals(1, repository.definitionsFor("артист").size)
+        assertEquals("professions", repository.categoryFor("артист"))
     }
 
     @Test
@@ -125,6 +128,31 @@ class SqliteDefinitionsRepositoryTest {
         assertFalse(repository.isAvailable())
         assertTrue(repository.definitionsFor("портал").isEmpty())
         assertFalse(context.getDatabasePath(databaseName).exists())
+    }
+
+    @Test fun upgradeRemovesInstalledCopyWhenCurrentAssetIsMissing() = runTest {
+        createDatabase(context.getDatabasePath(databaseName), 999, "Синтетический прежний текст")
+        val repo = repository()
+        assertFalse(repo.isAvailable())
+        assertTrue(repo.definitionsFor("портал").isEmpty())
+        assertFalse(context.getDatabasePath(databaseName).exists())
+    }
+
+    @Test fun upgradeToRealAssetReplacesSameOrHigherVersionAndEveryOldText() = runTest {
+        createDatabase(context.getDatabasePath(databaseName), 999, "Синтетический прежний текст", "артист")
+        val repo = SqliteDefinitionsRepository(context, databaseName = databaseName).also { repositories.add(it) }
+        val hint = repo.definitionsFor("артист").single()
+        assertTrue(hint.isOwnedHint)
+        assertNotEquals("Синтетический прежний текст", hint.text)
+        assertTrue(repo.definitionsFor("бык").isEmpty())
+        SQLiteDatabase.openDatabase(context.getDatabasePath(databaseName).path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+            db.rawQuery("SELECT origin,count(*) FROM definitions GROUP BY origin", null).use { rows ->
+                assertTrue(rows.moveToFirst())
+                assertEquals("own", rows.getString(0))
+                assertEquals(39, rows.getInt(1))
+                assertFalse(rows.moveToNext())
+            }
+        }
     }
 
     @Test
@@ -193,11 +221,11 @@ class SqliteDefinitionsRepositoryTest {
     }
 
     @Test
-    fun olderBundledUserVersionDoesNotDowngradeInstalledDatabase() = runTest {
+    fun bundledContentReplacesEvenHigherInstalledVersion() = runTest {
         createDatabase(context.getDatabasePath(databaseName), 2, "установленная версия")
         val asset = File(directory, "asset.db")
         createDatabase(asset, 1, "старая версия assets")
-        assertEquals("установленная версия", repository(asset).definitionsFor("портал").single().text)
+        assertEquals("старая версия assets", repository(asset).definitionsFor("портал").single().text)
     }
 
     @Test
@@ -238,9 +266,10 @@ class SqliteDefinitionsRepositoryTest {
         val repository = SqliteDefinitionsRepository(context, databaseName = databaseName).also { repositories.add(it) }
         if (com.example.sostavslova.BuildConfig.HAS_DEFINITIONS) {
             assertTrue(repository.isAvailable())
-            val definitions = repository.definitionsFor("администрация")
+            val definitions = repository.definitionsFor("артист")
             assertTrue(definitions.isNotEmpty())
-            assertTrue(definitions.all { it.source.startsWith("https://ru.wiktionary.org/wiki/") && it.example.isEmpty() })
+            assertTrue(definitions.all { it.isOwnedHint && it.example.isEmpty() })
+            assertTrue(repository.definitionsFor("администрация").isEmpty())
         } else {
             assertFalse(repository.isAvailable())
             assertTrue(repository.definitionsFor("администрация").isEmpty())

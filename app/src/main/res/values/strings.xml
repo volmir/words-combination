@@ -34,10 +34,10 @@
     <string name="close_dialog">Закрыть</string>
     <string name="definition_source">Источник: %1$s</string>
     <string name="about_definitions_heading">Словарь и определения</string>
-    <string name="about_definitions_authors">Слова и толкования взяты из русского Викисловаря. Авторы — участники русского Викисловаря. Определения этой сборки не прошли ручной аудит.\nhttps://ru.wiktionary.org/</string>
+    <string name="about_definitions_authors">Словарь, исходные сведения о категориях и формах слов взяты из русского Викисловаря. Авторы — участники русского Викисловаря.\nhttps://ru.wiktionary.org/</string>
     <string name="about_definitions_extraction">Машиночитаемая выгрузка: Kaikki.org / Wiktextract.\nhttps://kaikki.org/ruwiktionary/rawdata.html</string>
-    <string name="about_definitions_license">Для материалов Викисловаря указана лицензия Creative Commons «С указанием авторства — С сохранением условий» 4.0 Международная (CC BY-SA 4.0). Индивидуальный статус прав толкований в этой сборке не проверен; они предназначены для разработки.\nhttps://creativecommons.org/licenses/by-sa/4.0/</string>
-    <string name="about_definitions_changes">Обработка: отбор слов и значений, нормализация ё→е, извлечение обычного текста и раскрытие простых отсылок. Литературные примеры исключены. В подсказках ответ, его формы и распознанные однокоренные слова заменяются на ***.</string>
+    <string name="about_definitions_license">Для материалов Викисловаря указана лицензия Creative Commons «С указанием авторства — С сохранением условий» 4.0 Международная (CC BY-SA 4.0). Эта лицензия относится к словарным данным. Тексты толкований Викисловаря в сборку не входят.\nhttps://creativecommons.org/licenses/by-sa/4.0/</string>
+    <string name="about_definitions_changes">Обработка: отбор слов, нормализация ё→е, выделение категорий и форм слов. Словарные толкования и литературные примеры исключены. В подсказках ответ, его формы и распознанные однокоренные слова заменяются на ***.</string>
     <string name="about_definitions_history">Для каждого слова сохранён адрес исходной статьи. История статьи содержит сведения об авторах. Полный список адресов включён в приложение вместе со словарём.</string>
     <string name="about_code_heading">Программный код</string>
     <string name="about_code_sources">Программный код проекта «Составь слова» распространяется по лицензии MIT. Полный текст лицензии — в файле LICENSE в исходном репозитории и в составе APK.</string>

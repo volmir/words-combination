@@ -76,17 +76,18 @@ internal data class HintStateDto(
     val revealedPositions: Set<Int> = emptySet(),
     val shownSteps: Int = 0,
     val paidUnits: Int = 0,
+    val ownedContentVersion: Int = 0,
 ) {
     fun toCore() = HintState(
         HintLadder(target?.toCore(), steps.map { it.toCore() }, nextStepIndex, revealedPositions),
         shownSteps, paidUnits,
-    )
+    ).let { if (ownedContentVersion < 1) it.withoutLegacyDefinitions() else it }
 
     companion object {
         fun fromCore(state: HintState) = HintStateDto(
             state.ladder.target?.let(HintTargetDto::fromCore),
             state.ladder.steps.map(HintStepDto::fromCore), state.ladder.nextStepIndex,
-            state.ladder.revealedPositions, state.shownSteps, state.paidUnits,
+            state.ladder.revealedPositions, state.shownSteps, state.paidUnits, ownedContentVersion = 1,
         )
     }
 }

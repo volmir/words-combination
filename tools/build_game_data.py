@@ -561,6 +561,17 @@ def publish(candidate, output, artifacts=ARTIFACTS, *, expected_manifest_sha256=
         stage = output.parent / ("." + output.name + ".publish-transaction")
         if stage.exists():
             recover_publication(output, stage)
+        current_manifest = output / 'manifest.json'
+        if current_manifest.is_file():
+            # publish() is also a byte-transaction primitive for non-dictionary
+            # callers. Apply this guard only to a recognized dictionary manifest.
+            try:
+                current_policy = (json.loads(current_manifest.read_text()).get('definitions') or {}).get('rights_policy')
+            except json.JSONDecodeError:
+                current_policy = None
+            if current_policy == 'owned-minimal-hints-v1':
+                from build_owned_hints import verify
+                verify(candidate)
         if expected_manifest_sha256 is not None:
             current = output / "manifest.json"
             empty_target = not any((output / n).exists() for n in artifacts)
@@ -655,6 +666,10 @@ def require_release_audit(output, overrides=TOOLS / "overrides", config=TOOLS / 
                           allow_unaudited=False):
     database = output / "definitions.db"
     if not database.exists():
+        manifest_path = output / 'manifest.json'
+        if (manifest_path.exists() and (json.loads(manifest_path.read_text()).get('definitions') or {}).get('rights_policy')
+                == 'owned-minimal-hints-v1'):
+            raise ValueError('Release заблокирован: отсутствуют обязательные загадки T4')
         return {"release_audit": "no-database"}
     manifest = json.loads((output / "manifest.json").read_text())
     block = manifest.get("definitions") or {}
@@ -662,6 +677,20 @@ def require_release_audit(output, overrides=TOOLS / "overrides", config=TOOLS / 
     digest = dictionary.sha256_file(database)
     if block.get("sha256") != digest:
         raise ValueError("Release заблокирован: definitions.db изменена после генерации manifest")
+    if block.get('rights_policy') == 'owned-minimal-hints-v1':
+        from build_owned_hints import verify
+        verify(output)  # Owned-only bytes and ALL mandatory T4; waiver cannot skip this.
+        count = block['counts']['own']
+        approved = (audit.get('passed') is True and audit.get('database_sha256') == digest and
+                    audit.get('checked') == count and audit.get('bad') == 0 and
+                    block.get('rights_review', {}).get('passed') is True and
+                    block.get('own_license') not in (None, '', '<ЛИЦЕНЗИЯ — решает владелец>'))
+        if approved:
+            return {'release_audit': 'ok', 'publishable': True}
+        if not allow_unaudited:
+            raise ValueError('Release заблокирован: тексты и лицензия собственных подсказок не утверждены владельцем')
+        return {'release_audit': 'owner-waiver-unaudited', 'publishable': False,
+                'findings': ['Тексты/лицензия ожидают утверждения владельца; публикация запрещена']}
     findings = []
     if block.get("rights_policy") not in {"own-generated-v1", "hybrid-v1"}:
         findings.append("политика прав %s не подтверждена" % block.get("rights_policy"))

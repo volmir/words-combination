@@ -10,6 +10,7 @@ import com.example.sostavslova.core.Alphabet
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.security.MessageDigest
 import org.json.JSONArray
 import org.json.JSONException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -132,15 +133,14 @@ class SqliteDefinitionsRepository(
             val stagedFile = File.createTempFile("definitions-", ".db", appContext.cacheDir)
             staged = stagedFile
             openAsset().use { source -> stagedFile.outputStream().use { source.copyTo(it) } }
+            // Production assets are bound to the verified build, not a version counter.
+            if (assetOpenerIsDefault && digest(stagedFile) != BuildConfig.DEFINITIONS_SHA256) {
+                throw SQLiteException("База не совпадает с проверенным asset")
+            }
             val assetVersion = readVersion(stagedFile)
             if (assetVersion <= 0) throw SQLiteException("Некорректный PRAGMA user_version базы определений")
             val destination = appContext.getDatabasePath(databaseName)
-            val installedVersion = if (destination.isFile) {
-                try { readVersion(destination) } catch (_: SQLiteException) { -1 }
-            } else {
-                -1
-            }
-            if (installedVersion < assetVersion) {
+            if (!destination.isFile || digest(destination) != digest(stagedFile)) {
                 destination.parentFile?.mkdirs()
                 // Наша БД только для чтения; убираем остатки журналов старой версии.
                 listOf("-wal", "-shm", "-journal").forEach { File(destination.path + it).delete() }
@@ -154,19 +154,36 @@ class SqliteDefinitionsRepository(
                     throw error
                 }
             }
-            opened = DefinitionsOpenHelper(appContext, databaseName, maxOf(installedVersion, assetVersion))
+            opened = DefinitionsOpenHelper(appContext, databaseName, assetVersion)
             val database = opened.readableDatabase
             helper = opened
             return database
         } catch (_: IOException) {
             opened?.close()
+            appContext.deleteDatabase(databaseName)
             return null
         } catch (_: SQLiteException) {
             opened?.close()
+            appContext.deleteDatabase(databaseName)
             return null
         } finally {
             staged?.delete()
         }
+    }
+
+    private val assetOpenerIsDefault = assetOpener == null
+
+    private fun digest(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(65536)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                digest.update(buffer, 0, count)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
     private fun readVersion(file: File): Int = SQLiteDatabase.openDatabase(

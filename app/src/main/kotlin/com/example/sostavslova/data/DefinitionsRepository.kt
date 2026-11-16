@@ -14,6 +14,7 @@ data class Definition(
     val origin: String = "",
 ) {
     val isWiktionary: Boolean get() = origin == "wiktionary" || source.startsWith("https://ru.wiktionary.org/wiki/")
+    val isOwnedHint: Boolean get() = origin == "own" && source.isEmpty()
 }
 
 interface DefinitionsRepository {

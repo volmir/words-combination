@@ -274,6 +274,11 @@ def install(package: Path, output: Path, backup: Path, *, dry_run: bool = False)
     output, backup = Path(output).resolve(), Path(backup).resolve()
     if output == info["package"]:
         raise ValueError("--package и --out должны различаться")
+    if (output / 'manifest.json').is_file():
+        current = read_json(output / 'manifest.json')
+        if (current.get('definitions') or {}).get('rights_policy') == 'owned-minimal-hints-v1':
+            from build_owned_hints import verify
+            verify(info['package'])  # Reject old packages before backup or writes.
     already = False
     if (output / "manifest.json").is_file():
         attempt = installed_manifest(info)
