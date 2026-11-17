@@ -18,7 +18,7 @@
     "codex": {
       "light": "gpt-5.6-luna",
       "standard": "gpt-6.1-sol",
-      "heavy": "gpt-6.1-sol"
+      "heavy": "gpt-6-astra"
     },
     "opencode": {
       "light": "opencode/muse-ember-1.0#medium",

@@ -1,8 +1,8 @@
 # Примеры задач (не входят в рабочую очередь)
 
 Перенесите согласованную секцию в рабочую очередь `orchestrator/TASKS.md`
-и подставьте команды gate вашего проекта (см. `orchestrator/examples/
-config.example.json`, ключ `checks`).
+и подставьте команды gate вашего проекта (см.
+`orchestrator/examples/config.example.json`, ключ `checks`).
 
 ## DOC-1: Уточнить инструкцию локальной сборки
 tier: light

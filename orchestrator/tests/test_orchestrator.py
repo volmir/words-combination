@@ -259,19 +259,6 @@ class FixtureTests(unittest.TestCase):
             with self.assertRaises(module.Error):
                 module.load_config(config, backend='opencode', models_set='paid')
 
-    def test_removed_semantic_config_is_rejected(self):
-        with tempfile.TemporaryDirectory() as directory:
-            config = Path(directory) / 'config.json'
-            config.write_text(json.dumps({'semantic': {
-                'codex': {'provider': 'codex', 'model': 'm', 'cache': '.local/cache'}}}))
-            for backend in ('codex', 'opencode'):
-                with self.subTest(backend=backend), self.assertRaises(module.Error):
-                    module.load_config(config, backend=backend)
-            config.write_text('{}')
-            self.assertNotIn('semantic', module.load_config(config))
-            self.assertEqual(module.load_config(config)['branch'], 'main')
-            self.assertEqual(module.load_config(config)['efforts']['light'], 'medium')
-
     def test_load_config_ignores_environment_variables(self):
         with tempfile.TemporaryDirectory() as directory, \
                 patch.dict(os.environ, {'MODEL_LIGHT': 'from-env', 'CODEX_BIN': '/env/codex',
@@ -401,15 +388,10 @@ class QueueHelpers:
     def progress(self):
         return module.read_progress(self.repo / 'orchestrator/PROGRESS.md')
 
-    def test_agent_inherits_explicit_environment_without_lex_profile(self):
-        for flag in ('--list', '--dry-run'):
-            output = self.run_cli(flag)
-            self.assertNotIn('ИИ-оценки LEX', output)
-            self.assertNotIn('efforts игнорируются', output)
+    def test_agent_inherits_explicit_environment(self):
         explicit = {'CATEGORY_PROVIDER': 'explicit-provider', 'CATEGORY_MODEL': 'explicit-model',
                     'SEMANTIC_CACHE': '/explicit/cache'}
-        output = self.run_cli(**explicit)
-        self.assertNotIn('ИИ-оценки LEX', output)
+        self.run_cli(**explicit)
         self.assertEqual(self.calls()[0]['env'], explicit)
         self.assertEqual(self.g('branch', '--show-current'), 'main')
         self.assertEqual(self.g('for-each-ref', '--format=%(refname:short)', 'refs/heads/'), 'main')

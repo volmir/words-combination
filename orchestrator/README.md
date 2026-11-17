@@ -49,7 +49,6 @@ bash orchestrator/run.sh
 | `.runtime/logs/` | Локальные логи; создаются при запуске и не коммитятся |
 | `tests/` | Автоматические проверки с заглушками агентов |
 | `examples/` | Примеры задач и настроек; автоматически не выполняются |
-| `VALIDATION.md` | Результаты проверки модуля |
 
 Служебные файлы модуля защищены от правок агентом: задачи, журнал, конфиг,
 `orchestrator.py`, `run.sh` и `checks.py` проверяются по контрольным суммам.
@@ -386,11 +385,12 @@ gate: bash orchestrator/run.sh --check full && bash orchestrator/run.sh --check 
 В `models` используйте ключи `light`, `standard`, `heavy` внутри секции
 активного бэкенда; выберите модели, доступные вашему аккаунту. Пустая строка
 переключает tier на модель из настроек самого CLI. Встроенные умолчания
-модуля: Codex — `gpt-5.6-luna` для `light` и `gpt-6.1-sol` для `standard` и
-`heavy`; OpenCode — бесплатные `opencode/glm-5.3-flash-free` и
-`opencode/beam-free`. Текущий `config.json` переопределяет OpenCode на
-`opencode/muse-ember-1.0#medium` (`light`) и `opencode/deepseek-v4.1-flash#max`
-(`standard` и `heavy`); те же значения записаны в набор `free`.
+модуля: Codex — `gpt-5.6-luna` для `light`, `gpt-6.1-sol` для `standard` и
+`gpt-6-astra` для `heavy`; OpenCode — бесплатные
+`opencode/glm-5.3-flash-free` и `opencode/beam-free`. Текущий `config.json`
+переопределяет OpenCode на `opencode/muse-ember-1.0#medium` (`light`) и
+`opencode/deepseek-v4.1-flash#max` (`standard` и `heavy`); набор `free`
+содержит отдельные бесплатные модели.
 
 ## Новая пачка задач: очистить и заполнить заново
 
@@ -398,7 +398,7 @@ gate: bash orchestrator/run.sh --check full && bash orchestrator/run.sh --check 
 и убедитесь, что нужные правки проекта сохранены в коммитах. Из корня проекта:
 
 ```bash
-printf '# Задачи\n\n' > orchestrator/TASKS.md
+printf '# Очередь\n\n' > orchestrator/TASKS.md
 rm -f orchestrator/PROGRESS.md
 ```
 
@@ -541,8 +541,7 @@ Ctrl+C, SIGTERM и таймаут останавливают активную г
 
 Используемые CLI-флаги сверены с `codex-cli 0.167.1` (`codex exec
 --help`) и `opencode run` (поток `--format json`). Запуски с настоящими
-моделями в проверку комплекта не входили; пример живого прогона —
-`VALIDATION.md`.
+моделями в самопроверку не входят: тесты подменяют агентов заглушками.
 
 ## Самопроверка модуля
 
@@ -552,5 +551,4 @@ bash orchestrator/run.sh --check orchestrator
 
 Эквивалентно `python3 -m unittest discover -s orchestrator/tests`.
 Тесты создают временные Git-репозитории и подменяют агентов заглушками;
-аккаунт, API-ключ и сеть для них не нужны. Сводка реальных прогонов —
-в `VALIDATION.md`.
+аккаунт, API-ключ и сеть для них не нужны.
