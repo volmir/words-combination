@@ -623,8 +623,14 @@ class GameViewModelTest {
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val campaign = requireNotNull(campaignLevels.getCampaign())
         val index = campaignWords.requireIndex()
+        val migrated = progress.migrateCampaign(campaign, index)
+        assertEquals(campaign.contentSha256, migrated.campaignId)
+        assertFalse(migrated.finaleReached)
         progress.submitCampaignAnswer(campaign, 1, "карта", index)
         progress.submitCampaignAnswer(campaign, 2, "торт", index)
+        val reached = progress.observeCampaignProgress().first()
+        assertTrue(reached.finaleReached)
+        assertFalse(reached.finaleShown)
         val model = model(SavedStateHandle(mapOf("index" to "2")),
             wordRepository = campaignWords, levelRepository = campaignLevels)
         model.await { it.finaleSummary != null }
@@ -634,6 +640,9 @@ class GameViewModelTest {
         val reopened = model(SavedStateHandle(mapOf("index" to "1")),
             wordRepository = campaignWords, levelRepository = campaignLevels)
         assertNull(reopened.ready().finaleSummary)
+        val acknowledged = progress.observeCampaignProgress().first()
+        assertTrue(acknowledged.finaleReached)
+        assertTrue(acknowledged.finaleShown)
     }
 
     @Test fun v2ClosedRouteIsRejectedAndCorruptCampaignNeverFallsBack() = runTest {
