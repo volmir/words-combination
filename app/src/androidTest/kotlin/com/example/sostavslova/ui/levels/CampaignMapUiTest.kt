@@ -1,12 +1,18 @@
 package com.example.sostavslova.ui.levels
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.sostavslova.core.*
 import com.example.sostavslova.ui.components.StarsRow
 import com.example.sostavslova.ui.theme.WordsTheme
+import com.example.sostavslova.ui.theme.WordsColors
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -19,6 +25,73 @@ class CampaignMapUiTest {
     private fun level(number: Int, stars: Int = 0, recommended: Boolean = false) = LevelUiState(
         number, "слово$number", LevelProgress(), unlocked = true, campaignStars = stars,
         maxStars = 5, requiredStars = 2, stage = 1, recommended = recommended)
+
+    @Test fun compactCardsUseSubtleAvailabilityColorsAndUpdateWhenUnlocked() {
+        val state = mutableStateOf(LevelsUiState(loading = false,
+            levels = listOf(level(1), level(2).copy(unlocked = false), level(3, stars = 2), level(4, stars = 5)),
+            stages = listOf(Stage(1, 1, 4))))
+        compose.setContent { WordsTheme {
+            Surface(color = WordsColors.background) { LevelsScreen(state.value, {}, {}) }
+        } }
+        val open = compose.onNodeWithTag("level_card_1")
+        val locked = compose.onNodeWithTag("level_card_2")
+        compose.onAllNodesWithText("Закрыт").assertCountEquals(0)
+        compose.onAllNodesWithText("Открыт").assertCountEquals(0)
+        compose.onAllNodesWithText("Пройден").assertCountEquals(0)
+        compose.onAllNodesWithText("Все звёзды").assertCountEquals(0)
+        locked.assert(hasContentDescription("Уровень недоступен"))
+        open.assert(hasContentDescription("Уровень недоступен").not())
+        for (number in 1..4) compose.onNodeWithTag("level_card_$number").assertTextEquals("$number. СЛОВО$number")
+        // Замочек может увеличить высоту заголовка, но отметки прохождения
+        // больше не добавляют отдельную строку.
+        for (number in 3..4) assertEquals(open.fetchSemanticsNode().size.height,
+            compose.onNodeWithTag("level_card_$number").fetchSemanticsNode().size.height)
+
+        fun background(card: SemanticsNodeInteraction): Color {
+            val pixels = card.captureToImage().toPixelMap()
+            return pixels[(6 * compose.density.density).toInt(), pixels.height / 2]
+        }
+        val available = background(open)
+        val unavailable = background(locked)
+        val passed = background(compose.onNodeWithTag("level_card_3"))
+        val complete = background(compose.onNodeWithTag("level_card_4"))
+        assertTrue("Доступный фон — лёгкий зелёный", available.green > available.red)
+        assertTrue("Закрытый фон — лёгкий розовый", unavailable.red > unavailable.green)
+        assertTrue("Пройденный фон — лёгкий голубой", passed.blue > passed.red)
+        assertTrue("Все звёзды — лёгкий золотистый", complete.red > complete.green && complete.green > complete.blue)
+        val backgrounds = listOf(available, unavailable, passed, complete)
+        assertEquals(4, backgrounds.map { Triple(it.red, it.green, it.blue) }.toSet().size)
+        for (color in backgrounds) {
+            assertTrue("Фон должен оставаться очень светлым", minOf(color.red, color.green, color.blue) > 0.94f)
+        }
+        fun assertBackground(expected: Color, actual: Color) {
+            val opaque = expected.compositeOver(WordsColors.background)
+            assertEquals(opaque.red, actual.red, 2f / 255)
+            assertEquals(opaque.green, actual.green, 2f / 255)
+            assertEquals(opaque.blue, actual.blue, 2f / 255)
+        }
+        assertBackground(WordsColors.levelAvailableBackground, available)
+        assertBackground(WordsColors.levelLockedBackground, unavailable)
+        assertBackground(WordsColors.levelPassedBackground, passed)
+        assertBackground(WordsColors.levelAllStarsBackground, complete)
+
+        compose.runOnIdle { state.value = state.value.copy(levels = state.value.levels.map {
+            it.copy(unlocked = true)
+        }) }
+        locked.assert(hasContentDescription("Уровень недоступен").not())
+        compose.onAllNodesWithText("Открыт").assertCountEquals(0)
+        assertEquals(open.fetchSemanticsNode().size.height, locked.fetchSemanticsNode().size.height)
+        assertBackground(WordsColors.levelAvailableBackground, background(locked))
+        compose.runOnIdle { state.value = state.value.copy(levels = state.value.levels.map {
+            if (it.index == 2) it.copy(campaignStars = 2) else it
+        }) }
+        assertBackground(WordsColors.levelPassedBackground, background(locked))
+        compose.runOnIdle { state.value = state.value.copy(levels = state.value.levels.map {
+            if (it.index == 2) it.copy(campaignStars = 5) else it
+        }) }
+        assertBackground(WordsColors.levelAllStarsBackground, background(locked))
+        locked.assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Получено 5 из 5 звёзд"))
+    }
 
     @Test fun fivePositionsHaveAccessibleProgress() {
         compose.setContent { WordsTheme { StarsRow(3, 5) } }
@@ -41,9 +114,9 @@ class CampaignMapUiTest {
         compose.onNodeWithTag("levels_progress").assertTextEquals("Звёзд 0 из 10 · пройдено 0 из 2")
         compose.onNodeWithTag("levels_stage_1").assertTextEquals("Разминка · уровни 1–2")
         compose.onNodeWithTag("level_card_1")
-            .assertTextContains("Открыт", substring = true)
+            .assert(hasContentDescription("Уровень недоступен").not())
             .assertTextContains("Рекомендуемый уровень", substring = true)
-        compose.onNodeWithTag("level_card_2").assertTextContains("Закрыт", substring = true)
+        compose.onNodeWithTag("level_card_2").assert(hasContentDescription("Уровень недоступен"))
         compose.onAllNodesWithText("Для прохождения", substring = true).assertCountEquals(0)
         compose.onAllNodesWithText("Можно добрать", substring = true).assertCountEquals(0)
         compose.onNodeWithTag("levels_continue").performClick()
@@ -63,7 +136,8 @@ class CampaignMapUiTest {
         compose.onNodeWithTag("levels_continue").performClick()
         compose.runOnIdle { assertEquals("слово2", selected) }
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово1")
-        compose.onNodeWithTag("level_card_1").assertTextContains("Пройден", substring = true)
+        compose.onNodeWithTag("level_card_1").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Получено 2 из 5 звёзд"))
         compose.onNodeWithTag("level_card_1").performClick()
         compose.runOnIdle { assertEquals("слово1", selected) }
         compose.runOnIdle { state.value = state.value.copy(finaleReached = true,
@@ -73,11 +147,12 @@ class CampaignMapUiTest {
         compose.onNodeWithTag("levels_finale_banner").assertTextContains("Финал", substring = true)
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово2")
         compose.onNodeWithTag("level_card_2")
-            .assertTextContains("Пройден", substring = true)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Получено 2 из 5 звёзд"))
             .assertTextContains("Рекомендуемый уровень", substring = true)
         compose.onNodeWithContentDescription("Корона: финал кампании достигнут").assertExists()
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово1")
-        compose.onNodeWithTag("level_card_1").assertTextContains("Все звёзды", substring = true)
+        compose.onNodeWithTag("level_card_1").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Получено 5 из 5 звёзд"))
         compose.onNodeWithTag("level_card_1").performClick()
         compose.runOnIdle {
             assertEquals("слово1", selected)

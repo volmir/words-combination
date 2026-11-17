@@ -83,6 +83,22 @@ fun RulesScreen() {
                 }
             }
 
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.rules_colors_title), style = MaterialTheme.typography.titleMedium)
+                val colors = listOf(
+                    Triple("rules_level_color_locked", WordsColors.levelLockedBackground, R.string.rules_color_locked),
+                    Triple("rules_level_color_available", WordsColors.levelAvailableBackground, R.string.rules_color_available),
+                    Triple("rules_level_color_passed", WordsColors.levelPassedBackground, R.string.rules_color_passed),
+                    Triple("rules_level_color_all_stars", WordsColors.levelAllStarsBackground, R.string.rules_color_all_stars),
+                )
+                for ((tag, color, label) in colors) {
+                    Surface(Modifier.fillMaxWidth(), color = color, contentColor = WordsColors.text, shape = WordsCardShape) {
+                        Text(stringResource(label), Modifier.padding(12.dp).testTag(tag),
+                            style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = WordsColors.alertInfoBackground,

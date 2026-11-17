@@ -14,12 +14,16 @@ object WordsColors {
     val defaultButtonText = Color(0xFF333333)
     val dangerButton = Color(0xFFD9534F)
     val successButton = Color(0xFF5CB85C)
+    val levelAvailableBackground = successButton.copy(alpha = 0.06f)
+    val levelLockedBackground = dangerButton.copy(alpha = 0.04f)
+    val levelPassedBackground = primary.copy(alpha = 0.06f)
     val wellBackground = Color(0xFFF5F5F5)
     val wellBorder = Color(0xFFE3E3E3)
     val inputFocusBorder = Color(0xFF66AFE9)
     val tileBorder = Color(0xFFB7CCCE)
     /** Контраст на фактическом белом фоне: 3,88:1 (порог 3:1 для значимых индикаторов). */
     val starDone = Color(0xFFC46A00)
+    val levelAllStarsBackground = starDone.copy(alpha = 0.05f)
     /** Контраст на фактическом белом фоне: 4,48:1. */
     val starEmpty = Color(0xFF777777)
     val tableHead = Color(0xFFE8E8E8)

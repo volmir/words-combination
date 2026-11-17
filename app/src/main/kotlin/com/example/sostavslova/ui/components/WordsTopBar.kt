@@ -45,7 +45,7 @@ fun WordsTopBar(onBack: (() -> Unit)? = null, onOpenMenu: () -> Unit) {
             }
             Text(
                 stringResource(R.string.top_bar_title),
-                modifier = Modifier.weight(1f).padding(end = 12.dp),
+                modifier = Modifier.weight(1f).padding(end = 12.dp).testTag("app_title"),
                 style = MaterialTheme.typography.titleMedium,
             )
         }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Составь слова</string>
-    <string name="top_bar_title">✎ Составь слова</string>
+    <string name="top_bar_title">Составь слова</string>
     <string name="open_menu">Открыть меню</string>
     <string name="nav_levels">Прохождение</string>
     <string name="nav_rules">Правила</string>
@@ -86,6 +86,11 @@
     <string name="rules_item_5">5. Пройденные уровни остаются доступными: можно вернуться и добрать оставшиеся звёзды.</string>
     <string name="rules_item_6">6. Кампания short15 — это 15 уровней и шесть этапов с заданиями T1–T7. Достижение «Мастер» даётся за все звёзды кампании.</string>
     <string name="rules_footer">Подсказки помогают найти трудные слова и не отнимают звёзд.</string>
+    <string name="rules_colors_title">Цвета уровней</string>
+    <string name="rules_color_locked">Розовый — уровень пока закрыт.</string>
+    <string name="rules_color_available">Зелёный — уровень доступен, но ещё не пройден.</string>
+    <string name="rules_color_passed">Голубой — уровень пройден, можно добрать звёзды.</string>
+    <string name="rules_color_all_stars">Золотистый — собраны все звёзды уровня.</string>
 
     <!-- Об игре -->
     <string name="about_description">«Составь слова» — офлайн-игра: составляйте слова из букв исходного слова и выполняйте задания короткой кампании short15. В ней 15 уровней и шесть этапов; задания T1–T7 открываются постепенно, а звёзды за задания открывают следующие уровни и достижение «Мастер».</string>
@@ -117,10 +122,6 @@
     <string name="levels_master">Мастер — все звёзды собраны!</string>
     <string name="level_crown">Корона: финал кампании достигнут</string>
     <string name="level_stars_label">Звёзды</string>
-    <string name="level_open">Открыт</string>
-    <string name="level_passed">Пройден</string>
-    <string name="level_all_stars">Все звёзды</string>
-    <string name="level_status_locked">Закрыт</string>
     <string name="level_recommended">Рекомендуемый уровень</string>
     <string name="level_unlock_requirement">Для открытия наберите на уровне %1$d %2$d %3$s.</string>
     <string name="star_one">звезду</string>

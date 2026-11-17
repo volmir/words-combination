@@ -2,6 +2,7 @@ package com.example.sostavslova.ui.components
 
 import android.content.Context
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.R
@@ -15,16 +16,22 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 
-/** Фактический контраст токенов звёзд на фактическом фоне экранов (белый). */
+/** Контраст звёзд на белом фоне и на всех фонах карточек уровней. */
 @RunWith(AndroidJUnit4::class)
 class StarsContrastTest {
     @Test
     fun filledAndOutlineStarsKeepThreeToOneOnActualBackground() {
-        val background = WordsColors.background
-        val filled = contrastRatio(WordsColors.starDone, background)
-        val outline = contrastRatio(WordsColors.starEmpty, background)
-        assertTrue("Заполненная звезда: контраст $filled < 3:1", filled >= 3.0)
-        assertTrue("Контурная звезда: контраст $outline < 3:1", outline >= 3.0)
+        val backgrounds = listOf(WordsColors.background,
+            WordsColors.levelAvailableBackground.compositeOver(WordsColors.background),
+            WordsColors.levelLockedBackground.compositeOver(WordsColors.background),
+            WordsColors.levelPassedBackground.compositeOver(WordsColors.background),
+            WordsColors.levelAllStarsBackground.compositeOver(WordsColors.background))
+        for (background in backgrounds) {
+            val filled = contrastRatio(WordsColors.starDone, background)
+            val outline = contrastRatio(WordsColors.starEmpty, background)
+            assertTrue("Заполненная звезда на $background: контраст $filled < 3:1", filled >= 3.0)
+            assertTrue("Контурная звезда на $background: контраст $outline < 3:1", outline >= 3.0)
+        }
         assertNotEquals(WordsColors.starDone, WordsColors.starEmpty)
     }
 

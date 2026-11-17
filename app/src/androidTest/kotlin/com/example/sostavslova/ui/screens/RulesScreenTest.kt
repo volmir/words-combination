@@ -1,0 +1,29 @@
+package com.example.sostavslova.ui.screens
+
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
+import com.example.sostavslova.ui.theme.WordsTheme
+import org.junit.Rule
+import org.junit.Test
+
+class RulesScreenTest {
+    @get:Rule val compose = createComposeRule()
+
+    @Test fun colorLegendExplainsEveryLevelStateAndRemainsReachable() {
+        compose.setContent { WordsTheme { RulesScreen() } }
+        compose.onNodeWithText("Цвета уровней").performScrollTo().assertIsDisplayed()
+        val descriptions = listOf(
+            "rules_level_color_locked" to "Розовый — уровень пока закрыт.",
+            "rules_level_color_available" to "Зелёный — уровень доступен, но ещё не пройден.",
+            "rules_level_color_passed" to "Голубой — уровень пройден, можно добрать звёзды.",
+            "rules_level_color_all_stars" to "Золотистый — собраны все звёзды уровня.",
+        )
+        for ((tag, text) in descriptions) {
+            compose.onNodeWithTag(tag).performScrollTo().assertIsDisplayed().assertTextEquals(text)
+        }
+    }
+}

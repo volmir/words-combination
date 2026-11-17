@@ -28,7 +28,7 @@ class LevelsNavigationTest {
         compose.dismissWelcomeIfShown()
         compose.onNodeWithTag("level_card_1").assertIsEnabled()
         compose.onNodeWithTag("level_card_2").assertIsEnabled()
-            .assertTextContains("Закрыт", substring = true)
+            .assert(hasContentDescription("Уровень недоступен"))
         compose.onNodeWithTag("level_card_2").performClick()
         compose.onNodeWithText("Для открытия наберите на уровне 1 1 звезду.").assertExists()
         compose.onNodeWithTag("game_screen").assertDoesNotExist()

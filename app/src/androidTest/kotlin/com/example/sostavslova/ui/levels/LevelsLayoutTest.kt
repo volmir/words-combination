@@ -45,12 +45,12 @@ class LevelsLayoutTest {
             }
         }
         compose.onNodeWithTag("level_card_1").assertIsEnabled()
-            .assertTextContains("Открыт", substring = true)
+            .assert(hasContentDescription("Уровень недоступен").not())
         assertStars(context.getString(R.string.level_stars_label),
             context.resources.getQuantityString(R.plurals.level_stars_progress, items.first().maxStars,
                 0, items.first().maxStars))
         compose.onNodeWithTag("level_card_2").assertIsEnabled()
-            .assertTextContains("Закрыт", substring = true)
+            .assert(hasContentDescription("Уровень недоступен"))
         // Ряд звёзд на карте только показывает прогресс: «Задания» здесь вводит в заблуждение.
         compose.onAllNodesWithContentDescription("Задания").assertCountEquals(0)
         compose.onAllNodesWithText("Для прохождения", substring = true).assertCountEquals(0)
@@ -72,9 +72,8 @@ class LevelsLayoutTest {
         assertStars(context.getString(R.string.level_stars_label), starsDescription)
         compose.onNodeWithTag("level_card_1")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, starsDescription))
-            .assertTextContains("Все звёзды", substring = true)
         compose.onNodeWithTag("level_card_2").assertIsEnabled()
-            .assertTextContains("Открыт", substring = true)
+            .assert(hasContentDescription("Уровень недоступен").not())
         compose.onNodeWithTag("levels_grid").performScrollToKey("stage_6")
         compose.onNodeWithTag("levels_stage_6").assertTextEquals("Мастер · уровни 14–15")
         compose.onNodeWithTag("levels_grid").performScrollToKey(items.last().word)

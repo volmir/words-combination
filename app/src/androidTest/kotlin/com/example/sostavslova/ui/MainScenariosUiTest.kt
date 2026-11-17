@@ -202,6 +202,7 @@ class MainScenariosUiTest {
      */
     @Test
     fun scenario5_levelsLevel2IsLockedOnCleanData() = runTest {
+        compose.onNodeWithTag("app_title").assertTextEquals("Составь слова")
         // Убеждаемся, что данные чистые
         container.progressRepository.clearAll()
 
@@ -213,7 +214,7 @@ class MainScenariosUiTest {
         }
         compose.onNodeWithTag("level_card_1").assertIsEnabled()
         compose.onNodeWithTag("level_card_2").assertIsEnabled()
-            .assertTextContains("Закрыт", substring = true)
+            .assert(hasContentDescription("Уровень недоступен"))
     }
 
 }

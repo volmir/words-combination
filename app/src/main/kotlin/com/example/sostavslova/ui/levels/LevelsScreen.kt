@@ -199,17 +199,18 @@ private fun stageName(number: Int): String = stringResource(when (number) {
 @Composable
 private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Unit) {
     val stars = pluralStringResource(R.plurals.level_stars_progress, item.maxStars, item.stars, item.maxStars)
-    val status = stringResource(when {
-        !item.unlocked -> R.string.level_status_locked
-        item.stars == item.maxStars -> R.string.level_all_stars
-        item.stars >= item.requiredStars -> R.string.level_passed
-        else -> R.string.level_open
-    })
+    val background = when {
+        !item.unlocked -> WordsColors.levelLockedBackground
+        item.stars == item.maxStars -> WordsColors.levelAllStarsBackground
+        item.stars >= item.requiredStars -> WordsColors.levelPassedBackground
+        else -> WordsColors.levelAvailableBackground
+    }
     OutlinedButton(onClick, Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("level_card_${item.index}")
         .semantics { stateDescription = stars },
         enabled = enabled, shape = WordsCardShape,
         border = BorderStroke(if (item.recommended) 3.dp else 1.dp, WordsColors.defaultButtonBorder),
-        colors = ButtonDefaults.outlinedButtonColors(containerColor = WordsColors.background, contentColor = WordsColors.text),
+        colors = ButtonDefaults.outlinedButtonColors(containerColor = background,
+            disabledContainerColor = background, contentColor = WordsColors.text),
         contentPadding = PaddingValues(12.dp)) {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -221,7 +222,6 @@ private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Uni
             val starsLabel = stringResource(R.string.level_stars_label)
             if (item.campaignStars == null) StarsRow(item.progress, label = starsLabel) else {
                 StarsRow(item.stars, item.maxStars, label = starsLabel)
-                Text(status, style = MaterialTheme.typography.bodySmall)
                 if (item.recommended) Text(stringResource(R.string.level_recommended), style = MaterialTheme.typography.bodySmall)
             }
         }
