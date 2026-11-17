@@ -21,6 +21,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.core.CampaignProgress
 import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.HintRules
+import com.example.sostavslova.core.HintStage
 import com.example.sostavslova.core.TaskType
 import com.example.sostavslova.di.AppContainer
 import com.example.sostavslova.di.LocalAppContainer
@@ -148,7 +149,8 @@ class CampaignJourneyUiTest {
     }
 
     @Test fun newInstallToFinaleRestartAndAllStars() = runTest {
-        begin()
+        // SAFE содержит тему, но определение Wiktionary исключается: проверяем fallback.
+        begin(QaCampaign.Meanings.SAFE)
         assertEquals(1, saved().highestUnlockedLevel)
         val clean = saved()
         for (number in 2..3) {
@@ -162,7 +164,10 @@ class CampaignJourneyUiTest {
         }
         open(1, explanationExpected = true)
         assertTrue(setOf(TaskType.T1, TaskType.T2, TaskType.T4).all { it in saved().seenExplanations })
-        repeat(4) { step ->
+        val stages = listOf(HintStage.THEME, HintStage.LENGTH, HintStage.FIRST_LETTER, HintStage.ANSWER)
+        val paidUnits = listOf(0, 0, 1, 2)
+        compose.onNodeWithText("кот").assertDoesNotExist()
+        stages.forEachIndexed { step, stage ->
             compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
             withContext(Dispatchers.Default) { withTimeout(10_000) {
                 container.progressRepository.observeCampaignProgress().first {
@@ -170,18 +175,33 @@ class CampaignJourneyUiTest {
                 }
             } }
             compose.waitForIdle()
+            val hints = saved().levels.getValue("картотека").hints
+            assertEquals(stages, hints.ladder.steps.map { it.stage })
+            assertEquals(stages.take(step + 1), hints.ladder.shown.map { it.stage })
+            assertEquals(stage, hints.ladder.stage)
+            assertEquals(paidUnits[step], hints.paidUnits)
+            compose.onNodeWithTag("game_hint_stage").performScrollTo()
+                .assertTextEquals("Подсказка · открыто ${step + 1} из 4 частей")
+            compose.onNodeWithTag("game_hint_part_${step + 1}").assertExists()
+            compose.onNodeWithTag("game_hint_part_${step + 2}").assertDoesNotExist()
+            if (stage != HintStage.ANSWER) {
+                assertTrue(hints.ladder.shown.none { it.text?.contains("кот", ignoreCase = true) == true })
+                compose.onNodeWithText("кот").assertDoesNotExist()
+            } else {
+                compose.onNodeWithText("кот").assertExists()
+            }
         }
         val hinted = saved()
         val hints = hinted.levels.getValue("картотека").hints
         assertEquals("кот", hints.ladder.target?.word)
-        assertEquals(1, hints.paidUnits)
+        assertEquals(2, hints.paidUnits)
         restart()
         assertEquals(hinted, saved())
         open(1, explanationExpected = false)
-        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 4 из 5 частей")
+        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 4 из 4 частей")
         val campaign = requireNotNull(container.levelsRepository.getCampaign())
         val current = requireNotNull(CampaignRules.openLevel(campaign, saved(), 1, container.wordRepository.requireIndex()))
-        assertEquals(4, HintRules.budget(current).remaining)
+        assertEquals(3, HintRules.budget(current).remaining)
         answer("кот", 1)
         val first = saved().levels.getValue("картотека")
         assertEquals(setOf("riddle1"), first.completedTaskIds) // Три буквы не продвигают T1/T2.
