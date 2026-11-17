@@ -230,6 +230,27 @@ class PlayTimeRepositoryTest {
         assertEquals(LevelPlayTime(), repository.snapshot(campaign).getValue(1))
     }
 
+    @Test fun repeatedSnapshotsSeeOtherWriterCampaignValidationCorruptionAndClear() = runTest {
+        repository.initialize(campaign, 1, 0)
+        val initial = repository.snapshot(campaign)
+        assertEquals(initial, repository.snapshot(campaign))
+        val other = PlayTimeRepository(store)
+        val updated = other.appendSegment(campaign, 1, 1, 25, 2)
+        assertEquals(updated, repository.snapshot(campaign).getValue(1))
+        // Даже при том же SHA изменённые пороги требуют новой проверки записи.
+        val differentRules = campaign.copy(levels = campaign.levels.map {
+            if (it.number == 1) it.copy(requiredStars = 3) else it
+        })
+        rejected { repository.snapshot(differentRules) }
+        val raw = requireNotNull(store.data.first()[key])
+        store.edit { it[key] = "broken" }
+        rejected { repository.snapshot(campaign) }
+        store.edit { it[key] = raw }
+        assertEquals(updated, repository.snapshot(campaign).getValue(1))
+        other.clearTimeStatistics()
+        assertEquals(mapOf(1 to LevelPlayTime(), 2 to LevelPlayTime()), repository.snapshot(campaign))
+    }
+
     @Test fun damagedPreferencesFileFailsClosedWithoutReplacingIt() = runTest {
         close()
         val bytes = byteArrayOf(-1, -1, -1, 0, 42)

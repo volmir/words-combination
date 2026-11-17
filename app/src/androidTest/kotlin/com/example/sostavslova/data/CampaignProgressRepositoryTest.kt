@@ -415,6 +415,23 @@ class CampaignProgressRepositoryTest {
         }
     }
 
+    @Test fun repeatedReadsSeeOtherRepositoryWritesCorruptionRestoreAndClear() = runTest {
+        answer("крот")
+        val initial = snapshot()
+        val initialRaw = requireNotNull(store.data.first()[key])
+        assertEquals(initial, snapshot())
+        val other = ProgressRepository(store)
+        other.markCampaignExplanationSeen(TaskType.T1)
+        assertEquals(initial.copy(seenExplanations = setOf(TaskType.T1)), snapshot())
+        // Прежний разобранный снимок не должен скрывать повреждение нового JSON.
+        store.edit { it[key] = "broken" }
+        assertTrue(runCatching { snapshot() }.isFailure)
+        store.edit { it[key] = initialRaw }
+        assertEquals(initial, snapshot())
+        other.clearAll()
+        assertEquals(CampaignProgress(), snapshot())
+    }
+
     @Test fun clearAllRemovesCampaignAndLegacyDataAndSurvivesRestart() = runTest {
         store.edit { it[stringPreferencesKey("currentGame")] = """{"word":"торт","found":["рот"]}""" }
         repository.saveLevelResult(Level(1, "торт", answers = 2, words = 3, letter = 'т', letterCount = 2),

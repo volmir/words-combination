@@ -1,5 +1,8 @@
 package com.example.sostavslova.time
 
+import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.core.okio.OkioStorage
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.PreferencesSerializer
@@ -7,6 +10,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.core.*
 import com.example.sostavslova.data.CampaignJson
+import com.example.sostavslova.data.LevelPlayTime
+import com.example.sostavslova.data.PlayTimeStore
 import com.example.sostavslova.data.PlayTimeRepository
 import com.example.sostavslova.data.ProgressRepository
 import java.math.BigInteger
@@ -31,15 +36,58 @@ class PlayTimeAcceptanceTest {
             ?: InstrumentationRegistry.getInstrumentation().targetContext.assets.open(name)
                 .bufferedReader().use { it.readText() }
 
-    private inner class Process {
+    /** Wall time, independent of runTest's virtual clock; only phase names and numbers. */
+    private class PhaseTimings {
+        private data class Sample(var count: Int = 0, var nanos: Long = 0, var maxNanos: Long = 0)
+        private val started = System.nanoTime()
+        private val samples = linkedMapOf<String, Sample>()
+
+        inline fun <T> measure(phase: String, block: () -> T): T {
+            val start = System.nanoTime()
+            try { return block() }
+            finally { record(phase, System.nanoTime() - start) }
+        }
+
+        @Synchronized fun record(phase: String, nanos: Long) {
+            val sample = samples.getOrPut(phase) { Sample() }
+            sample.count++
+            sample.nanos += nanos
+            sample.maxNanos = maxOf(sample.maxNanos, nanos)
+        }
+
+        @Synchronized fun report(checkpoint: String) {
+            Log.i("G08Timing", "checkpoint=$checkpoint elapsedMs=${(System.nanoTime() - started) / 1_000_000}")
+            samples.forEach { (phase, sample) ->
+                Log.i("G08Timing", "phase=$phase count=${sample.count} totalMs=${sample.nanos / 1_000_000} maxMs=${sample.maxNanos / 1_000_000}")
+            }
+        }
+    }
+
+    private inner class Process(val timings: PhaseTimings = PhaseTimings()) {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        private fun store(name: String) = PreferenceDataStoreFactory.create(scope = scope,
-            storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer) {
-                temporary.root.resolve(name).absolutePath.toPath()
-            })
+        private fun store(name: String): DataStore<Preferences> {
+            val delegate = PreferenceDataStoreFactory.create(scope = scope,
+                storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer) {
+                    temporary.root.resolve(name).absolutePath.toPath()
+                })
+            val phase = name.substringBefore('.')
+            return object : DataStore<Preferences> by delegate {
+                override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences =
+                    timings.measure("${phase}_transaction") {
+                        delegate.updateData { preferences ->
+                            timings.measure("${phase}_transform") { transform(preferences) }
+                        }
+                    }
+            }
+        }
         val clock = AtomicLong(0)
         val time = PlayTimeRepository(store("time.preferences_pb"))
-        val tracker = PlayTimeTracker(time, scope, clock::get)
+        val tracker = PlayTimeTracker(object : PlayTimeStore {
+            override suspend fun initialize(campaign: Campaign, levelNumber: Int, starsBeforeTracking: Int): LevelPlayTime =
+                timings.measure("time_initialize") { time.initialize(campaign, levelNumber, starsBeforeTracking) }
+            override suspend fun appendSegment(campaign: Campaign, levelNumber: Int, sequence: Long, activeMs: Long, starsAfter: Int): LevelPlayTime =
+                timings.measure("time_append") { time.appendSegment(campaign, levelNumber, sequence, activeMs, starsAfter) }
+        }, scope, clock::get)
         val progressStore = store("progress.preferences_pb")
         val progress = ProgressRepository(progressStore,
             onCampaignCommitted = tracker::checkpointProgress)
@@ -50,128 +98,149 @@ class PlayTimeAcceptanceTest {
             tracker.setActivityResumed(true)
             tracker.setWindowFocused("activity", true)
         }
-        suspend fun close() { scope.cancel(); scope.coroutineContext.job.join() }
+        suspend fun close() = timings.measure("process_close") { scope.cancel(); scope.coroutineContext.job.join() }
+        suspend fun awaitTime() = timings.measure("actor_barrier") { tracker.awaitSaved() }
         suspend fun exit() {
             tracker.setExiting(true)
-            progress.awaitSaved()
-            tracker.awaitSaved()
+            timings.measure("progress_barrier") { progress.awaitSaved() }
+            awaitTime()
         }
     }
 
     @Test fun installedCampaignRThenRevisitsTo49StarsHasExactLevelStageAndCampaignTotals() = runTest {
-        val source = text("campaign.json")
-        val sha = MessageDigest.getInstance("SHA-256").digest(source.toByteArray())
-            .joinToString("") { "%02x".format(it) }
-        val campaign = CampaignJson.decode(source).copy(contentSha256 = sha)
-        val index = WordIndex.fromText(text("words.txt"))
-        assertEquals(15, campaign.levels.size)
-        assertEquals(6, campaign.stages.size)
-        assertEquals(49, campaign.levels.sumOf { it.maxStars })
-        var process = Process()
-        val totals = campaign.levels.associate { it.number to 0L }.toMutableMap()
-        val toR = mutableMapOf<Int, Long>()
-        val toM = mutableMapOf<Int, Long>()
-        try {
-            process.progress.migrateCampaign(campaign, index)
-            // Obtain witnesses through TaskRules, including T4/T6/T7; never inject stars.
-            val answers = campaign.levels.associate { level ->
-                val initial = CurrentCampaignLevel(level, GameState.start(level.word, index))
-                level.number to level.tasks.flatMap { task ->
-                    val single = initial.copy(level = level.copy(tasks = listOf(task), requiredStars = 1))
-                    val target = TaskRules.evaluate(single, campaign.countMinLength).progress.single().target
-                    initial.game.allWords.sorted().filter { word ->
-                        TaskRules.submit(single, word, campaign.countMinLength, index)
-                            .evaluation.progress.single().current > 0
-                    }.take(target)
-                }.distinct()
-            }
-            suspend fun saved() = process.progress.observeCampaignProgress().first()
-            fun active(level: CampaignLevel, ms: Long) {
-                process.clock.addAndGet(ms)
-                totals[level.number] = totals.getValue(level.number) + ms
-            }
-            suspend fun play(level: CampaignLevel, full: Boolean) {
-                process.open(campaign, level, CampaignRules.stars(level, saved()))
-                // Inline found words and hint dialog belong to ONE active game interval.
-                active(level, 1000)
-                process.tracker.setWindowFocused("hint", true)
-                process.tracker.setWindowFocused("activity", false)
-                process.progress.requestCampaignHint(campaign, level.number,
-                    saved().levels[level.word]?.hints?.shownSteps ?: 0, index)
-                active(level, 2000)
-                process.tracker.setWindowFocused("activity", true)
-                process.tracker.setWindowFocused("hint", false)
-                for (word in answers.getValue(level.number)) {
-                    val before = saved()
-                    val stars = CampaignRules.stars(level, before)
-                    if (stars >= if (full) level.maxStars else level.requiredStars) break
-                    if (word in before.levels[level.word]?.found.orEmpty()) continue
-                    active(level, 1000)
-                    val result = process.progress.submitCampaignAnswer(campaign, level.number, word, index)
-                    assertEquals(AnswerResult.CORRECT, result.result)
-                    val after = result.evaluation.stars
-                    if (stars < level.requiredStars && after >= level.requiredStars) toR[level.number] = totals.getValue(level.number)
-                    if (stars < level.maxStars && after >= level.maxStars) toM[level.number] = totals.getValue(level.number)
-                    // Duplicate answer + UI render must not create a second milestone/segment.
-                    process.tracker.awaitSaved()
-                    val snapshot = process.time.snapshot(campaign)
-                    process.progress.submitCampaignAnswer(campaign, level.number, word, index)
-                    process.tracker.updateLevel("entry", PlayTimeTarget(campaign, level.number, after))
-                    process.tracker.awaitSaved()
-                    assertEquals(snapshot, process.time.snapshot(campaign))
+        // Real DataStore IO: avoid routing every reply through the virtual-time event loop.
+        withContext(Dispatchers.Default) {
+            val timings = PhaseTimings()
+            val source = timings.measure("campaign_read") { text("campaign.json") }
+            val sha = MessageDigest.getInstance("SHA-256").digest(source.toByteArray())
+                .joinToString("") { "%02x".format(it) }
+            val campaign = CampaignJson.decode(source).copy(contentSha256 = sha)
+            val index = timings.measure("word_list") { WordIndex.fromText(text("words.txt")) }
+            assertEquals(15, campaign.levels.size)
+            assertEquals(6, campaign.stages.size)
+            assertEquals(49, campaign.levels.sumOf { it.maxStars })
+            var process = Process(timings)
+            val totals = campaign.levels.associate { it.number to 0L }.toMutableMap()
+            val toR = mutableMapOf<Int, Long>()
+            val toM = mutableMapOf<Int, Long>()
+            try {
+                timings.measure("migration") { process.progress.migrateCampaign(campaign, index) }
+                // Obtain witnesses through TaskRules, including T4/T6/T7; never inject stars.
+                val answers = timings.measure("witnesses") {
+                    campaign.levels.associate { level ->
+                        val initial = CurrentCampaignLevel(level, GameState.start(level.word, index))
+                        level.number to level.tasks.flatMap { task ->
+                            val single = initial.copy(level = level.copy(tasks = listOf(task), requiredStars = 1))
+                            val target = TaskRules.evaluate(single, campaign.countMinLength).progress.single().target
+                            initial.game.allWords.sorted().filter { word ->
+                                TaskRules.submit(single, word, campaign.countMinLength, index)
+                                    .evaluation.progress.single().current > 0
+                            }.take(target)
+                        }.distinct()
+                    }
                 }
-                assertTrue(CampaignRules.stars(level, saved()) >= if (full) level.maxStars else level.requiredStars)
-                process.tracker.setDrawerOpen(true)
-                process.clock.addAndGet(50_000) // menu time excluded
-                process.tracker.setRoute("time", null)
-                process.tracker.detachLevel("entry")
-                process.tracker.setDrawerOpen(false)
-                process.tracker.awaitSaved()
-                assertEquals(totals.getValue(level.number), process.time.snapshot(campaign).getValue(level.number).cumulativeActiveMs)
+                timings.report("witnesses_ready")
+                suspend fun saved() = timings.measure("progress_read") { process.progress.observeCampaignProgress().first() }
+                suspend fun timeSnapshot() = timings.measure("time_read") { process.time.snapshot(campaign) }
+                fun active(level: CampaignLevel, ms: Long) {
+                    process.clock.addAndGet(ms)
+                    totals[level.number] = totals.getValue(level.number) + ms
+                }
+                suspend fun play(level: CampaignLevel, full: Boolean) = timings.measure("play_level") {
+                    process.open(campaign, level, CampaignRules.stars(level, saved()))
+                    // Inline found words and hint dialog belong to ONE active game interval.
+                    active(level, 1000)
+                    process.tracker.setWindowFocused("hint", true)
+                    process.tracker.setWindowFocused("activity", false)
+                    timings.measure("hint") { process.progress.requestCampaignHint(campaign, level.number,
+                        saved().levels[level.word]?.hints?.shownSteps ?: 0, index) }
+                    active(level, 2000)
+                    process.tracker.setWindowFocused("activity", true)
+                    process.tracker.setWindowFocused("hint", false)
+                    for (word in answers.getValue(level.number)) {
+                        val before = saved()
+                        val stars = CampaignRules.stars(level, before)
+                        if (stars >= if (full) level.maxStars else level.requiredStars) break
+                        if (word in before.levels[level.word]?.found.orEmpty()) continue
+                        active(level, 1000)
+                        val result = timings.measure("answer") { process.progress.submitCampaignAnswer(campaign, level.number, word, index) }
+                        assertEquals(AnswerResult.CORRECT, result.result)
+                        val after = result.evaluation.stars
+                        if (stars < level.requiredStars && after >= level.requiredStars) toR[level.number] = totals.getValue(level.number)
+                        if (stars < level.maxStars && after >= level.maxStars) toM[level.number] = totals.getValue(level.number)
+                        // Duplicate answer + UI render must not create a second milestone/segment.
+                        process.awaitTime()
+                        val snapshot = timeSnapshot()
+                        timings.measure("duplicate") { process.progress.submitCampaignAnswer(campaign, level.number, word, index) }
+                        process.tracker.updateLevel("entry", PlayTimeTarget(campaign, level.number, after))
+                        process.awaitTime()
+                        assertEquals(snapshot, timeSnapshot())
+                    }
+                    val completed = saved()
+                    assertTrue(CampaignRules.stars(level, completed) >= if (full) level.maxStars else level.requiredStars)
+                    assertEquals(if (full) campaign.levels.size else minOf(level.number + 1, campaign.levels.size),
+                        completed.highestUnlockedLevel)
+                    process.tracker.setDrawerOpen(true)
+                    process.clock.addAndGet(50_000) // menu time excluded
+                    process.tracker.setRoute("time", null)
+                    process.tracker.detachLevel("entry")
+                    process.tracker.setDrawerOpen(false)
+                    process.awaitTime()
+                    assertEquals(totals.getValue(level.number), timeSnapshot().getValue(level.number).cumulativeActiveMs)
+                }
+                timings.measure("pass_R") {
+                    campaign.levels.forEach { play(it, false); Log.i("G08Timing", "checkpoint=R_${it.number}") }
+                }
+                assertTrue(saved().finaleReached)
+                assertTrue(campaign.levels.any { CampaignRules.stars(it, saved()) < it.maxStars })
+                // Cold start with actual disk files and a NEW monotonic epoch.
+                process.exit()
+                val atR = saved()
+                val timeAtR = timeSnapshot()
+                process.close()
+                process = Process(timings)
+                assertEquals(atR, process.progress.migrateCampaign(campaign, index))
+                assertEquals(timeAtR, timeSnapshot())
+                timings.measure("pass_M") {
+                    campaign.levels.forEach { play(it, true); Log.i("G08Timing", "checkpoint=M_${it.number}") }
+                }
+                assertEquals(49, CampaignRules.summary(campaign, saved()).stars)
+                // Replay after M keeps milestones and contributes to total time.
+                val first = campaign.levels.first()
+                process.open(campaign, first, first.maxStars)
+                active(first, 7000)
+                process.exit()
+                timings.measure("final_checks") {
+                    val records = timeSnapshot()
+                    campaign.levels.forEach { level ->
+                        val record = records.getValue(level.number)
+                        assertEquals(totals.getValue(level.number), record.cumulativeActiveMs)
+                        assertEquals(toR.getValue(level.number), record.timeToRMs)
+                        assertEquals(toM.getValue(level.number), record.timeToFullMs)
+                    }
+                    val summary = process.time.observeStatistics(campaign).first()
+                    val total = totals.values.sum()
+                    assertEquals(BigInteger.valueOf(total), summary.screenActiveMs)
+                    assertEquals(total / 15.0, summary.meanLevelActiveMs)
+                    assertEquals(totals.values.sorted()[7].toDouble(), summary.medianLevelActiveMs)
+                    summary.stages.forEach { stage ->
+                        assertEquals(BigInteger.valueOf(campaign.levels.filter { it.stage == stage.stageNumber }
+                            .sumOf { totals.getValue(it.number) }), stage.screenActiveMs)
+                    }
+                    assertEquals(summary.screenActiveMs, summary.stages.fold(BigInteger.ZERO) { sum, stage -> sum + stage.screenActiveMs })
+                    assertEquals(BigInteger.valueOf(toR.values.sum()), summary.toR.totalMs)
+                    assertEquals(BigInteger.valueOf(toM.values.sum()), summary.toFull.totalMs)
+                    val progress = saved()
+                    process.close()
+                    process = Process(timings)
+                    assertEquals(progress, process.progress.migrateCampaign(campaign, index))
+                    assertEquals(records, timeSnapshot())
+                }
+            } finally {
+                withContext(NonCancellable) { process.close() }
+                timings.report("finished")
             }
-            campaign.levels.forEach { play(it, false) }
-            assertTrue(saved().finaleReached)
-            assertTrue(campaign.levels.any { CampaignRules.stars(it, saved()) < it.maxStars })
-            // Cold start with actual disk files and a NEW monotonic epoch.
-            process.exit()
-            val atR = saved()
-            val timeAtR = process.time.snapshot(campaign)
-            process.close()
-            process = Process()
-            assertEquals(atR, process.progress.migrateCampaign(campaign, index))
-            assertEquals(timeAtR, process.time.snapshot(campaign))
-            campaign.levels.forEach { play(it, true) }
-            assertEquals(49, CampaignRules.summary(campaign, saved()).stars)
-            // Replay after M keeps milestones and contributes to total time.
-            val first = campaign.levels.first()
-            process.open(campaign, first, first.maxStars)
-            active(first, 7000)
-            process.exit()
-            val records = process.time.snapshot(campaign)
-            campaign.levels.forEach { level ->
-                val record = records.getValue(level.number)
-                assertEquals(totals.getValue(level.number), record.cumulativeActiveMs)
-                assertEquals(toR.getValue(level.number), record.timeToRMs)
-                assertEquals(toM.getValue(level.number), record.timeToFullMs)
-            }
-            val summary = process.time.observeStatistics(campaign).first()
-            val total = totals.values.sum()
-            assertEquals(BigInteger.valueOf(total), summary.screenActiveMs)
-            assertEquals(total / 15.0, summary.meanLevelActiveMs)
-            assertEquals(totals.values.sorted()[7].toDouble(), summary.medianLevelActiveMs)
-            summary.stages.forEach { stage ->
-                assertEquals(BigInteger.valueOf(campaign.levels.filter { it.stage == stage.stageNumber }
-                    .sumOf { totals.getValue(it.number) }), stage.screenActiveMs)
-            }
-            assertEquals(summary.screenActiveMs, summary.stages.fold(BigInteger.ZERO) { sum, stage -> sum + stage.screenActiveMs })
-            assertEquals(BigInteger.valueOf(toR.values.sum()), summary.toR.totalMs)
-            assertEquals(BigInteger.valueOf(toM.values.sum()), summary.toFull.totalMs)
-            val progress = saved()
-            process.close()
-            process = Process()
-            assertEquals(progress, process.progress.migrateCampaign(campaign, index))
-            assertEquals(records, process.time.snapshot(campaign))
-        } finally { process.close() }
+        }
     }
 
     @Test fun abruptProcessDeathKeepsDurableCheckpointAndDropsOnlyUnflushedTail() = runTest {

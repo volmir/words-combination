@@ -126,6 +126,9 @@ class ProgressRepository(
     private val campaignProgressKey = stringPreferencesKey("campaignProgressV2")
     private val campaignProgressArchiveKey = stringPreferencesKey("campaignProgressV2Archive")
     private val welcomeStateKey = stringPreferencesKey("welcomeStateV1")
+    // Один неизменяемый снимок, строго по полному JSON, включая внешние записи/сброс.
+    // Кэш не является квитанцией commit: чтение всё равно начинается с DataStore.
+    @Volatile private var decodedCampaign: Pair<String, CampaignProgress>? = null
 
     /** Один снимок для уровня, доступа, подсказок и итогов CampaignRules.summary. */
     fun observeCampaignProgress(): Flow<CampaignProgress> = dataStore.data
@@ -355,8 +358,14 @@ class ProgressRepository(
         "Level is locked or unknown"
     }
 
-    private fun readCampaign(preferences: Preferences): CampaignProgress =
-        readCampaignDto(preferences)?.toCore() ?: CampaignProgress()
+    private fun readCampaign(preferences: Preferences): CampaignProgress {
+        val raw = preferences[campaignProgressKey] ?: return CampaignProgress()
+        val cached = decodedCampaign
+        if (cached?.first == raw) return cached.second
+        return json.decodeFromString<CampaignProgressDto>(raw).toCore().also {
+            decodedCampaign = raw to it
+        }
+    }
 
     private fun readWelcomeState(preferences: Preferences): WelcomeState =
         when (preferences[welcomeStateKey]) {
@@ -386,7 +395,9 @@ class ProgressRepository(
                 val saved = readCampaign(preferences)
                 val changed = change(saved)
                 if (changed.first != saved) {
-                    preferences[campaignProgressKey] = json.encodeToString(CampaignProgressDto.fromCore(changed.first))
+                    val raw = json.encodeToString(CampaignProgressDto.fromCore(changed.first))
+                    preferences[campaignProgressKey] = raw
+                    decodedCampaign = raw to changed.first
                 }
                 result = changed
             }

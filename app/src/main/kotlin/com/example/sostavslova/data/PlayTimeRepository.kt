@@ -48,11 +48,22 @@ interface PlayTimeStore {
 
 class PlayTimeRepository(private val dataStore: DataStore<Preferences>) : PlayTimeStore {
     private val json = Json { encodeDefaults = true }
+    private data class DecodedSnapshot(
+        val campaign: Campaign,
+        val preferences: Preferences,
+        val records: Map<Int, LevelPlayTime>,
+    )
+    // Только последний снимок. Новые данные или параметры кампании требуют валидации.
+    @Volatile private var decodedSnapshot: DecodedSnapshot? = null
 
     fun observe(campaign: Campaign): Flow<Map<Int, LevelPlayTime>> {
         identity(campaign)
         return dataStore.data.map { preferences ->
-            campaign.levels.associate { level -> level.number to read(preferences, campaign, level) }
+            val cached = decodedSnapshot
+            if (cached?.campaign == campaign && cached.preferences == preferences) cached.records
+            else campaign.levels.associate { level -> level.number to read(preferences, campaign, level) }.also {
+                decodedSnapshot = DecodedSnapshot(campaign, preferences, it)
+            }
         }.distinctUntilChanged().flowOn(Dispatchers.Default)
     }
 
