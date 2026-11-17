@@ -22,8 +22,7 @@
     "CC BY-SA 4.0",
     "Kaikki.org",
     "FrequencyWords",
-    "Apache-2.0",
-    "BSD-3-Clause"
+    "Apache-2.0"
   ],
   "expected_user_strings": {
     "about_code_heading": "Программный код",

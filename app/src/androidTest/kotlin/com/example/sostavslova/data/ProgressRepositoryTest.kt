@@ -1,15 +1,15 @@
 package com.example.sostavslova.data
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
+import com.example.sostavslova.data.jsonstore.Preferences
+import com.example.sostavslova.data.jsonstore.edit
+import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import com.example.sostavslova.core.GameState
 import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.LevelProgress
 import androidx.datastore.core.okio.OkioStorage
-import androidx.datastore.preferences.core.PreferencesSerializer
+import com.example.sostavslova.data.jsonstore.PreferencesSerializer
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import okio.FileSystem
@@ -49,7 +49,7 @@ class ProgressRepositoryTest {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         store = PreferenceDataStoreFactory.create(scope = scope,
             storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer) {
-                File(directory, "progress.preferences_pb").absolutePath.toPath()
+                File(directory, "progress.json").absolutePath.toPath()
             })
         repository = ProgressRepository(store)
     }

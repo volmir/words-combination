@@ -2,9 +2,9 @@ package com.example.sostavslova.time
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.okio.OkioStorage
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.PreferencesSerializer
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
+import com.example.sostavslova.data.jsonstore.Preferences
+import com.example.sostavslova.data.jsonstore.PreferencesSerializer
 import com.example.sostavslova.core.Campaign
 import com.example.sostavslova.core.CampaignLevel
 import com.example.sostavslova.core.CampaignTask
@@ -45,8 +45,8 @@ class PlayTimeProgressIntegrationTest {
                     CampaignTask.T1("count", 1), CampaignTask.T7("letter", 'т', 1)))
             ), contentSha256 = "a".repeat(64))
             val index = WordIndex(listOf("кора", "крот"))
-            val progressStore = store("progress.preferences_pb")
-            val time = PlayTimeRepository(store("time.preferences_pb"))
+            val progressStore = store("progress.json")
+            val time = PlayTimeRepository(store("time.json"))
             val clock = AtomicLong(0)
             var tracker = PlayTimeTracker(time, scope, clock::get)
             val progress = ProgressRepository(progressStore, onCampaignCommitted = { tracker.checkpointProgress(it) })
@@ -107,7 +107,7 @@ class PlayTimeProgressIntegrationTest {
                 }, scope = scope)
             val committed = CompletableDeferred<Unit>()
             val release = CompletableDeferred<Unit>()
-            val actualProgress = store("progress.preferences_pb")
+            val actualProgress = store("progress.json")
             val heldProgress = object : DataStore<Preferences> {
                 override val data: Flow<Preferences> = actualProgress.data
                 override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
@@ -123,7 +123,7 @@ class PlayTimeProgressIntegrationTest {
             val index = WordIndex(listOf("крот"))
             ProgressRepository(actualProgress).migrateCampaign(campaign, index)
             val clock = AtomicLong(0)
-            val time = PlayTimeRepository(store("time.preferences_pb"))
+            val time = PlayTimeRepository(store("time.json"))
             val tracker = PlayTimeTracker(time, scope, clock::get)
             val progress = ProgressRepository(heldProgress, onCampaignCommitted = tracker::checkpointProgress)
             tracker.setRoute("entry", 1)

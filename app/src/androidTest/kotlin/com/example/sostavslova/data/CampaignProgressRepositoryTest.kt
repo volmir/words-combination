@@ -1,12 +1,12 @@
 package com.example.sostavslova.data
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.PreferencesSerializer
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
+import com.example.sostavslova.data.jsonstore.Preferences
+import com.example.sostavslova.data.jsonstore.PreferencesSerializer
 import androidx.datastore.core.okio.OkioStorage
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.sostavslova.data.jsonstore.edit
+import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import com.example.sostavslova.core.AnswerResult
 import com.example.sostavslova.core.Campaign
 import com.example.sostavslova.core.CampaignLevel
@@ -90,7 +90,7 @@ class CampaignProgressRepositoryTest {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         store = ControlledStore(PreferenceDataStoreFactory.create(
             storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer) {
-                File(directory, "campaign.preferences_pb").absolutePath.toPath()
+                File(directory, "campaign.json").absolutePath.toPath()
             },
             scope = scope,
         ))
@@ -121,7 +121,7 @@ class CampaignProgressRepositoryTest {
                      {"stage":"FIRST_LETTER","text":"т","revealedPositions":[0]},
                      {"stage":"ANSWER","text":"торт","revealedPositions":[0,1,2,3]}],
             "nextStepIndex":3,"revealedPositions":[0],"shownSteps":7,"paidUnits":2}}}}"""
-        val unrelatedTime = androidx.datastore.preferences.core.longPreferencesKey("synthetic_play_time")
+        val unrelatedTime = com.example.sostavslova.data.jsonstore.longPreferencesKey("synthetic_play_time")
         store.edit { it[key] = raw; it[unrelatedTime] = 1234L }
         val migrated = snapshot()
         val saved = migrated.levels.getValue("картотека")

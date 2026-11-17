@@ -1,9 +1,9 @@
 package com.example.sostavslova.data
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.sostavslova.data.jsonstore.Preferences
+import com.example.sostavslova.data.jsonstore.edit
+import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import com.example.sostavslova.core.Campaign
 import com.example.sostavslova.core.CampaignLevel
 import com.example.sostavslova.core.CampaignTimeSnapshot
@@ -37,7 +37,7 @@ data class LevelPlayTime(
 /**
  * Отдельный DataStore, принадлежащий AppContainer. edit сериализует операции даже
  * разных экземпляров репозитория над одним DataStore и возвращается после записи.
- * Ошибки диска, protobuf и JSON передаются вызывающему коду: нули вместо повреждённых
+ * Ошибки диска и JSON передаются вызывающему коду: нули вместо повреждённых
  * данных не выдаются. Повторять неудачную запись следует с тем же sequence.
  * Этот слой не запускает таймер и не вычисляет/меняет игровой прогресс.
  */

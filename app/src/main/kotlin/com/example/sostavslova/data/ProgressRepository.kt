@@ -1,10 +1,10 @@
 package com.example.sostavslova.data
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.MutablePreferences
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.sostavslova.data.jsonstore.MutablePreferences
+import com.example.sostavslova.data.jsonstore.Preferences
+import com.example.sostavslova.data.jsonstore.edit
+import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import com.example.sostavslova.core.Alphabet
 import com.example.sostavslova.core.AnswerResult
 import com.example.sostavslova.core.Campaign

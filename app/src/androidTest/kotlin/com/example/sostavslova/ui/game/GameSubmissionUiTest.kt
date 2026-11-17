@@ -7,7 +7,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -38,7 +38,7 @@ class GameSubmissionUiTest {
         val owner = object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
         try {
             val repository = ProgressRepository(PreferenceDataStoreFactory.create(scope = scope) {
-                File(directory, "progress.preferences_pb")
+                File(directory, "progress.json")
             })
             val words = WordRepository({ context.assets.open("words.txt").bufferedReader().use { it.readText() } })
             val levels = LevelsRepository({ error("No v1") }, readCampaign = {

@@ -2,11 +2,11 @@ package com.example.sostavslova.data
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.okio.OkioStorage
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.PreferencesSerializer
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
+import com.example.sostavslova.data.jsonstore.Preferences
+import com.example.sostavslova.data.jsonstore.PreferencesSerializer
+import com.example.sostavslova.data.jsonstore.edit
+import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import com.example.sostavslova.core.Campaign
 import com.example.sostavslova.core.CampaignProgress
 import com.example.sostavslova.core.CampaignLevel
@@ -72,7 +72,7 @@ class LegacyCampaignMigrationTest {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         store = ControlledStore(PreferenceDataStoreFactory.create(
             storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer) {
-                File(directory, "migration.preferences_pb").absolutePath.toPath()
+                File(directory, "migration.json").absolutePath.toPath()
             }, scope = scope,
         ))
         repository = ProgressRepository(store)

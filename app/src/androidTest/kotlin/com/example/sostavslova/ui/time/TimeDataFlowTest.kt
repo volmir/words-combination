@@ -1,8 +1,8 @@
 package com.example.sostavslova.ui.time
 
 import androidx.datastore.core.okio.OkioStorage
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.PreferencesSerializer
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
+import com.example.sostavslova.data.jsonstore.PreferencesSerializer
 import com.example.sostavslova.core.*
 import com.example.sostavslova.data.PlayTimeRepository
 import java.math.BigInteger
@@ -21,7 +21,7 @@ class TimeDataFlowTest {
 
     @Test fun subscribedLocalSnapshotsUpdateWithoutRefreshOrReadSideWrites() = runTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        val path = temporaryFolder.newFolder().resolve("time.preferences_pb").absolutePath.toPath()
+        val path = temporaryFolder.newFolder().resolve("time.json").absolutePath.toPath()
         val store = PreferenceDataStoreFactory.create(scope = scope,
             storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer) { path })
         val repository = PlayTimeRepository(store)

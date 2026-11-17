@@ -5,9 +5,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
+import com.example.sostavslova.data.jsonstore.Preferences
+import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -80,7 +80,7 @@ class WelcomeDialogUiTest {
         val currentScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         scope = currentScope
         store = PreferenceDataStoreFactory.create(scope = currentScope) {
-            File(directory, "progress.preferences_pb")
+            File(directory, "progress.json")
         }
         return ProgressRepository(store, installEvidence = { evidence },
             hadLocalStateAtStartup = hadLocalState)

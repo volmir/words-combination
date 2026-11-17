@@ -2,11 +2,11 @@ package com.example.sostavslova.data
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.okio.OkioStorage
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.PreferencesSerializer
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
+import com.example.sostavslova.data.jsonstore.Preferences
+import com.example.sostavslova.data.jsonstore.PreferencesSerializer
+import com.example.sostavslova.data.jsonstore.edit
+import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import com.example.sostavslova.core.CampaignRules
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -39,7 +39,7 @@ class PlayTimeRepositoryTest {
     private val key = stringPreferencesKey("playTimeV1:${campaign.contentSha256}:1:картотека")
 
     @Before fun setUp() {
-        file = File(temporaryFolder.newFolder(), "time.preferences_pb")
+        file = File(temporaryFolder.newFolder(), "time.json")
         open()
     }
 
@@ -262,7 +262,7 @@ class PlayTimeRepositoryTest {
     }
 
     @Test fun timingAndExplicitClearLeaveLegacyWordsStarsHintsAndCampaignProgressUntouched() = runTest {
-        val progressFile = File(temporaryFolder.newFolder(), "progress.preferences_pb")
+        val progressFile = File(temporaryFolder.newFolder(), "progress.json")
         val progressStore = PreferenceDataStoreFactory.create(scope = scope,
             storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer) { progressFile.absolutePath.toPath() })
         val raw = """{"version":2,"levels":{"картотека":{"found":["карта"],"completedTaskIds":["count","initial"],"hints":{"shownSteps":1,"paidUnits":1,"ownedContentVersion":1}}}}"""

@@ -1,8 +1,8 @@
 package com.example.sostavslova.data
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.emptyPreferences
+import com.example.sostavslova.data.jsonstore.Preferences
+import com.example.sostavslova.data.jsonstore.emptyPreferences
 import com.example.sostavslova.core.Level
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin

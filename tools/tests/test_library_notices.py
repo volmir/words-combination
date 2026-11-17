@@ -1,4 +1,5 @@
 import io
+import json
 import os
 from pathlib import Path
 import tempfile
@@ -6,10 +7,34 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
-from tools.build_library_notices import archive_notices, default_gradle_cache, pom_licenses
+from tools.build_library_notices import archive_notices, default_gradle_cache, generate, pom_licenses
 
 
 class LibraryNoticesTest(unittest.TestCase):
+    def test_json_datastore_notice_does_not_require_or_claim_protobuf(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            cache = root / 'cache'
+            pom = cache / 'androidx.datastore' / 'datastore-core-android' / '1.1.7' / 'hash' / 'lib.pom'
+            pom.parent.mkdir(parents=True)
+            pom.write_text('<project xmlns="http://maven.apache.org/POM/4.0.0">'
+                           '<licenses><license><name>Apache 2</name>'
+                           '<url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>'
+                           '</license></licenses></project>')
+            jar = root / 'library.jar'
+            with zipfile.ZipFile(jar, 'w') as archive:
+                archive.writestr('META-INF/NOTICE', 'Synthetic notice\n')
+            inputs = root / 'inputs.json'
+            inputs.write_text(json.dumps({'debug': [{'artifact': 'androidx.datastore:datastore-core-android:1.1.7',
+                                                     'file': str(jar)}]}))
+            legal = root / 'legal'
+            legal.mkdir()
+            (legal / 'Apache-2.0.txt').write_text('Apache license\n')
+            # No Protobuf license is present in this minimal JSON DataStore build.
+            result = generate(inputs, cache, legal)
+            self.assertNotIn('Protobuf BSD-3-Clause upstream notice', result['LIBRARY_NOTICES.txt'])
+            self.assertNotIn('datastore-preferences-external-protobuf', result['RUNTIME_LIBRARIES.json'])
+
     def test_parent_license_is_resolved_with_both_pom_hashes(self):
         with tempfile.TemporaryDirectory() as temp:
             cache = Path(temp)

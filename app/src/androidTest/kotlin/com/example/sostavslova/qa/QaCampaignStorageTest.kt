@@ -29,7 +29,7 @@ class QaCampaignStorageTest {
     @get:Rule val temporary = TemporaryFolder()
     private val containers = mutableListOf<AppContainer>()
 
-    private fun container(name: String) = QaCampaign.container(File(temporary.root, "$name.preferences_pb"))
+    private fun container(name: String) = QaCampaign.container(File(temporary.root, "$name.json"))
         .also { containers.add(it) }
 
     @After fun close() = runTest {

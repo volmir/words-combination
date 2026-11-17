@@ -75,6 +75,6 @@ CC0-1.0 относится только к 39 значениям hint утвер
 Публикационный аудит остаётся открытым: docs/OWN_HINTS_LICENSE_RELEASE_AUDIT.md.
 
 Открытые библиотеки AndroidX, Jetpack Compose, Kotlin и kotlinx:
-Apache-2.0, за исключением перепакованного Protobuf (BSD-3-Clause).
+Apache-2.0 (фактический состав поставляемых зависимостей и полные тексты см. в LIBRARY_NOTICES.txt).
 Полные тексты и уведомления: Apache-2.0.txt, LIBRARY_NOTICES.txt.
 Инвентаризация: RUNTIME_LIBRARIES.json.

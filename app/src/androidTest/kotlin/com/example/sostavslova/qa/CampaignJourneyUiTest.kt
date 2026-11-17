@@ -57,7 +57,7 @@ class CampaignJourneyUiTest {
     private lateinit var activity: Activity
 
     private fun begin(fullApp: Boolean = false) {
-        file = File(temporary.root, "qa.preferences_pb")
+        file = File(temporary.root, "qa.json")
         container = QaCampaign.container(file).also { containers.add(it) }
         mounted.value = container
         compose.setContent {

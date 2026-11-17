@@ -2,11 +2,11 @@ package com.example.sostavslova.time
 
 import android.util.Log
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
+import com.example.sostavslova.data.jsonstore.Preferences
 import androidx.datastore.core.okio.OkioStorage
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.PreferencesSerializer
-import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
+import com.example.sostavslova.data.jsonstore.PreferencesSerializer
+import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.core.*
 import com.example.sostavslova.data.CampaignJson
@@ -81,14 +81,14 @@ class PlayTimeAcceptanceTest {
             }
         }
         val clock = AtomicLong(0)
-        val time = PlayTimeRepository(store("time.preferences_pb"))
+        val time = PlayTimeRepository(store("time.json"))
         val tracker = PlayTimeTracker(object : PlayTimeStore {
             override suspend fun initialize(campaign: Campaign, levelNumber: Int, starsBeforeTracking: Int): LevelPlayTime =
                 timings.measure("time_initialize") { time.initialize(campaign, levelNumber, starsBeforeTracking) }
             override suspend fun appendSegment(campaign: Campaign, levelNumber: Int, sequence: Long, activeMs: Long, starsAfter: Int): LevelPlayTime =
                 timings.measure("time_append") { time.appendSegment(campaign, levelNumber, sequence, activeMs, starsAfter) }
         }, scope, clock::get)
-        val progressStore = store("progress.preferences_pb")
+        val progressStore = store("progress.json")
         val progress = ProgressRepository(progressStore,
             onCampaignCommitted = tracker::checkpointProgress)
         fun open(campaign: Campaign, level: CampaignLevel, stars: Int) {

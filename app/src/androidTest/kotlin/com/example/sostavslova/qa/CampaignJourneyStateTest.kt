@@ -36,7 +36,7 @@ class CampaignJourneyStateTest {
     private val owners = mutableListOf<ViewModelStoreOwner>()
 
     private fun container(name: String, words: WordRepository? = null) =
-        QaCampaign.container(File(temporary.root, "$name.preferences_pb"), words = words)
+        QaCampaign.container(File(temporary.root, "$name.json"), words = words)
             .also { containers.add(it) }
 
     @After fun close() = runTest {
@@ -49,7 +49,7 @@ class CampaignJourneyStateTest {
             listOf("кот", "кот", "кот", "крот"),
             listOf("крот", "трек", "кот", "рак"),
         ).withIndex()) {
-            val app = QaCampaign.container(File(temporary.root, "route$number.preferences_pb")).also { containers.add(it) }
+            val app = QaCampaign.container(File(temporary.root, "route$number.json")).also { containers.add(it) }
             val campaign = requireNotNull(app.levelsRepository.getCampaign())
             val index = app.wordRepository.requireIndex()
             val progress = app.progressRepository
