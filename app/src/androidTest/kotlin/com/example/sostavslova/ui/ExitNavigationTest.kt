@@ -3,6 +3,7 @@ package com.example.sostavslova.ui
 import android.content.ContextWrapper
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.test.espresso.Espresso
 import com.example.sostavslova.MainActivity
 import com.example.sostavslova.WordsApplication
 import kotlinx.coroutines.Job
@@ -17,7 +18,7 @@ class ExitNavigationTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_card_1").fetchSemanticsNodes().isNotEmpty() }
         compose.dismissWelcomeIfShown()
     }
-    private fun back() = compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+    private fun back() = Espresso.pressBack()
 
     @Test fun drawerBackClosesDrawerAndDialogSurvivesRecreationWithCancel() {
         compose.onNodeWithTag("app_menu").performClick()
@@ -57,10 +58,23 @@ class ExitNavigationTest {
     @Test fun systemBackDismissesDialogAndActivityIsFoundThroughWrappers() {
         assertSame(compose.activity, ContextWrapper(ContextWrapper(compose.activity)).findActivity())
         assertNull(compose.activity.applicationContext.findActivity())
-        compose.onNodeWithTag("app_menu").performClick()
-        compose.onNodeWithTag("drawer_exit").performScrollTo().performClick()
-        back()
-        compose.onNodeWithTag("exit_dialog_confirm").assertDoesNotExist()
-        assertFalse(compose.activity.isFinishing)
+        val pending = Job()
+        (compose.activity.application as WordsApplication).container.progressRepository.trackOperation(pending)
+        try {
+            compose.onNodeWithTag("app_menu").performClick()
+            compose.onNodeWithTag("drawer_exit").performScrollTo().performClick()
+            compose.onNodeWithTag("exit_dialog_confirm").assertIsDisplayed().assertIsNotEnabled()
+            compose.onNodeWithText("Прогресс сохранён.").assertDoesNotExist()
+            back()
+            compose.onNodeWithTag("exit_dialog_confirm").assertDoesNotExist()
+            assertFalse(compose.activity.isFinishing)
+            assertFalse(pending.isCompleted)
+            pending.complete()
+            compose.waitForIdle()
+            compose.onNodeWithTag("exit_dialog_confirm").assertDoesNotExist()
+            compose.onNodeWithTag("app_menu").assertIsDisplayed().performClick()
+            compose.onNodeWithTag("drawer_exit").performScrollTo().assertIsDisplayed()
+            assertFalse(compose.activity.isFinishing)
+        } finally { pending.complete() }
     }
 }
