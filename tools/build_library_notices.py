@@ -95,12 +95,15 @@ def generate(inputs, cache, legal):
     for r in inventory:
         lines.append(r['artifact'] + ' [' + ', '.join(r['profiles']) + '] — ' +
                      ', '.join(l['spdx'] for l in r['licenses']))
-    lines += ['', 'Apache-2.0 full text:', (legal / 'Apache-2.0.txt').read_text(),
-              '', 'Protobuf BSD-3-Clause upstream notice:',
-              'Source: https://raw.githubusercontent.com/protocolbuffers/protobuf/v3.25.1/LICENSE',
-              'DataStore POM declares BSD-3-Clause. Exact repackaged protobuf revision remains unverified;',
-              'this upstream notice is retained conservatively and is not proof of that revision.',
-              (legal / 'Protobuf-BSD-3-Clause.txt').read_text()]
+    lines += ['', 'Apache-2.0 full text:', (legal / 'Apache-2.0.txt').read_text()]
+    if any(r['artifact'].split(':')[1] == 'datastore-preferences-external-protobuf' for r in inventory):
+        # Historical AndroidX Preferences builds contain a BSD-licensed repackaged runtime.
+        # Core DataStore + JSON must not claim to bundle it after the dependency is removed.
+        lines += ['', 'Protobuf BSD-3-Clause upstream notice:',
+                  'Source: https://raw.githubusercontent.com/protocolbuffers/protobuf/v3.25.1/LICENSE',
+                  'DataStore POM declares BSD-3-Clause. Exact repackaged protobuf revision remains unverified;',
+                  'this upstream notice is retained conservatively and is not proof of that revision.',
+                  (legal / 'Protobuf-BSD-3-Clause.txt').read_text()]
     for key, value in sorted(texts.items()):
         lines += ['', 'Verbatim embedded third-party notice SHA-256 ' + key + ':', value]
     lines += ['', 'End of runtime library notices.']

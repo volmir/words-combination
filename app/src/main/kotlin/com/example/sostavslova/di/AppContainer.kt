@@ -3,8 +3,7 @@ package com.example.sostavslova.di
 import android.content.Context
 import android.os.SystemClock
 import android.util.Log
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.preferencesDataStoreFile
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
 import com.example.sostavslova.BuildConfig
 import com.example.sostavslova.data.RiddlesRepository
 import com.example.sostavslova.data.LevelsRepository
@@ -13,6 +12,7 @@ import com.example.sostavslova.data.ProgressRepository
 import com.example.sostavslova.data.JsonRiddlesRepository
 import com.example.sostavslova.data.WordRepository
 import com.example.sostavslova.data.readInstallEvidence
+import com.example.sostavslova.data.jsonstore.LegacyPreferencesMigration
 import com.example.sostavslova.time.PlayTimeTracker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,12 +46,15 @@ class AppContainer(
         readAsset = { appContext.assets.open("owned_riddles.json").use { it.readBytes() } },
     )
 
-    private val progressFileProvider = progressFile ?: { appContext.preferencesDataStoreFile("progress") }
+    private val storeDirectory = File(appContext.filesDir, "datastore")
+    private val oldProgressFile = File(storeDirectory, "progress.preferences_pb")
+    private val progressFileProvider = progressFile ?: { File(storeDirectory, "progress.json") }
+    private val migrateOldProgress = progressFile == null && !progressFileProvider().exists()
 
     // Снимок до первого edit: отсутствие файла не доказывает новую установку,
     // но его наличие подтверждает локальное состояние старого запуска.
     private val hadLocalStateAtStartup = try {
-        progressFileProvider().exists()
+        progressFileProvider().exists() || (progressFile == null && oldProgressFile.exists())
     } catch (_: Exception) {
         true
     }
@@ -59,7 +62,8 @@ class AppContainer(
     private val progressDataStore by lazy {
         PreferenceDataStoreFactory.create(
             scope = CoroutineScope(applicationScope.coroutineContext + Dispatchers.IO),
-            produceFile = progressFileProvider,
+            migrations = if (migrateOldProgress) listOf(LegacyPreferencesMigration(oldProgressFile, true)) else emptyList(),
+            produceFile = { progressFileProvider().also { it.parentFile?.mkdirs() } },
         )
     }
     val progressRepository: ProgressRepository by lazy {
@@ -76,7 +80,11 @@ class AppContainer(
         PlayTimeRepository(
             PreferenceDataStoreFactory.create(
                 scope = CoroutineScope(applicationScope.coroutineContext + Dispatchers.IO),
-                produceFile = { appContext.preferencesDataStoreFile("play_time") },
+                migrations = listOf(LegacyPreferencesMigration(
+                    File(storeDirectory, "play_time.preferences_pb"),
+                    !File(storeDirectory, "play_time.json").exists(),
+                )),
+                produceFile = { File(storeDirectory, "play_time.json").also { it.parentFile?.mkdirs() } },
             ),
         )
     }

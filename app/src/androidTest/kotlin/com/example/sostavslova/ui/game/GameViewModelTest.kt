@@ -1,9 +1,9 @@
 package com.example.sostavslova.ui.game
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
+import com.example.sostavslova.data.jsonstore.Preferences
+import com.example.sostavslova.data.jsonstore.edit
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -49,7 +49,7 @@ class GameViewModelTest {
         directory = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir,
             "game-test-${UUID.randomUUID()}").apply { mkdirs() }
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        store = PreferenceDataStoreFactory.create(scope = scope) { File(directory, "progress.preferences_pb") }
+        store = PreferenceDataStoreFactory.create(scope = scope) { File(directory, "progress.json") }
         progress = ProgressRepository(store)
     }
 
@@ -338,7 +338,7 @@ class GameViewModelTest {
                 }
                 val seed = org.json.JSONObject().put("version", 2).put("highestUnlockedLevel", level.number)
                     .put("campaignId", campaign.contentSha256).put("levels", earlier)
-                store.edit { it[androidx.datastore.preferences.core.stringPreferencesKey("campaignProgressV2")] = seed.toString() }
+                store.edit { it[com.example.sostavslova.data.jsonstore.stringPreferencesKey("campaignProgressV2")] = seed.toString() }
                 val game = model(SavedStateHandle(mapOf("index" to level.number.toString())), meanings = meanings,
                     wordRepository = campaignWords, levelRepository = campaignLevels)
                 val initial = game.ready()
@@ -421,7 +421,7 @@ class GameViewModelTest {
         val closed = model(SavedStateHandle(mapOf("index" to "2")))
         assertEquals(R.string.level_closed, closed.await { it.returnLevels }.levelsMessage)
         assertTrue(progress.levelAnswers("портал").isEmpty())
-        assertNull(store.data.first()[androidx.datastore.preferences.core.stringPreferencesKey("currentGame")])
+        assertNull(store.data.first()[com.example.sostavslova.data.jsonstore.stringPreferencesKey("currentGame")])
     }
 
     @Test fun routeAndProgressRestoreButOldDraftIsIgnoredAfterViewModelRecreation() = runTest {
@@ -479,7 +479,7 @@ class GameViewModelTest {
         withContext(Dispatchers.Main) { owners.forEach { it.viewModelStore.clear() } }
         scope.cancel(); scope.coroutineContext.job.join()
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        store = PreferenceDataStoreFactory.create(scope = scope) { File(directory, "progress.preferences_pb") }
+        store = PreferenceDataStoreFactory.create(scope = scope) { File(directory, "progress.json") }
         progress = ProgressRepository(store)
         val fresh = model(wordRepository = campaignWords, levelRepository = campaignLevels)
         val restored = fresh.ready()
@@ -519,7 +519,7 @@ class GameViewModelTest {
         val campaign = requireNotNull(campaignLevels.getCampaign())
         progress.migrateCampaign(campaign, campaignWords.requireIndex())
         // Запись fixture через тот же совместимый DTO.
-        store.edit { it[androidx.datastore.preferences.core.stringPreferencesKey("campaignProgressV2")] =
+        store.edit { it[com.example.sostavslova.data.jsonstore.stringPreferencesKey("campaignProgressV2")] =
             """{"version":2,"levels":{"картотека":{"hints":{"paidUnits":5,"shownSteps":5}}}}""" }
         val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
         val ready = model.ready()
@@ -561,7 +561,7 @@ class GameViewModelTest {
         val second = model(SavedStateHandle(mapOf("index" to "2")),
             wordRepository = campaignWords, levelRepository = campaignLevels)
         assertEquals("трактор", second.ready().game?.word)
-        assertNull(store.data.first()[androidx.datastore.preferences.core.stringPreferencesKey("currentGame")])
+        assertNull(store.data.first()[com.example.sostavslova.data.jsonstore.stringPreferencesKey("currentGame")])
     }
 
     /** 30 синтетических уровней, суммарно 100 звёзд; последний имеет порог 4/5. */
@@ -593,7 +593,7 @@ class GameViewModelTest {
                 org.json.JSONArray(level.tasks.map { it.id })))
         }
         seeded.put("levels", savedLevels)
-        store.edit { it[androidx.datastore.preferences.core.stringPreferencesKey("campaignProgressV2")] = seeded.toString() }
+        store.edit { it[com.example.sostavslova.data.jsonstore.stringPreferencesKey("campaignProgressV2")] = seeded.toString() }
         suspend fun open(number: String = "30", repository: ProgressRepository = progress) = model(
             SavedStateHandle(mapOf("index" to number)), repository = repository,
             wordRepository = campaignWords, levelRepository = campaignLevels)
@@ -890,7 +890,7 @@ class GameViewModelTest {
                 org.json.JSONArray(level.tasks.map { it.id })))
         }
         seeded.put("levels", savedLevels)
-        store.edit { it[androidx.datastore.preferences.core.stringPreferencesKey("campaignProgressV2")] = seeded.toString() }
+        store.edit { it[com.example.sostavslova.data.jsonstore.stringPreferencesKey("campaignProgressV2")] = seeded.toString() }
 
         val fourteenth = model(SavedStateHandle(mapOf("index" to "14")),
             wordRepository = campaignWords, levelRepository = campaignLevels)

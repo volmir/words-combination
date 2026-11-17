@@ -1,8 +1,8 @@
 package com.example.sostavslova.data
 
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
+import com.example.sostavslova.data.jsonstore.edit
+import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.BuildConfig
 import com.example.sostavslova.core.CampaignRules
@@ -45,7 +45,7 @@ class CampaignJsonUpgradeTest {
         entries.put(target.word, json)
         val seed = JSONObject().put("version",2).put("campaignId",campaign.contentSha256)
             .put("highestUnlockedLevel",12).put("levels",entries).toString()
-        val file = temporary.newFolder().resolve("upgrade.preferences_pb")
+        val file = temporary.newFolder().resolve("upgrade.json")
         val key = stringPreferencesKey("campaignProgressV2")
         var scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         var store = PreferenceDataStoreFactory.create(scope = scope) { file }

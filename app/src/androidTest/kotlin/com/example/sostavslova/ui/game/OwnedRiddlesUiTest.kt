@@ -8,9 +8,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
+import com.example.sostavslova.data.jsonstore.edit
+import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.*
 import com.example.sostavslova.MainActivity
@@ -59,7 +59,7 @@ class OwnedRiddlesUiTest {
             campaign.levels.filter { it.number < 14 }.forEach { level ->
                 entries.put(level.word,JSONObject().put("completedTaskIds",JSONArray(level.tasks.map { it.id })))
             }
-            val file = File(directory,"seed.preferences_pb")
+            val file = File(directory,"seed.json")
             val seedScope = CoroutineScope(SupervisorJob()+Dispatchers.IO)
             val seedStore = PreferenceDataStoreFactory.create(scope=seedScope) { file }
             try {

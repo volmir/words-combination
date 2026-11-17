@@ -1,8 +1,8 @@
 package com.example.sostavslova.ui.levels
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
+import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
+import com.example.sostavslova.data.jsonstore.Preferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -43,7 +43,7 @@ class LevelsViewModelTest {
     @Before fun setUp() {
         directory = File(context.cacheDir, "levels-test-${UUID.randomUUID()}").apply { mkdirs() }
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        store = PreferenceDataStoreFactory.create(scope = scope) { File(directory, "progress.preferences_pb") }
+        store = PreferenceDataStoreFactory.create(scope = scope) { File(directory, "progress.json") }
         progress = ProgressRepository(store)
     }
     @After fun tearDown() = runTest {
@@ -71,7 +71,7 @@ class LevelsViewModelTest {
         withContext(Dispatchers.Main) { model.onSelectLevel("торт") }
         assertEquals(1, model.uiState.value.openLevel)
         assertEquals(before, store.data.first())
-        assertNull(store.data.first()[androidx.datastore.preferences.core.stringPreferencesKey("currentGame")])
+        assertNull(store.data.first()[com.example.sostavslova.data.jsonstore.stringPreferencesKey("currentGame")])
     }
 
     @Test fun v1CompletionUpdatesAccessAndEarnedStars() = runTest {
