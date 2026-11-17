@@ -386,8 +386,7 @@ gate: bash orchestrator/run.sh --check full && bash orchestrator/run.sh --check 
 активного бэкенда; выберите модели, доступные вашему аккаунту. Пустая строка
 переключает tier на модель из настроек самого CLI. Встроенные умолчания
 модуля: Codex — `gpt-5.6-luna` для `light`, `gpt-6.1-sol` для `standard` и
-`gpt-6-astra` для `heavy`; OpenCode — бесплатные
-`opencode/glm-5.3-flash-free` и `opencode/beam-free`. Текущий `config.json`
+`heavy`; OpenCode — бесплатные `opencode/glm-5.3-flash-free` и `opencode/beam-free`. Текущий `config.json`
 переопределяет OpenCode на `opencode/muse-ember-1.0#medium` (`light`) и
 `opencode/deepseek-v4.1-flash#max` (`standard` и `heavy`); набор `free`
 содержит отдельные бесплатные модели.

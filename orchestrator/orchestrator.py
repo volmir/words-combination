@@ -111,7 +111,7 @@ def parse_tasks(path):
     return tasks
 
 
-CODEX_MODEL_DEFAULTS = {"light": "gpt-5.6-luna", "standard": "gpt-6.1-sol", "heavy": "gpt-6-astra"}
+CODEX_MODEL_DEFAULTS = {"light": "gpt-5.6-luna", "standard": "gpt-6.1-sol", "heavy": "gpt-6.1-sol"}
 OPENCODE_MODEL_DEFAULTS = {"light": "opencode/glm-5.3-flash-free",
                            "standard": "opencode/glm-5.3-flash-free#max",
                            "heavy": "opencode/beam-free#max"}
