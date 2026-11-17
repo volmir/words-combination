@@ -5,6 +5,9 @@ import re
 import os
 
 FORBIDDEN_MODULES = {'sqlite3', '_sqlite3', 'pysqlite3', 'apsw'}
+LEGACY_TOOLCHAIN_REFERENCE = re.compile(
+    r'prepare_owned_hints[.]py|owned-hints-toolchain[/\\]|libsqlite3[.]so', re.I,
+)
 
 
 def check(root):
@@ -32,12 +35,17 @@ def check(root):
                     failures.append(name)
             if path.suffix == '.py':
                 for node in ast.walk(ast.parse(path.read_text(encoding='utf8'))):
+                    if (isinstance(node, ast.Constant) and isinstance(node.value, str) and
+                            LEGACY_TOOLCHAIN_REFERENCE.search(node.value)):
+                        failures.append(name)
                     modules = ([a.name for a in node.names] if isinstance(node,ast.Import) else
                                [node.module or ''] if isinstance(node,ast.ImportFrom) else [])
                     if any(m.split('.')[0] in FORBIDDEN_MODULES for m in modules):
                         failures.append(name)
             elif path.suffix in {'.kt', '.kts', '.toml', '.yml', '.yaml'}:
-                if re.search(r'android\.database\.sqlite|SQLiteDatabase|org\.sqlite|sqlite-jdbc|libsqlite|security\.ubuntu\.com/.+\.deb',path.read_text(),re.I):
+                content = path.read_text()
+                if (LEGACY_TOOLCHAIN_REFERENCE.search(content) or
+                        re.search(r'android\.database\.sqlite|SQLiteDatabase|org\.sqlite|sqlite-jdbc|libsqlite|security\.ubuntu\.com/.+\.deb',content,re.I)):
                     failures.append(name)
     # Root and module build files are not under source roots.
     for path in [*root.glob('*.gradle.kts'), root/'app/build.gradle.kts', root/'core/build.gradle.kts']:
@@ -45,7 +53,9 @@ def check(root):
             continue
         if any(p in {'.local','.gradle','build','cache'} for p in path.relative_to(root).parts):
             continue
-        if re.search(r'libsqlite|sqlite-jdbc|definitions\.db|3\.37\.2|\.deb\b',path.read_text(),re.I):
+        content = path.read_text()
+        if (LEGACY_TOOLCHAIN_REFERENCE.search(content) or
+                re.search(r'libsqlite|sqlite-jdbc|definitions\.db|3\.37\.2|\.deb\b',content,re.I)):
             failures.append(path.relative_to(root).as_posix())
     if failures:
         raise ValueError('Forbidden project storage dependency: ' + ', '.join(sorted(set(failures))))

@@ -23,3 +23,19 @@ class TextStorageContractTest(unittest.TestCase):
             for name in ('docs/archive.md','.local/cache/old.db','tools/cache/old.db'):
                 path=root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text('Historical fixture')
             check(root)
+
+    def test_legacy_toolchain_paths_in_active_builds_and_tools_fail(self):
+        mutations = [
+            ('app/build.gradle.kts', b'runPython("tools/prepare_owned_hints.py", "--download")'),
+            ('tools/optional.py', b'library = ".local/owned-hints-toolchain/lib/libsqlite3.so.0"\n'),
+            ('tools/copy.py', b'copyfile("libsqlite3.so.0", "fixture/library")\n'),
+            ('.github/workflows/build.yml', b'run: python3 tools/prepare_owned_hints.py --download\n'),
+        ]
+        for name, content in mutations:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                path = root / name
+                path.parent.mkdir(parents=True)
+                path.write_bytes(content)
+                with self.assertRaises(ValueError):
+                    check(root)
