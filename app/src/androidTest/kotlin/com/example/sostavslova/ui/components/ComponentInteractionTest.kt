@@ -123,7 +123,7 @@ class ComponentInteractionTest {
         compose.onNodeWithText("Авторы — участники русского Викисловаря", substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Kaikki.org / Wiktextract", substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("CC BY-SA 4.0", substring = true).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Литературные примеры исключены", substring = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Словарные толкования и литературные примеры исключены", substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Программный код").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("лицензии MIT", substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("github.com", substring = true).assertDoesNotExist()
