@@ -36,11 +36,13 @@ class ComponentInteractionTest {
         compose.runOnIdle { assertEquals(Destination.Rules, selected) }
         compose.onNode(hasText("Об игре") and hasClickAction()).performScrollTo().performClick()
         compose.runOnIdle { assertEquals(Destination.About, selected) }
+        compose.onNodeWithText("Время игры").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(Destination.Time, selected) }
         compose.onNodeWithText("Значение слова").assertDoesNotExist()
         compose.onNodeWithText("Поиск слов").assertDoesNotExist()
         compose.onNodeWithText("Словарь").assertDoesNotExist()
         compose.runOnIdle {
-            assertEquals(setOf("levels", "level/{index}", "rules", "about"), Destination.entries.map { it.route }.toSet())
+            assertEquals(setOf("levels", "level/{index}", "time", "rules", "about"), Destination.entries.map { it.route }.toSet())
         }
     }
 
