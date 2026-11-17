@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
@@ -75,7 +76,7 @@ import java.util.Locale
 import kotlinx.coroutines.delay
 
 @Composable
-fun GameRoute(playTimeOwner: String, onReturnLevels: (Int) -> Unit) {
+fun GameRoute(playTimeOwner: String, onOpenLevel: (Int) -> Unit, onReturnLevels: (Int) -> Unit) {
     BackHandler { onReturnLevels(0) }
     val container = appContainer()
     val factory = remember(container, playTimeOwner) {
@@ -116,8 +117,10 @@ fun GameRoute(playTimeOwner: String, onReturnLevels: (Int) -> Unit) {
         }
     }
     LaunchedEffect(state.returnLevels) { if (state.returnLevels) onReturnLevels(state.levelsMessage) }
+    LaunchedEffect(state.nextLevelNavigation) { state.nextLevelNavigation?.let(onOpenLevel) }
     GameScreen(state, model::onInputChanged, model::onSubmit, model::onHint,
-        model::onDialog, model::onDismissDialog, model::onRetry, notice, model::onDismissExplanations, model::onCloseFinale)
+        model::onDialog, model::onDismissDialog, model::onRetry, notice, model::onDismissExplanations,
+        model::onCloseFinale, model::onNextLevel)
 }
 
 @Composable
@@ -132,6 +135,7 @@ fun GameScreen(
     notice: GameMessage? = null,
     onDismissExplanations: () -> Unit = {},
     onCloseFinale: (Boolean) -> Unit = {},
+    onNextLevel: () -> Unit = {},
 ) {
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -173,7 +177,7 @@ fun GameScreen(
                             onSubmit()
                             focus.requestFocus()
                             keyboard?.show()
-                        }, enabled = state.canPlay, inputEnabled = !state.loading && !state.returnLevels,
+                        }, enabled = state.canPlay, inputEnabled = !state.loading && !state.returnLevels && !state.navigatingNext,
                         maxLength = null, focusRequester = focus)
                     if (state.busy) GameLoading(stringResource(R.string.game_saving))
                 }
@@ -187,6 +191,16 @@ fun GameScreen(
                 ) {
                     state.message?.let { GameBanner(it) }
                     notice?.let { GameBanner(it) }
+                }
+                state.nextLevelNumber?.let { number ->
+                    Well(Modifier.testTag("game_next_level").semantics { liveRegion = LiveRegionMode.Polite }) {
+                        Text(stringResource(R.string.game_next_level_title),
+                            Modifier.semantics { heading() }, style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.game_next_level_message), style = MaterialTheme.typography.bodyMedium)
+                        GamePrimaryAction(stringResource(R.string.game_next_level_action, number),
+                            state.canPlay, onNextLevel, "game_next_level_button")
+                        if (state.navigatingNext) GameLoading(stringResource(R.string.game_saving))
+                    }
                 }
                 if (current != null) {
                     CampaignTasks(state)
@@ -210,8 +224,8 @@ fun GameScreen(
                             }
                         }
                     }
-                    GameAction(stringResource(R.string.show_hint), state.canPlay && !state.hintLoading,
-                        onHint, R.drawable.ic_help, "game_hint_button")
+                    GamePrimaryAction(stringResource(R.string.show_hint), state.canPlay && !state.hintLoading,
+                        onHint, "game_hint_button")
                 }
                 Column(Modifier.fillMaxWidth().testTag("game_found_words"),
                     verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -353,10 +367,10 @@ private fun CampaignHint(state: GameUiState, onHint: () -> Unit) {
         }
         explanation?.let { Text(stringResource(it), Modifier.testTag("game_hint_budget"),
             style = MaterialTheme.typography.bodyMedium) }
-        GameAction(if (cost == null) stringResource(R.string.hint_action_unavailable, state.hintRemaining)
+        GamePrimaryAction(if (cost == null) stringResource(R.string.hint_action_unavailable, state.hintRemaining)
             else stringResource(R.string.hint_action, cost, state.hintRemaining),
             state.canPlay && !complete && cost != null && cost <= state.hintRemaining,
-            onHint, R.drawable.ic_help, "game_hint_button")
+            onHint, "game_hint_button")
     }
 }
 
@@ -391,6 +405,15 @@ private fun CloseDialogButton(onDismiss: () -> Unit) {
 private fun GameLoading(text: String) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
         CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+        Text(text, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@Composable
+private fun GamePrimaryAction(text: String, enabled: Boolean, onClick: () -> Unit, tag: String) {
+    Button(onClick, enabled = enabled,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag(tag), shape = WordsControlShape,
+        colors = ButtonDefaults.buttonColors(containerColor = WordsColors.primary, contentColor = WordsColors.background)) {
         Text(text, style = MaterialTheme.typography.bodyLarge)
     }
 }

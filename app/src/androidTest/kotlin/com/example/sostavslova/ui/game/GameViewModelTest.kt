@@ -93,6 +93,123 @@ class GameViewModelTest {
         withTimeout(10_000) { events.first() }
     }
 
+    @Test fun nextLevelUsesCommittedUnlockAllowsMoreStarsAndWaitsForSaveBarrier() = runTest {
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        assertNull(model.ready().nextLevelNumber)
+        withContext(Dispatchers.Main) { model.onNextLevel() }
+        assertNull(model.uiState.value.nextLevelNavigation)
+        val opened = model.answer("карта")
+        assertEquals(2, opened.nextLevelNumber)
+        assertEquals(2, opened.campaignLevel?.completedTaskIds?.size)
+        assertTrue(requireNotNull(opened.campaignLevel).completedTaskIds.size < requireNotNull(opened.campaignLevel).level.maxStars)
+        val extra = model.answer("крот")
+        assertEquals(3, extra.campaignLevel?.completedTaskIds?.size)
+        val saved = progress.observeCampaignProgress().first()
+        val release = CompletableDeferred<Unit>()
+        val pending = scope.launch { release.await() }
+        progress.trackOperation(pending)
+        try {
+            withContext(Dispatchers.Main) {
+                model.onInputChanged("Черновик")
+                repeat(4) { model.onNextLevel() }
+            }
+            assertTrue(model.uiState.value.navigatingNext)
+            assertFalse(model.uiState.value.canPlay)
+            assertNull(model.uiState.value.nextLevelNavigation)
+            release.complete(Unit)
+            val navigating = model.await { it.nextLevelNavigation != null }
+            assertEquals(2, navigating.nextLevelNavigation)
+            assertEquals("", navigating.input)
+            assertEquals(saved, progress.observeCampaignProgress().first())
+            val returned = model(wordRepository = campaignWords, levelRepository = campaignLevels).ready()
+            assertEquals(2, returned.nextLevelNumber)
+            assertEquals(listOf("карта", "крот"), returned.game?.found)
+            assertEquals(extra.campaignLevel?.completedTaskIds, returned.campaignLevel?.completedTaskIds)
+            val last = model(SavedStateHandle(mapOf("index" to "2")),
+                wordRepository = campaignWords, levelRepository = campaignLevels).ready()
+            assertNull(last.nextLevelNumber)
+        } finally { release.complete(Unit) }
+    }
+
+    @Test fun nextLevelOfferWaitsForDurableUnlockAndIgnoresTransitionDuringSubmission() = runTest {
+        val pause = AtomicBoolean(false)
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val wrapped = object : DataStore<Preferences> {
+            override val data = store.data
+            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                if (pause.get()) { entered.complete(Unit); release.await() }
+                return store.updateData(transform)
+            }
+        }
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(repository = ProgressRepository(wrapped), wordRepository = campaignWords,
+            levelRepository = campaignLevels)
+        model.ready()
+        pause.set(true)
+        try {
+            withContext(Dispatchers.Main) { model.onInputChanged("карта"); model.onSubmit(); model.onNextLevel() }
+            withContext(Dispatchers.Default) { withTimeout(10_000) { entered.await() } }
+            assertTrue(model.uiState.value.busy)
+            assertNull(model.uiState.value.nextLevelNumber)
+            assertNull(model.uiState.value.nextLevelNavigation)
+            assertEquals(1, progress.observeCampaignProgress().first().highestUnlockedLevel)
+            release.complete(Unit)
+            val committed = model.await { !it.busy && it.nextLevelNumber == 2 }
+            assertEquals(listOf("карта"), committed.game?.found)
+            assertEquals(2, progress.observeCampaignProgress().first().highestUnlockedLevel)
+            assertTrue(committed.canPlay)
+        } finally { release.complete(Unit) }
+    }
+
+    @Test fun nextLevelSaveFailureKeepsDraftAndProgressAndCanBeRetried() = runTest {
+        val fail = AtomicBoolean(false)
+        val wrapped = object : DataStore<Preferences> {
+            override val data = store.data
+            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                if (fail.get()) throw IOException("Synthetic exit barrier failure")
+                return store.updateData(transform)
+            }
+        }
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(repository = ProgressRepository(wrapped), wordRepository = campaignWords,
+            levelRepository = campaignLevels)
+        model.ready(); model.answer("карта")
+        val saved = progress.observeCampaignProgress().first()
+        fail.set(true)
+        withContext(Dispatchers.Main) { model.onInputChanged("Черновик"); model.onNextLevel() }
+        val rejected = model.await { !it.navigatingNext && it.message?.text == R.string.game_save_error }
+        assertNull(rejected.nextLevelNavigation)
+        assertEquals("Черновик", rejected.input)
+        assertEquals(saved, progress.observeCampaignProgress().first())
+        fail.set(false)
+        withContext(Dispatchers.Main) { model.onNextLevel() }
+        assertEquals(2, model.await { it.nextLevelNavigation != null }.nextLevelNavigation)
+        assertEquals(saved, progress.observeCampaignProgress().first())
+    }
+
+    @Test fun legacyNextLevelUsesExistingAccessRulesAndLastHasNoNextLevel() = runTest {
+        seed("торт")
+        val model = model()
+        assertNull(model.ready().nextLevelNumber)
+        model.answer("рот")
+        assertNull(model.uiState.value.nextLevelNumber)
+        model.answer("тор")
+        assertEquals(2, model.await { it.nextLevelNumber != null }.nextLevelNumber)
+        // Новые ответы сохраняются и после появления предложения перейти.
+        model.answer("тот")
+        assertEquals(3, model.uiState.value.game?.foundCount)
+        withContext(Dispatchers.Main) { model.onNextLevel() }
+        assertEquals(2, model.await { it.nextLevelNavigation != null }.nextLevelNavigation)
+        val last = model(SavedStateHandle(mapOf("index" to "2"))).ready()
+        assertNull(last.nextLevelNumber)
+        assertEquals(listOf("рот", "тор", "тот"), progress.levelAnswers("торт"))
+    }
+
     @Test fun campaignMissingLettersReachMessageAndRepeatedSubmitDoesNotLeaveBusy() = runTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val exactWords = WordRepository({ context.assets.open("words.txt").bufferedReader().use { it.readText() } })

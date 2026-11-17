@@ -114,9 +114,12 @@ data class GameUiState(
     val hintLoading: Boolean = false,
     val dialog: GameDialog? = null,
     val returnLevels: Boolean = false,
+    val nextLevelNumber: Int? = null,
+    val navigatingNext: Boolean = false,
+    val nextLevelNavigation: Int? = null,
     @param:StringRes val levelsMessage: Int = 0,
 ) {
-    val canPlay: Boolean get() = game != null && !loading && !loadError && !busy && !hintLoading && !returnLevels && finaleSummary == null
+    val canPlay: Boolean get() = game != null && !loading && !loadError && !busy && !hintLoading && !returnLevels && !navigatingNext && finaleSummary == null
 }
 
 class GameViewModel(
@@ -211,12 +214,20 @@ class GameViewModel(
                             publishSession(restored.game, level, restored, LevelProgress(),
                                 if (savedCampaign.finaleReached && !savedCampaign.finaleShown) {
                                     CampaignRules.summary(requireNotNull(loadedCampaign), savedCampaign)
-                                } else null)
+                                } else null,
+                                nextLevelNumber = (requireNotNull(number) + 1).takeIf {
+                                    LevelRouteRules.isUnlocked(it, loadedCampaign, savedCampaign, legacy, emptyMap())
+                                })
                         }
                 } else {
                     progress.observeLevelSession(game.word).collect { snapshot ->
+                        val allStars = progress.observeLevelProgress().first()
                         val restored = withContext(computationDispatcher) { game.restoreFound(snapshot.found) }
-                        publishSession(restored, level, null, snapshot.progress)
+                        val next = legacy.getOrNull(legacy.indexOfFirst { it.index == number } + 1)?.index
+                        publishSession(restored, level, null, snapshot.progress,
+                            nextLevelNumber = next?.takeIf {
+                                LevelRouteRules.isUnlocked(it, null, CampaignProgress(), legacy, allStars)
+                            })
                     }
                 }
             } catch (cancelled: CancellationException) {
@@ -229,7 +240,7 @@ class GameViewModel(
     }
 
     private suspend fun publishSession(game: GameState, level: Level?, current: CurrentCampaignLevel?, stars: LevelProgress,
-        finaleSummary: CampaignSummary? = null) {
+        finaleSummary: CampaignSummary? = null, nextLevelNumber: Int? = null) {
         val (shownHints, cost) = withContext(computationDispatcher) {
             val shown = current?.takeIf { HintRules.currentStep(it) != null }?.hints?.ladder?.shown.orEmpty()
             shown to current?.let { HintRules.nextCost(it, campaign?.countMinLength ?: 4) }
@@ -247,6 +258,7 @@ class GameViewModel(
             hintSequence++
         }
         mutableState.update { it.copy(loading = false, loadError = false, game = game, level = level,
+            nextLevelNumber = nextLevelNumber,
             finaleSummary = finaleSummary,
             campaignLevel = current, campaignHint = shownHints.lastOrNull(), campaignHints = shownHints,
             hintCost = cost, hintRemaining = current?.let { HintRules.budget(it).remaining } ?: 0,
@@ -281,6 +293,32 @@ class GameViewModel(
 
     // Черновик живёт только пока открыт экран, даже если ViewModel пережила Activity.
     fun onScreenClosed() { mutableState.update { it.copy(input = "") } }
+
+    fun onNextLevel() {
+        val before = uiState.value
+        val target = before.nextLevelNumber ?: return
+        if (!before.canPlay) return
+        // Захватываем переход синхронно: повторное нажатие не создаёт второй маршрут.
+        mutableState.update { it.copy(navigatingNext = true) }
+        viewModelScope.launch {
+            try {
+                // Не регистрируем сам барьер через trackOperation: иначе он ждал бы себя.
+                progress.awaitSaved()
+                val activeCampaign = campaign
+                val legacy = if (activeCampaign == null) levels.getLevels() else emptyList()
+                val saved = if (activeCampaign == null) CampaignProgress() else progress.observeCampaignProgress().first()
+                val stars = if (activeCampaign == null) progress.observeLevelProgress().first() else emptyMap()
+                if (LevelRouteRules.isUnlocked(target, activeCampaign, saved, legacy, stars)) {
+                    mutableState.update { it.copy(input = "", nextLevelNavigation = target) }
+                } else mutableState.update { it.copy(navigatingNext = false, nextLevelNumber = null) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                mutableState.update { it.copy(navigatingNext = false,
+                    message = GameMessage(R.string.game_save_error, type = AlertType.Danger)) }
+            }
+        }
+    }
 
     fun onInputChanged(raw: String) {
         // Правильный ответ не длиннее исходника (≤ MAX_WORD_LENGTH), поэтому

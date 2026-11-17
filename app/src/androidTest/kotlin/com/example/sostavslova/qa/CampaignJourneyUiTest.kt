@@ -148,6 +148,48 @@ class CampaignJourneyUiTest {
         compose.dismissWelcomeIfShown()
     }
 
+    @Test fun directNextLevelKeepsAnswersStarsAndHintsAndDropsOnlyDraft() = runTest {
+        begin(); open(1)
+        compose.onNodeWithTag("game_next_level_button").assertDoesNotExist()
+        answer("карта", 1)
+        compose.onNodeWithTag("game_next_level_button").performScrollTo()
+            .assertTextEquals("Перейти на уровень 2 →").assertIsEnabled()
+        assertEquals(1, saved().levels.getValue("картотека").completedTaskIds.size)
+        // Предложение не мешает остаться и заработать следующую звезду.
+        answer("крот", 2)
+        compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
+        awaitTag("game_hint_part_1")
+        val first = saved().levels.getValue("картотека")
+        assertEquals(2, first.completedTaskIds.size)
+        assertTrue(first.completedTaskIds.size < 3)
+        compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("Неотправленный черновик")
+        val next = compose.onNodeWithTag("game_next_level_button").performScrollTo()
+        val click = requireNotNull(next.fetchSemanticsNode().config[
+            androidx.compose.ui.semantics.SemanticsActions.OnClick].action)
+        compose.runOnUiThread { repeat(4) { click() } }
+        compose.waitUntil(10_000) { nav.currentBackStackEntry?.arguments?.getString("index") == "2" }
+        awaitTag("level_header"); dismissExplanation()
+        assertEquals("levels", nav.previousBackStackEntry?.destination?.route)
+        compose.onNodeWithTag("level_header").assertTextContains("уровень 2 из 3", substring = true)
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("")
+        assertEquals(first, saved().levels.getValue("картотека"))
+        toMap(); open(1, explanationExpected = false)
+        compose.onNodeWithTag("game_next_level_button").performScrollTo().assertIsEnabled()
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("")
+        assertEquals(first, saved().levels.getValue("картотека"))
+        compose.onNodeWithTag("game_hint_part_1").performScrollTo().assertExists()
+        toMap(); open(2)
+        answer("трек", 3)
+        compose.onNodeWithTag("game_next_level_button").performScrollTo()
+            .assertTextEquals("Перейти на уровень 3 →").performClick()
+        compose.waitUntil(10_000) { nav.currentBackStackEntry?.arguments?.getString("index") == "3" }
+        awaitTag("level_header"); dismissExplanation()
+        compose.onNodeWithTag("game_next_level").assertDoesNotExist()
+        compose.onNodeWithTag("game_next_level_button").assertDoesNotExist()
+        assertEquals(first, saved().levels.getValue("картотека"))
+        assertEquals(listOf("трек"), saved().levels.getValue("электротрактор").found)
+    }
+
     @Test fun newInstallToFinaleRestartAndAllStars() = runTest {
         // SAFE содержит тему, но определение Wiktionary исключается: проверяем fallback.
         begin(QaCampaign.Meanings.SAFE)

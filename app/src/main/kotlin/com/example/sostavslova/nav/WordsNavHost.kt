@@ -38,7 +38,14 @@ fun WordsNavHost(navController: NavHostController, modifier: Modifier = Modifier
             arguments = listOf(navArgument("index") { type = NavType.StringType }),
             deepLinks = listOf(navDeepLink { uriPattern = "sostavslova://level/{index}" }),
         ) { entry ->
-            GameRoute(entry.id) { message -> navController.returnToLevels(message) }
+            GameRoute(entry.id, onOpenLevel = { number ->
+                if (navController.currentBackStackEntry == entry) {
+                    navController.navigate(Destination.level(number)) {
+                        popUpTo(entry.destination.id) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            }) { message -> navController.returnToLevels(message) }
         }
         composable(Destination.Time.route) { com.example.sostavslova.ui.time.TimeRoute() }
         composable(Destination.Rules.route) { RulesScreen() }

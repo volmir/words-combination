@@ -4,6 +4,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
@@ -98,6 +99,37 @@ class CampaignGameUiTest {
         assertTextFits()
     }
 
+    @Test fun nextLevelOfferAndHintHaveSeparateAccessibleActions() {
+        val state = mutableStateOf(initial.copy(totalLevels = 31, hintCost = 0, hintRemaining = 0))
+        var transitions = 0
+        var hints = 0
+        compose.setContent {
+            WordsTheme { GameScreen(state.value, {}, {}, { hints++ }, {}, {}, {},
+                onNextLevel = { transitions++ }) }
+        }
+        compose.onNodeWithTag("game_next_level_button").assertDoesNotExist()
+        compose.runOnIdle { state.value = state.value.copy(nextLevelNumber = 31) }
+        compose.onNodeWithTag("game_next_level").performScrollTo().assertHasNoClickAction()
+        compose.onNodeWithText("Следующий уровень открыт!").assertExists()
+        compose.onNodeWithText("Вы можете перейти дальше или остаться здесь, чтобы отгадывать слова и собирать оставшиеся звёзды.")
+            .assertExists()
+        val button = compose.onNodeWithTag("game_next_level_button").performScrollTo()
+        button.assertTextEquals("Перейти на уровень 31 →")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Button))
+            .assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp).performClick()
+        assertEquals(1, transitions)
+        compose.onNodeWithTag("game_hint").performScrollTo().assertHasNoClickAction()
+        compose.onNodeWithTag("game_hint_button").performScrollTo()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Button))
+            .assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
+            .assertTextContains("Получить подсказку · цена 0 · осталось 0").performClick()
+        assertEquals(1, hints)
+        compose.runOnIdle { state.value = state.value.copy(navigatingNext = true) }
+        compose.onNodeWithTag("game_next_level_button").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsNotEnabled()
+        assertTextFits()
+    }
+
     @Test fun installedCampaignTasksMatchEveryLevelWithoutOpeningAnotherList() {
         val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
         val campaign = com.example.sostavslova.data.CampaignJson.decode(
@@ -146,7 +178,7 @@ class CampaignGameUiTest {
         compose.onNodeWithTag("game_hint_part_4").assertDoesNotExist()
         assertOwnHintProvenanceAndNoAnswer()
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled()
-            .assertTextContains("Открыть следующую часть · цена 0 · осталось 0").performClick()
+            .assertTextContains("Получить подсказку · цена 0 · осталось 0").performClick()
         assertEquals(1, clicks)
         compose.runOnIdle { state.value = state.value.copy(hintCost = 1, campaignHints = steps,
             campaignLevel = state.value.campaignLevel?.let { current -> current.copy(hints = current.hints.copy(
@@ -162,7 +194,7 @@ class CampaignGameUiTest {
         assertEquals((1..3).map { "game_hint_part_$it" }, parts.map { it.config[SemanticsProperties.TestTag] })
         assertOwnHintProvenanceAndNoAnswer()
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsNotEnabled()
-            .assertTextContains("Открыть следующую часть · цена 1 · осталось 0")
+            .assertTextContains("Получить подсказку · цена 1 · осталось 0")
         compose.onNodeWithTag("game_hint_budget").performScrollTo()
             .assertTextContains("Каждые 4 найденных слова", substring = true)
         assertTextFits()
@@ -217,7 +249,7 @@ class CampaignGameUiTest {
                     button.assertIsNotEnabled()
                     compose.onNodeWithText("Все шаги этой подсказки уже показаны.").assertExists()
                 } else {
-                    button.assertIsEnabled().assertTextContains("Открыть следующую часть · цена 1 · осталось 2")
+                    button.assertIsEnabled().assertTextContains("Получить подсказку · цена 1 · осталось 2")
                 }
                 compose.onAllNodesWithText("Викисловарь", substring = true).assertCountEquals(0)
                 assertTextFits()

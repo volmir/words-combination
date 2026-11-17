@@ -57,7 +57,7 @@
     <string name="hint_all_found">Все слова уже найдены</string>
     <string name="hint_title">Подсказка:</string>
     <string name="hint_definition_source">Собственная подсказка · CC0-1.0. Скрыты ответ и однокоренные слова.</string>
-    <string name="show_hint">Показать подсказку</string>
+    <string name="show_hint">Получить подсказку</string>
     <string name="hint_fallback">Слово из %1$d %2$s, начинается на «%3$s»</string>
     <string name="hint_letter_genitive_one">буквы</string>
     <string name="hint_letter_genitive_many">букв</string>
@@ -215,8 +215,11 @@
     <string name="hint_unopened">Подсказка · откройте первую часть</string>
     <string name="hint_part">Часть %1$d</string>
     <string name="hint_part_description">Часть %1$d из %2$d</string>
-    <string name="hint_action_unavailable">Открыть следующую часть · недоступно · осталось %1$d</string>
-    <string name="hint_action">Открыть следующую часть · цена %1$d · осталось %2$d</string>
+    <string name="hint_action_unavailable">Получить подсказку · недоступно · осталось %1$d</string>
+    <string name="hint_action">Получить подсказку · цена %1$d · осталось %2$d</string>
+    <string name="game_next_level_title">Следующий уровень открыт!</string>
+    <string name="game_next_level_message">Вы можете перейти дальше или остаться здесь, чтобы отгадывать слова и собирать оставшиеся звёзды.</string>
+    <string name="game_next_level_action">Перейти на уровень %1$d →</string>
     <string name="hint_letters_available">Доступны подсказки по буквам.</string>
     <string name="hint_metadata_unavailable">Тема или определение недоступны. Эти шаги пропущены без расхода.</string>
     <string name="drawer_exit">Выход</string>
