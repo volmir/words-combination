@@ -22,9 +22,10 @@ import com.example.sostavslova.ui.IsolatedGameStorageRule
 
 @RunWith(AndroidJUnit4::class)
 class GameNavigationTest {
+    private val diagnostics = GameRootDiagnostics()
     private val storage = IsolatedGameStorageRule()
     val compose = createAndroidComposeRule<MainActivity>()
-    @get:Rule val rules: RuleChain = RuleChain.outerRule(storage).around(compose)
+    @get:Rule val rules: RuleChain = RuleChain.outerRule(diagnostics).around(storage).around(compose).around(diagnostics.failure)
     private val container get() = storage.container
     @Before fun setUp() = runTest {
         container.wordRepository.ensureLoaded()
@@ -61,6 +62,9 @@ class GameNavigationTest {
         compose.onNode(hasSetTextAction()).performImeAction()
     }
     private suspend fun awaitCorrectAnswer(answer: String) {
+        if (InstrumentationRegistry.getArguments().getString("g12Trace") == "true") {
+            diagnostics.capture("before-feedback")
+        }
         val message = if (answer.length == 3 && container.levelsRepository.getCampaign() != null)
             R.string.correct_three_letter_answer else R.string.correct_answer
         awaitText(InstrumentationRegistry.getInstrumentation().targetContext.getString(message))
