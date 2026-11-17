@@ -15,8 +15,9 @@ sys.path.insert(0, str(ROOT / 'tools'))
 sys.path.insert(0, str(ROOT))
 from tools.owned_hints import validate, load_metadata, sha, compare_imported
 from tools.owned_hints_rights import owner_decision, database_metadata, publication_fields, exact
-from build_game_data import build_database, publish
+from build_game_data import publish
 from game_data_providers import atomic_json
+from tools.owned_hints_toolchain import build_database, restore_database
 
 POLICY = 'owned-minimal-hints-v1'
 INDEX = ROOT / 'tools/owned_hint_index.json'
@@ -136,6 +137,8 @@ def verify(data, candidate_path=None, index_path=None):
     candidate_path, index_path = candidate_path or CANDIDATE, index_path or INDEX
     candidate, index, metadata, manifest = inputs(data, candidate_path, index_path)
     block = manifest.get('definitions', {})
+    if not (data / 'definitions.db').exists():
+        restore_database(data)
     expected_block = definitions_block(data, data / 'definitions.db', candidate_path, index_path, candidate, metadata)
     if not exact(block, expected_block):
         raise ValueError('Owned hints manifest differs from verified evidence/state')

@@ -123,6 +123,13 @@ python3 tools/build_local_definitions.py --dump .local/dictionary/raw-wiktextrac
 
 ### Основные команды:
 
+Для новой среды с другой SQLite или экспорта AI Studio без `definitions.db`
+сначала выполните `python3 tools/prepare_owned_hints.py --download`.
+Подготовка восстанавливает утверждённые байты и закрепляет библиотеку
+генератора; аудит и лицензионные проверки сохраняются. Последующие проверки
+подсказок работают без сети. Требования и ограничения —
+[в инструкции toolchain](docs/OWN_HINTS_TOOLCHAIN.md).
+
 ```bash
 # 1. Запуск unit-тестов игровой логики (:core)
 python3 -m unittest discover tools/tests
