@@ -5,39 +5,33 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.MainActivity
-import com.example.sostavslova.WordsApplication
+import com.example.sostavslova.R
 import kotlin.random.Random
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
 
 /** Основные сценарии кампании: выбор уровня, ответы, подсказка и возврат. */
 @RunWith(AndroidJUnit4::class)
 class MainScenariosUiTest {
-    @get:Rule
+    private val storage = IsolatedGameStorageRule()
     val compose = createAndroidComposeRule<MainActivity>()
+    @get:Rule val rules: RuleChain = RuleChain.outerRule(storage).around(compose)
 
     private val container
-        get() = (InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as WordsApplication).container
+        get() = storage.container
 
     @Before
     fun setUp() = runTest {
         container.random = Random(42)
-        container.progressRepository.clearAll()
         container.wordRepository.ensureLoaded()
         compose.waitUntil(10_000) { compose.onNodeWithTag("level_card_1").isEnabled() }
         compose.dismissWelcomeIfShown()
-    }
-
-    @After
-    fun tearDown() = runTest {
-        container.random = Random.Default
-        container.progressRepository.clearAll()
     }
 
     private fun SemanticsNodeInteraction.isEnabled() = runCatching { assertIsEnabled() }.isSuccess
@@ -53,12 +47,20 @@ class MainScenariosUiTest {
         compose.onNodeWithTag("level_card_1").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_screen").fetchSemanticsNodes().isNotEmpty() &&
             compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitForIdle()
+        if (compose.onAllNodesWithText("Новые задания этапа").fetchSemanticsNodes().isNotEmpty()) {
+            compose.onNodeWithText("Закрыть").performClick()
+        }
+        compose.onNodeWithText(InstrumentationRegistry.getInstrumentation().targetContext
+            .getString(R.string.check_answer)).assertIsEnabled()
     }
     private suspend fun source() = container.levelsRepository.getCampaign()?.levels?.first()?.word
         ?: container.levelsRepository.getLevels().first().word
 
-    /** Ответ, который есть в текущем производственном исходнике; v1 оставлен как запасной стенд. */
-    private fun validAnswer(source: String) = if (source == "чемпионство") "нос" else "пар"
+    // Обычное «Правильно!» проверяем на слове от четырёх букв.
+    // У трёхбуквенного ответа кампании своё сообщение и отдельный сценарий ниже.
+    private suspend fun validAnswer(source: String) =
+        container.wordRepository.startGame(source).allWords.first { it.length >= 4 }
     // Заведомо отсутствующее в словаре слово для проверки ветки NOT_FOUND.
     private fun unknownAnswer() = "щщщ"
 
@@ -91,6 +93,31 @@ class MainScenariosUiTest {
         assertEquals(listOf(valid), foundAnswers(source))
     }
 
+    @Test
+    fun threeLetterAnswerAndRepeatKeepFeedbackCountAndSavedProgress() = runTest {
+        startLevel()
+        val source = source()
+        val answer = container.wordRepository.startGame(source).allWords.first { it.length == 3 }
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        answerWord(answer)
+        awaitText(context.getString(R.string.correct_three_letter_answer))
+        awaitText("Найденные слова · 1 из", substring = true)
+        compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsEnabled()
+        assertEquals(listOf(answer), foundAnswers(source))
+        val saved = container.progressRepository.observeCampaignProgress().first()
+        assertTrue(saved.levels.getValue(source).completedTaskIds.isEmpty())
+
+        answerWord(answer.uppercase())
+        awaitText("Вы уже разгадали слово $answer")
+        awaitText("Найденные слова · 1 из", substring = true)
+        compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsEnabled()
+        assertEquals(saved, container.progressRepository.observeCampaignProgress().first())
+        compose.onNodeWithTag("game_back").performClick()
+        startLevel()
+        awaitText("Найденные слова · 1 из", substring = true)
+        assertEquals(saved, container.progressRepository.observeCampaignProgress().first())
+    }
+
     /**
      * Сценарий 2: Неизвестное слово → «Слово … не распознано словарём»;
      * повтор верного → «Вы уже разгадали слово …».
@@ -109,6 +136,9 @@ class MainScenariosUiTest {
 
         answerWord(valid)
         awaitText("Вы уже разгадали слово $valid")
+        awaitText("Найденные слова · 1 из", substring = true)
+        compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsEnabled()
+        assertEquals(listOf(valid), foundAnswers(source))
     }
 
     /**
