@@ -22,6 +22,7 @@ import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.CurrentCampaignLevel
 import com.example.sostavslova.core.GameState
 import com.example.sostavslova.core.Level
+import com.example.sostavslova.ui.assertTextLayoutFits
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.*
 import org.junit.Rule
@@ -165,7 +166,10 @@ class FoundWordsSectionTest(private val width: Int, private val fontScale: Float
             .fetchSemanticsNodes().forEach { node ->
                 val layouts = mutableListOf<TextLayoutResult>()
                 node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
-                layouts.forEach { assertFalse(it.layoutInput.text.text, it.hasVisualOverflow) }
+                layouts.forEach { layout ->
+                    assertTextLayoutFits(layout, "width=$width, fontScale=$fontScale, " +
+                        "tag=${node.config.getOrNull(SemanticsProperties.TestTag)}")
+                }
             }
         compose.onAllNodes(hasClickAction()).fetchSemanticsNodes().forEach { node ->
             val minimum = 48f * compose.density.density - 1f

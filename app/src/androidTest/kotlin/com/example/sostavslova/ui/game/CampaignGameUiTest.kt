@@ -17,6 +17,8 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.sostavslova.core.*
+import com.example.sostavslova.data.Definition
+import com.example.sostavslova.ui.assertTextLayoutFits
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.*
 import org.junit.Rule
@@ -27,6 +29,12 @@ import org.junit.runners.Parameterized
 @RunWith(Parameterized::class)
 class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
     @get:Rule val compose = createComposeRule()
+    // Собственный синтетический текст; статьи словарей в fixture не используются.
+    private val ownDefinition = Definition("крот",
+        "Крот — условный обитатель подземного мира; кротовый ход служит примером.",
+        related = listOf("кротовый"), origin = "own")
+    private val maskedOwnDefinition = requireNotNull(DefinitionHint.prepare(ownDefinition.display,
+        ownDefinition.text, ownDefinition.forms, ownDefinition.related))
     private val tasks = listOf(
         CampaignTask.T1("count", 2), CampaignTask.T2("initial", 'к', 1),
         CampaignTask.T3("long", 4, "карта"), CampaignTask.T4("riddles", listOf("кот", "крот")),
@@ -131,7 +139,7 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
 
     @Test fun accumulatedHintStepsCostAndZeroBudgetAreVisible() {
         val steps = listOf(HintStep(HintStage.THEME, "Животные"),
-            HintStep(HintStage.DEFINITION, "Синтетическое безопасное описание", wiktionary = true),
+            HintStep(HintStage.DEFINITION, maskedOwnDefinition, wiktionary = ownDefinition.isWiktionary),
             HintStep(HintStage.LENGTH, length = 4))
         val state = mutableStateOf(initial.copy(campaignHints = steps.take(2),
             campaignLevel = evaluated.state.copy(hints = HintState(ladder = HintLadder(
@@ -151,17 +159,29 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
         compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 2 из 4 частей")
         compose.onNodeWithText("Животные").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Синтетическое безопасное описание").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Викисловарь · CC BY-SA 4.0. Скрыты ответ и однокоренные слова.")
-            .performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("крот").assertDoesNotExist()
-        compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled().performClick()
+        compose.onNodeWithTag("game_hint_part_1").assertTextContains("Животные")
+        compose.onNodeWithTag("game_hint_part_2").performScrollTo().assertTextContains(maskedOwnDefinition)
+        compose.onNodeWithTag("game_hint_part_3").assertDoesNotExist()
+        compose.onNodeWithTag("game_hint_part_4").assertDoesNotExist()
+        assertOwnHintProvenanceAndNoAnswer()
+        compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled()
+            .assertTextContains("Открыть следующую часть · цена 0 · осталось 0").performClick()
         assertEquals(1, clicks)
         compose.runOnIdle { state.value = state.value.copy(hintCost = 1, campaignHints = steps,
             campaignLevel = state.value.campaignLevel?.let { current -> current.copy(hints = current.hints.copy(
                 ladder = current.hints.ladder.copy(nextStepIndex = 3))) }) }
         compose.onNodeWithText("Слово из 4 букв").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("game_hint_stage").assertTextEquals("Подсказка · открыто 3 из 4 частей")
+        compose.onNodeWithTag("game_hint_part_1").assertTextContains("Животные")
+        compose.onNodeWithTag("game_hint_part_2").assertTextContains(maskedOwnDefinition)
+        compose.onNodeWithTag("game_hint_part_3").assertTextContains("Слово из 4 букв")
+        compose.onNodeWithTag("game_hint_part_4").assertDoesNotExist()
+        val parts = compose.onAllNodes(hasTestTag("game_hint_part_1") or hasTestTag("game_hint_part_2") or
+            hasTestTag("game_hint_part_3")).fetchSemanticsNodes()
+        assertEquals((1..3).map { "game_hint_part_$it" }, parts.map { it.config[SemanticsProperties.TestTag] })
+        assertOwnHintProvenanceAndNoAnswer()
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsNotEnabled()
+            .assertTextContains("Открыть следующую часть · цена 1 · осталось 0")
         compose.onNodeWithTag("game_hint_budget").performScrollTo()
             .assertTextContains("Каждые 4 найденных слова", substring = true)
         assertTextFits()
@@ -306,7 +326,7 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
     @Test fun riddlesRemainUnderTaskAndReflectSolvedUpdates() {
         val riddles = listOf(
             RiddleUiState("Первая безопасная загадка", 3, "К", solved = true),
-            RiddleUiState("Синтетическая смысловая загадка", 4, "К", wiktionary = true),
+            RiddleUiState(maskedOwnDefinition, 4, "К", wiktionary = ownDefinition.isWiktionary),
             RiddleUiState(null, 6, "К"))
         val state = mutableStateOf(initial.copy(riddles = mapOf("riddles" to riddles)))
         compose.setContent {
@@ -319,9 +339,9 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
             }
         }
         compose.onNodeWithTag("game_riddle_preview").assertDoesNotExist()
-        compose.onNodeWithText("Синтетическая смысловая загадка").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Викисловарь · CC BY-SA 4.0. Скрыты ответ и однокоренные слова.").assertExists()
-        compose.onNodeWithText("крот").assertDoesNotExist()
+        compose.onNodeWithText(maskedOwnDefinition).performScrollTo().assertIsDisplayed()
+            .assert(hasAnyAncestor(hasTestTag("level_task_t4")))
+        assertOwnHintProvenanceAndNoAnswer()
         compose.onNodeWithText("Первая безопасная загадка").assertExists()
         compose.onAllNodesWithText("Ещё не разгадана").assertCountEquals(2)
         compose.runOnIdle {
@@ -330,6 +350,9 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
             }))
         }
         compose.onAllNodesWithText("Разгадана").assertCountEquals(2)
+        compose.onAllNodesWithText("Ещё не разгадана").assertCountEquals(1)
+        compose.onNodeWithTag("level_riddle_2").onChildren().filter(hasText("Разгадана")).assertCountEquals(1)
+        assertOwnHintProvenanceAndNoAnswer()
         compose.onNodeWithText("Загадка 3").assertExists()
         compose.onNodeWithText("Слово из 6 букв, начинается на «К»").assertExists()
         compose.runOnIdle {
@@ -337,7 +360,32 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         }
         compose.onNodeWithTag("game_riddle_preview").assertDoesNotExist()
         compose.onAllNodesWithText("Разгадана").assertCountEquals(3)
+        compose.onAllNodesWithText("Ещё не разгадана").assertCountEquals(0)
+        compose.onNodeWithText(maskedOwnDefinition).assert(hasAnyAncestor(hasTestTag("level_task_t4")))
+        assertOwnHintProvenanceAndNoAnswer()
         compose.onNodeWithTag("level_task_t4").assertExists()
+    }
+
+    private fun assertOwnHintProvenanceAndNoAnswer() {
+        assertEquals("own", ownDefinition.origin)
+        assertEquals("", ownDefinition.source)
+        assertTrue(ownDefinition.isOwnedHint)
+        assertFalse(ownDefinition.isWiktionary)
+        assertTrue(maskedOwnDefinition.contains(DefinitionHint.MASK))
+        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        val sourceNotice = context.getString(com.example.sostavslova.R.string.hint_definition_source)
+        assertEquals("Собственная подсказка · CC0-1.0. Скрыты ответ и однокоренные слова.", sourceNotice)
+        // own не устанавливает legacy-флаг wiktionary и не показывает блок атрибуции.
+        compose.onAllNodesWithText(sourceNotice, useUnmergedTree = true).assertCountEquals(0)
+        val text = compose.onAllNodes(isRoot(), useUnmergedTree = true).fetchSemanticsNodes()
+            .flatMap(::flatten).flatMap {
+                it.config.getOrNull(SemanticsProperties.Text).orEmpty().map { value -> value.text } +
+                    it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
+            }.joinToString("\n")
+        assertFalse(text.contains(ownDefinition.display, ignoreCase = true))
+        assertFalse(text.contains("Викисловарь", ignoreCase = true))
+        assertFalse(text.contains("CC BY-SA", ignoreCase = true))
+        assertFalse(text.contains("https://"))
     }
 
     @Test fun finaleSurvivesScreenRestorationAndBothActionsFit() {
@@ -386,7 +434,8 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
                 val layouts = mutableListOf<TextLayoutResult>()
                 node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
                 layouts.forEach { layout ->
-                    assertFalse(layout.layoutInput.text.text, layout.hasVisualOverflow)
+                    assertTextLayoutFits(layout, "width=$width, fontScale=$fontScale, " +
+                        "tag=${node.config.getOrNull(SemanticsProperties.TestTag)}")
                 }
             }
     }
