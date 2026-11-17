@@ -1,5 +1,7 @@
 package com.example.sostavslova.qa
 
+import android.content.Context
+import android.content.ContextWrapper
 import android.os.Looper
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.core.WordIndex
@@ -13,7 +15,7 @@ import kotlin.random.Random
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.job
 
-/** Только синтетические данные; ни assets, ни пользовательский progress не используются. */
+/** Только синтетические данные; пользовательские progress и play_time не используются. */
 internal object QaCampaign {
     val words = listOf("кот", "крот", "торт", "карта", "река", "трек", "рак", "рот")
     val json = """
@@ -38,7 +40,11 @@ internal object QaCampaign {
     enum class Meanings { SAFE, ABSENT, FILTERED }
 
     fun container(file: File, meanings: Meanings = Meanings.SAFE, words: WordRepository? = null): AppContainer =
-        AppContainer(InstrumentationRegistry.getInstrumentation().targetContext,
+        AppContainer(object : ContextWrapper(InstrumentationRegistry.getInstrumentation().targetContext) {
+            override fun getApplicationContext(): Context = this
+            // Новый progress получает новое время; restart того же progress сохраняет оба файла.
+            override fun getFilesDir(): File = File(requireNotNull(file.parentFile), "${file.name}.files")
+        },
             readCampaign = { json },
             words = words ?: WordRepository({ this.words.joinToString("\n") }),
             definitions = object : DefinitionsRepository {
@@ -57,9 +63,12 @@ internal object QaCampaign {
 }
 
 internal suspend fun AppContainer.closeQa() {
-    if (applicationScope.coroutineContext.job.isActive) progressRepository.awaitSaved()
-    applicationScope.cancel()
-    applicationScope.coroutineContext.job.join()
+    try {
+        if (applicationScope.coroutineContext.job.isActive) awaitSaved()
+    } finally {
+        applicationScope.cancel()
+        applicationScope.coroutineContext.job.join()
+    }
 }
 
 /** Ловит перебор на Main детерминированно, независимо от скорости устройства. */

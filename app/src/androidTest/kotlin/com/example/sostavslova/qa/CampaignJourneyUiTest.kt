@@ -117,6 +117,8 @@ class CampaignJourneyUiTest {
     }
     private suspend fun answer(word: String, count: Int) {
         enter(word)
+        // Завершаем обработку IME в Compose до ожидания DataStore вне UI test clock.
+        compose.waitForIdle()
         withContext(Dispatchers.Default) {
             withTimeout(10_000) {
                 container.progressRepository.observeCampaignProgress().first {
@@ -266,9 +268,11 @@ class CampaignJourneyUiTest {
         compose.waitUntil(10_000) {
             compose.onAllNodesWithText("Прогресс сохранён.").fetchSemanticsNodes().isNotEmpty()
         }
+        assertFalse(activity.isFinishing)
         compose.onNodeWithTag("exit_dialog_confirm").assertIsEnabled().performClick()
         compose.waitUntil(10_000) { activity.isFinishing }
         assertEquals(listOf("кот"), saved().levels.getValue("картотека").found)
+        assertTimeSaved()
     }
 
     @Test fun doubleSystemBackFromMapExitsWithSavedAnswers() = runTest {
@@ -279,5 +283,14 @@ class CampaignJourneyUiTest {
         compose.runOnUiThread { back.onBackPressed() }
         compose.waitUntil(10_000) { activity.isFinishing }
         assertEquals(listOf("кот"), saved().levels.getValue("картотека").found)
+        assertTimeSaved()
+    }
+
+    private suspend fun assertTimeSaved() {
+        val campaign = requireNotNull(container.levelsRepository.getCampaign())
+        val time = container.playTimeRepository.snapshot(campaign).getValue(1)
+        assertEquals(1, time.lastStars)
+        assertTrue(time.lastSequence > 0L)
+        assertNull(container.playTimeTracker.writeFailure.value)
     }
 }
