@@ -1,0 +1,603 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="285" failures="0" errors="0" skipped="0" time="362.391" timestamp="2026-11-17T12:58:04" hostname="localhost">
+  <testsuite name="com.example.sostavslova.data.CampaignProgressRepositoryTest" tests="18" failures="0" errors="0" skipped="0" time="7.545" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="answerTransitionsComeFromCommittedFrontierAndFinaleRatherThanStarThresholdAlone" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.198" />
+    <testcase name="absentDtoFieldsDefaultAndLegacySaveRemainsReadableAndIndependent" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.058" />
+    <testcase name="oldSavedDefinitionIsRemovedWithoutResettingWordsStarsOrHintCounters" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.128" />
+    <testcase name="repeatedReadsSeeOtherRepositoryWritesCorruptionRestoreAndClear" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.156" />
+    <testcase name="repeatedAnswerAndConcurrentReplayOfHintDoNotAwardOrSpendTwice" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.506" />
+    <testcase name="explanationAndFinaleFlagsAreCommittedOnceAndFailureAllowsRetry" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.177" />
+    <testcase name="pendingFinaleSurvivesStoreRestartAndFailedAcknowledgementUntilClosed" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.305" />
+    <testcase name="concurrentAnswerAndPaidHintPreserveBothUpdatesAndEarnedBudget" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.155" />
+    <testcase name="cancellationWhileAnswerWaitsForCommitCannotLoseAcceptedWrite" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.102" />
+    <testcase name="writeFailureDoesNotPublishAnswerStarsUnlockOrHintCostAndRetrySucceeds" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.153" />
+    <testcase name="missingLettersKeepExactDetailsAndDoNotChangeSavedProgress" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.078" />
+    <testcase name="hintResultIsNotReturnedBeforeCommitAndNavigationCancellationPreservesCost" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.13" />
+    <testcase name="closedRoutesInvalidAnswersAndUnreadableVersionsCannotOverwriteProgress" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.103" />
+    <testcase name="hundredConcurrentDistinctAnswersAcrossTwoRepositoryInstancesNeverLoseUpdates" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="4.202" />
+    <testcase name="completeSnapshotIncludingHintLadderAndFinaleSurvivesRestart" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.432" />
+    <testcase name="sameAnswerOnTwoLevelsIsIndependentAndReplacedSourceHasNoStars" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.078" />
+    <testcase name="clearAllRemovesCampaignAndLegacyDataAndSurvivesRestart" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.455" />
+    <testcase name="oneAnswerPersistsSeveralStarsAndUnlockInOneTransactionAndOneSnapshot" classname="com.example.sostavslova.data.CampaignProgressRepositoryTest" time="0.129" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.data.ExitSaveBarrierTest" tests="3" failures="0" errors="0" skipped="0" time="0.083" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="cancellingExitWaitDoesNotCancelWrite" classname="com.example.sostavslova.data.ExitSaveBarrierTest" time="0.028" />
+    <testcase name="barrierWaitsForPreparationAndForAcceptedWrite" classname="com.example.sostavslova.data.ExitSaveBarrierTest" time="0.027" />
+    <testcase name="failedTransactionCanBeRetriedWithoutLosingAnswer" classname="com.example.sostavslova.data.ExitSaveBarrierTest" time="0.028" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.data.LegacyCampaignMigrationTest" tests="27" failures="0" errors="0" skipped="0" time="4.908" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="oldFreeGameMatchingOnlyNewLevelDoesNotCreateCampaignProgress" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.102" />
+    <testcase name="failedCommitLeavesAllOldKeysAndRetryMigratesExactlyOnce" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.179" />
+    <testcase name="incompleteRecordsUseDefaultsAndNormalizedAliasesMerge" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.128" />
+    <testcase name="v2ForAnotherCampaignIsArchivedResetAndV1PayloadIsKept" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.205" />
+    <testcase name="unidentifiedV2AdoptsIdentityOnlyWhenEveryKeyBelongsToCampaignAndRecomputesFrontier" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.105" />
+    <testcase name="ambiguousCurrentOnlyGameOnOldAndNewSourceIsNotPromoted" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.079" />
+    <testcase name="clearAllRemovesBothVersionsEvenWhenPayloadIsUnreadableAndDoesNotRemigrateOnRestart" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.281" />
+    <testcase name="foreignV1MapKeysDoNotTurnFreeGameIntoNewCampaignStarsOrAccess" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.13" />
+    <testcase name="replacedAndDeletedSourcesDoNotGiveAnswersOrStarsToNewOccupants" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.128" />
+    <testcase name="duplicateNewSourcesAbortBeforeChangingLegacyData" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.104" />
+    <testcase name="successfulMigrationIsIdempotentAcrossRestartAndKeepsExistingV2AsAuthority" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.231" />
+    <testcase name="malformedFutureOrUnprocessableV2BlocksMigrationAndEventsWithoutErasingEitherVersion" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.481" />
+    <testcase name="currentGameCannotLeakIntoDifferentRecordedLevel" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.127" />
+    <testcase name="secondaryFlagsAnswersAndCurrentGameDoNotInventCompletedPredecessor" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.127" />
+    <testcase name="emptyInstallCanInitializeAndRepeatWithoutInventingProgress" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.104" />
+    <testcase name="foundIsNormalizedDeduplicatedAndFilteredByNewDictionaryAndMultiset" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.13" />
+    <testcase name="oldV1FlagsDoNotUnlockShortCampaignWithoutTransferredStars" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.102" />
+    <testcase name="flagsAloneKeepV1ButCannotBecomeV2StarsOrAccess" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.106" />
+    <testcase name="malformedOrFutureLegacyPayloadIsNeverReplacedByEmptyV2" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="1.033" />
+    <testcase name="migrationAndDeletionAreInvisibleUntilCommitAndSurviveUiCancellation" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.077" />
+    <testcase name="everyNewTaskAndRiddleTargetsAreRecomputedWithoutOldFlagsOrHintCost" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.103" />
+    <testcase name="readingV1AndV2DoesNotStartMigrationAndEventsCannotBypassIt" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.103" />
+    <testcase name="currentGameAddsOnlyValidAnswersOfIndependentlyRecordedRealLevel" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.103" />
+    <testcase name="sameIdentityKeepsSavedStarsAndFrontier" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.103" />
+    <testcase name="unidentifiedV2WithForeignWordsIsResetAndArchived" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.103" />
+    <testcase name="concurrentRepositoriesMigrateOneSnapshotWithoutDuplicatingAnswersOrResettingLaterEvents" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.33" />
+    <testcase name="reorderedLevelsMatchNormalizedWordAndOldFrontier" classname="com.example.sostavslova.data.LegacyCampaignMigrationTest" time="0.104" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.data.LevelRouteRulesTest" tests="2" failures="0" errors="0" skipped="0" time="0.033" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="v2AccessUsesSavedFrontierAndIgnoresLegacyStars" classname="com.example.sostavslova.data.LevelRouteRulesTest" time="0.003" />
+    <testcase name="legacyRejectsUnknownNumbersAndUsesCompletedForAccess" classname="com.example.sostavslova.data.LevelRouteRulesTest" time="0.03" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.data.LevelsRepositoryTest" tests="7" failures="0" errors="0" skipped="0" time="0.522" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="miniV2IsValidatedAndCachedAcrossConcurrentMainCallers" classname="com.example.sostavslova.data.LevelsRepositoryTest" time="0.079" />
+    <testcase name="unreadableV2PropagatesInsteadOfBecomingAbsent" classname="com.example.sostavslova.data.LevelsRepositoryTest" time="0.028" />
+    <testcase name="invalidV2NeverFallsBackToV1OrCachesFailure" classname="com.example.sostavslova.data.LevelsRepositoryTest" time="0.179" />
+    <testcase name="loadsThirtyCoreLevelsFromRealAssetsOnceOffMain" classname="com.example.sostavslova.data.LevelsRepositoryTest" time="0.054" />
+    <testcase name="missingV2IsExplicitAndCached" classname="com.example.sostavslova.data.LevelsRepositoryTest" time="0.029" />
+    <testcase name="loadsInstalledShort15CampaignAndMatchesBuildHash" classname="com.example.sostavslova.data.LevelsRepositoryTest" time="0.152" />
+    <testcase name="expectedCampaignHashRejectsWrongAsset" classname="com.example.sostavslova.data.LevelsRepositoryTest" time="0.001" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.data.PlayTimeRepositoryTest" tests="13" failures="0" errors="0" skipped="0" time="3.528" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="segmentsAccumulateAndThresholdsAreCapturedOnlyOnceIncludingSimultaneousThresholds" classname="com.example.sostavslova.data.PlayTimeRepositoryTest" time="0.23" />
+    <testcase name="concurrentRetriesAndDistinctLevelsSerializeAcrossRepositoryInstances" classname="com.example.sostavslova.data.PlayTimeRepositoryTest" time="0.909" />
+    <testcase name="repeatedSnapshotsSeeOtherWriterCampaignValidationCorruptionAndClear" classname="com.example.sostavslova.data.PlayTimeRepositoryTest" time="0.279" />
+    <testcase name="firstLaunchHasZeroTimesAndDoesNotWriteOrInventRecords" classname="com.example.sostavslova.data.PlayTimeRepositoryTest" time="0.102" />
+    <testcase name="restoreAfterMissedCommitDoesNotInventHistoricalMilestones" classname="com.example.sostavslova.data.PlayTimeRepositoryTest" time="0.227" />
+    <testcase name="statisticsReadIsPureAndCampaignScoped" classname="com.example.sostavslova.data.PlayTimeRepositoryTest" time="0.18" />
+    <testcase name="zeroAllowedButNegativeOverflowAndInvalidOrderDoNotChangeDisk" classname="com.example.sostavslova.data.PlayTimeRepositoryTest" time="0.255" />
+    <testcase name="campaignHashNumberAndWordIsolateRecordsAndUnidentifiedCampaignIsRejected" classname="com.example.sostavslova.data.PlayTimeRepositoryTest" time="0.204" />
+    <testcase name="historicalStarsNeverBecomeZeroTimeRecords" classname="com.example.sostavslova.data.PlayTimeRepositoryTest" time="0.152" />
+    <testcase name="committedDuplicateSurvivesRestartAndOlderRetriesAreIgnored" classname="com.example.sostavslova.data.PlayTimeRepositoryTest" time="0.177" />
+    <testcase name="damagedPreferencesFileFailsClosedWithoutReplacingIt" classname="com.example.sostavslova.data.PlayTimeRepositoryTest" time="0.053" />
+    <testcase name="timingAndExplicitClearLeaveLegacyWordsStarsHintsAndCampaignProgressUntouched" classname="com.example.sostavslova.data.PlayTimeRepositoryTest" time="0.255" />
+    <testcase name="malformedJsonInvalidValuesAndFutureSchemaFailClosedWithoutOverwriting" classname="com.example.sostavslova.data.PlayTimeRepositoryTest" time="0.505" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.data.ProgressRepositoryTest" tests="8" failures="0" errors="0" skipped="0" time="1.193" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="transitionalV1SnapshotMigratesIntoV2BySourceWord" classname="com.example.sostavslova.data.ProgressRepositoryTest" time="0.177" />
+    <testcase name="starsNeverDecreaseAndAnswersAccumulateWithoutDuplicates" classname="com.example.sostavslova.data.ProgressRepositoryTest" time="0.202" />
+    <testcase name="malformedLegacyMigrationDoesNotEraseExistingLevelProgress" classname="com.example.sostavslova.data.ProgressRepositoryTest" time="0.153" />
+    <testcase name="corruptLegacyPayloadIsPreservedWhenMigrationFails" classname="com.example.sostavslova.data.ProgressRepositoryTest" time="0.078" />
+    <testcase name="parallelSavesMergeAnswersAndStarsAtomically" classname="com.example.sostavslova.data.ProgressRepositoryTest" time="0.252" />
+    <testcase name="levelAnswersAndStarsSurviveReopeningDataStore" classname="com.example.sostavslova.data.ProgressRepositoryTest" time="0.102" />
+    <testcase name="emptyStoreHasNoCurrentGameOrLevelProgress" classname="com.example.sostavslova.data.ProgressRepositoryTest" time="0.051" />
+    <testcase name="migrationKeepsLegacyLevelAnswersAndOpeningButExcludesFreeGame" classname="com.example.sostavslova.data.ProgressRepositoryTest" time="0.178" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" tests="15" failures="0" errors="0" skipped="0" time="1.571" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="upgradeToRealAssetReplacesSameOrHigherVersionAndEveryOldText" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.203" />
+    <testcase name="absentDefinitionsReturnFalseAndEmptyListWithoutCreatingDatabase" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.028" />
+    <testcase name="realAssetContainsOnlyMinimalOwnedHints" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.153" />
+    <testcase name="upgradeRemovesInstalledCopyWhenCurrentAssetIsMissing" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.053" />
+    <testcase name="readsFormsAndNearestCognatesFromWordMetadata" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.054" />
+    <testcase name="normalizedQueriesPreservePlainTextAndCopyAssetOnceOffMain" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.103" />
+    <testcase name="missingAssetIsAlsoSafeWhenBuildFlagIsTrue" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.029" />
+    <testcase name="newerBundledUserVersionReplacesInstalledDatabase" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.156" />
+    <testcase name="oldSchemaWithoutMetadataDoesNotBreakDefinitions" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.077" />
+    <testcase name="bundledDictionaryUsesOpenSourceOrRemainsOptional" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.152" />
+    <testcase name="sourceIsReadFromNewSchemaWithoutLosingOtherFields" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.103" />
+    <testcase name="bundledContentReplacesEvenHigherInstalledVersion" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.128" />
+    <testcase name="categorySchemaV8ReplacesInstalledV7AndPreservesDefinitionMetadata" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.127" />
+    <testcase name="categoriesAreOptionalNormalizedAndIndependentOfDefinitions" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.127" />
+    <testcase name="bundleWithoutDefinitionsDoesNotExposeOldInstalledCopy" classname="com.example.sostavslova.data.SqliteDefinitionsRepositoryTest" time="0.078" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.data.WelcomeStateRepositoryTest" tests="8" failures="0" errors="0" skipped="0" time="0.671" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="concurrentDoneMarksAreAtomicAndOnlyFirstChangesState" classname="com.example.sostavslova.data.WelcomeStateRepositoryTest" time="0.178" />
+    <testcase name="clearingAppDataOnFreshInstallRequestsShowAgain" classname="com.example.sostavslova.data.WelcomeStateRepositoryTest" time="0.076" />
+    <testcase name="upgradeWithLegacyProgressFailsClosedAndKeepsItUntouched" classname="com.example.sostavslova.data.WelcomeStateRepositoryTest" time="0.051" />
+    <testcase name="resolvingWelcomeKeepsUnidentifiedCampaignProgressAndStars" classname="com.example.sostavslova.data.WelcomeStateRepositoryTest" time="0.104" />
+    <testcase name="existingInstallWithoutWelcomeKeyDoesNotGetShowOrWriteIt" classname="com.example.sostavslova.data.WelcomeStateRepositoryTest" time="0.028" />
+    <testcase name="unknownInstallEvidenceFailsClosedWithoutWritingWelcomeKey" classname="com.example.sostavslova.data.WelcomeStateRepositoryTest" time="0.027" />
+    <testcase name="doneCannotBeMarkedWithoutConfirmedShow" classname="com.example.sostavslova.data.WelcomeStateRepositoryTest" time="0.052" />
+    <testcase name="freshInstallPersistsShowUntilShownAndDoneSurvivesRestart" classname="com.example.sostavslova.data.WelcomeStateRepositoryTest" time="0.155" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.data.WordRepositoryTest" tests="3" failures="0" errors="0" skipped="0" time="0.36" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="concurrentAndRepeatedLoadsReadFileOnceOffMain" classname="com.example.sostavslova.data.WordRepositoryTest" time="0.077" />
+    <testcase name="loadingFailureIsExposedAsState" classname="com.example.sostavslova.data.WordRepositoryTest" time="0.029" />
+    <testcase name="startGameNormalizesSourceAndFiltersRestoredAnswersUsingCore" classname="com.example.sostavslova.data.WordRepositoryTest" time="0.254" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.di.AppContainerTest" tests="3" failures="0" errors="0" skipped="0" time="0.208" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="miniCampaignCanBeInjectedThroughContainer" classname="com.example.sostavslova.di.AppContainerTest" time="0.052" />
+    <testcase name="applicationOwnsOneContainerAndOneRepositoryOfEachKind" classname="com.example.sostavslova.di.AppContainerTest" time="0.129" />
+    <testcase name="corruptInjectedCampaignIsNotHiddenByLegacyAssets" classname="com.example.sostavslova.di.AppContainerTest" time="0.027" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.qa.CampaignFixtureTest" tests="3" failures="0" errors="0" skipped="0" time="0.105" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="alternateThresholdsAndAllThematicPairsRemainReachable" classname="com.example.sostavslova.qa.CampaignFixtureTest" time="0.052" />
+    <testcase name="exactUiRouteReachesFinaleAtSevenAndMasterAtEightWithoutGlobalAnswerExclusion" classname="com.example.sostavslova.qa.CampaignFixtureTest" time="0.026" />
+    <testcase name="fixtureHasAllTypesDistinctFinalBoundaryAndEveryTaskIsReachable" classname="com.example.sostavslova.qa.CampaignFixtureTest" time="0.027" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.qa.CampaignJourneyStateTest" tests="2" failures="0" errors="0" skipped="0" time="2.494" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="differentTaskCombinationsUnlockAndAllT6MembersCountWithoutDatabaseOrFilter" classname="com.example.sostavslova.qa.CampaignJourneyStateTest" time="0.833" />
+    <testcase name="openingAndAnswerMeasureDictionaryAccessAndNeverScanOnUiThread" classname="com.example.sostavslova.qa.CampaignJourneyStateTest" time="1.661" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.qa.CampaignJourneyUiTest" tests="7" failures="0" errors="0" skipped="0" time="42.63" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="closedDeepLinkUsesInjectedCampaignWithoutChangingProgress" classname="com.example.sostavslova.qa.CampaignJourneyUiTest" time="5.481" />
+    <testcase name="directNextLevelKeepsAnswersStarsAndHintsAndDropsOnlyDraft" classname="com.example.sostavslova.qa.CampaignJourneyUiTest" time="9.156" />
+    <testcase name="t4RemainsPlayableWithoutDatabase" classname="com.example.sostavslova.qa.CampaignJourneyUiTest" time="3.75" />
+    <testcase name="exitFromMenuWaitsForSaveAndClosesHost" classname="com.example.sostavslova.qa.CampaignJourneyUiTest" time="3.95" />
+    <testcase name="doubleSystemBackFromMapExitsWithSavedAnswers" classname="com.example.sostavslova.qa.CampaignJourneyUiTest" time="3.695" />
+    <testcase name="t4RemainsPlayableWhenEveryDefinitionIsFiltered" classname="com.example.sostavslova.qa.CampaignJourneyUiTest" time="3.622" />
+    <testcase name="newInstallToFinaleRestartAndAllStars" classname="com.example.sostavslova.qa.CampaignJourneyUiTest" time="12.976" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.qa.QaCampaignStorageTest" tests="4" failures="0" errors="0" skipped="0" time="0.363" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="sharedTimeWithFreshProgressReportsOriginalInvariantFailure" classname="com.example.sostavslova.qa.QaCampaignStorageTest" time="0.103" />
+    <testcase name="closeDrainsProgressAndTimeAndReopenKeepsBoth" classname="com.example.sostavslova.qa.QaCampaignStorageTest" time="0.103" />
+    <testcase name="failedClosePropagatesTimeFailureAndStillJoinsScope" classname="com.example.sostavslova.qa.QaCampaignStorageTest" time="0.054" />
+    <testcase name="freshProgressDoesNotReuseAnotherContainersTime" classname="com.example.sostavslova.qa.QaCampaignStorageTest" time="0.103" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.time.PlayTimeAcceptanceTest" tests="3" failures="0" errors="0" skipped="0" time="38.909" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="abruptProcessDeathKeepsDurableCheckpointAndDropsOnlyUnflushedTail" classname="com.example.sostavslova.time.PlayTimeAcceptanceTest" time="0.129" />
+    <testcase name="installedCampaignRThenRevisitsTo49StarsHasExactLevelStageAndCampaignTotals" classname="com.example.sostavslova.time.PlayTimeAcceptanceTest" time="38.274" />
+    <testcase name="coldStartsBeforeAndAfterFixtureCampaignChangeKeepVersionsIsolatedAndArchiveProgress" classname="com.example.sostavslova.time.PlayTimeAcceptanceTest" time="0.506" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.time.PlayTimeProgressIntegrationTest" tests="2" failures="0" errors="0" skipped="0" time="0.612" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="exitWaitsForCancelledAnswerCommitThenForTimeCheckpoint" classname="com.example.sostavslova.time.PlayTimeProgressIntegrationTest" time="0.205" />
+    <testcase name="savedStarsReachRThenFullAcrossTrackerRestartWithoutHistoricalReplays" classname="com.example.sostavslova.time.PlayTimeProgressIntegrationTest" time="0.407" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.time.PlayTimeTrackerTest" tests="21" failures="0" errors="0" skipped="0" time="0.277" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="rThenReturnThenFullUsesBothPeriodsAndDuplicateEventsDoNothing" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.051" />
+    <testcase name="uiRerenderCannotAwardStarsOrMilestones" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.027" />
+    <testcase name="initializeFailureKeepsBaselineAndSegmentsInOrder" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.001" />
+    <testcase name="starCheckpointsContinueAndFinaleStopsWithFinalStars" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.028" />
+    <testcase name="loadingErrorLockedUnknownAndWrongRouteDoNotCount" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.002" />
+    <testcase name="slowWritesSurviveDisposeAndBarrierWaitsForAllAcceptedSegments" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.028" />
+    <testcase name="ambiguousCommitRetriesSameSequenceWithoutDoubleCounting" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.002" />
+    <testcase name="fakeAndroidLifecyclePauseStopResumeDestroyAndDisposeAreIdempotent" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.029" />
+    <testcase name="screenLockAndActivityFinishStopDespiteDialogFocus" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.003" />
+    <testcase name="sixtySecondCheckpointHasNoOneHzPollingOrUiTicks" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.002" />
+    <testcase name="explicitExitCannotBeRestartedByRepeatedResume" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.002" />
+    <testcase name="recreationAndRotationUseNewTickAndSingleInitialization" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.003" />
+    <testcase name="drawerStopsButHintDialogFocusContinuesAndExternalFocusLossStops" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.003" />
+    <testcase name="starSnapshotAfterNavigationDoesNotRaceOrChangeOtherRunningLevel" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.028" />
+    <testcase name="routeChangesStopAtNavigationAndOldDisposeCannotStopNewLevel" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.003" />
+    <testcase name="storageFailureIsDiagnosticAndExitBarrierFailsUntilRetry" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.028" />
+    <testcase name="committedProgressOutlivesScreenAndStaleUiCannotRevertStars" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.002" />
+    <testcase name="otherCampaignCommitCannotAwardMilestone" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.003" />
+    <testcase name="processDeathRestartsSequenceFromDiskWithoutCarryingStartTick" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.002" />
+    <testcase name="timePageRemainsReadOnlyAcrossLongStayAndReturnToMap" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.002" />
+    <testcase name="resumedPauseResumeAndDuplicateStopsExcludeBriefBackground" classname="com.example.sostavslova.time.PlayTimeTrackerTest" time="0.028" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.ExitDialogTest" tests="2" failures="0" errors="0" skipped="0" time="3.93" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="onlyCommittedStatePromisesSavingAndErrorKeepsRetryEnabled" classname="com.example.sostavslova.ui.ExitDialogTest" time="1.965" />
+    <testcase name="busyDisablesConfirmationButAllowsCancelAndDoesNotPromiseSaving" classname="com.example.sostavslova.ui.ExitDialogTest" time="1.965" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.ExitNavigationTest" tests="3" failures="0" errors="0" skipped="0" time="8.333" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="systemBackDismissesDialogAndActivityIsFoundThroughWrappers" classname="com.example.sostavslova.ui.ExitNavigationTest" time="2.543" />
+    <testcase name="drawerBackClosesDrawerAndDialogSurvivesRecreationWithCancel" classname="com.example.sostavslova.ui.ExitNavigationTest" time="3.222" />
+    <testcase name="recreationWhileSavingKeepsConfirmDisabledAndCancelPreventsExit" classname="com.example.sostavslova.ui.ExitNavigationTest" time="2.568" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.ExitViewModelTest" tests="7" failures="0" errors="0" skipped="0" time="0.042" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="restoredDialogChecksStorageAgainAndDoesNotRestoreBackWindow" classname="com.example.sostavslova.ui.ExitViewModelTest" time="0.028" />
+    <testcase name="exactDeadlineAndExpiredWindowRequireAnotherPress" classname="com.example.sostavslova.ui.ExitViewModelTest" time="0.003" />
+    <testcase name="cancellingConfirmedExitSuppressesLateNonCancellableCompletion" classname="com.example.sostavslova.ui.ExitViewModelTest" time="0.002" />
+    <testcase name="confirmationChecksStorageAgainAfterSavedMessage" classname="com.example.sostavslova.ui.ExitViewModelTest" time="0.003" />
+    <testcase name="secondBackWithinTwoSecondsWaitsForSave" classname="com.example.sostavslova.ui.ExitViewModelTest" time="0.002" />
+    <testcase name="failureAllowsRetryAndNeverPromisesSavedProgress" classname="com.example.sostavslova.ui.ExitViewModelTest" time="0.003" />
+    <testcase name="busyDisablesRepeatedConfirmationAndCancellationPreventsFinish" classname="com.example.sostavslova.ui.ExitViewModelTest" time="0.001" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.MainScenariosUiTest" tests="6" failures="0" errors="0" skipped="0" time="20.686" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="threeLetterAnswerAndRepeatKeepFeedbackCountAndSavedProgress" classname="com.example.sostavslova.ui.MainScenariosUiTest" time="4.276" />
+    <testcase name="levelAnswerIsSavedAndScoreUpdated" classname="com.example.sostavslova.ui.MainScenariosUiTest" time="3.296" />
+    <testcase name="scenario2_incorrectWordNotFoundAndRepeatedWordAlreadyFound" classname="com.example.sostavslova.ui.MainScenariosUiTest" time="3.65" />
+    <testcase name="scenario3_hintDoesNotRevealUnfoundWords" classname="com.example.sostavslova.ui.MainScenariosUiTest" time="3.776" />
+    <testcase name="backToMapAndReopenPreservesAnswers" classname="com.example.sostavslova.ui.MainScenariosUiTest" time="3.701" />
+    <testcase name="scenario5_levelsLevel2IsLockedOnCleanData" classname="com.example.sostavslova.ui.MainScenariosUiTest" time="1.987" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.TextLayoutAssertionsTest" tests="6" failures="0" errors="0" skipped="0" time="10.267" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="actualVerticalClippingIsRejected" classname="com.example.sostavslova.ui.TextLayoutAssertionsTest" time="1.713" />
+    <testcase name="cachedParagraphCanBeWiderThanTextWithoutClippingAnyLine" classname="com.example.sostavslova.ui.TextLayoutAssertionsTest" time="1.712" />
+    <testcase name="ellipsizedTextIsRejected" classname="com.example.sostavslova.ui.TextLayoutAssertionsTest" time="1.71" />
+    <testcase name="actualHorizontalClippingIsRejected" classname="com.example.sostavslova.ui.TextLayoutAssertionsTest" time="1.736" />
+    <testcase name="wrappedHeaderKeepsEveryLineInsideText" classname="com.example.sostavslova.ui.TextLayoutAssertionsTest" time="1.71" />
+    <testcase name="omittedLinesAreRejected" classname="com.example.sostavslova.ui.TextLayoutAssertionsTest" time="1.686" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.components.ComponentInteractionTest" tests="9" failures="0" errors="0" skipped="0" time="16.277" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="sourceWordIsAnnouncedAsOnePhraseInsteadOfSeparateLetters" classname="com.example.sostavslova.ui.components.ComponentInteractionTest" time="1.71" />
+    <testcase name="inputLimitsLengthAndSubmitsByImeAndButtonWithoutLosingFocus" classname="com.example.sostavslova.ui.components.ComponentInteractionTest" time="2.114" />
+    <testcase name="drawerKeepsSupportedDestinationsAndInvokesNavigation" classname="com.example.sostavslova.ui.components.ComponentInteractionTest" time="1.913" />
+    <testcase name="definitionKeepsAngleBracketsNewlinesAndCanHideWordLabel" classname="com.example.sostavslova.ui.components.ComponentInteractionTest" time="1.71" />
+    <testcase name="hintDoesNotLeakAnswerThroughSourceUrl" classname="com.example.sostavslova.ui.components.ComponentInteractionTest" time="1.685" />
+    <testcase name="statisticsShowsTotalsAndPercentFromCore" classname="com.example.sostavslova.ui.components.ComponentInteractionTest" time="1.735" />
+    <testcase name="definitionShowsOriginalArticleUrl" classname="com.example.sostavslova.ui.components.ComponentInteractionTest" time="1.736" />
+    <testcase name="foundWordsAreDisplayedWithoutClickActions" classname="com.example.sostavslova.ui.components.ComponentInteractionTest" time="1.711" />
+    <testcase name="aboutShowsAttributionLicenseAndChangesAtNativeFont" classname="com.example.sostavslova.ui.components.ComponentInteractionTest" time="1.963" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.components.ComponentLayoutTest" tests="10" failures="0" errors="0" skipped="0" time="17.534" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="rendersWithoutTextOverflowAndWith48DpClickTargets[WELL]" classname="com.example.sostavslova.ui.components.ComponentLayoutTest" time="1.711" />
+    <testcase name="rendersWithoutTextOverflowAndWith48DpClickTargets[WORD_INPUT]" classname="com.example.sostavslova.ui.components.ComponentLayoutTest" time="1.784" />
+    <testcase name="rendersWithoutTextOverflowAndWith48DpClickTargets[LETTERS]" classname="com.example.sostavslova.ui.components.ComponentLayoutTest" time="1.835" />
+    <testcase name="rendersWithoutTextOverflowAndWith48DpClickTargets[STARS]" classname="com.example.sostavslova.ui.components.ComponentLayoutTest" time="1.709" />
+    <testcase name="rendersWithoutTextOverflowAndWith48DpClickTargets[FOUND_WORDS]" classname="com.example.sostavslova.ui.components.ComponentLayoutTest" time="1.71" />
+    <testcase name="rendersWithoutTextOverflowAndWith48DpClickTargets[ALERTS]" classname="com.example.sostavslova.ui.components.ComponentLayoutTest" time="1.761" />
+    <testcase name="rendersWithoutTextOverflowAndWith48DpClickTargets[STATISTICS]" classname="com.example.sostavslova.ui.components.ComponentLayoutTest" time="1.761" />
+    <testcase name="rendersWithoutTextOverflowAndWith48DpClickTargets[DEFINITION]" classname="com.example.sostavslova.ui.components.ComponentLayoutTest" time="1.763" />
+    <testcase name="rendersWithoutTextOverflowAndWith48DpClickTargets[TOP_BAR]" classname="com.example.sostavslova.ui.components.ComponentLayoutTest" time="1.738" />
+    <testcase name="rendersWithoutTextOverflowAndWith48DpClickTargets[DRAWER]" classname="com.example.sostavslova.ui.components.ComponentLayoutTest" time="1.762" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.components.StarsContrastTest" tests="2" failures="0" errors="0" skipped="0" time="0.002" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="filledAndOutlineStarsKeepThreeToOneOnActualBackground" classname="com.example.sostavslova.ui.components.StarsContrastTest" time="0.001" />
+    <testcase name="filledAndOutlineStarDrawablesDifferByGeometry" classname="com.example.sostavslova.ui.components.StarsContrastTest" time="0.001" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.components.StarsSemanticsTest" tests="2" failures="0" errors="0" skipped="0" time="3.645" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="interactiveGroupKeepsTaskAction" classname="com.example.sostavslova.ui.components.StarsSemanticsTest" time="1.735" />
+    <testcase name="groupAnnouncesModelProgressAsOneReadOnlyNodeForEveryShape" classname="com.example.sostavslova.ui.components.StarsSemanticsTest" time="1.91" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.game.CampaignGameUiTest" tests="9" failures="0" errors="0" skipped="0" time="24.973" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="riddlesRemainUnderTaskAndReflectSolvedUpdates" classname="com.example.sostavslova.ui.game.CampaignGameUiTest" time="2.139" />
+    <testcase name="hintPartsAreUniqueOrderedAndDoNotExposeFutureStepsAfterRestorationOrTargetChange" classname="com.example.sostavslova.ui.game.CampaignGameUiTest" time="4.25" />
+    <testcase name="finaleSurvivesScreenRestorationAndBothActionsFit" classname="com.example.sostavslova.ui.game.CampaignGameUiTest" time="2.943" />
+    <testcase name="installedCampaignTasksMatchEveryLevelWithoutOpeningAnotherList" classname="com.example.sostavslova.ui.game.CampaignGameUiTest" time="2.867" />
+    <testcase name="allSevenTasksRiddlesGroupsAndStatisticsAtNativeSize" classname="com.example.sostavslova.ui.game.CampaignGameUiTest" time="3.268" />
+    <testcase name="tasksStayVisibleAcrossUpdatesAndLevelChangesWithoutClearingInput" classname="com.example.sostavslova.ui.game.CampaignGameUiTest" time="2.565" />
+    <testcase name="nextLevelOfferAndHintHaveSeparateAccessibleActions" classname="com.example.sostavslova.ui.game.CampaignGameUiTest" time="2.365" />
+    <testcase name="longInputIsNotTruncatedAndKeepsAccessibleLabel" classname="com.example.sostavslova.ui.game.CampaignGameUiTest" time="2.137" />
+    <testcase name="accumulatedHintStepsCostAndZeroBudgetAreVisible" classname="com.example.sostavslova.ui.game.CampaignGameUiTest" time="2.439" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.game.FoundWordsSectionTest" tests="4" failures="0" errors="0" skipped="0" time="27.378" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="largestInstalledLevelKeepsStatisticsReachableWithEveryGroupExpanded[legacy=false]" classname="com.example.sostavslova.ui.game.FoundWordsSectionTest" time="7.366" />
+    <testcase name="emptyAnd146WordsShareOneSectionAndKeepOnlyGroupAndStatisticsActions[legacy=false]" classname="com.example.sostavslova.ui.game.FoundWordsSectionTest" time="6.788" />
+    <testcase name="largestInstalledLevelKeepsStatisticsReachableWithEveryGroupExpanded[legacy=true]" classname="com.example.sostavslova.ui.game.FoundWordsSectionTest" time="6.711" />
+    <testcase name="emptyAnd146WordsShareOneSectionAndKeepOnlyGroupAndStatisticsActions[legacy=true]" classname="com.example.sostavslova.ui.game.FoundWordsSectionTest" time="6.513" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.game.GameLayoutTest" tests="1" failures="0" errors="0" skipped="0" time="2.29" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="gameAndDialogsWrapAndKeep48DpTargets" classname="com.example.sostavslova.ui.game.GameLayoutTest" time="2.29" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.game.GameNavigationTest" tests="6" failures="0" errors="0" skipped="0" time="30.496" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="hintAndBackKeepSavedAnswers" classname="com.example.sostavslova.ui.game.GameNavigationTest" time="4.01" />
+    <testcase name="recreationAndBackKeepAnswersAndDiscardDraft" classname="com.example.sostavslova.ui.game.GameNavigationTest" time="6.211" />
+    <testcase name="levelAnswersStatisticsAndNonInteractiveFoundWordsRemainAvailable" classname="com.example.sostavslova.ui.game.GameNavigationTest" time="4.475" />
+    <testcase name="repeatedResumeKeepsSessionAndRecreationDiscardsDraft" classname="com.example.sostavslova.ui.game.GameNavigationTest" time="6.966" />
+    <testcase name="mapRecreationDiscardsDraftsWithoutTransferringThemBetweenLevels" classname="com.example.sostavslova.ui.game.GameNavigationTest" time="5.359" />
+    <testcase name="unsubmittedAnswerIsDiscardedOnBackAndRecreation" classname="com.example.sostavslova.ui.game.GameNavigationTest" time="3.475" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.game.GameSubmissionUiTest" tests="2" failures="0" errors="0" skipped="0" time="4.652" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="rejectionMessagesKeepCategoriesCountsAndSafeFallback" classname="com.example.sostavslova.ui.game.GameSubmissionUiTest" time="2.163" />
+    <testcase name="exactDictionaryRejectionTravelsThroughRepositoryAndViewModelToAccessibleBanner" classname="com.example.sostavslova.ui.game.GameSubmissionUiTest" time="2.489" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.game.GameViewModelTest" tests="34" failures="0" errors="0" skipped="0" time="28.069" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="noDatabaseSkipsPaidMetadataAndFreeT4LengthWorksAtZero" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.103" />
+    <testcase name="v2RouteRestoresSnapshotAndSavesEachAnswerAndHintThroughSave01" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.179" />
+    <testcase name="finaleAtFourOfFiveSurvivesRecreationUntilClosedAndNeverRepeatsAtHundred" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.33" />
+    <testcase name="hintMasksRootsAndFormsInsteadOfDiscardingUsefulDefinition" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.053" />
+    <testcase name="nextLevelOfferWaitsForDurableUnlockAndIgnoresTransitionDuringSubmission" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.076" />
+    <testcase name="legacyNextLevelUsesExistingAccessRulesAndLastHasNoNextLevel" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.103" />
+    <testcase name="hintLadderAccumulatesAndRestoresAcrossReturnRotationAndNewStore" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.226" />
+    <testcase name="repeatedOpenDuringLoadAndRetainedOwnerDoNotSearchAgainAndObserveFreshV1" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.077" />
+    <testcase name="v2ClosedRouteIsRejectedAndCorruptCampaignNeverFallsBack" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.054" />
+    <testcase name="campaignCategoryProvidesOptionalThemeWithoutDatabase" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.104" />
+    <testcase name="hintNeverUsesFoundWordAndSuppressesWordAndUrlInDefinitions" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.204" />
+    <testcase name="importedTextsNeverEnterLegacyHintCampaignRiddleOrLadder" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.529" />
+    <testcase name="firstStarsEmitEventsAndFinishedIsAnEventOnlyOnce" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.806" />
+    <testcase name="routeAndProgressRestoreButOldDraftIsIgnoredAfterViewModelRecreation" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.277" />
+    <testcase name="campaignSafeRiddleTextHasNoMetadataAndProgressSurvivesRecreation" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.428" />
+    <testcase name="installedMinimalAssetSuppliesEveryMandatoryRiddleToGameUi" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="17.646" />
+    <testcase name="oneCampaignAnswerWritesOnceAndEmitsEveryNewStarAndUnlockOnlyOnce" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.329" />
+    <testcase name="campaignMissingLettersReachMessageAndRepeatedSubmitDoesNotLeaveBusy" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.479" />
+    <testcase name="nextLevelUsesCommittedUnlockAllowsMoreStarsAndWaitsForSaveBarrier" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.582" />
+    <testcase name="correctRepeatIncorrectAndLatinLetterFollowCoreAndPersistOnlyCorrectAnswers" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.304" />
+    <testcase name="lateHintResultCannotOverwriteNewerCampaignAnswerOrSpendOnResume" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.38" />
+    <testcase name="finaleLevelsActionAcknowledgesBeforeNavigationAndDoesNotRepeat" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.506" />
+    <testcase name="hintFallsBackWhenUnavailableMissingOrLeaking" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.279" />
+    <testcase name="invalidAndClosedRouteReturnToMapWithoutWritingGame" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.177" />
+    <testcase name="answerInFlightWhenNavigatingSavesOnlyItsLevelAndPreservesNewDraft" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.353" />
+    <testcase name="newTaskTypesAreExplainedAtTheirFirstActualLevelAndNeverRepeat" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.579" />
+    <testcase name="hintTriesAnotherRemainingWordWhenFirstMeaningIsUnusable" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.228" />
+    <testcase name="nextLevelSaveFailureKeepsDraftAndProgressAndCanBeRetried" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.328" />
+    <testcase name="delayedLoadFromRemovedRouteCannotChangeNextLevelOrReturn" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.279" />
+    <testcase name="campaignRiddlesKeepAssignedAnswersWithMissingCorruptAndUnusableDefinitions" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="1.107" />
+    <testcase name="levelRestoresSavedAnswersThroughCoreAndFiltersInvalid" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.178" />
+    <testcase name="saveFailureKeepsAnswerRetryableAndDoesNotFinishOrDoubleWrite" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.254" />
+    <testcase name="emptyOrNonRussianSubmissionExplainsItselfAndLongInputIsKeptWhole" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.305" />
+    <testcase name="statisticsAndTasksDoNotLoadWordDefinitionsOrChangeProgress" classname="com.example.sostavslova.ui.game.GameViewModelTest" time="0.227" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.levels.CampaignMapUiTest" tests="6" failures="0" errors="0" skipped="0" time="12.46" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="summaryStageContinueLockedExplanationFinaleAndMaster" classname="com.example.sostavslova.ui.levels.CampaignMapUiTest" time="2.417" />
+    <testcase name="loadingShowsNeutralSpaceWithoutFakeCardsThenErrorRetryAndSuccess" classname="com.example.sostavslova.ui.levels.CampaignMapUiTest" time="2.089" />
+    <testcase name="compactCardsUseSubtleAvailabilityColorsAndUpdateWhenUnlocked" classname="com.example.sostavslova.ui.levels.CampaignMapUiTest" time="2.214" />
+    <testcase name="fivePositionsHaveAccessibleProgress" classname="com.example.sostavslova.ui.levels.CampaignMapUiTest" time="1.787" />
+    <testcase name="initialRecommendationScrollsOnceAndUpdatesDoNotMoveMap" classname="com.example.sostavslova.ui.levels.CampaignMapUiTest" time="1.988" />
+    <testcase name="welcomeWaitsForReadyMapAndIsPresentedOncePerState" classname="com.example.sostavslova.ui.levels.CampaignMapUiTest" time="1.965" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.levels.CampaignStarsSummaryTest" tests="1" failures="0" errors="0" skipped="0" time="1.787" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="installedCampaignMasterShowsFortyNineOfFortyNineFromModel" classname="com.example.sostavslova.ui.levels.CampaignStarsSummaryTest" time="1.787" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.levels.LevelRouteAccessTest" tests="3" failures="0" errors="0" skipped="0" time="7.04" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="backFromLinkedLevelReturnsToMap" classname="com.example.sostavslova.ui.levels.LevelRouteAccessTest" time="2.361" />
+    <testcase name="invalidIndicesReturnToMapWithMessage" classname="com.example.sostavslova.ui.levels.LevelRouteAccessTest" time="2.263" />
+    <testcase name="closedDeepLinkReturnsToMapAndAvailableLinkOpensGame" classname="com.example.sostavslova.ui.levels.LevelRouteAccessTest" time="2.416" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.levels.LevelsLayoutTest" tests="1" failures="0" errors="0" skipped="0" time="2.391" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="levelsWrapKeep48DpTargetsShowSavedStarsAndUseAdaptiveGrid" classname="com.example.sostavslova.ui.levels.LevelsLayoutTest" time="2.391" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.levels.LevelsNavigationTest" tests="1" failures="0" errors="0" skipped="0" time="4.553" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="drawerOpensLevelsScrollSurvivesRecreationAndSelectionOpensRealGame" classname="com.example.sostavslova.ui.levels.LevelsNavigationTest" time="4.553" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.levels.LevelsViewModelTest" tests="4" failures="0" errors="0" skipped="0" time="0.233" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="miniV2ContinueBackfillFinaleAndFullCollection" classname="com.example.sostavslova.ui.levels.LevelsViewModelTest" time="0.127" />
+    <testcase name="v1CompletionUpdatesAccessAndEarnedStars" classname="com.example.sostavslova.ui.levels.LevelsViewModelTest" time="0.027" />
+    <testcase name="freshMapShowsFirstOnlyAndSelectionDoesNotWriteGame" classname="com.example.sostavslova.ui.levels.LevelsViewModelTest" time="0.027" />
+    <testcase name="v2UsesCampaignSnapshotAndNeverReadsV1Levels" classname="com.example.sostavslova.ui.levels.LevelsViewModelTest" time="0.052" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.levels.WelcomeDialogUiTest" tests="5" failures="0" errors="0" skipped="0" time="10.0" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="dismissedWelcomeDoesNotReturnAfterRecompositionRotationOrNewMap" classname="com.example.sostavslova.ui.levels.WelcomeDialogUiTest" time="2.142" />
+    <testcase name="existingInstallWithoutWelcomeKeyDoesNotShowDialog" classname="com.example.sostavslova.ui.levels.WelcomeDialogUiTest" time="1.813" />
+    <testcase name="freshInstallShowsOneDialogAndMarksDoneBeforeConfirmation" classname="com.example.sostavslova.ui.levels.WelcomeDialogUiTest" time="2.038" />
+    <testcase name="clearingDataOnFreshInstallShowsWelcomeAgain" classname="com.example.sostavslova.ui.levels.WelcomeDialogUiTest" time="2.19" />
+    <testcase name="loadErrorAndEmptyMapDoNotShowDialogOrWriteWelcomeKey" classname="com.example.sostavslova.ui.levels.WelcomeDialogUiTest" time="1.817" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.screens.RulesScreenTest" tests="1" failures="0" errors="0" skipped="0" time="1.991" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="colorLegendExplainsEveryLevelStateAndRemainsReachable" classname="com.example.sostavslova.ui.screens.RulesScreenTest" time="1.991" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.time.TimeDataFlowTest" tests="1" failures="0" errors="0" skipped="0" time="0.053" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="subscribedLocalSnapshotsUpdateWithoutRefreshOrReadSideWrites" classname="com.example.sostavslova.ui.time.TimeDataFlowTest" time="0.053" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.time.TimeNavigationTest" tests="1" failures="0" errors="0" skipped="0" time="5.357" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="timeReadsWithoutWritesPreservesMapAndStopsGameOnDrawerNavigation" classname="com.example.sostavslova.ui.time.TimeNavigationTest" time="5.357" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.time.TimePresentationTest" tests="4" failures="0" errors="0" skipped="0" time="0.034" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="durationBoundariesTruncateSubsecondsWithoutWrappingHours" classname="com.example.sostavslova.ui.time.TimePresentationTest" time="0.002" />
+    <testcase name="longDurationUsesTotalHoursIncludingBeyondLongSum" classname="com.example.sostavslova.ui.time.TimePresentationTest" time="0.002" />
+    <testcase name="historicalThresholdDoesNotBecomeFullCompletionAndSnapshotsUpdate" classname="com.example.sostavslova.ui.time.TimePresentationTest" time="0.002" />
+    <testcase name="freshHistoricalPendingAndMeasuredZeroAreDifferentSnapshots" classname="com.example.sostavslova.ui.time.TimePresentationTest" time="0.028" />
+  </testsuite>
+  <testsuite name="com.example.sostavslova.ui.time.TimeScreenTest" tests="5" failures="0" errors="0" skipped="0" time="10.348" timestamp="2026-11-17T12:58:04" hostname="localhost">
+    <properties>
+      <property name="device" value="2201117SY - 13" />
+      <property name="flavor" value="" />
+      <property name="project" value=":app" />
+    </properties>
+    <testcase name="veryLongDurationRemainsFullyReadableInSummaryAndLevel" classname="com.example.sostavslova.ui.time.TimeScreenTest" time="1.914" />
+    <testcase name="allFieldsFitNativeScreenAndKeepTalkBackHeadings" classname="com.example.sostavslova.ui.time.TimeScreenTest" time="2.719" />
+    <testcase name="localSnapshotChangesAppearWithoutRefreshAndMissingValuesAreExplicit" classname="com.example.sostavslova.ui.time.TimeScreenTest" time="2.089" />
+    <testcase name="longLevelNameRemainsFullyReadable" classname="com.example.sostavslova.ui.time.TimeScreenTest" time="1.863" />
+    <testcase name="loadingReadErrorAndUnavailableCampaignDoNotPretendToBeZero" classname="com.example.sostavslova.ui.time.TimeScreenTest" time="1.763" />
+  </testsuite>
+</testsuites>

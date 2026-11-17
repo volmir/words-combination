@@ -1,0 +1,43 @@
+{
+  "commit": "9ee337d82f8f7506de6560b81dc6511eddff8322",
+  "physical_device_count": 1,
+  "manufacturer": "Xiaomi",
+  "model": "2201117SY",
+  "android": "13",
+  "api": "33",
+  "miui": "V816",
+  "wm_size": "Physical size: 1080x2400",
+  "wm_density": "Physical density: 440",
+  "font_scale": "1.0",
+  "enabled_accessibility_services": "null",
+  "java_major": 21,
+  "runner": "com.example.sostavslova.WordsTestRunner",
+  "target_package": "io.github.volmir.wordscombination",
+  "apk_hashes": {
+    "io.github.volmir.wordscombination": {
+      "local": "c5ad985ea0c0a6b23685336c368995b675e19e11dd69e3a6696f6c1098460176",
+      "installed": "c5ad985ea0c0a6b23685336c368995b675e19e11dd69e3a6696f6c1098460176",
+      "match": true
+    },
+    "io.github.volmir.wordscombination.test": {
+      "local": "e089590082551a57c71298a6e393ba6c0dc9e68d4a6667e0f7e7ca5fefcc2c46",
+      "installed": "e089590082551a57c71298a6e393ba6c0dc9e68d4a6667e0f7e7ca5fefcc2c46",
+      "match": true
+    }
+  },
+  "screen_maintenance": "KEYCODE_WAKEUP каждые 20 секунд; системные настройки не записывались",
+  "after": {
+    "wm_size": "Physical size: 1080x2400",
+    "wm_density": "Physical density: 440",
+    "font_scale": "1.0",
+    "miui_app_op": "MIUIOP(10021): ignore",
+    "installed_packages_present": {
+      "io.github.volmir.wordscombination": true,
+      "io.github.volmir.wordscombination.test": true
+    },
+    "installed_apk_hashes": {
+      "io.github.volmir.wordscombination": "c5ad985ea0c0a6b23685336c368995b675e19e11dd69e3a6696f6c1098460176",
+      "io.github.volmir.wordscombination.test": "e089590082551a57c71298a6e393ba6c0dc9e68d4a6667e0f7e7ca5fefcc2c46"
+    }
+  }
+}
