@@ -270,7 +270,9 @@ class GameViewModelTest {
         progress.clearAll()
         val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
-        val game = model(meanings = imported, wordRepository = campaignWords, levelRepository = campaignLevels)
+        // The fresh campaign starts at level 1; seed("портал") selected legacy route 2.
+        val game = model(handle = SavedStateHandle(mapOf("index" to "1")),
+            meanings = imported, wordRepository = campaignWords, levelRepository = campaignLevels)
         assertTrue(game.ready().riddles.values.flatten().all { it.text == null && !it.wiktionary })
         repeat(2) { count ->
             withContext(Dispatchers.Main) { game.onHint() }
