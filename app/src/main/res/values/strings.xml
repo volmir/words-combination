@@ -116,7 +116,6 @@
     <string name="levels_master">Мастер — все звёзды собраны!</string>
     <string name="level_crown">Корона: финал кампании достигнут</string>
     <string name="level_stars_label">Звёзды</string>
-    <string name="level_recommended">Рекомендуемый уровень</string>
     <string name="level_unlock_requirement">Для открытия наберите на уровне %1$d %2$d %3$s.</string>
     <string name="star_one">звезду</string>
     <string name="star_few">звезды</string>

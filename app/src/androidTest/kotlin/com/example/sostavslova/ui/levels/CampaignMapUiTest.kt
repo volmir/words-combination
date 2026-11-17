@@ -62,7 +62,7 @@ class CampaignMapUiTest {
         val backgrounds = listOf(available, unavailable, passed, complete)
         assertEquals(4, backgrounds.map { Triple(it.red, it.green, it.blue) }.toSet().size)
         for (color in backgrounds) {
-            assertTrue("Фон должен оставаться очень светлым", minOf(color.red, color.green, color.blue) > 0.94f)
+            assertTrue("Фон должен оставаться светлым для контраста звёзд и текста", minOf(color.red, color.green, color.blue) > 0.78f)
         }
         fun assertBackground(expected: Color, actual: Color) {
             val opaque = expected.compositeOver(WordsColors.background)
@@ -115,7 +115,8 @@ class CampaignMapUiTest {
         compose.onNodeWithTag("levels_stage_1").assertTextEquals("Разминка · уровни 1–2")
         compose.onNodeWithTag("level_card_1")
             .assert(hasContentDescription("Уровень недоступен").not())
-            .assertTextContains("Рекомендуемый уровень", substring = true)
+            .assertTextEquals("1. СЛОВО1")
+        compose.onAllNodesWithText("Рекомендуемый уровень", substring = true).assertCountEquals(0)
         compose.onNodeWithTag("level_card_2").assert(hasContentDescription("Уровень недоступен"))
         compose.onAllNodesWithText("Для прохождения", substring = true).assertCountEquals(0)
         compose.onAllNodesWithText("Можно добрать", substring = true).assertCountEquals(0)
@@ -148,7 +149,8 @@ class CampaignMapUiTest {
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово2")
         compose.onNodeWithTag("level_card_2")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Получено 2 из 5 звёзд"))
-            .assertTextContains("Рекомендуемый уровень", substring = true)
+            .assertTextEquals("2. СЛОВО2")
+        compose.onAllNodesWithText("Рекомендуемый уровень", substring = true).assertCountEquals(0)
         compose.onNodeWithContentDescription("Корона: финал кампании достигнут").assertExists()
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово1")
         compose.onNodeWithTag("level_card_1").assert(

@@ -220,9 +220,10 @@ private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Uni
                 if (item.crowned) Icon(painterResource(R.drawable.ic_crown), stringResource(R.string.level_crown), Modifier.size(24.dp))
             }
             val starsLabel = stringResource(R.string.level_stars_label)
-            if (item.campaignStars == null) StarsRow(item.progress, label = starsLabel) else {
+            if (item.campaignStars == null) {
+                StarsRow(item.progress, label = starsLabel)
+            } else {
                 StarsRow(item.stars, item.maxStars, label = starsLabel)
-                if (item.recommended) Text(stringResource(R.string.level_recommended), style = MaterialTheme.typography.bodySmall)
             }
         }
     }
