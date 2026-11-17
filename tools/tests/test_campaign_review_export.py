@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import csv
+from tools import lexical_json
 import hashlib
 import json
 from pathlib import Path
-import sqlite3
 import sys
 import tempfile
 import unittest
@@ -72,28 +72,13 @@ def campaign_fixture() -> dict:
 
 
 def write_database(path: Path, defined: list[str]) -> None:
-    with sqlite3.connect(path) as db:
-        db.executescript("""
-            CREATE TABLE definitions(id INTEGER PRIMARY KEY, word TEXT NOT NULL, display TEXT NOT NULL,
-                ord INTEGER NOT NULL, text TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '',
-                antonym TEXT NOT NULL DEFAULT '', example TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '',
-                origin TEXT NOT NULL, category TEXT NOT NULL, guessable INTEGER NOT NULL CHECK(guessable IN (0,1)));
-            CREATE TABLE word_metadata(word TEXT PRIMARY KEY, category TEXT NOT NULL,
-                category_source TEXT NOT NULL DEFAULT 'unknown:legacy_input',
-                forms TEXT NOT NULL DEFAULT '[]', related TEXT NOT NULL DEFAULT '[]');
-            PRAGMA user_version=8;
-        """)
-        for number, word in enumerate(defined, 1):
-            category = "professions" if word in T6_WORDS else "other"
-            source = "sense.categories:профессии" if category == "professions" else "unknown:uncertain_sense"
-            db.execute("INSERT INTO word_metadata(word,category,category_source,forms,related) VALUES(?,?,?,?,?)",
-                       (word, category, source, json.dumps([word], ensure_ascii=False), "[]"))
-            text = ("Кот — домашнее животное, которое любит молоко и ловит мышей."
-                    if word == "кот" else f"Толкование слова {word}, достаточное для проверки подсказки.")
-            db.execute("INSERT INTO definitions(word,display,ord,text,notes,antonym,example,source,origin,category,guessable)"
-                       " VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                       (word, word, 1, text, "", "", "", "https://ru.wiktionary.org/wiki/" + word,
-                        "wiktionary", category, 0))
+    rows=[];metadata={}
+    for word in defined:
+        category='professions' if word in T6_WORDS else 'other'
+        metadata[word]=dict(category=category,category_source='sense.categories:профессии' if category=='professions' else 'unknown:uncertain_sense',forms=[word],related=[])
+        text='Кот — домашнее животное, которое любит молоко и ловит мышей.' if word=='кот' else f'Толкование слова {word}, достаточное для проверки подсказки.'
+        rows.append(dict(word=word,display=word,text=text,source='https://ru.wiktionary.org/wiki/'+word,origin='wiktionary',category=category,guessable=0))
+    lexical_json.build(path,rows,metadata,{},8)
 
 
 def write_fixture(root: Path) -> None:
@@ -104,7 +89,7 @@ def write_fixture(root: Path) -> None:
     campaign_path.write_text(json.dumps(campaign, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     words_path = data / "words.txt"
     words_path.write_text("\n".join(DICTIONARY) + "\n", encoding="utf-8")
-    database_path = data / "definitions.db"
+    database_path = data / "owned_riddles.json"
     write_database(database_path, DICTIONARY)
     definitions = {
         "audit": {"passed": False},
@@ -115,7 +100,7 @@ def write_fixture(root: Path) -> None:
         "rights_review": {"passed": False, "replacement_required": True,
                           "status": "unverified-provisional"},
         "sha256": digest(database_path),
-        "user_version": 8,
+        "revision": 8,
     }
     manifest = {
         "schema": "dictionary-provenance-v1",
@@ -211,7 +196,7 @@ class ExportSyntheticTest(unittest.TestCase):
         snapshot = payload["snapshot"]
         self.assertEqual(digest(self.root / "data/campaign.json"), snapshot["campaign_sha256"])
         self.assertEqual(digest(self.root / "data/words.txt"), snapshot["dictionary_sha256"])
-        self.assertEqual(digest(self.root / "data/definitions.db"), snapshot["definitions_sha256"])
+        self.assertEqual(digest(self.root / "data/owned_riddles.json"), snapshot["definitions_sha256"])
         self.assertEqual(digest(self.root / "data/manifest.json"), snapshot["manifest_sha256"])
         self.assertEqual(snapshot["campaign_sha256"], snapshot["inputs"]["campaign.json"])
         self.assertEqual(len(DICTIONARY), snapshot["rights"]["wiktionary_definitions"])
@@ -241,14 +226,13 @@ class InstalledShort15Test(unittest.TestCase):
         manifest = json.loads((ROOT / "data/manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["campaign_source"]["sha256"], payload["snapshot"]["campaign_sha256"])
         self.assertEqual(0, payload["snapshot"]["rights"]["wiktionary_definitions"])
-        self.assertEqual(39, payload["snapshot"]["rights"]["own_definitions"])
+        self.assertEqual(11, payload["snapshot"]["rights"]["own_definitions"])
         # Installed evidence may progress from pending to approved. Compare the
         # export with independently validated evidence, not a historical state.
         from tools.owned_hints_rights import owner_decision, publication_fields
         candidate = ROOT / "docs/owned_hints.json"
         campaign = ROOT / "data/campaign.json"
-        evidence = publication_fields(candidate, campaign, digest(ROOT / "data/definitions.db"),
-                                      owner_decision(candidate, campaign))
+        evidence = publication_fields(candidate, campaign, owner_decision(candidate, campaign))
         self.assertEqual(evidence["audit"]["passed"], payload["snapshot"]["rights"]["audit_passed"])
         self.assertEqual(evidence["rights_review"]["passed"],
                          payload["snapshot"]["rights"]["rights_review_passed"])

@@ -2,8 +2,8 @@
 from copy import deepcopy
 import gzip
 import json
+from tools import lexical_json
 from pathlib import Path
-import sqlite3
 import sys
 import tempfile
 import unittest
@@ -230,15 +230,11 @@ class LevelProfilesTest(unittest.TestCase):
     def test_real_db_export_ignores_guessable_and_blocks_owner_words(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            database, words, output = root / 'test.db', root / 'words.txt', root / 'input.jsonl'
+            database, words, output = root / 'test.json', root / 'words.txt', root / 'input.jsonl'
             words.write_text('елка\nбрудершафт\n', encoding='utf-8')
-            with sqlite3.connect(database) as db:
-                db.execute('CREATE TABLE word_metadata(word TEXT,forms TEXT,related TEXT)')
-                db.execute('CREATE TABLE definitions(id INTEGER,word TEXT,ord INTEGER,text TEXT,guessable INTEGER)')
-                for i, word in enumerate(('елка', 'брудершафт')):
-                    db.execute('INSERT INTO word_metadata VALUES (?, ?, ?)', (word, '[]', '[]'))
-                    db.execute('INSERT INTO definitions VALUES (?, ?, 1, ?, 0)',
-                               (i, word, 'Синтетический текст для проверки экспорта.'))
+            lexical_json.build(database,
+                [dict(word=w, text='Синтетический текст для проверки экспорта.', guessable=0) for w in ('елка', 'брудершафт')],
+                {w:dict(category='other',forms=[],related=[]) for w in ('елка', 'брудершафт')}, {}, 8)
             profiles.export_hint_inputs(database, words, output)
             rows = [json.loads(line) for line in output.read_text().splitlines()]
             by_word = {r['word']: r for r in rows[1:]}
@@ -267,7 +263,7 @@ class LevelProfilesTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             words, dump, frequency = root / 'words.txt', root / 'dump.jsonl', root / 'frequency.txt'
-            universe, database, manifest = root / 'universe.txt', root / 'defs.db', root / 'manifest.json'
+            universe, database, manifest = root / 'universe.txt', root / 'lexical.json', root / 'manifest.json'
             all_words = self.words | semantic.PREFERRED_SOURCES
             words.write_text('\n'.join(sorted(all_words)) + '\n', encoding='utf-8')
             universe.write_bytes(words.read_bytes())
@@ -277,13 +273,9 @@ class LevelProfilesTest(unittest.TestCase):
                         'forms': [{'form': 'ёлки'}] if word == 'елка' else [],
                         'senses': [{'glosses': ['Синтетическое описание проверочного объекта.']}]}, ensure_ascii=False) + '\n')
             frequency.write_text('\n'.join(w + ' 100' for w in sorted(all_words)) + '\nёлки 7\n', encoding='utf-8')
-            with sqlite3.connect(database) as db:
-                db.execute('CREATE TABLE word_metadata(word TEXT,forms TEXT,related TEXT)')
-                db.execute('CREATE TABLE definitions(id INTEGER,word TEXT,ord INTEGER,text TEXT,guessable INTEGER)')
-                for i, word in enumerate(sorted(all_words)):
-                    db.execute('INSERT INTO word_metadata VALUES (?, ?, ?)', (word, '[]', '[]'))
-                    db.execute('INSERT INTO definitions VALUES (?, ?, 1, ?, 0)',
-                               (i, word, 'Синтетическое описание проверочного объекта.'))
+            lexical_json.build(database,
+                [dict(word=w, text='Синтетическое описание проверочного объекта.', guessable=0) for w in sorted(all_words)],
+                {w:dict(category='other',forms=[],related=[]) for w in sorted(all_words)}, {}, 8)
             digest = profiles.dictionary.sha256_file
             manifest.write_text(json.dumps({'source': {'sha256_input': digest(dump)},
                 'sha256_words_txt': digest(words), 'definitions': {'sha256': digest(database)},

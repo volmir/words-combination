@@ -25,7 +25,7 @@ class WordlistBuildTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.source = self.root / "source.jsonl"
-        self.database = self.root / "definitions.db"
+        self.database = self.root / "lexical_data.json"
 
     def write_entries(self, *entries):
         self.source.write_text("\n".join(json.dumps(e, ensure_ascii=False) for e in entries), encoding="utf-8")

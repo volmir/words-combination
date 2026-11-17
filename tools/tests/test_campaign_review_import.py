@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from tools import lexical_json
 from pathlib import Path
 import shutil
-import sqlite3
 import sys
 import tempfile
 import unittest
@@ -108,7 +108,7 @@ class ImportInstalledCampaignTest(unittest.TestCase):
         cls.root = Path(cls.temporary.name) / "project"
         data = cls.root / "data"
         data.mkdir(parents=True)
-        for name in ("campaign.json", "words.txt", "definitions.db", "manifest.json"):
+        for name in ("campaign.json", "words.txt", "owned_riddles.json", "manifest.json"):
             shutil.copy2(ROOT / "data" / name, data / name)
         # Keep T6_ADD/category-review coverage independent of editorial additions
         # to the installed campaign. Only this temporary fixture is changed.
@@ -117,17 +117,19 @@ class ImportInstalledCampaignTest(unittest.TestCase):
                     if task["id"] == "l14-t6")
         task["words"] = [word for word in task["words"] if word not in {"акробат", "диктор"}]
         (data / "campaign.json").write_text(json.dumps(campaign, ensure_ascii=False), encoding="utf-8")
-        with sqlite3.connect(data / "definitions.db") as database:
-            database.executemany(
-                "UPDATE word_metadata SET category=?, category_source=? WHERE word=?",
-                [("sport", "synthetic:test", "акробат"), ("other", "synthetic:test", "диктор")])
+        # Runtime riddle texts stay intact; mutate only this synthetic category fixture.
+        tools=cls.root/'tools';tools.mkdir()
+        index=json.loads((ROOT/'tools/owned_hint_index.json').read_text())
+        for word,category in [('акробат','sport'),('диктор','other')]:
+            index['word_metadata'][word].update(category=category,category_source='synthetic:test')
+        (tools/'owned_hint_index.json').write_text(json.dumps(index,ensure_ascii=False))
         manifest = json.loads((data / "manifest.json").read_text(encoding="utf-8"))
         manifest["campaign_source"]["sha256"] = digest(data / "campaign.json")
-        manifest["definitions"]["sha256"] = digest(data / "definitions.db")
+        manifest["owned_riddles"]["sha256"] = digest(data / "owned_riddles.json")
         (data / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
         cls.original_campaign = (data / "campaign.json").read_bytes()
         cls.data_hashes = {name: digest(data / name) for name in
-                           ("campaign.json", "words.txt", "definitions.db", "manifest.json")}
+                           ("campaign.json", "words.txt", "owned_riddles.json", "manifest.json")}
         cls.snapshot = export.export(cls.root)
         cls.snapshot_path = cls.root / "build/reports/curation/curation_snapshot.json"
         cls.snapshot_path.parent.mkdir(parents=True, exist_ok=True)
@@ -285,8 +287,8 @@ class ImportInstalledCampaignTest(unittest.TestCase):
         self.assertEqual("Отсутствие смысла и логической связи.", pending[0]["text"])
         self.assertEqual(self.original_campaign, (out / "campaign.candidate.json").read_bytes())
         self.assertFalse(report["hint_overrides_integrated"])
-        self.assertEqual(self.data_hashes["definitions.db"],
-                         digest(self.root / "data/definitions.db"))
+        self.assertEqual(self.data_hashes["owned_riddles.json"],
+                         digest(self.root / "data/owned_riddles.json"))
         self.assert_data_unchanged()
 
     def test_hint_replace_that_reveals_answer_is_rejected(self):

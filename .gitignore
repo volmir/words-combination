@@ -17,7 +17,7 @@ app/src/main/assets/words.txt
 app/src/main/assets/levels.json
 app/src/main/assets/campaign.json
 app/src/main/assets/word_sources.jsonl.gz
-app/src/main/assets/definitions.db
+app/src/main/assets/owned_riddles.json
 app/src/main/assets/THIRD_PARTY_NOTICES.txt
 app/src/main/assets/LICENSE
 app/src/main/assets/CC-BY-SA-4.0.txt

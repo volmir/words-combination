@@ -34,7 +34,7 @@ class OwnedHintsTest {
                 val info = assertNotNull(data[target])
                 assertEquals(info.definition, DefinitionHint.prepare(target, assertNotNull(info.definition), info.forms, info.related))
                 val hint = HintRules.next(current, data, random = Random(13))
-                assertEquals(HintStage.DEFINITION, hint.step?.stage)
+                assertEquals(HintStage.FIRST_LETTER, hint.step?.stage)
                 assertFalse(assertNotNull(hint.step).wiktionary)
                 assertEquals(0, hint.state.hints.paidUnits)
                 val selected = assertNotNull(hint.state.hints.ladder.target).word
@@ -81,7 +81,7 @@ class OwnedHintsTest {
                 val word = task.words[(start + offset) % task.words.size]
                 assertEquals("professions", lexical.getJSONObject(word).getString("category"))
                 val hint = HintRules.next(current, emptyMap(), random = Random(offset))
-                assertEquals(HintStage.LENGTH, hint.step?.stage)
+                assertEquals(HintStage.FIRST_LETTER, hint.step?.stage)
                 assertTrue(hint.state.hints.ladder.target?.word in task.words)
                 current = TaskRules.submit(current, word, campaign.countMinLength).evaluation.state
                 assertEquals(offset == 3, task.id in current.completedTaskIds)
@@ -96,7 +96,7 @@ class OwnedHintsTest {
         val first = HintRules.next(current, data, random = Random(2))
         current = first.state
         val answer = assertNotNull(current.hints.ladder.target).word
-        if (answer !in data) assertEquals(HintStage.LENGTH, first.step?.stage)
+        assertEquals(HintStage.FIRST_LETTER, first.step?.stage)
         assertEquals(1, current.hints.shownSteps)
         assertEquals(1, current.hints.paidUnits)
         val remaining = HintRules.budget(current).remaining

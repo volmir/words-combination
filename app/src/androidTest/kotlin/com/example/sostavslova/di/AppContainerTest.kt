@@ -54,7 +54,7 @@ class AppContainerTest {
         assertSame(container, application.container)
         assertSame(container.wordRepository, application.container.wordRepository)
         assertSame(container.levelsRepository, application.container.levelsRepository)
-        assertSame(container.definitionsRepository, application.container.definitionsRepository)
+        assertSame(container.riddlesRepository, application.container.riddlesRepository)
         assertSame(container.progressRepository, application.container.progressRepository)
         assertSame(container.playTimeRepository, application.container.playTimeRepository)
         assertSame(container.playTimeTracker, application.container.playTimeTracker)

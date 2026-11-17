@@ -62,7 +62,6 @@ import com.example.sostavslova.time.observePlayTimeLifecycle
 import com.example.sostavslova.core.LevelRules
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.ui.components.AlertBanner
-import com.example.sostavslova.ui.components.DefinitionBlock
 import com.example.sostavslova.ui.components.LetterTiles
 import com.example.sostavslova.ui.components.StarsRow
 import com.example.sostavslova.ui.components.StatsTable
@@ -82,10 +81,8 @@ fun GameRoute(playTimeOwner: String, onOpenLevel: (Int) -> Unit, onReturnLevels:
     val factory = remember(container, playTimeOwner) {
         viewModelFactory { initializer {
             GameViewModel(createSavedStateHandle(), container.wordRepository, container.levelsRepository,
-                container.progressRepository, container.definitionsRepository, container.random,
-                categoryText = { key -> com.example.sostavslova.data.CategoryNames.resource(key)?.let {
-                    container.categoryName(it)
-                } }, playTimeTracker = container.playTimeTracker, playTimeOwner = playTimeOwner)
+                container.progressRepository, container.riddlesRepository, container.random,
+                playTimeTracker = container.playTimeTracker, playTimeOwner = playTimeOwner)
         } }
     }
     val model: GameViewModel = viewModel(factory = factory)
@@ -211,17 +208,12 @@ fun GameScreen(
                         Column(Modifier.testTag("game_hint").semantics { liveRegion = LiveRegionMode.Polite },
                             verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(stringResource(R.string.hint_title), style = MaterialTheme.typography.titleMedium)
-                            if (hint.definitions.isEmpty()) Text(stringResource(R.string.hint_fallback,
+                            Text(stringResource(R.string.hint_fallback,
                                 hint.length, RussianPlural.form(hint.length,
                                     stringResource(R.string.hint_letter_genitive_one),
                                     stringResource(R.string.hint_letter_genitive_many),
                                     stringResource(R.string.hint_letter_genitive_many)), hint.firstLetter))
-                            else {
-                                hint.definitions.forEach { DefinitionBlock(it, labelWord = null) }
-                                if (hint.definitions.any { it.origin == "wiktionary" }) {
-                                    Text(stringResource(R.string.hint_definition_source), style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
+
                         }
                     }
                     GamePrimaryAction(stringResource(R.string.show_hint), state.canPlay && !state.hintLoading,
@@ -323,8 +315,9 @@ fun GameScreen(
 /** Read the current snapshot only: no local accumulation or cached target across restoration. */
 @Composable
 private fun CampaignHint(state: GameUiState, onHint: () -> Unit) {
-    val current = state.campaignLevel ?: return
-    val ladder = current.hints.ladder
+    val current = state.campaignLevel?.let { com.example.sostavslova.core.HintRules.restore(it) } ?: return
+    val ladder = current.hints.ladder.takeUnless { it.target?.word in current.game.found }
+        ?: com.example.sostavslova.core.HintLadder()
     val total = ladder.steps.size
     val shown = if (com.example.sostavslova.core.HintRules.currentStep(current) != null) ladder.shown else emptyList()
     val complete = shown.isNotEmpty() && shown.size == total
@@ -341,22 +334,9 @@ private fun CampaignHint(state: GameUiState, onHint: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.hint_part, index + 1), style = MaterialTheme.typography.titleSmall)
                 step.text?.let { Text(it, style = MaterialTheme.typography.bodyLarge) }
-                step.length?.let { length ->
-                    Text(stringResource(R.string.hint_length, length,
-                        RussianPlural.form(length, stringResource(R.string.hint_letter_genitive_one),
-                            stringResource(R.string.hint_letter_genitive_many), stringResource(R.string.hint_letter_genitive_many))),
-                        style = MaterialTheme.typography.bodyLarge)
-                }
-                if (step.wiktionary && step.text != null) {
-                    Text(stringResource(R.string.hint_definition_source), style = MaterialTheme.typography.bodySmall)
-                }
+
             }
             HorizontalDivider()
-        }
-        if (state.hintFallback && shown.isNotEmpty()) {
-            Text(stringResource(R.string.hint_letters_available), style = MaterialTheme.typography.bodySmall)
-            if (com.example.sostavslova.BuildConfig.DEBUG) Text(stringResource(R.string.hint_metadata_unavailable),
-                style = MaterialTheme.typography.bodySmall)
         }
         if (state.hintLoading) Text(stringResource(R.string.hint_loading), style = MaterialTheme.typography.bodyMedium)
         val explanation = when {

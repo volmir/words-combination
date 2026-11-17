@@ -14,7 +14,6 @@
     <string name="welcome_message">Добро пожаловать в „Составь слова“! Составляйте слова из букв исходного слова, выполняйте задания, получайте звёзды и открывайте новые уровни. Выберите первый доступный уровень — прогресс сохраняется автоматически</string>
     <string name="welcome_confirm">Понятно</string>
     <string name="level_start_error">Не удалось начать уровень. Попробуйте ещё раз.</string>
-    <string name="definitions_unavailable">Определения недоступны в этой версии</string>
     <string name="your_answer">Ваш ответ:</string>
     <string name="source_word_description">Исходное слово: %1$s</string>
     <string name="check_answer">Проверить</string>
@@ -28,15 +27,12 @@
     <string name="stats_total">Всего</string>
     <string name="stats_pair">%1$d / %2$d</string>
     <string name="stats_number">%1$d</string>
-    <string name="definition_separator">\u0020-\u0020</string>
-    <string name="definition_antonym_prefix">противоп.\u0020</string>
     <string name="close_dialog">Закрыть</string>
-    <string name="definition_source">Источник: %1$s</string>
-    <string name="about_definitions_heading">Словарь и определения</string>
+    <string name="about_definitions_heading">Словарь и загадки</string>
     <string name="about_definitions_authors">Словарь, исходные сведения о категориях и формах слов взяты из русского Викисловаря. Авторы — участники русского Викисловаря.\nhttps://ru.wiktionary.org/</string>
     <string name="about_definitions_extraction">Машиночитаемая выгрузка: Kaikki.org / Wiktextract.\nhttps://kaikki.org/ruwiktionary/rawdata.html</string>
-    <string name="about_definitions_license">Словарные данные и лексические материалы распространяются на применимой основе по Creative Commons «С указанием авторства — С сохранением условий» 4.0 Международная (CC BY-SA 4.0). Текстов толкований Викисловаря в текущей БД нет. 39 собственных подсказок кампании распространяются отдельно по CC0-1.0.\nhttps://creativecommons.org/licenses/by-sa/4.0/</string>
-    <string name="about_definitions_changes">Обработка: отбор слов, нормализация ё→е, выделение категорий и форм слов. Словарные толкования и литературные примеры исключены. В подсказках ответ, его формы и распознанные однокоренные слова заменяются на ***.</string>
+    <string name="about_definitions_license">Словарные данные и лексические материалы распространяются на применимой основе по Creative Commons «С указанием авторства — С сохранением условий» 4.0 Международная (CC BY-SA 4.0). 11 собственных загадок T4 включены в отдельный JSON и распространяются по CC0-1.0. Толкования Викисловаря не поставляются.\nhttps://creativecommons.org/licenses/by-sa/4.0/</string>
+    <string name="about_definitions_changes">Обработка: отбор слов, нормализация ё→е, выделение категорий и форм слов. Словарные толкования и литературные примеры исключены. Буквенные подсказки открывают позиции шаблона ответа.</string>
     <string name="about_definitions_history">Для каждого слова сохранён адрес исходной статьи. История статьи содержит сведения об авторах. Полный список адресов включён в приложение вместе со словарём.</string>
     <string name="about_code_heading">Программный код</string>
     <string name="about_code_sources">Программный код проекта «Составь слова» распространяется по лицензии MIT. Полный текст лицензии — в файле LICENSE в исходном репозитории и в составе APK.</string>
@@ -56,7 +52,6 @@
     <string name="star_received">Получена звезда!</string>
     <string name="hint_all_found">Все слова уже найдены</string>
     <string name="hint_title">Подсказка:</string>
-    <string name="hint_definition_source">Собственная подсказка · CC0-1.0. Скрыты ответ и однокоренные слова.</string>
     <string name="show_hint">Получить подсказку</string>
     <string name="hint_fallback">Слово из %1$d %2$s, начинается на «%3$s»</string>
     <string name="hint_letter_genitive_one">буквы</string>
@@ -106,7 +101,6 @@
         <item quantity="many">Получено %1$d из %2$d звёзд</item>
         <item quantity="other">Получено %1$d из %2$d звёзд</item>
     </plurals>
-    <string name="hint_length">Слово из %1$d %2$s</string>
     <string name="hint_budget_exhausted">Подсказки закончились. Каждые 4 найденных слова дают ещё одну подсказку.</string>
     <string name="hint_ladder_complete">Все шаги этой подсказки уже показаны.</string>
     <string name="levels_campaign_progress">Звёзд %1$d из %2$d · пройдено %3$d из %4$d</string>
@@ -144,7 +138,6 @@
     <string name="game_riddle_number">Загадка %1$d</string>
     <string name="game_riddle_solved">Разгадана</string>
     <string name="game_riddle_pending">Ещё не разгадана</string>
-    <string name="game_riddle_fallback">Определение недоступно. Запасная загадка по буквам ведёт к тому же ответу и даёт ту же звезду.</string>
     <string name="game_found_group">%1$d %2$s · %3$d %4$s</string>
     <string name="game_group_expanded">Раскрыта</string>
     <string name="game_group_collapsed">Свёрнута</string>
@@ -220,8 +213,6 @@
     <string name="game_next_level_title">Следующий уровень открыт!</string>
     <string name="game_next_level_message">Вы можете перейти дальше или остаться здесь, чтобы отгадывать слова и собирать оставшиеся звёзды.</string>
     <string name="game_next_level_action">Перейти на уровень %1$d →</string>
-    <string name="hint_letters_available">Доступны подсказки по буквам.</string>
-    <string name="hint_metadata_unavailable">Тема или определение недоступны. Эти шаги пропущены без расхода.</string>
     <string name="drawer_exit">Выход</string>
     <string name="exit_title">Выйти из игры?</string>
     <string name="exit_saved">Прогресс сохранён.</string>

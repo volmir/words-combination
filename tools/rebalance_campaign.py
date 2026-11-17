@@ -294,7 +294,7 @@ def main():
     parser.add_argument('--words', type=Path, default=ROOT / 'data/words.txt')
     parser.add_argument('--previous-levels', type=Path, default=ROOT / 'data/levels.json')
     parser.add_argument('--selection-config', type=Path, default=generation.selection.CONFIG)
-    parser.add_argument('--database', type=Path, default=ROOT / 'data/definitions.db')
+    parser.add_argument('--database', type=Path, default=ROOT / 'data/lexical_data.json')
     parser.add_argument('--manifest', type=Path, default=ROOT / 'data/manifest.json')
     parser.add_argument('--dump', type=Path, default=ROOT / '.local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz')
     parser.add_argument('--hints', type=Path, default=ROOT / 'build/reports/level_profiles/hints.jvm.jsonl')

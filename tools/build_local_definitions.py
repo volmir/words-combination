@@ -6,7 +6,7 @@ import gzip
 import json
 import re
 import shutil
-import sqlite3
+import lexical_json
 from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
@@ -15,7 +15,7 @@ from urllib.parse import quote
 import build_dictionary as dictionary
 import clean_dictionary as clean
 import word_categories as thematic
-from build_game_data import build_database, publish, write_csv
+from build_game_data import build_lexical_data, publish, write_csv
 from game_data_providers import atomic_json, json_digest
 from game_data_quality import normalize_form
 
@@ -174,24 +174,23 @@ def select_definitions(words, articles, settings, removed, taxonomy=None, dedupl
     return rows, failures, resolutions
 
 
-def validate_database(path, words, settings):
-    with sqlite3.connect(path) as db:
-        if db.execute("PRAGMA integrity_check").fetchone()[0] != "ok" or db.execute("PRAGMA user_version").fetchone()[0] < 8:
-            raise ValueError("Повреждённая или устаревшая база определений")
-        if {row[0] for row in db.execute("SELECT word FROM word_metadata")} != words:
-            raise ValueError("Метаданные не соответствуют игровому словарю")
-        taxonomy = thematic.load_taxonomy()
-        for category, source in db.execute("SELECT category,category_source FROM word_metadata"):
-            if category not in taxonomy or not source or (category == "other") != source.startswith("unknown:"):
-                raise ValueError("Некорректная категория или её происхождение")
-        for word, text, source, origin, example in db.execute("SELECT word,text,source,origin,example FROM definitions"):
-            if (word not in words or origin != "wiktionary" or not source.startswith("https://ru.wiktionary.org/wiki/") or example or
-                    not settings["min_chars"] <= len(text) <= settings["max_chars"] or re.search(r"[<>\r\n]", text)):
-                raise ValueError("Некорректное определение: " + word)
-        for forms, related in db.execute("SELECT forms,related FROM word_metadata"):
-            for values in (json.loads(forms), json.loads(related)):
-                if not isinstance(values, list) or any(not isinstance(word, str) or not re.fullmatch(r"[а-я]+", word) for word in values):
-                    raise ValueError("Некорректные формы или однокоренные слова")
+def validate_lexical_data(path, words, settings):
+    document = lexical_json.read(path)
+    if document['revision'] < 8 or set(document['word_metadata']) != words:
+        raise ValueError('Invalid lexical revision or dictionary coverage')
+    taxonomy = thematic.load_taxonomy()
+    for info in document['word_metadata'].values():
+        category, source = info['category'], info['category_source']
+        if category not in taxonomy or not source or (category == 'other') != source.startswith('unknown:'):
+            raise ValueError('Некорректная категория или её происхождение')
+        for values in (info['forms'], info['related']):
+            if not isinstance(values, list) or any(not isinstance(w, str) or not re.fullmatch(r'[а-я]+', w) for w in values):
+                raise ValueError('Некорректные формы или однокоренные слова')
+    for row in document['definitions']:
+        if (row['word'] not in words or row['origin'] != 'wiktionary' or
+                not row['source'].startswith('https://ru.wiktionary.org/wiki/') or row['example'] or
+                not settings['min_chars'] <= len(row['text']) <= settings['max_chars'] or re.search(r'[<>\r\n]', row['text'])):
+            raise ValueError('Некорректное определение: ' + row['word'])
 
 
 def cached_articles(path, dump_sha, cleanup, cache_directory):
@@ -276,32 +275,31 @@ def run(args):
     candidate = args.cache / "builds" / inputs
     candidate.mkdir(parents=True, exist_ok=True)
     previous_version, previous_content = settings["schema_version"] - 1, None
-    installed = args.out / "definitions.db"
+    installed = args.out / "lexical_data.json"
     if installed.exists():
-        with sqlite3.connect(installed) as db:
-            previous_version = db.execute("PRAGMA user_version").fetchone()[0]
-            previous_content = dict(db.execute("SELECT key,value FROM build_metadata")).get("content_sha256")
+        old = lexical_json.read(installed)
+        previous_version = old["revision"]
+        previous_content = old["build_metadata"].get("content_sha256")
     state_file = candidate / "state.json"
     state = {"version": max(settings["schema_version"], previous_version + int(previous_content != content))}
     atomic_json(state_file, state)
-    database = candidate / "definitions.db"
+    database = candidate / "lexical_data.json"
     rebuild = not database.exists()
     if not rebuild:
-        with sqlite3.connect(database) as db:
-            rebuild = db.execute("PRAGMA user_version").fetchone()[0] != state["version"]
+        rebuild = lexical_json.read(database)["revision"] != state["version"]
     metadata = {"content_sha256": content, "rights_policy": "wiktionary-provisional-v1", "source_sha256": dump_sha,
                 "dictionary_words_sha256": manifest["sha256_words_txt"], "masker_version": settings["masker_version"],
                 "masker_sha256": masker_sha, "generator": "build_local_definitions.py"}
     if rebuild:
-        build_database(database, rows, word_metadata, metadata, state["version"])
-    validate_database(database, words, settings)
+        build_lexical_data(database, rows, word_metadata, metadata, state["version"])
+    validate_lexical_data(database, words, settings)
     defined = {row["word"] for row in rows}
     block = {"rights_policy": "wiktionary-provisional-v1", "sha256": dictionary.sha256_file(database),
              "rights_review": {"passed": False, "status": "unverified-provisional", "replacement_required": True},
              "generator": {"provider": "local-dump", "model": None, "date": settings["generation_date"],
                            "config_sha256": dictionary.sha256_file(args.config), "source_sha256": dump_sha},
              "counts": {"own": 0, "wiktionary": len(rows)}, "coverage": {"words": len(defined), "total": len(words)},
-             "audit": {"passed": False}, "user_version": state["version"], "guessability_evaluated": False,
+             "audit": {"passed": False}, "revision": state["version"], "guessability_evaluated": False,
              "dictionary_words_sha256": manifest["sha256_words_txt"],
              "hint_processing": {"version": settings["masker_version"], "sha256": masker_sha,
                                  "strategy": "runtime-core-mask-forms-and-cognates", "replacement": "***"}}
@@ -312,7 +310,7 @@ def run(args):
     summary = {"words": len(words), "words_with_definitions": len(defined), "words_without_definitions": len(words - defined),
                "definitions": len(rows), "coverage_fraction": len(defined) / max(1, len(words)), "resolved_references": len(resolutions),
                "failure_reasons": dict(Counter(reason for reasons in failures.values() for reason in reasons)),
-               "database": str(database), "database_bytes": database.stat().st_size, "user_version": state["version"],
+               "database": str(database), "database_bytes": database.stat().st_size, "revision": state["version"],
                "published": not args.prepare_only, "ai_used": False, "audit_passed": False, "dictionary_changed": False}
     args.reports.mkdir(parents=True, exist_ok=True)
     atomic_json(args.reports / "category_index.json", dict(index, database_sha256=block["sha256"],
@@ -351,7 +349,7 @@ def main():
     args = parser.parse_args()
     try:
         print(json.dumps(run(args), ensure_ascii=False, indent=2))
-    except (ValueError, OSError, KeyError, sqlite3.Error) as error:
+    except (ValueError, OSError, KeyError) as error:
         parser.exit(2, "Ошибка: %s\n" % error)
 
 

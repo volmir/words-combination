@@ -58,14 +58,7 @@ internal fun CampaignTasks(state: GameUiState) {
 
 @Composable
 private fun RiddleText(riddle: RiddleUiState) {
-    if (riddle.text != null) {
-        Text(riddle.text, style = MaterialTheme.typography.bodyLarge)
-        if (riddle.wiktionary) Text(stringResource(R.string.hint_definition_source), style = MaterialTheme.typography.bodySmall)
-    } else {
-        Text(stringResource(R.string.hint_fallback, riddle.length, letterForm(riddle.length), riddle.firstLetter),
-            style = MaterialTheme.typography.bodyLarge)
-        if (com.example.sostavslova.BuildConfig.DEBUG) Text(stringResource(R.string.game_riddle_fallback), style = MaterialTheme.typography.bodySmall)
-    }
+    Text(riddle.text, style = MaterialTheme.typography.bodyLarge)
 }
 
 @Composable

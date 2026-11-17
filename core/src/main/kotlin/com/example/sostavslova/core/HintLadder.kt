@@ -16,6 +16,7 @@ data class HintWordData(
     val related: Set<String> = emptySet(),
     val familiar: Boolean = false,
     val undesirableLabels: Set<String> = emptySet(),
+    val knownPositions: Set<Int> = emptySet(),
 )
 
 /** Контекст назначения сохраняется до угадывания, даже если задание уже закрыто другим ответом. */
@@ -26,7 +27,7 @@ data class HintTarget(
     val letter: Char? = null,
 )
 
-/** Только данные шага; подписи, длина со склонением и сообщения форматируются в UI. */
+/** Старые виды шагов и поля оставлены для чтения сохранений. Новые шаги содержат шаблон. */
 data class HintStep(
     val stage: HintStage = HintStage.LENGTH,
     val text: String? = null,
@@ -44,72 +45,88 @@ data class HintLadder(
     val steps: List<HintStep> = emptyList(),
     val nextStepIndex: Int = 0,
     val revealedPositions: Set<Int> = emptySet(),
+    val letterLadderVersion: Int = 0,
 ) {
     val shown: List<HintStep> get() = steps.take(nextStepIndex)
     val stage: HintStage? get() = shown.lastOrNull()?.stage
 
+    /** Старые тексты удаляются; купленные позиции и ответ остаются открытыми.
+     * Будущие позиции берутся сначала из прежнего порядка, затем из стабильной
+     * перестановки. Миграция не меняет ни один счётчик и не использует Random.Default.
+     */
+    internal fun lettersOnly(task: CampaignTask?, known: Set<Int> = emptySet()): HintLadder {
+        val target = target ?: return this
+        if (letterLadderVersion >= 1 && revealedPositions.containsAll(known)) return this
+        val word = target.word
+        val acquired = shown
+        val acquiredPositions = acquired.flatMap { positionsOf(word, it) }.toSet()
+        val baseline = knownPositions(word, task) + (known - acquiredPositions) + (revealedPositions - acquiredPositions)
+        var positions = baseline
+        val retained = mutableListOf<HintStep>()
+        for (step in acquired) {
+            if (step.stage !in letterStages) continue
+            val next = positions + positionsOf(word, step)
+            if (next == positions) continue
+            positions = next
+            retained += letterStep(word, positions)
+        }
+        val open = retained.size
+        val order = steps.drop(nextStepIndex).filter { it.stage != HintStage.ANSWER }
+            .flatMap { positionsOf(word, it).sorted() }.distinct() +
+            word.indices.shuffled(Random(word.hashCode()))
+        appendLetters(word, target, positions, order, retained)
+        return copy(steps = retained, nextStepIndex = open, revealedPositions = positions,
+            letterLadderVersion = 1)
+    }
+
     companion object {
+        private val letterStages = setOf(HintStage.FIRST_LETTER, HintStage.PATTERN, HintStage.ANSWER)
+
         internal fun build(target: HintTarget, task: CampaignTask?, data: HintWordData, random: Random): HintLadder {
             val word = target.word
+            val known = knownPositions(word, task) + data.knownPositions.filter { it in word.indices }
             val steps = mutableListOf<HintStep>()
-            val texts = mutableSetOf<String>()
-            val knownPositions = when (task) {
-                is CampaignTask.T2 -> setOf(0)
-                is CampaignTask.T5 -> (word.length - task.ending.length until word.length).toSet()
-                else -> emptySet()
-            }
-            var positions = knownPositions
-            fun addText(stage: HintStage, text: String?) {
-                if (text != null && texts.add(Alphabet.normalize(text))) steps += HintStep(stage, text)
-            }
-            val category = data.category
-            val categoryText = category?.text?.let { safeCategory(word, it, data) }
-            if (task is CampaignTask.T6 && category?.key == task.category) {
-                categoryText?.let { texts += Alphabet.normalize(it) }
-            } else {
-                addText(HintStage.THEME, categoryText)
-            }
-            addText(HintStage.DEFINITION, data.definition?.let {
-                DefinitionHint.prepare(word, it, data.forms, data.related)
-            })
-            val definitionIndex = steps.indexOfFirst { it.stage == HintStage.DEFINITION }
-            if (definitionIndex >= 0) steps[definitionIndex] = steps[definitionIndex].copy(wiktionary = data.definitionWiktionary)
-            steps += HintStep(HintStage.LENGTH, length = word.length)
-            if (0 !in positions) {
-                positions = positions + 0
-                steps += HintStep(HintStage.FIRST_LETTER, word.first().toString(), revealedPositions = positions)
-            }
-            // Каждая новая позиция — отдельный шаг; одинаковые буквы в других местах остаются скрыты.
-            while (positions.size < word.length / 2) {
-                val hidden = word.indices.filter { it !in positions }
-                val taskLetter = hidden.filter { word[it] == target.letter }
-                val position = (taskLetter.ifEmpty { hidden }).random(random)
-                positions = positions + position
-                val pattern = word.mapIndexed { i, char -> if (i in positions) char else '_' }.joinToString("")
-                steps += HintStep(HintStage.PATTERN, pattern, revealedPositions = positions)
-            }
-            steps += HintStep(HintStage.ANSWER, word, revealedPositions = word.indices.toSet())
-            return HintLadder(target, steps, revealedPositions = knownPositions)
+            appendLetters(word, target, known, word.indices.shuffled(random), steps)
+            return HintLadder(target, steps, revealedPositions = known, letterLadderVersion = 1)
         }
 
-        private fun safeCategory(word: String, text: String, data: HintWordData): String? {
-            val clean = HintText.clean(text) ?: return null
-            val normalized = Alphabet.normalize(clean)
-            if (normalized.isEmpty()) return null
-            val family = (data.forms + data.related + word).map(Alphabet::normalize).filter { it.isNotEmpty() }
-            val tokens = clean.split(Regex("[^А-Яа-яЁё\\u0300\\u0301]+"))
-                .map(Alphabet::normalize).filter { it.isNotEmpty() }
-            // Для короткой темы вместо малоинформативного «***» пропускаем весь шаг.
-            if (family.any { relative -> normalized.contains(relative) || tokens.any {
-                    DefinitionHint.sharesRoot(relative, it) ||
-                        // Короткую тему безопаснее пропустить даже при неоднозначном корне
-                        // (например, известное родство «кошка» и тема «кошачьи»).
-                        (relative.length >= 3 && it.length >= 3 && relative.take(3) == it.take(3))
-                } }
-            ) {
-                return null
+        private fun knownPositions(word: String, task: CampaignTask?): Set<Int> = when (task) {
+            is CampaignTask.T2 -> setOf(0)
+            is CampaignTask.T5 -> (word.length - task.ending.length until word.length).toSet()
+            else -> emptySet()
+        }
+
+        private fun positionsOf(word: String, step: HintStep): Set<Int> = when (step.stage) {
+            HintStage.ANSWER -> word.indices.toSet()
+            HintStage.FIRST_LETTER -> step.revealedPositions.ifEmpty { setOf(0) }
+            HintStage.PATTERN -> step.revealedPositions + word.indices.filter { i ->
+                step.text?.getOrNull(i) == word[i]
             }
-            return clean
+            else -> emptySet()
+        }.filter { it in word.indices }.toSet()
+
+        private fun letterStep(word: String, positions: Set<Int>): HintStep {
+            val stage = when {
+                positions.size == word.length -> HintStage.ANSWER
+                positions == setOf(0) -> HintStage.FIRST_LETTER
+                else -> HintStage.PATTERN
+            }
+            return HintStep(stage, word.mapIndexed { i, char -> if (i in positions) char else '_' }.joinToString(""),
+                revealedPositions = positions)
+        }
+
+        private fun appendLetters(word: String, target: HintTarget, known: Set<Int>, order: List<Int>, steps: MutableList<HintStep>) {
+            var positions = known
+            val remaining = order.distinct().filter { it !in positions }.toMutableList()
+            // Начальная буква — первый ориентир, затем приоритет буквы задания T7.
+            if (0 in remaining) { remaining.remove(0); remaining.add(0, 0) }
+            val taskPositions = remaining.filter { word[it] == target.letter }
+            val first = remaining.take(1).filter { it == 0 }
+            val sorted = first + taskPositions.filter { it !in first } + remaining.filter { it !in first && it !in taskPositions }
+            for (position in sorted) {
+                positions = positions + position
+                steps += letterStep(word, positions)
+            }
         }
     }
 }

@@ -12,6 +12,5 @@ class WordsApplication : Application() {
         super.onCreate()
         container = AppContainer(this)
         container.applicationScope.launch { container.wordRepository.ensureLoaded() }
-        container.applicationScope.launch { container.definitionsRepository.isAvailable() }
     }
 }

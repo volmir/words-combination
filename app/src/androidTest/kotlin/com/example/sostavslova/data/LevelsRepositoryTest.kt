@@ -128,7 +128,7 @@ class LevelsRepositoryTest {
         assertEquals(BuildConfig.CAMPAIGN_SHA256, campaign.contentSha256)
         assertEquals(BuildConfig.CAMPAIGN_SHA256, sha256(bytes("campaign.json")))
         assertEquals(BuildConfig.WORDS_SHA256, sha256(bytes("words.txt")))
-        assertEquals(BuildConfig.DEFINITIONS_SHA256, sha256(bytes("definitions.db")))
+        assertEquals(BuildConfig.RIDDLES_SHA256, sha256(bytes("owned_riddles.json")))
         assertTrue(ProductionCampaignValidator.validate(campaign, "short15-release-v1").isEmpty())
     }
 

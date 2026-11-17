@@ -10,7 +10,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.semantics.SemanticsActions
 import com.example.sostavslova.core.*
-import com.example.sostavslova.data.Definition
 import com.example.sostavslova.ui.assertTextLayoutFits
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.*
@@ -20,11 +19,7 @@ import org.junit.Test
 class CampaignGameUiTest {
     @get:Rule val compose = createComposeRule()
     // Собственный синтетический текст; статьи словарей в fixture не используются.
-    private val ownDefinition = Definition("крот",
-        "Крот — условный обитатель подземного мира; кротовый ход служит примером.",
-        related = listOf("кротовый"), origin = "own")
-    private val maskedOwnDefinition = requireNotNull(DefinitionHint.prepare(ownDefinition.display,
-        ownDefinition.text, ownDefinition.forms, ownDefinition.related))
+    private val maskedOwnDefinition = "Условный обитатель подземного мира для проверки экрана."
     private val tasks = listOf(
         CampaignTask.T1("count", 2), CampaignTask.T2("initial", 'к', 1),
         CampaignTask.T3("long", 4, "карта"), CampaignTask.T4("riddles", listOf("кот", "крот")),
@@ -36,8 +31,8 @@ class CampaignGameUiTest {
     private val initial = GameUiState(loading = false, game = game, campaignLevel = evaluated.state,
         totalLevels = 30, taskProgress = evaluated.progress, statistics = game.statistics(),
         riddles = mapOf("riddles" to listOf(
-            RiddleUiState("Условное безопасное описание животного", 3, "К", solved = true),
-            RiddleUiState(null, 4, "К"))),
+            RiddleUiState("Условное безопасное описание животного", solved = true),
+            RiddleUiState("Вторая безопасная загадка"))),
     )
 
     @Test fun allSevenTasksRiddlesGroupsAndStatisticsAtNativeSize() {
@@ -74,7 +69,7 @@ class CampaignGameUiTest {
         compose.onNodeWithText("Найдите 1 слово по теме «Животные»").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("level_riddle_1").onChildren().filter(hasText("Разгадана")).assertCountEquals(1)
         compose.onNodeWithTag("level_riddle_2").onChildren().filter(hasText("Ещё не разгадана")).assertCountEquals(1)
-        compose.onNodeWithText("Слово из 4 букв, начинается на «К»").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Вторая безопасная загадка").performScrollTo().assertIsDisplayed()
         // Ни полные ответы загадок, ни адреса их статей не попадают в дерево доступности.
         val semantics = compose.onAllNodes(isRoot(), useUnmergedTree = true).fetchSemanticsNodes()
         val text = semantics.flatMap { root -> flatten(root) }.flatMap {
@@ -154,45 +149,34 @@ class CampaignGameUiTest {
         }
     }
 
-    @Test fun accumulatedHintStepsCostAndZeroBudgetAreVisible() {
-        val steps = listOf(HintStep(HintStage.THEME, "Животные"),
-            HintStep(HintStage.DEFINITION, maskedOwnDefinition, wiktionary = ownDefinition.isWiktionary),
-            HintStep(HintStage.LENGTH, length = 4))
-        val state = mutableStateOf(initial.copy(campaignHints = steps.take(2),
+    @Test fun accumulatedLetterStepsCostAndZeroBudgetAreVisible() {
+        val steps = listOf(HintStep(HintStage.FIRST_LETTER, "к___", revealedPositions = setOf(0)),
+            HintStep(HintStage.PATTERN, "кр__", revealedPositions = setOf(0, 1)),
+            HintStep(HintStage.PATTERN, "кро_", revealedPositions = setOf(0, 1, 2)),
+            HintStep(HintStage.ANSWER, "крот", revealedPositions = (0..3).toSet()))
+        val state = mutableStateOf(initial.copy(
             campaignLevel = evaluated.state.copy(hints = HintState(ladder = HintLadder(
-                target = HintTarget("крот"), steps = steps + HintStep(HintStage.FIRST_LETTER, "к"), nextStepIndex = 2))),
+                target = HintTarget("крот"), steps = steps, letterLadderVersion = 1))),
             hintCost = 0, hintRemaining = 0))
         var clicks = 0
-        compose.setContent {
-            WordsTheme {
-                GameScreen(state.value, {}, {}, { clicks++ }, {}, {}, {})
-            }
-        }
+        compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, { clicks++ }, {}, {}, {}) } }
         compose.onNodeWithTag("game_hint")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
-        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 2 из 4 частей")
-        compose.onNodeWithText("Животные").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag("game_hint_part_1").assertTextContains("Животные")
-        compose.onNodeWithTag("game_hint_part_2").performScrollTo().assertTextContains(maskedOwnDefinition)
-        compose.onNodeWithTag("game_hint_part_3").assertDoesNotExist()
-        compose.onNodeWithTag("game_hint_part_4").assertDoesNotExist()
-        assertOwnHintProvenanceAndNoAnswer()
+        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 0 из 4 частей")
+        compose.onNodeWithTag("game_hint_part_1").assertDoesNotExist()
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled()
             .assertTextContains("Получить подсказку · цена 0 · осталось 0").performClick()
         assertEquals(1, clicks)
-        compose.runOnIdle { state.value = state.value.copy(hintCost = 1, campaignHints = steps,
+        compose.runOnIdle { state.value = state.value.copy(hintCost = 1,
             campaignLevel = state.value.campaignLevel?.let { current -> current.copy(hints = current.hints.copy(
-                ladder = current.hints.ladder.copy(nextStepIndex = 3))) }) }
-        compose.onNodeWithText("Слово из 4 букв").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag("game_hint_stage").assertTextEquals("Подсказка · открыто 3 из 4 частей")
-        compose.onNodeWithTag("game_hint_part_1").assertTextContains("Животные")
-        compose.onNodeWithTag("game_hint_part_2").assertTextContains(maskedOwnDefinition)
-        compose.onNodeWithTag("game_hint_part_3").assertTextContains("Слово из 4 букв")
-        compose.onNodeWithTag("game_hint_part_4").assertDoesNotExist()
-        val parts = compose.onAllNodes(hasTestTag("game_hint_part_1") or hasTestTag("game_hint_part_2") or
-            hasTestTag("game_hint_part_3")).fetchSemanticsNodes()
-        assertEquals((1..3).map { "game_hint_part_$it" }, parts.map { it.config[SemanticsProperties.TestTag] })
-        assertOwnHintProvenanceAndNoAnswer()
+                ladder = current.hints.ladder.copy(nextStepIndex = 1, revealedPositions = setOf(0)))) }) }
+        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 1 из 4 частей")
+        compose.onNodeWithTag("game_hint_part_1").assertTextContains("к___")
+        compose.onNodeWithTag("game_hint_part_2").assertDoesNotExist()
+        compose.onAllNodesWithText("кр__", useUnmergedTree = true).assertCountEquals(0)
+        compose.onAllNodesWithText("кро_", useUnmergedTree = true).assertCountEquals(0)
+        compose.onAllNodesWithText("крот", useUnmergedTree = true).assertCountEquals(0)
+        compose.onNodeWithText("Слово из 4 букв").assertDoesNotExist()
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsNotEnabled()
             .assertTextContains("Получить подсказку · цена 1 · осталось 0")
         compose.onNodeWithTag("game_hint_budget").performScrollTo()
@@ -201,14 +185,12 @@ class CampaignGameUiTest {
     }
 
     @Test fun hintPartsAreUniqueOrderedAndDoNotExposeFutureStepsAfterRestorationOrTargetChange() {
-        val masked = requireNotNull(DefinitionHint.prepare("крот", "Крот — условный обитатель подземного мира."))
-        assertFalse(masked.contains("крот", ignoreCase = true))
-        val steps = listOf(HintStep(HintStage.DEFINITION, masked),
-            HintStep(HintStage.LENGTH, length = 4), HintStep(HintStage.FIRST_LETTER, "к"),
-            HintStep(HintStage.PATTERN, "кр__"), HintStep(HintStage.ANSWER, "крот"))
+        val steps = listOf(HintStep(HintStage.FIRST_LETTER, "к___"),
+            HintStep(HintStage.PATTERN, "кр__"), HintStep(HintStage.PATTERN, "кро_"),
+            HintStep(HintStage.ANSWER, "крот"))
         fun snapshot(open: Int, parts: List<HintStep> = steps, target: String = "крот") = initial.copy(
             campaignLevel = evaluated.state.copy(hints = HintState(ladder = HintLadder(
-                target = HintTarget(target), steps = parts, nextStepIndex = open))),
+                target = HintTarget(target), steps = parts, nextStepIndex = open, letterLadderVersion = 1))),
             campaignHints = parts.take(open), hintCost = if (open == parts.size) null else 1, hintRemaining = 2)
         val state = mutableStateOf(snapshot(0))
         var clicks = 0
@@ -218,18 +200,18 @@ class CampaignGameUiTest {
                 GameScreen(state.value, {}, {}, { clicks++ }, {}, {}, {})
             }
         }
-        for (open in listOf(0, 1, 3, 5)) {
+        for (open in listOf(0, 1, 3, 4)) {
             compose.runOnIdle { state.value = snapshot(open) }
             repeat(2) { pass ->
                 if (pass == 1) restoration.emulateSavedInstanceStateRestore()
                 compose.onNodeWithTag("game_hint_stage").performScrollTo()
-                    .assertTextEquals("Подсказка · открыто $open из 5 частей")
+                    .assertTextEquals("Подсказка · открыто $open из 4 частей")
                 for (index in steps.indices) {
                     val part = compose.onAllNodesWithTag("game_hint_part_${index + 1}")
                     part.assertCountEquals(if (index < open) 1 else 0)
                     if (index < open) {
                         compose.onNodeWithTag("game_hint_part_${index + 1}").performScrollTo()
-                            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Часть ${index + 1} из 5"))
+                            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Часть ${index + 1} из 4"))
                     }
                 }
                 // Check the unmerged tree too: closed content must not reach accessibility.
@@ -245,7 +227,7 @@ class CampaignGameUiTest {
                 assertEquals((1..open).map { "game_hint_part_$it" }, parts.map { it.config[SemanticsProperties.TestTag] })
                 compose.onAllNodesWithTag("game_hint_button").assertCountEquals(1)
                 val button = compose.onNodeWithTag("game_hint_button").performScrollTo()
-                if (open == 5) {
+                if (open == 4) {
                     button.assertIsNotEnabled()
                     compose.onNodeWithText("Все шаги этой подсказки уже показаны.").assertExists()
                 } else {
@@ -256,16 +238,16 @@ class CampaignGameUiTest {
             }
         }
         // A new target replaces the entire block, even if a stale auxiliary UI list remained.
-        compose.runOnIdle { state.value = snapshot(1, listOf(HintStep(HintStage.LENGTH, length = 5)), "карта")
+        compose.runOnIdle { state.value = snapshot(1, listOf(HintStep(HintStage.PATTERN, "к____")), "карта")
             .copy(campaignHints = steps) }
         compose.onNodeWithTag("game_hint_stage").assertTextEquals("Подсказка · открыто 1 из 1 частей")
-        compose.onNodeWithTag("game_hint_part_1").assertTextContains("Слово из 5 букв")
-        compose.onAllNodesWithText(masked, useUnmergedTree = true).assertCountEquals(0)
+        compose.onNodeWithTag("game_hint_part_1").assertTextContains("к____")
+        compose.onAllNodesWithText("кр__", useUnmergedTree = true).assertCountEquals(0)
         compose.onAllNodesWithTag("game_hint_part_2").assertCountEquals(0)
         compose.runOnIdle { state.value = snapshot(3, target = "кот") }
         // Once the target has been found, its old parts are no longer visible.
         compose.onAllNodesWithTag("game_hint_part_1").assertCountEquals(0)
-        compose.onAllNodesWithText(masked, useUnmergedTree = true).assertCountEquals(0)
+        compose.onAllNodesWithText("кр__", useUnmergedTree = true).assertCountEquals(0)
         compose.runOnIdle { state.value = initial.copy(hintCost = null, hintRemaining = 2) }
         compose.onNodeWithText("Все слова уже найдены").assertExists()
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsNotEnabled()
@@ -273,11 +255,9 @@ class CampaignGameUiTest {
         compose.onNodeWithTag("game_hint_stage").assertTextEquals("Подсказка · откройте первую часть")
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled().performClick()
         assertEquals(1, clicks)
-        compose.runOnIdle { state.value = snapshot(1, steps.filter { it.stage != HintStage.DEFINITION })
-            .copy(hintFallback = true, hintCost = 1, hintRemaining = 0) }
+        compose.runOnIdle { state.value = snapshot(1).copy(hintCost = 1, hintRemaining = 0) }
         compose.onNodeWithTag("game_hint_stage").assertTextEquals("Подсказка · открыто 1 из 4 частей")
-        compose.onNodeWithText("Доступны подсказки по буквам.").assertExists()
-        compose.onNodeWithTag("game_hint_part_1").assertTextContains("Слово из 4 букв")
+        compose.onNodeWithTag("game_hint_part_1").assertTextContains("к___")
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsNotEnabled()
         assertTextFits()
     }
@@ -326,9 +306,9 @@ class CampaignGameUiTest {
 
     @Test fun riddlesRemainUnderTaskAndReflectSolvedUpdates() {
         val riddles = listOf(
-            RiddleUiState("Первая безопасная загадка", 3, "К", solved = true),
-            RiddleUiState(maskedOwnDefinition, 4, "К", wiktionary = ownDefinition.isWiktionary),
-            RiddleUiState(null, 6, "К"))
+            RiddleUiState("Первая безопасная загадка", solved = true),
+            RiddleUiState(maskedOwnDefinition),
+            RiddleUiState("Третья безопасная загадка"))
         val state = mutableStateOf(initial.copy(riddles = mapOf("riddles" to riddles)))
         compose.setContent {
             WordsTheme {
@@ -351,7 +331,7 @@ class CampaignGameUiTest {
         compose.onNodeWithTag("level_riddle_2").onChildren().filter(hasText("Разгадана")).assertCountEquals(1)
         assertOwnHintProvenanceAndNoAnswer()
         compose.onNodeWithText("Загадка 3").assertExists()
-        compose.onNodeWithText("Слово из 6 букв, начинается на «К»").assertExists()
+        compose.onNodeWithText("Третья безопасная загадка").assertExists()
         compose.runOnIdle {
             state.value = state.value.copy(riddles = mapOf("riddles" to riddles.map { it.copy(solved = true) }))
         }
@@ -364,22 +344,12 @@ class CampaignGameUiTest {
     }
 
     private fun assertOwnHintProvenanceAndNoAnswer() {
-        assertEquals("own", ownDefinition.origin)
-        assertEquals("", ownDefinition.source)
-        assertTrue(ownDefinition.isOwnedHint)
-        assertFalse(ownDefinition.isWiktionary)
-        assertTrue(maskedOwnDefinition.contains(DefinitionHint.MASK))
-        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
-        val sourceNotice = context.getString(com.example.sostavslova.R.string.hint_definition_source)
-        assertEquals("Собственная подсказка · CC0-1.0. Скрыты ответ и однокоренные слова.", sourceNotice)
-        // own не устанавливает legacy-флаг wiktionary и не показывает блок атрибуции.
-        compose.onAllNodesWithText(sourceNotice, useUnmergedTree = true).assertCountEquals(0)
         val text = compose.onAllNodes(isRoot(), useUnmergedTree = true).fetchSemanticsNodes()
             .flatMap(::flatten).flatMap {
                 it.config.getOrNull(SemanticsProperties.Text).orEmpty().map { value -> value.text } +
                     it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
             }.joinToString("\n")
-        assertFalse(text.contains(ownDefinition.display, ignoreCase = true))
+        assertFalse(text.contains("крот", ignoreCase = true))
         assertFalse(text.contains("Викисловарь", ignoreCase = true))
         assertFalse(text.contains("CC BY-SA", ignoreCase = true))
         assertFalse(text.contains("https://"))

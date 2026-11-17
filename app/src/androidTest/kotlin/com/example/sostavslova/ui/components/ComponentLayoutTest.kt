@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import com.example.sostavslova.core.LengthStat
 import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.core.Statistics
-import com.example.sostavslova.data.Definition
 import com.example.sostavslova.nav.Destination
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.*
@@ -81,7 +80,7 @@ class ComponentLayoutTest(private val exampleName: String) {
 
 /** Фикстуры принадлежат тестам и не включаются в приложение. */
 private enum class ComponentExample {
-    WELL, WORD_INPUT, LETTERS, STARS, FOUND_WORDS, ALERTS, STATISTICS, DEFINITION, TOP_BAR, DRAWER;
+    WELL, WORD_INPUT, LETTERS, STARS, FOUND_WORDS, ALERTS, STATISTICS, RIDDLE, TOP_BAR, DRAWER;
 
     @Composable
     fun Render() {
@@ -111,7 +110,7 @@ private enum class ComponentExample {
                         STATISTICS -> StatsTable(Statistics(
                             listOf(LengthStat(3, 2, 10), LengthStat(4, 1, 12), LengthStat(5, 0, 6)),
                         ))
-                        DEFINITION -> DefinitionBlock(definition())
+                        RIDDLE -> Text("Учебный пример: <органы управления>.\nВторая строка загадки сохраняет перенос.")
                         else -> Unit
                     }
                 }
@@ -119,11 +118,4 @@ private enum class ComponentExample {
         }
     }
 
-    private fun definition() = Definition(
-        display = "портал",
-        text = "Учебный пример: <органы управления>.\nВторая строка определения сохраняет перенос.",
-        notes = "Примечание к учебному примеру.",
-        antonym = "противоположное значение",
-        example = "Это пример употребления слова.",
-    )
 }

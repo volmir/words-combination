@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """LCH-04 mechanical evidence, never a legal/publication PASS.
 
-Checks every APK asset against its source, every SQLite byte against a fresh
-owned-only build, all provenance rows, runtime version markers and ZIP members.
+Checks every APK asset against its source, every runtime JSON byte against a fresh
+approved-only build, all provenance rows, runtime version markers and ZIP members.
 Produces hashes rather than copying dictionary prose into reports.
 """
 import argparse
@@ -12,7 +12,6 @@ import io
 import json
 from pathlib import Path
 import re
-import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -21,6 +20,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from tools import lexical_json
 from tools.build_owned_hints import verify, inputs, coverage
 from tools.build_library_notices import generate
 from tools.owned_hints import tokens
@@ -63,10 +63,10 @@ def screen_legacy(root, apk, source_files, database, expected_sha, resource_stri
     possible foreign paraphrases. Never exports old text, only matching words.
     """
     if sha(database.read_bytes()) != expected_sha:
-        raise ValueError('Legacy comparison DB does not match LCH-02 snapshot')
+        raise ValueError('Comparison JSON hash mismatch')
     grams = {}
-    with sqlite3.connect(database.resolve().as_uri() + '?mode=ro', uri=True) as db:
-        rows = db.execute("SELECT word,text FROM definitions WHERE origin='wiktionary'").fetchall()
+    document = lexical_json.read(database)
+    rows = [(r['word'],r['text']) for r in document['definitions'] if r['origin']=='wiktionary']
     for word, text in rows:
         ts = tokens(text)
         for i in range(len(ts) - 4):
@@ -111,7 +111,7 @@ def audit(root, apk, profile, runtime_inputs):
     minimal = verify(data)
     candidate, index, metadata, manifest = inputs(data)
     expected = {name: (data / name).read_bytes() for name in
-                ('words.txt', 'word_sources.jsonl.gz', 'levels.json', 'campaign.json', 'definitions.db')}
+                ('words.txt', 'word_sources.jsonl.gz', 'levels.json', 'campaign.json', 'owned_riddles.json')}
     for name in ('THIRD_PARTY_NOTICES.txt', 'Apache-2.0.txt', 'CC-BY-SA-4.0.txt',
                  'LIBRARY_NOTICES.txt', 'RUNTIME_LIBRARIES.json'):
         expected[name] = (root / 'legal' / name).read_bytes()
@@ -146,24 +146,17 @@ def audit(root, apk, profile, runtime_inputs):
     with zipfile.ZipFile(apk) as archive:
         if len(archive.namelist()) != len(set(archive.namelist())):
             raise ValueError('Duplicate ZIP member')
+        for entry in archive.infolist():
+            if (re.search(r'\.(?:db|sqlite[^/]*|deb)$|libsqlite', entry.filename, re.I) or
+                    archive.read(entry).startswith(b'SQLite format 3\x00')):
+                raise ValueError('Forbidden binary storage payload: ' + entry.filename)
         check_assets(archive, expected)
         actual_markers = {n: archive.read(n).decode().strip() for n in archive.namelist() if n.endswith('.version')}
         for name, value in actual_markers.items():
             if markers.get(name) != value:
                 raise ValueError('Unknown/stale dependency version marker: ' + name)
-        with tempfile.TemporaryDirectory() as temp:
-            db_path = Path(temp) / 'definitions.db'
-            db_path.write_bytes(archive.read('assets/definitions.db'))
-            with sqlite3.connect(db_path) as db:
-                counts = {t: db.execute('SELECT count(*) FROM ' + t).fetchone()[0]
-                          for t in ('definitions', 'word_metadata', 'build_metadata')}
-                origins = dict(db.execute('SELECT origin,count(*) FROM definitions GROUP BY origin'))
-                if origins != {'own': 39}:
-                    raise ValueError('Foreign definitions in APK')
-                free_pages = db.execute('PRAGMA freelist_count').fetchone()[0]
-                sqlite_version = db.execute('PRAGMA user_version').fetchone()[0]
-                rows = [dict(word=w, text_sha256=sha(t.encode()), characters=len(t))
-                        for w, t in db.execute('SELECT word,text FROM definitions ORDER BY word')]
+        riddles = json.loads(archive.read('assets/owned_riddles.json'))['riddles']
+        rows = [dict(word=w, text_sha256=sha(t.encode('utf8')), characters=len(t)) for w,t in sorted(riddles.items())]
         members = [dict(path=i.filename, bytes=i.file_size, sha256=sha(archive.read(i.filename)))
                    for i in sorted(archive.infolist(), key=lambda i: i.filename) if not i.is_dir()]
         for member in members:
@@ -187,12 +180,12 @@ def audit(root, apk, profile, runtime_inputs):
                 profile=profile, apk=dict(path=str(apk.relative_to(root)), bytes=apk.stat().st_size, sha256=sha(apk.read_bytes())),
                 words=len(words), provenance_rows=len(sources), provenance_urls=url_count,
                 coverage=coverage(candidate, json.loads(expected['campaign.json'])),
-                sqlite=dict(tables=counts, origins=origins, freelist_count=free_pages, user_version=sqlite_version),
+                riddles=dict(count=len(rows), license="CC0-1.0", sha256=sha(expected["owned_riddles.json"])),
                 own_rows=rows, reproducibility=minimal, version_markers=actual_markers,
                 apk_members=members, source_files=source_files,
-                rights=dict(audit_passed=manifest['definitions']['audit']['passed'],
-                            rights_review_passed=manifest['definitions']['rights_review']['passed'],
-                            license=manifest['definitions']['own_license'], status='BLOCKED_FOR_PUBLIC_RELEASE'))
+                rights=dict(audit_passed=manifest['owned_riddles']['audit']['passed'],
+                            rights_review_passed=manifest['owned_riddles']['rights_review']['passed'],
+                            license=manifest['owned_riddles']['own_license'], status='BLOCKED_FOR_PUBLIC_RELEASE'))
 
 
 def main():
@@ -200,17 +193,17 @@ def main():
     parser.add_argument('--apk', type=Path, required=True)
     parser.add_argument('--profile', choices=('debug', 'release'), required=True)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--legacy-db', type=Path)
+    parser.add_argument('--comparison-json', type=Path)
     parser.add_argument('--resource-strings', type=Path)
     args = parser.parse_args()
     result = audit(ROOT, args.apk.resolve(), args.profile, ROOT / 'app/build/reports/licenses/runtime-inputs.json')
-    if args.legacy_db:
+    if args.comparison_json:
         index = json.loads((ROOT / 'tools/owned_hint_index.json').read_text())
-        result['legacy_screening'] = screen_legacy(ROOT, args.apk, result['source_files'], args.legacy_db,
-                                                   index['source_database_sha256'], args.resource_strings)
+        result['legacy_screening'] = screen_legacy(ROOT, args.apk, result['source_files'], args.comparison_json,
+                                                   sha(args.comparison_json.read_bytes()), args.resource_strings)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    print(json.dumps({key: result[key] for key in ('status', 'apk', 'coverage', 'sqlite')}, ensure_ascii=False))
+    print(json.dumps({key: result[key] for key in ('status', 'apk', 'coverage', 'riddles')}, ensure_ascii=False))
 
 
 if __name__ == '__main__':

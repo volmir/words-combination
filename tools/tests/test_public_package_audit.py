@@ -1,10 +1,10 @@
 """Archive attacks use only synthetic payloads, never external dictionary prose."""
 import gzip
+from tools import lexical_json
 import hashlib
 import io
 from pathlib import Path
 import re
-import sqlite3
 import tempfile
 import unittest
 import zipfile
@@ -32,16 +32,16 @@ class PublicPackageAuditTest(unittest.TestCase):
         return zipfile.ZipFile(io.BytesIO(raw.getvalue()))
 
     def test_uncompressed_provenance_is_checked_by_content(self):
-        expected = {'word_sources.jsonl.gz': gzip.compress(b'synthetic provenance'), 'definitions.db': b'own db'}
+        expected = {'word_sources.jsonl.gz': gzip.compress(b'synthetic provenance'), 'owned_riddles.json': b'own db'}
         with self.archive({'assets/word_sources.jsonl': b'synthetic provenance',
-                           'assets/definitions.db': b'own db'}) as archive:
+                           'assets/owned_riddles.json': b'own db'}) as archive:
             check_assets(archive, expected)
 
     def test_hidden_backup_and_replaced_payload_are_rejected(self):
-        expected = {'word_sources.jsonl.gz': gzip.compress(b'synthetic provenance'), 'definitions.db': b'own db'}
-        assets = {'assets/word_sources.jsonl.gz': expected['word_sources.jsonl.gz'], 'assets/definitions.db': b'own db'}
+        expected = {'word_sources.jsonl.gz': gzip.compress(b'synthetic provenance'), 'owned_riddles.json': b'own db'}
+        assets = {'assets/word_sources.jsonl.gz': expected['word_sources.jsonl.gz'], 'assets/owned_riddles.json': b'own db'}
         for mutation in ({**assets, 'assets/legacy.zip': b'hidden synthetic text'},
-                         {**assets, 'assets/definitions.db': b'synthetic foreign db'}):
+                         {**assets, 'assets/owned_riddles.json': b'synthetic foreign db'}):
             with self.subTest(mutation=list(mutation)), self.archive(mutation) as archive:
                 with self.assertRaises(ValueError):
                     check_assets(archive, expected)
@@ -58,11 +58,9 @@ class PublicPackageAuditTest(unittest.TestCase):
     def test_legacy_screening_detects_prose_in_binary_payload_without_exporting_it(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            db_path = root / 'synthetic.db'
+            db_path = root / 'synthetic.json'
             text = 'Синтетическое описание выдуманного предмета для проверки сканера.'
-            with sqlite3.connect(db_path) as db:
-                db.execute('CREATE TABLE definitions(word,text,origin)')
-                db.execute('INSERT INTO definitions VALUES(?,?,?)', ('фикстура', text, 'wiktionary'))
+            lexical_json.build(db_path,[dict(word='фикстура',text=text,origin='wiktionary')],{}, {}, 8)
             apk = root / 'test.apk'
             with zipfile.ZipFile(apk, 'w') as archive:
                 archive.writestr('classes.dex', b'prefix\x00' + text.encode() + b'\x00suffix')

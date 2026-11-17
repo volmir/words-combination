@@ -2,7 +2,7 @@
 """Read-only export of the installed short15 campaign for editorial review.
 
 The export reads only the installed ``data/campaign.json``, ``data/words.txt``,
-``data/definitions.db`` and ``data/manifest.json``. It performs no network calls,
+``data/lexical_data.json`` and ``data/manifest.json``. It performs no network calls,
 does not use AI, never writes into ``data/`` and keeps all source paths out of the
 payload. JSON is the reproducible machine-readable snapshot; CSV/TSV files are
 plain standard-library catalogs for people and do not require Excel.
@@ -10,16 +10,16 @@ plain standard-library catalogs for people and do not require Excel.
 from __future__ import annotations
 
 import argparse
+import lexical_json
 import csv
 from collections import Counter, defaultdict
 from hashlib import sha256
 import json
 from pathlib import Path
-import sqlite3
 import sys
 
 
-INPUT_FILES = ("campaign.json", "words.txt", "definitions.db", "manifest.json")
+INPUT_FILES = ("campaign.json", "words.txt", "owned_riddles.json", "manifest.json")
 MASK = "***"
 WEIGHTS = {3: 3, 4: 2}
 
@@ -218,13 +218,15 @@ def _manifest_checks(manifest: dict, words: list[str], words_sha: str, database_
     expected_words_sha = manifest.get("sha256_words_txt")
     if expected_words_sha is not None and expected_words_sha != words_sha:
         raise ValueError("SHA-256 words.txt расходится с manifest.sha256_words_txt")
-    definitions = manifest.get("definitions") or {}
+    definitions = manifest.get("owned_riddles") or manifest.get("definitions") or {}
     expected_database_sha = definitions.get("sha256")
     if expected_database_sha is not None and expected_database_sha != database_sha:
-        raise ValueError("SHA-256 definitions.db расходится с manifest.definitions.sha256")
+        raise ValueError("SHA-256 lexical_data.json расходится с manifest.definitions.sha256")
     dictionary_sha = definitions.get("dictionary_words_sha256")
     if dictionary_sha is not None and dictionary_sha != words_sha:
-        raise ValueError("definitions.db в manifest относится к другому словарю")
+        raise ValueError("lexical_data.json в manifest относится к другому словарю")
+    if "owned_riddles" in manifest and definitions.get("count") != defined_words:
+        raise ValueError("Riddle count differs from manifest")
     counts = definitions.get("counts") or {}
     if counts:
         for origin in sorted(set(counts) | set(origins)):
@@ -234,7 +236,7 @@ def _manifest_checks(manifest: dict, words: list[str], words_sha: str, database_
     if coverage.get("total") is not None and coverage["total"] != len(words):
         raise ValueError("manifest.definitions.coverage.total расходится с words.txt")
     if coverage.get("words") is not None and coverage["words"] != defined_words:
-        raise ValueError("manifest.definitions.coverage.words расходится с definitions.db")
+        raise ValueError("manifest.definitions.coverage.words расходится с lexical_data.json")
 
 
 def export(root: Path) -> dict:
@@ -247,7 +249,7 @@ def export(root: Path) -> dict:
     manifest = _read_json(paths["manifest.json"], root)
     campaign_sha = digest(paths["campaign.json"])
     words_sha = digest(paths["words.txt"])
-    database_sha = digest(paths["definitions.db"])
+    database_sha = digest(paths["owned_riddles.json"])
     manifest_sha = digest(paths["manifest.json"])
 
     all_words = sorted({normalize(line) for line in paths["words.txt"].read_text(encoding="utf-8").splitlines()
@@ -262,21 +264,14 @@ def export(root: Path) -> dict:
         sys.path.insert(0, str(tools_directory))
     from hint_text import prepare  # existing project masking rule
 
-    database_uri = Path(paths["definitions.db"]).resolve().as_uri() + "?mode=ro"
-    db = sqlite3.connect(database_uri, uri=True)
-    db.row_factory = sqlite3.Row
-    try:
-        metadata = {row["word"]: dict(row) for row in db.execute(
-            "SELECT word,category,category_source,forms,related FROM word_metadata")}
-        definitions = defaultdict(list)
-        for row in db.execute(
-                "SELECT id,word,ord,text,source,origin,category FROM definitions ORDER BY word,ord,id"):
-            definitions[row["word"]].append(dict(row))
-        db_origins = [dict(row) for row in db.execute(
-            "SELECT origin, COUNT(*) AS count FROM definitions GROUP BY origin ORDER BY origin")]
-        defined_words = db.execute("SELECT COUNT(DISTINCT word) FROM definitions").fetchone()[0]
-    finally:
-        db.close()
+    document = lexical_json.review_data(paths['owned_riddles.json'])
+    metadata = document['word_metadata']
+    definitions = defaultdict(list)
+    for row in document['definitions']:
+        definitions[row['word']].append(row)
+    counts = Counter(row['origin'] for row in document['definitions'])
+    db_origins = [dict(origin=origin, count=count) for origin,count in sorted(counts.items())]
+    defined_words = len(definitions)
     origins = {row["origin"]: row["count"] for row in db_origins}
     _manifest_checks(manifest, all_words, words_sha, database_sha, origins, defined_words)
 
@@ -390,7 +385,7 @@ def export(root: Path) -> dict:
                     "mask": MASK,
                 })
 
-    definitions_block = manifest.get("definitions") or {}
+    definitions_block = manifest.get("owned_riddles") or manifest.get("definitions") or {}
     audit = definitions_block.get("audit") or {}
     rights_review = definitions_block.get("rights_review") or {}
     rights = {
@@ -420,7 +415,7 @@ def export(root: Path) -> dict:
             "inputs": {
                 "campaign.json": campaign_sha,
                 "words.txt": words_sha,
-                "definitions.db": database_sha,
+                "owned_riddles.json": database_sha,
                 "manifest.json": manifest_sha,
             },
             "campaign_id": manifest.get("campaign_source", {}),
@@ -517,7 +512,7 @@ def main(argv=None) -> int:
     try:
         payload = export(args.root.resolve())
         json_path, directory = write_outputs(payload, args.root, args.output, args.catalog_dir)
-    except (OSError, ValueError, KeyError, sqlite3.Error) as error:
+    except (OSError, ValueError, KeyError) as error:
         parser.exit(2, f"ERROR: {error}\n")
     print(f'Exported {len(payload["overview"])} levels, {len(payload["tasks"])} tasks, '
           f'{len(payload["answers"])} accepted answer rows, {len(payload["hints"])} definition rows; '

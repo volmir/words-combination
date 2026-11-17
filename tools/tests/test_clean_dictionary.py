@@ -326,7 +326,7 @@ class CleanupTest(unittest.TestCase):
         self.assertEqual(before, {p.name: p.read_bytes() for p in args.out.iterdir()})
         self.assertEqual({"рот", "тор", "торт"}, set(dictionary.read_list(args.out / "words.txt")))
         self.assertEqual(3, result["selected"])
-        self.assertFalse((args.out / "definitions.db").exists())
+        self.assertFalse((args.out / "lexical_data.json").exists())
         metadata = json.loads((args.out / "manifest.json").read_text())["selection"]
         self.assertEqual("game-cleanup-v1", metadata["mode"])
         self.assertIn("котик", metadata["reference_checks"]["golden_excluded"])

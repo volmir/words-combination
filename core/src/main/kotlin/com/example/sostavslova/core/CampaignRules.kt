@@ -69,7 +69,7 @@ object CampaignRules {
         val level = campaign.levels[levelNumber - 1]
         val saved = progress.levels[level.word] ?: CampaignLevelProgress()
         val game = GameState.start(level.word, index, normalizedFound(saved.found))
-        return CurrentCampaignLevel(level, game, saved.completedTaskIds.intersect(taskIds(level)), saved.hints)
+        return HintRules.restore(CurrentCampaignLevel(level, game, saved.completedTaskIds.intersect(taskIds(level)), saved.hints))
     }
 
     /**

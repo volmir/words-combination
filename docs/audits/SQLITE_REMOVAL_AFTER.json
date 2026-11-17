@@ -1,0 +1,944 @@
+{
+  "schema": "text-storage-migration-verification-v1",
+  "date": "2026-11-17",
+  "before": "SQLITE_REMOVAL_BEFORE.json",
+  "verification": {
+    "unchanged": {
+      "data/campaign.json": {
+        "before": "1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e",
+        "after": "1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e",
+        "identical": true
+      },
+      "docs/owned_hints.json": {
+        "before": "061633244ec968aeec2e0dc50aca1b61ecb8ca735590c5510938ab5085b711b0",
+        "after": "061633244ec968aeec2e0dc50aca1b61ecb8ca735590c5510938ab5085b711b0",
+        "identical": true
+      },
+      "docs/OWN_HINTS_OWNER_APPROVAL.json": {
+        "before": "50ea8dd86af6a32a13165e21378273b9734557f6980cc5ccea518a7d04e3e128",
+        "after": "50ea8dd86af6a32a13165e21378273b9734557f6980cc5ccea518a7d04e3e128",
+        "identical": true
+      },
+      "docs/OWN_HINTS_MANUAL_AUDIT.json": {
+        "before": "9f6bec48459ef460fab2d11f50745bf74db9c0322d4571f5092f1378daedaff1",
+        "after": "9f6bec48459ef460fab2d11f50745bf74db9c0322d4571f5092f1378daedaff1",
+        "identical": true
+      },
+      "tools/owned_hint_index.json": {
+        "before": "81d4c21302c54a969466c289fa950e7d255d3eb35a5b7bb641b4f8facb392335",
+        "after": "81d4c21302c54a969466c289fa950e7d255d3eb35a5b7bb641b4f8facb392335",
+        "identical": true
+      }
+    },
+    "packages": [
+      {
+        "path": "app/build/outputs/apk/debug/app-debug.apk",
+        "bytes": 13243940,
+        "sha256": "231cf5ea662da64e1addf3694036ae1b414d48da12a908614a8c08c810b021db",
+        "forbidden_members": [],
+        "assets": [
+          {
+            "path": "assets/Apache-2.0.txt",
+            "bytes": 11358,
+            "compressed_bytes": 4430
+          },
+          {
+            "path": "assets/CC-BY-SA-4.0.txt",
+            "bytes": 20138,
+            "compressed_bytes": 7186
+          },
+          {
+            "path": "assets/LIBRARY_NOTICES.txt",
+            "bytes": 30171,
+            "compressed_bytes": 7151
+          },
+          {
+            "path": "assets/LICENSE",
+            "bytes": 1127,
+            "compressed_bytes": 704
+          },
+          {
+            "path": "assets/RUNTIME_LIBRARIES.json",
+            "bytes": 59398,
+            "compressed_bytes": 10740
+          },
+          {
+            "path": "assets/campaign.json",
+            "bytes": 9651,
+            "compressed_bytes": 1714
+          },
+          {
+            "path": "assets/levels.json",
+            "bytes": 4896,
+            "compressed_bytes": 1129
+          },
+          {
+            "path": "assets/word_sources.jsonl",
+            "bytes": 3794190,
+            "compressed_bytes": 542258
+          },
+          {
+            "path": "assets/words.txt",
+            "bytes": 330018,
+            "compressed_bytes": 100158
+          },
+          {
+            "path": "assets/THIRD_PARTY_NOTICES.txt",
+            "bytes": 7547,
+            "compressed_bytes": 3371
+          },
+          {
+            "path": "assets/owned_riddles.json",
+            "bytes": 1666,
+            "compressed_bytes": 830
+          }
+        ],
+        "riddles_count": 11
+      },
+      {
+        "path": "app/build/outputs/apk/release/app-release-unsigned.apk",
+        "bytes": 2673081,
+        "sha256": "fe50a8b8f7792eb26782bbc68d0515eeb07f91d1fe0a10110b0581130841a416",
+        "forbidden_members": [],
+        "assets": [
+          {
+            "path": "assets/dexopt/baseline.prof",
+            "bytes": 8244,
+            "compressed_bytes": 8244
+          },
+          {
+            "path": "assets/dexopt/baseline.profm",
+            "bytes": 1519,
+            "compressed_bytes": 1519
+          },
+          {
+            "path": "assets/Apache-2.0.txt",
+            "bytes": 11358,
+            "compressed_bytes": 3949
+          },
+          {
+            "path": "assets/CC-BY-SA-4.0.txt",
+            "bytes": 20138,
+            "compressed_bytes": 6198
+          },
+          {
+            "path": "assets/LIBRARY_NOTICES.txt",
+            "bytes": 30171,
+            "compressed_bytes": 6103
+          },
+          {
+            "path": "assets/LICENSE",
+            "bytes": 1127,
+            "compressed_bytes": 695
+          },
+          {
+            "path": "assets/RUNTIME_LIBRARIES.json",
+            "bytes": 59398,
+            "compressed_bytes": 9155
+          },
+          {
+            "path": "assets/THIRD_PARTY_NOTICES.txt",
+            "bytes": 7547,
+            "compressed_bytes": 2963
+          },
+          {
+            "path": "assets/campaign.json",
+            "bytes": 9651,
+            "compressed_bytes": 1367
+          },
+          {
+            "path": "assets/levels.json",
+            "bytes": 4896,
+            "compressed_bytes": 896
+          },
+          {
+            "path": "assets/owned_riddles.json",
+            "bytes": 1666,
+            "compressed_bytes": 785
+          },
+          {
+            "path": "assets/word_sources.jsonl",
+            "bytes": 3794190,
+            "compressed_bytes": 412380
+          },
+          {
+            "path": "assets/words.txt",
+            "bytes": 330018,
+            "compressed_bytes": 79308
+          }
+        ],
+        "riddles_count": 11
+      },
+      {
+        "path": "app/build/outputs/bundle/release/app-release.aab",
+        "bytes": 4510923,
+        "sha256": "3af650df4b5f9bcd65bd1278e67589943954fea4b003543561b117e6360ecd0f",
+        "forbidden_members": [],
+        "assets": [
+          {
+            "path": "base/assets/Apache-2.0.txt",
+            "bytes": 11358,
+            "compressed_bytes": 3949
+          },
+          {
+            "path": "base/assets/CC-BY-SA-4.0.txt",
+            "bytes": 20138,
+            "compressed_bytes": 6198
+          },
+          {
+            "path": "base/assets/LIBRARY_NOTICES.txt",
+            "bytes": 30171,
+            "compressed_bytes": 6103
+          },
+          {
+            "path": "base/assets/LICENSE",
+            "bytes": 1127,
+            "compressed_bytes": 695
+          },
+          {
+            "path": "base/assets/RUNTIME_LIBRARIES.json",
+            "bytes": 59398,
+            "compressed_bytes": 9155
+          },
+          {
+            "path": "base/assets/THIRD_PARTY_NOTICES.txt",
+            "bytes": 7547,
+            "compressed_bytes": 2963
+          },
+          {
+            "path": "base/assets/campaign.json",
+            "bytes": 9651,
+            "compressed_bytes": 1367
+          },
+          {
+            "path": "base/assets/levels.json",
+            "bytes": 4896,
+            "compressed_bytes": 896
+          },
+          {
+            "path": "base/assets/owned_riddles.json",
+            "bytes": 1666,
+            "compressed_bytes": 785
+          },
+          {
+            "path": "base/assets/word_sources.jsonl",
+            "bytes": 3794190,
+            "compressed_bytes": 412380
+          },
+          {
+            "path": "base/assets/words.txt",
+            "bytes": 330018,
+            "compressed_bytes": 79308
+          }
+        ],
+        "riddles_count": 11
+      }
+    ],
+    "old_debug": {
+      "sha256": "8ecc829a70a60ca2aa4f3554d926d95091f3c4529e215f9c08e630f110c27ac4",
+      "bytes": 13777247
+    },
+    "saved_bytes": 533307
+  },
+  "riddles": [
+    {
+      "word": "артист",
+      "sha256": "c9b8984c48c407ef2dc4ec36b51d3fed57f63f9cc03fb6468cb4c4d9f682671f",
+      "roles": [
+        {
+          "level": 14,
+          "task": "l14-t4"
+        }
+      ],
+      "verbatim_approved": true
+    },
+    {
+      "word": "банк",
+      "sha256": "e71b218c912a04ca552dbfeaf0f53364f244e2d54cc2ce85074aff006499f006",
+      "roles": [
+        {
+          "level": 14,
+          "task": "l14-t4"
+        }
+      ],
+      "verbatim_approved": true
+    },
+    {
+      "word": "билет",
+      "sha256": "00502b29f77c4bd856879ddad25596a677dea728f2d2eeb40ed3846b2cd7b19c",
+      "roles": [
+        {
+          "level": 12,
+          "task": "l12-t4"
+        }
+      ],
+      "verbatim_approved": true
+    },
+    {
+      "word": "весна",
+      "sha256": "357cb5a9f1881845a26205b2117681d9e0b2f8a615834325f06fe95a6a137415",
+      "roles": [
+        {
+          "level": 13,
+          "task": "l13-t4"
+        }
+      ],
+      "verbatim_approved": true
+    },
+    {
+      "word": "десерт",
+      "sha256": "e7307e9c64fac5fdd5da64700faf03741d8338424bb3dedb0d47c48148baf25e",
+      "roles": [
+        {
+          "level": 11,
+          "task": "l11-t4"
+        }
+      ],
+      "verbatim_approved": true
+    },
+    {
+      "word": "ковер",
+      "sha256": "4a5fb5c8dd965c6067347b14dbdb9601b29ea04281c2a7f14ce051aa790b5583",
+      "roles": [
+        {
+          "level": 13,
+          "task": "l13-t4"
+        }
+      ],
+      "verbatim_approved": true
+    },
+    {
+      "word": "отель",
+      "sha256": "f7a395314daf41b746fbb6d1442bcbee21fcad27379d7334e7e2b1dbe6088d69",
+      "roles": [
+        {
+          "level": 11,
+          "task": "l11-t4"
+        }
+      ],
+      "verbatim_approved": true
+    },
+    {
+      "word": "проблема",
+      "sha256": "4629da32dc874ff607338f51251180043822b630c800451f46437c7b9f17c3f0",
+      "roles": [
+        {
+          "level": 12,
+          "task": "l12-t4"
+        }
+      ],
+      "verbatim_approved": true
+    },
+    {
+      "word": "работа",
+      "sha256": "ee22f3cf344a6476c1adbf8b75ac01c723597ef74c155a77ddb461be7ca4cd2f",
+      "roles": [
+        {
+          "level": 9,
+          "task": "l09-t4"
+        }
+      ],
+      "verbatim_approved": true
+    },
+    {
+      "word": "стадион",
+      "sha256": "8d643e46c877d5fbbef47aaec75ac72fbf968753586a6d3642159d4eb07ad669",
+      "roles": [
+        {
+          "level": 14,
+          "task": "l14-t4"
+        }
+      ],
+      "verbatim_approved": true
+    },
+    {
+      "word": "утро",
+      "sha256": "6c22f6109217d8603e9589ccc112b9fd96d99238c875240c585ab9dc09ca456b",
+      "roles": [
+        {
+          "level": 10,
+          "task": "l10-t4"
+        }
+      ],
+      "verbatim_approved": true
+    }
+  ],
+  "device": {
+    "before": {
+      "files/datastore/progress.preferences_pb": {
+        "bytes": 292,
+        "sha256": "b84d5e2cf95498c8697d217f5a7295e0921f204d506da059da2c984898b20531"
+      },
+      "databases/definitions.db": {
+        "bytes": 1822720,
+        "sha256": "ffe5e6f66298610ef239863bc9583512344e42da0229f90ca0c6fb6aaf6f9688"
+      }
+    },
+    "after": {
+      "files/datastore/progress.preferences_pb": {
+        "bytes": 292,
+        "sha256": "b84d5e2cf95498c8697d217f5a7295e0921f204d506da059da2c984898b20531"
+      },
+      "databases/definitions.db": {
+        "bytes": 1822720,
+        "sha256": "ffe5e6f66298610ef239863bc9583512344e42da0229f90ca0c6fb6aaf6f9688"
+      }
+    },
+    "identical": true
+  },
+  "ignored_local_caches": [
+    {
+      "path": ".local/data01-repeat-fresh/definitions/builds/b155e8d7114edc0e7aeaca5414f43b7a9a2bb6d240efbe44bd6a642b99908514/definitions.db",
+      "bytes": 17223680,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/owned-hints-toolchain/lib/libsqlite3.so.0",
+      "bytes": 1358520,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/data01-cache/definitions/builds/b155e8d7114edc0e7aeaca5414f43b7a9a2bb6d240efbe44bd6a642b99908514/definitions.db",
+      "bytes": 17223680,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/data01-cache/definitions/builds/fd642e059c8cd8c31d8fd90c0c8a1e213016a7eb7c3b45dc5d3a3d248be87d02/definitions.db",
+      "bytes": 17223680,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/data01-cache/installed-baseline/definitions.db",
+      "bytes": 19214336,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/data01-oc-cache/definitions/builds/b155e8d7114edc0e7aeaca5414f43b7a9a2bb6d240efbe44bd6a642b99908514/definitions.db",
+      "bytes": 17223680,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/data01-oc-cache/definitions/builds/93d1d9d9bc121c83f76e2d821227f430c2b6025a8b068fb2993af95856045f0c/definitions.db",
+      "bytes": 17223680,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/data01-oc-cache/definitions/builds/43b5db36c625bf3e84c4cab3d0601725416a5777f8b3077e26c826fe50b01fa9/definitions.db",
+      "bytes": 17223680,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/data01-oc-cache/definitions/builds/3a5232163798a16552ceb250e341c1a0340974d1a4a7c4c6dc51b71d66ee43d4/definitions.db",
+      "bytes": 17223680,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/data01-oc-cache/installed-baseline/definitions.db",
+      "bytes": 19214336,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/data01-oc-cache/runs/cf75f869bf83b072307937fe17b35e6f9cc3d914e96fd80bd7cf3994cc206b05/round-01/package/definitions.db",
+      "bytes": 17223680,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/data01-oc-cache/runs/5af0b463581cb06ea99596aa40362a009d5b84a6342c865fb9e2269d9d94b595/round-01/package/definitions.db",
+      "bytes": 17223680,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/data01-oc-cache/runs/eb80087458575123948d8906124891bf24f3ff181c0dfac2f12b25cfed4b773e/round-01/package/definitions.db",
+      "bytes": 17223680,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/data01-oc-cache/runs/624d498a5194a0307b561ea68be633d7af179ed0bd543e570710b1a6ed7b3c8e/round-01/package/definitions.db",
+      "bytes": 17223680,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/short15-05-rollback-data/definitions.db",
+      "bytes": 17223680,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/short15-rollback-v1-data/definitions.db",
+      "bytes": 19214336,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/ui-hang-20261116/gradle-report/com.example.sostavslova.data.SqliteDefinitionsRepositoryTest.html",
+      "bytes": 3449,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/gradle-report/debug/com.example.sostavslova.data.SqliteDefinitionsRepositoryTest.html",
+      "bytes": 3448,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-readsFormsAndNearestCognatesFromWordMetadata.txt",
+      "bytes": 1218,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-categorySchemaV8ReplacesInstalledV7AndPreservesDefinitionMetadata.txt",
+      "bytes": 2181,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-sourceIsReadFromNewSchemaWithoutLosingOtherFields.txt",
+      "bytes": 2604,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-bundleWithoutDefinitionsDoesNotExposeOldInstalledCopy.txt",
+      "bytes": 743,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-realAssetContainsOnlyMinimalOwnedHints.txt",
+      "bytes": 2067,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-absentDefinitionsReturnFalseAndEmptyListWithoutCreatingDatabase.txt",
+      "bytes": 885,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-normalizedQueriesPreservePlainTextAndCopyAssetOnceOffMain.txt",
+      "bytes": 1648,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-missingAssetIsAlsoSafeWhenBuildFlagIsTrue.txt",
+      "bytes": 585,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-upgradeRemovesInstalledCopyWhenCurrentAssetIsMissing.txt",
+      "bytes": 961,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-categoriesAreOptionalNormalizedAndIndependentOfDefinitions.txt",
+      "bytes": 1479,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-bundledContentReplacesEvenHigherInstalledVersion.txt",
+      "bytes": 1206,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-upgradeToRealAssetReplacesSameOrHigherVersionAndEveryOldText.txt",
+      "bytes": 1829,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-bundledDictionaryUsesOpenSourceOrRemainsOptional.txt",
+      "bytes": 1403,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-oldSchemaWithoutMetadataDoesNotBreakDefinitions.txt",
+      "bytes": 1316,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/pre04-17/results/debug/2201117SY - 13/logcat-com.example.sostavslova.data.SqliteDefinitionsRepositoryTest-newerBundledUserVersionReplacesInstalledDatabase.txt",
+      "bytes": 1352,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": ".local/v2-cache/installed-baseline/definitions.db",
+      "bytes": 19214336,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": "tools/cache/local_definitions/builds/016b4ce7315595121f9a20ec8dc438ac99c2e3dede710f82b13c0f291d9d14ef/definitions.db",
+      "bytes": 19193856,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": "tools/cache/local_definitions/builds/106b79b09b43b3654e8d726621451c7bf7d4492d0e90e76ddc4be3840f37c10f/definitions.db",
+      "bytes": 17240064,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": "tools/cache/local_definitions/builds/2618898b919cd9b7265fb0405ac7cd0a16920f60b15743fa130c980a44e6e6c3/definitions.db",
+      "bytes": 19189760,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": "tools/cache/local_definitions/builds/98950fb3ff46362c8ce15b4deb21df2acfbeaeb326f58635e6ed6183b3b70516/definitions.db",
+      "bytes": 19214336,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": "tools/cache/local_definitions/builds/6e933b6ba19345c9f08aa6cdfe4906bbd73660742af7ff5378b7f58772c4c9e6/definitions.db",
+      "bytes": 19214336,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": "tools/cache/local_definitions/builds/34f84b3313794a7c79a26c9cd5f0a800cfd1dc376872434f9267d5fa4bdcd4ae/definitions.db",
+      "bytes": 17235968,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    },
+    {
+      "path": "tools/cache/builds/46e1b36748f26d06aedb4d7d5a5d16f12c3d5fcd83441669989b43e7c98447be/definitions.db",
+      "bytes": 11538432,
+      "classification": "ignored local cache; not a build/generator input after JSON conversion"
+    }
+  ],
+  "residual_matches": [
+    {
+      "path": "README.md",
+      "classification": "link to migration report",
+      "count": 1
+    },
+    {
+      "path": "docs/ANDROID_UI_HANG_DIAGNOSIS.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "docs/CAMPAIGN.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 4
+    },
+    {
+      "path": "docs/CAMPAIGN_REVIEW.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 8
+    },
+    {
+      "path": "docs/CORE_CAMPAIGN.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "docs/CUR03_ACCEPTANCE.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 5
+    },
+    {
+      "path": "docs/DATA_PIPELINE_V2.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "docs/DEFINITIONS_POLICY.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 2
+    },
+    {
+      "path": "docs/DICTIONARY_CLEANUP.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "docs/LCH01_REPORT.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "docs/LCH03_REPORT.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 7
+    },
+    {
+      "path": "docs/LEVEL_HINTS.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "docs/LOCAL_DEFINITIONS.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 2
+    },
+    {
+      "path": "docs/OWN_HINTS_LICENSE_RELEASE_AUDIT.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 7
+    },
+    {
+      "path": "docs/OWN_HINTS_MANUAL_AUDIT.json",
+      "classification": "immutable historical rights evidence; exact file hash is validated",
+      "count": 1
+    },
+    {
+      "path": "docs/OWN_HINTS_MANUAL_AUDIT.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "docs/OWN_HINTS_SCOPE.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "docs/OWN_HINTS_TOOLCHAIN.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "docs/OWN_HINTS_VERIFICATION.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "docs/PRE_RELEASE_ANDROID_QA.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 2
+    },
+    {
+      "path": "docs/PROJECT_STATUS.md",
+      "classification": "link to migration report",
+      "count": 1
+    },
+    {
+      "path": "docs/RELEASE_RIGHTS_DECISION.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 24
+    },
+    {
+      "path": "docs/RIGHTS02_REPORT.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "docs/RIGHTS03_REPORT.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 2
+    },
+    {
+      "path": "docs/RIGHTS_RELEASE_AUDIT.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 3
+    },
+    {
+      "path": "docs/SELECTIVE_CAMPAIGN.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 10
+    },
+    {
+      "path": "docs/SHORT15_05_REPORT.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 6
+    },
+    {
+      "path": "docs/SHORT15_INSTALL.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "docs/SHORT15_RELEASE_GATE.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 5
+    },
+    {
+      "path": "docs/SQLITE_REPRODUCIBILITY_AUDIT.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 47
+    },
+    {
+      "path": "docs/audits/LCH04_PACKAGE_INVENTORY.json",
+      "classification": "historical evidence; not an active build input",
+      "count": 5
+    },
+    {
+      "path": "docs/audits/SQLITE_REMOVAL_BEFORE.json",
+      "classification": "historical evidence; not an active build input",
+      "count": 584
+    },
+    {
+      "path": "docs/decisions/2026-11-06-provisional-definitions.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "docs/qa/pre04-17/coverage.json",
+      "classification": "historical evidence; not an active build input",
+      "count": 61
+    },
+    {
+      "path": "docs/qa/pre04-17/junit.xml",
+      "classification": "historical evidence; not an active build input",
+      "count": 16
+    },
+    {
+      "path": "docs/uiux/SHORT15_REGRESSION.md",
+      "classification": "historical section/report or migration inventory; current contract linked explicitly",
+      "count": 1
+    },
+    {
+      "path": "orchestrator/PROGRESS.md",
+      "classification": "historical evidence; not an active build input",
+      "count": 2
+    },
+    {
+      "path": "orchestrator/TASKS.bak.md",
+      "classification": "historical evidence; not an active build input",
+      "count": 16
+    },
+    {
+      "path": "tools/audit_public_package.py",
+      "classification": "negative guard/test; rejects imports/binaries and never loads them",
+      "count": 2
+    },
+    {
+      "path": "tools/check_text_storage.py",
+      "classification": "negative guard/test; rejects imports/binaries and never loads them",
+      "count": 5
+    },
+    {
+      "path": "tools/tests/test_owned_riddles_portable.py",
+      "classification": "negative guard/test; rejects imports/binaries and never loads them",
+      "count": 2
+    },
+    {
+      "path": "tools/tests/test_text_storage_contract.py",
+      "classification": "negative guard/test; rejects imports/binaries and never loads them",
+      "count": 4
+    }
+  ],
+  "source_binary_matches": [],
+  "changed_paths": [
+    "M\t.gitignore",
+    "M\tAGENTS.md",
+    "M\tREADME.md",
+    "M\tapp/build.gradle.kts",
+    "M\tapp/src/androidTest/kotlin/com/example/sostavslova/data/CampaignProgressRepositoryTest.kt",
+    "M\tapp/src/androidTest/kotlin/com/example/sostavslova/data/LevelsRepositoryTest.kt",
+    "D\tapp/src/androidTest/kotlin/com/example/sostavslova/data/SqliteDefinitionsRepositoryTest.kt",
+    "M\tapp/src/androidTest/kotlin/com/example/sostavslova/di/AppContainerTest.kt",
+    "M\tapp/src/androidTest/kotlin/com/example/sostavslova/qa/CampaignJourneyStateTest.kt",
+    "M\tapp/src/androidTest/kotlin/com/example/sostavslova/qa/CampaignJourneyUiTest.kt",
+    "M\tapp/src/androidTest/kotlin/com/example/sostavslova/qa/QaCampaign.kt",
+    "M\tapp/src/androidTest/kotlin/com/example/sostavslova/ui/components/ComponentInteractionTest.kt",
+    "M\tapp/src/androidTest/kotlin/com/example/sostavslova/ui/components/ComponentLayoutTest.kt",
+    "M\tapp/src/androidTest/kotlin/com/example/sostavslova/ui/game/CampaignGameUiTest.kt",
+    "M\tapp/src/androidTest/kotlin/com/example/sostavslova/ui/game/GameLayoutTest.kt",
+    "M\tapp/src/androidTest/kotlin/com/example/sostavslova/ui/game/GameSubmissionUiTest.kt",
+    "M\tapp/src/androidTest/kotlin/com/example/sostavslova/ui/game/GameViewModelTest.kt",
+    "M\tapp/src/main/kotlin/com/example/sostavslova/WordsApplication.kt",
+    "M\tapp/src/main/kotlin/com/example/sostavslova/data/CampaignProgressDto.kt",
+    "D\tapp/src/main/kotlin/com/example/sostavslova/data/DefinitionsRepository.kt",
+    "D\tapp/src/main/kotlin/com/example/sostavslova/data/SqliteDefinitionsRepository.kt",
+    "M\tapp/src/main/kotlin/com/example/sostavslova/di/AppContainer.kt",
+    "D\tapp/src/main/kotlin/com/example/sostavslova/ui/components/DefinitionBlock.kt",
+    "M\tapp/src/main/kotlin/com/example/sostavslova/ui/game/CampaignTasks.kt",
+    "M\tapp/src/main/kotlin/com/example/sostavslova/ui/game/GameScreen.kt",
+    "M\tapp/src/main/kotlin/com/example/sostavslova/ui/game/GameViewModel.kt",
+    "M\tapp/src/main/kotlin/com/example/sostavslova/ui/screens/Screens.kt",
+    "M\tapp/src/main/res/values/strings.xml",
+    "M\tcore/src/main/kotlin/com/example/sostavslova/core/CampaignRules.kt",
+    "M\tcore/src/main/kotlin/com/example/sostavslova/core/HintLadder.kt",
+    "M\tcore/src/main/kotlin/com/example/sostavslova/core/HintRules.kt",
+    "M\tcore/src/test/kotlin/com/example/sostavslova/core/CampaignDatasetAudit.kt",
+    "M\tcore/src/test/kotlin/com/example/sostavslova/core/HintRulesTest.kt",
+    "M\tcore/src/test/kotlin/com/example/sostavslova/core/OwnedHintsTest.kt",
+    "D\tdata/definitions.db",
+    "M\tdata/manifest.json",
+    "M\tdocs/ANDROID_UI_HANG_DIAGNOSIS.md",
+    "M\tdocs/CAMPAIGN.md",
+    "M\tdocs/CAMPAIGN_REVIEW.md",
+    "M\tdocs/CORE_CAMPAIGN.md",
+    "M\tdocs/CUR03_ACCEPTANCE.md",
+    "M\tdocs/DATA_PIPELINE_V2.md",
+    "M\tdocs/DEFINITIONS_POLICY.md",
+    "M\tdocs/DICTIONARY_CLEANUP.md",
+    "M\tdocs/LCH01_REPORT.md",
+    "M\tdocs/LCH03_REPORT.md",
+    "M\tdocs/LEVEL_HINTS.md",
+    "M\tdocs/LOCAL_DEFINITIONS.md",
+    "M\tdocs/OWN_HINTS_LICENSE_RELEASE_AUDIT.md",
+    "M\tdocs/OWN_HINTS_MANUAL_AUDIT.md",
+    "M\tdocs/OWN_HINTS_SCOPE.md",
+    "M\tdocs/OWN_HINTS_TOOLCHAIN.md",
+    "M\tdocs/OWN_HINTS_VERIFICATION.md",
+    "M\tdocs/PRE_RELEASE_ANDROID_QA.md",
+    "M\tdocs/PROJECT_STATUS.md",
+    "M\tdocs/RELEASE_RIGHTS_DECISION.md",
+    "M\tdocs/RIGHTS02_REPORT.md",
+    "M\tdocs/RIGHTS03_REPORT.md",
+    "M\tdocs/RIGHTS_RELEASE_AUDIT.md",
+    "M\tdocs/SELECTIVE_CAMPAIGN.md",
+    "M\tdocs/SHORT15_05_REPORT.md",
+    "M\tdocs/SHORT15_INSTALL.md",
+    "M\tdocs/SHORT15_RELEASE_GATE.md",
+    "M\tdocs/SQLITE_REPRODUCIBILITY_AUDIT.md",
+    "M\tdocs/decisions/2026-11-06-provisional-definitions.md",
+    "M\tdocs/uiux/SHORT15_REGRESSION.md",
+    "M\tlegal/THIRD_PARTY_NOTICES.txt",
+    "M\ttools/apply_short15_balance.py",
+    "M\ttools/audit_public_package.py",
+    "M\ttools/build_campaign.py",
+    "M\ttools/build_dictionary.py",
+    "M\ttools/build_game_data.py",
+    "M\ttools/build_local_definitions.py",
+    "M\ttools/build_owned_hints.py",
+    "M\ttools/campaign_profiles.py",
+    "M\ttools/campaign_review_export.py",
+    "M\ttools/campaign_review_import.py",
+    "M\ttools/clean_dictionary.py",
+    "M\ttools/install_short15_package.py",
+    "M\ttools/owned_hints.py",
+    "M\ttools/owned_hints_rights.py",
+    "D\ttools/owned_hints_toolchain.json",
+    "D\ttools/owned_hints_toolchain.py",
+    "M\ttools/pick_level_words.py",
+    "D\ttools/prepare_owned_hints.py",
+    "M\ttools/prepare_v2.py",
+    "M\ttools/rebalance_campaign.py",
+    "M\ttools/tests/test_build_dictionary.py",
+    "M\ttools/tests/test_campaign_review_export.py",
+    "M\ttools/tests/test_campaign_review_import.py",
+    "M\ttools/tests/test_clean_dictionary.py",
+    "M\ttools/tests/test_game_data.py",
+    "M\ttools/tests/test_level_profiles.py",
+    "M\ttools/tests/test_local_definitions.py",
+    "M\ttools/tests/test_owned_hints_install.py",
+    "M\ttools/tests/test_owned_hints_owner_review.py",
+    "M\ttools/tests/test_owned_hints_rights.py",
+    "D\ttools/tests/test_owned_hints_toolchain.py",
+    "M\ttools/tests/test_prepare_v2.py",
+    "M\ttools/tests/test_public_package_audit.py",
+    "M\ttools/tests/test_rights_release_gate.py",
+    "M\ttools/tests/test_short15_balance.py",
+    "M\ttools/tests/test_short15_install.py",
+    "M\ttools/validate_campaign.py"
+  ],
+  "new_paths": [
+    "app/src/androidTest/kotlin/com/example/sostavslova/data/CampaignJsonUpgradeTest.kt",
+    "app/src/androidTest/kotlin/com/example/sostavslova/data/JsonRiddlesRepositoryTest.kt",
+    "app/src/androidTest/kotlin/com/example/sostavslova/ui/game/OwnedRiddlesUiTest.kt",
+    "app/src/main/kotlin/com/example/sostavslova/data/RiddlesRepository.kt",
+    "core/src/test/kotlin/com/example/sostavslova/core/HintLadderTest.kt",
+    "core/src/test/kotlin/com/example/sostavslova/core/OwnedRiddlesAssetTest.kt",
+    "data/owned_riddles.json",
+    "docs/audits/SQLITE_REMOVAL_BEFORE.json",
+    "tools/check_text_storage.py",
+    "tools/lexical_json.py",
+    "tools/owned_riddles_contract.json",
+    "tools/tests/test_owned_riddles_json.py",
+    "tools/tests/test_owned_riddles_portable.py",
+    "tools/tests/test_text_storage_contract.py"
+  ],
+  "platform_exception": {
+    "debug_dex_string_matches": 20,
+    "release_dex_string_matches": 0,
+    "artifacts": [
+      "androidx.core:core-ktx:1.13.1",
+      "androidx.core:core:1.13.1"
+    ],
+    "classes": [
+      "androidx/core/database/sqlite/SQLiteDatabaseKt",
+      "androidx/core/database/sqlite/SQLiteCursorCompat"
+    ],
+    "note": "Unused platform wrappers from unchanged AndroidX; no project calls, no engine or DB asset; R8 removes them in release."
+  }
+}

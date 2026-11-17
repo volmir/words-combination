@@ -25,9 +25,16 @@ object HintRules {
         return HintBudget(initial, normalizedFound(current).size / 4, current.hints.paidUnits)
     }
 
+    /** Чистое восстановление старого формата без изменения бюджета, ответов и звёзд. */
+    fun restore(current: CurrentCampaignLevel, words: Map<String, HintWordData> = emptyMap()): CurrentCampaignLevel {
+        val ladder = current.hints.ladder
+        val task = current.level.tasks.firstOrNull { it.id == ladder.target?.taskId }
+        return current.copy(hints = current.hints.copy(ladder = ladder.lettersOnly(task, words[ladder.target?.word]?.knownPositions.orEmpty())))
+    }
+
     /** Чтение при повороте/возврате: не выбирает цель и ничего не списывает. */
     fun currentStep(current: CurrentCampaignLevel): HintStep? =
-        current.hints.ladder.takeUnless { it.target?.word in normalizedFound(current) }?.shown?.lastOrNull()
+        restore(current).hints.ladder.takeUnless { it.target?.word in normalizedFound(current) }?.shown?.lastOrNull()
 
     /**
      * Ровно один явный запрос нового шага. Повторный вызов с возвращённым state —
@@ -41,7 +48,7 @@ object HintRules {
         random: Random = Random.Default,
     ): HintResult {
         val found = normalizedFound(current)
-        var hints = current.hints
+        var hints = restore(current, words).hints
         if (hints.ladder.target == null || hints.ladder.target.word in found) {
             val target = selectTarget(current, words, countMinLength, random)
             val ladder = if (target == null) HintLadder() else HintLadder.build(
@@ -56,9 +63,7 @@ object HintRules {
         val target = hints.ladder.target ?: return HintResult(state, null, HintStatus.NO_TARGET)
         val step = hints.ladder.steps.getOrNull(hints.ladder.nextStepIndex)
             ?: return HintResult(state, null, HintStatus.LADDER_COMPLETE)
-        val free = target.taskType == TaskType.T4 && step.stage in setOf(
-            HintStage.THEME, HintStage.DEFINITION, HintStage.LENGTH,
-        )
+        val free = target.taskType == TaskType.T4 && hints.ladder.nextStepIndex == 0 && step.stage != HintStage.ANSWER
         if (!free && budget(state).remaining == 0) return HintResult(state, null, HintStatus.BUDGET_EXHAUSTED)
         val next = hints.copy(
             ladder = hints.ladder.copy(

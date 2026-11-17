@@ -32,7 +32,7 @@ ARTIFACTS = (
     "word_sources.jsonl.gz",
     "levels.json",
     "golden_search.json",
-    "definitions.db",
+    "owned_riddles.json",
     "campaign.json",
     "manifest.json",
 )
@@ -144,13 +144,15 @@ def verify_package(package: Path) -> dict:
     for name, key in checks.items():
         if manifest.get(key) != sha256(package / name):
             raise ValueError(f"manifest.{key} не совпадает с {name}")
-    definitions = manifest.get("definitions") or {}
-    if (definitions.get("sha256") != sha256(package / "definitions.db") or
+    definitions = manifest.get("owned_riddles") or {}
+    if (definitions.get("sha256") != sha256(package / "owned_riddles.json") or
             definitions.get("dictionary_words_sha256") != manifest.get("sha256_words_txt")):
-        raise ValueError("definitions.db не связана с итоговым словарём")
+        raise ValueError("lexical_data.json не связана с итоговым словарём")
     if (manifest.get("source") or {}).get("license") != "CC-BY-SA-4.0":
         raise ValueError("Нет подтверждённой лицензии словаря")
 
+    from tools.build_owned_hints import verify
+    verify(package)
     validation = read_json(package / "validation_report.json")
     if (validation.get("schema") != "campaign-validation-v1" or validation.get("installable") is not True or
             validation.get("unreachable") or validation.get("balance_deviations") or
@@ -216,10 +218,12 @@ def verify_installed(directory: Path, manifest: dict | None = None) -> dict:
     ):
         if manifest.get(key) != sha256(directory / name):
             raise ValueError(f"Установленный {name} не совпадает с manifest")
-    definitions = manifest.get("definitions") or {}
-    if (definitions.get("sha256") != sha256(directory / "definitions.db") or
+    definitions = manifest.get("owned_riddles") or {}
+    if (definitions.get("sha256") != sha256(directory / "owned_riddles.json") or
             definitions.get("dictionary_words_sha256") != manifest.get("sha256_words_txt")):
-        raise ValueError("Установленная definitions.db не совпадает с manifest")
+        raise ValueError("Установленная lexical_data.json не совпадает с manifest")
+    from tools.build_owned_hints import verify
+    verify(directory)
     verify_campaign(read_json(directory / "campaign.json"))
     return manifest
 
@@ -276,7 +280,7 @@ def install(package: Path, output: Path, backup: Path, *, dry_run: bool = False)
         raise ValueError("--package и --out должны различаться")
     if (output / 'manifest.json').is_file():
         current = read_json(output / 'manifest.json')
-        if (current.get('definitions') or {}).get('rights_policy') == 'owned-minimal-hints-v1':
+        if current.get('owned_riddles'):
             from build_owned_hints import verify
             verify(info['package'])  # Reject old packages before backup or writes.
     already = False

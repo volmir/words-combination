@@ -10,11 +10,11 @@ import os
 import random
 import re
 import shutil
-import sqlite3
 import sys
 import tempfile
 from contextlib import contextmanager
 import fcntl
+import lexical_json
 from collections import Counter
 from pathlib import Path
 from urllib.parse import quote
@@ -30,7 +30,7 @@ TOOLS = ROOT / "tools"
 REJECT_CODES = {"not_noun", "proper_name", "abbreviation", "form_variant", "diminutive", "obsolete",
                 "dialect", "jargon", "slang", "neologism", "rare", "narrow_term", "compound", "offensive",
                 "typo", "low_familiarity"}
-ARTIFACTS = ("words.txt", "word_sources.jsonl.gz", "levels.json", "golden_search.json", "definitions.db", "manifest.json")
+ARTIFACTS = ("words.txt", "word_sources.jsonl.gz", "levels.json", "golden_search.json", "lexical_data.json", "manifest.json")
 
 
 def load_config(path):
@@ -419,59 +419,32 @@ def check_levels(sources, reference, reports):
                          str(Path(reports) / "unreachable_levels.json"))
 
 
-def build_database(path, rows, categories, metadata, version):
-    if path.exists():
-        path.unlink()
-    with sqlite3.connect(path) as db:
-        db.executescript("""
-            CREATE TABLE definitions(id INTEGER PRIMARY KEY, word TEXT NOT NULL, display TEXT NOT NULL,
-                ord INTEGER NOT NULL, text TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '',
-                antonym TEXT NOT NULL DEFAULT '', example TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '',
-                origin TEXT NOT NULL, category TEXT NOT NULL, guessable INTEGER NOT NULL CHECK(guessable IN (0,1)));
-            CREATE TABLE word_metadata(word TEXT PRIMARY KEY, category TEXT NOT NULL,
-                category_source TEXT NOT NULL DEFAULT 'unknown:legacy_input',
-                forms TEXT NOT NULL DEFAULT '[]', related TEXT NOT NULL DEFAULT '[]');
-            CREATE TABLE build_metadata(key TEXT PRIMARY KEY, value TEXT NOT NULL);
-            CREATE INDEX idx_definitions_word ON definitions(word);
-        """)
-        order = Counter()
-        for row in rows:
-            order[row["word"]] += 1
-            db.execute("INSERT INTO definitions(word,display,ord,text,source,origin,category,guessable) VALUES(?,?,?,?,?,?,?,?)",
-                       (row["word"], row["display"], order[row["word"]], row["text"], row["source"],
-                        row["origin"], row["category"], row["guessable"]))
-        for word, value in sorted(categories.items()):
-            info = value if isinstance(value, dict) else {"category": value}
-            db.execute("INSERT INTO word_metadata(word,category,category_source,forms,related) VALUES(?,?,?,?,?)",
-                       (word, info["category"], info.get("category_source", "unknown:legacy_input"),
-                        json.dumps(sorted(set(info.get("forms", []))), ensure_ascii=False),
-                        json.dumps(sorted(set(info.get("related", []))), ensure_ascii=False)))
-        db.executemany("INSERT INTO build_metadata VALUES(?,?)", sorted((key, str(value)) for key, value in metadata.items()))
-        db.execute("PRAGMA user_version = %d" % version)
-        db.commit()
-        db.execute("VACUUM")
+def build_lexical_data(path, rows, categories, metadata, version):
+    lexical_json.build(path, rows, categories, metadata, version)
 
 
-def validate_database(path, records, taxonomy, config):
-    with sqlite3.connect(path) as db:
-        if db.execute("PRAGMA integrity_check").fetchone()[0] != "ok" or db.execute("PRAGMA user_version").fetchone()[0] < 4:
-            raise ValueError("База повреждена или имеет старую схему")
-        seen = set()
-        for word, text, origin, source, category, guessable in db.execute("SELECT word,text,origin,source,category,guessable FROM definitions"):
-            if word not in records or category not in taxonomy or origin not in {"own", "wiktionary"} or guessable not in (0, 1):
-                raise ValueError("Нарушена целостность определения: " + word)
-            if origin == "wiktionary" and not source.startswith("https://ru.wiktionary.org/wiki/") or origin == "own" and source:
-                raise ValueError("Неверное происхождение определения: " + word)
-            record = records[word]
-            issues = definition_issues(word, text, record["forms"], [gloss["text"] for gloss in record["glosses"]], config,
-                                       wiktionary=origin == "wiktionary")
-            key = " ".join(fold(text).split())
-            if issues or key in seen:
-                raise ValueError("Определение не прошло ворота: " + word + " " + ",".join(issues))
-            seen.add(key)
-        for word, category in db.execute("SELECT word,category FROM word_metadata"):
-            if word not in records or category not in taxonomy:
-                raise ValueError("Неверная категория слова: " + word)
+def validate_lexical_data(path, records, taxonomy, config):
+    document = lexical_json.read(path)
+    if document["revision"] < 4:
+        raise ValueError("База повреждена или имеет старую схему")
+    seen = set()
+    for row in document["definitions"]:
+        word, text, origin, source, category, guessable = (row[k] for k in ("word", "text", "origin", "source", "category", "guessable"))
+        if word not in records or category not in taxonomy or origin not in {"own", "wiktionary"} or guessable not in (0, 1):
+            raise ValueError("Нарушена целостность определения: " + word)
+        if origin == "wiktionary" and not source.startswith("https://ru.wiktionary.org/wiki/") or origin == "own" and source:
+            raise ValueError("Неверное происхождение определения: " + word)
+        record = records[word]
+        issues = definition_issues(word, text, record["forms"], [gloss["text"] for gloss in record["glosses"]], config,
+                                   wiktionary=origin == "wiktionary")
+        key = " ".join(fold(text).split())
+        if issues or key in seen:
+            raise ValueError("Определение не прошло ворота: " + word + " " + ",".join(issues))
+        seen.add(key)
+    for word, info in document["word_metadata"].items():
+        category = info["category"]
+        if word not in records or category not in taxonomy:
+            raise ValueError("Неверная категория слова: " + word)
 
 
 def manifest_identity(manifest):
@@ -493,9 +466,8 @@ def audit_sample(candidate, output, reports, seed):
         binding = path.with_suffix(".csv.meta.json")
         if binding.exists() and json.loads(binding.read_text())["identity"] == identity and path.exists():
             return path
-    with sqlite3.connect(candidate / "definitions.db") as db:
-        rows = [dict(zip(("id", "word", "text", "origin", "source", "category", "guessable"), row)) for row in db.execute(
-            "SELECT id,word,text,origin,source,category,guessable FROM definitions ORDER BY id")]
+    rows = [{k: row[k] for k in ("id", "word", "text", "origin", "source", "category", "guessable")}
+            for row in lexical_json.read(candidate / "lexical_data.json")["definitions"]]
     selected = random.Random(seed).sample(rows, min(300, len(rows)))
     immutable = {str(row["id"]): json_digest({key: str(value) for key, value in row.items()}) for row in selected}
     write_csv(path, ["id", "word", "text", "origin", "source", "category", "guessable", "ok", "bad", "comment"],
@@ -567,10 +539,11 @@ def publish(candidate, output, artifacts=ARTIFACTS, *, expected_manifest_sha256=
             # publish() is also a byte-transaction primitive for non-dictionary
             # callers. Apply this guard only to a recognized dictionary manifest.
             try:
-                current_policy = (json.loads(current_manifest.read_text()).get('definitions') or {}).get('rights_policy')
+                current_document = json.loads(current_manifest.read_text())
+                current_policy = 'owned-riddles' if 'owned_riddles' in current_document else (current_document.get('definitions') or {}).get('rights_policy')
             except json.JSONDecodeError:
                 current_policy = None
-            if current_policy == 'owned-minimal-hints-v1':
+            if current_policy in {'owned-minimal-hints-v1', 'owned-riddles'}:
                 from tools.build_owned_hints import verify
                 verify(candidate)
         if expected_manifest_sha256 is not None:
@@ -630,11 +603,10 @@ def verify_audit(path, output, reviewer, overrides=TOOLS / "overrides", config=T
                       ("levels.json", "sha256_levels_json"), ("golden_search.json", "sha256_golden_search")):
         if dictionary.sha256_file(candidate / name) != manifest[key]:
             raise ValueError("Артефакты изменились после создания выборки")
-    if dictionary.sha256_file(candidate / "definitions.db") != binding["sha256_db"]:
+    if dictionary.sha256_file(candidate / "lexical_data.json") != binding["sha256_db"]:
         raise ValueError("База изменилась после создания выборки")
-    if (output / "definitions.db").exists() and dictionary.sha256_file(output / "definitions.db") != binding["sha256_db"]:
-        with sqlite3.connect(output / "definitions.db") as current, sqlite3.connect(candidate / "definitions.db") as proposed:
-            if current.execute("PRAGMA user_version").fetchone()[0] >= proposed.execute("PRAGMA user_version").fetchone()[0]:
+    if (output / "lexical_data.json").exists() and dictionary.sha256_file(output / "lexical_data.json") != binding["sha256_db"]:
+        if lexical_json.read(output / "lexical_data.json")["revision"] >= lexical_json.read(candidate / "lexical_data.json")["revision"]:
                 raise ValueError("Нельзя подтвердить устаревшую сборку поверх новой версии БД")
     seen, checked, bad = set(), 0, 0
     with path.open(encoding="utf-8", newline="") as source:
@@ -665,45 +637,15 @@ def verify_audit(path, output, reviewer, overrides=TOOLS / "overrides", config=T
 
 def require_release_audit(output, overrides=TOOLS / "overrides", config=TOOLS / "selection_config.json",
                           allow_unaudited=False):
-    database = output / "definitions.db"
-    if not database.exists():
-        manifest_path = output / 'manifest.json'
-        if (manifest_path.exists() and (json.loads(manifest_path.read_text()).get('definitions') or {}).get('rights_policy')
-                == 'owned-minimal-hints-v1'):
-            raise ValueError('Release заблокирован: отсутствуют обязательные загадки T4')
-        return {"release_audit": "no-database"}
-    manifest = json.loads((output / "manifest.json").read_text())
-    block = manifest.get("definitions") or {}
-    audit = block.get("audit") or {}
-    digest = dictionary.sha256_file(database)
-    if block.get("sha256") != digest:
-        raise ValueError("Release заблокирован: definitions.db изменена после генерации manifest")
-    if block.get('rights_policy') == 'owned-minimal-hints-v1':
-        from tools.build_owned_hints import verify
-        # Same evidence/state validator as install and verifyOwnedHints, including
-        # both human documents and reproducible owned-only database bytes.
-        verified = verify(output)
-        if verified['publication_status'] == 'approved':
-            return {'release_audit': 'ok', 'publishable': True}
-        raise ValueError('Release заблокирован: тексты/лицензия не утверждены владельцем либо не пройден полный ручной аудит; waiver недопустим')
-    findings = []
-    if block.get("rights_policy") not in {"own-generated-v1", "hybrid-v1"}:
-        findings.append("политика прав %s не подтверждена" % block.get("rights_policy"))
-    if (audit.get("passed") is not True or audit.get("database_sha256") != digest or
-            type(audit.get("checked")) is not int or type(audit.get("bad")) is not int or
-            audit.get("checked", 0) < 300 or not 0 <= audit.get("bad", -1) <= audit.get("checked", 0) * 0.03):
-        findings.append("ручной аудит определений не пройден (audit.passed=%s)" % audit.get("passed"))
-    if not findings:
-        verify_selection_inputs(manifest, overrides, config)
-        return {"release_audit": "ok", "publishable": True}
-    if not allow_unaudited:
-        raise ValueError("Release заблокирован: definitions.db не соответствует пройденному ручному аудиту")
+    if allow_unaudited:
+        raise ValueError('Release waiver is not supported')
+    from tools.build_owned_hints import verify
+    # Only exact approved runtime JSON is publishable. No legacy or waiver branch.
     try:
-        verify_selection_inputs(manifest, overrides, config)
-    except ValueError as error:
-        findings.append(str(error))
-    return {"release_audit": "owner-waiver-unaudited", "publishable": False,
-            "rights_policy": block.get("rights_policy"), "findings": findings}
+        verify(output)
+    except (ValueError, OSError, KeyError) as error:
+        raise ValueError('Release blocked: ' + str(error)) from error
+    return dict(release_audit='ok', publishable=True)
 
 
 def build_reference_data(args, manifest, input_sha, config, taxonomy, a, b, candidates, stage, reports, code_hash, protected):
@@ -733,12 +675,12 @@ def build_reference_data(args, manifest, input_sha, config, taxonomy, a, b, cand
     reasons = selection_reports(reports, records, decisions, selected, overrides, config)
     candidate = args.cache / "builds" / key
     candidate.mkdir(parents=True, exist_ok=True)
-    old_database = args.out / "definitions.db"
+    old_database = args.out / "lexical_data.json"
     previous_version, previous_content = 3, None
     if old_database.exists():
-        with sqlite3.connect(old_database) as db:
-            previous_version = db.execute("PRAGMA user_version").fetchone()[0]
-            previous_content = dict(db.execute("SELECT key,value FROM build_metadata")).get("content_sha256")
+        old = lexical_json.read(old_database)
+        previous_version = old["revision"]
+        previous_content = old["build_metadata"].get("content_sha256")
     state_path = candidate / "state.json"
     state = json.loads(state_path.read_text()) if state_path.exists() else {
         "date": args.generation_date or datetime.date.today().isoformat(), "version": 4}
@@ -749,25 +691,24 @@ def build_reference_data(args, manifest, input_sha, config, taxonomy, a, b, cand
     generator = {"provider": "local-dump", "model": None, "prompt_sha256": None, "date": state["date"]}
     rights_review = {"passed": False, "status": "unverified-provisional", "replacement_required": True,
                      "decision": "docs/decisions/2026-11-06-provisional-definitions.md"}
-    database = candidate / "definitions.db"
+    database = candidate / "lexical_data.json"
     metadata = {"content_sha256": key, "rights_policy": "wiktionary-provisional-v1", "source_sha256": input_sha,
                 "generator": json.dumps(generator, sort_keys=True), "rights_review": json.dumps(rights_review, sort_keys=True),
                 "selection_sha256": json_digest(config), "categories_sha256": json_digest(taxonomy),
                 "guessability_evaluated": "false"}
     rebuild = not database.exists()
     if not rebuild:
-        with sqlite3.connect(database) as db:
-            rebuild = db.execute("PRAGMA user_version").fetchone()[0] != state["version"]
+        rebuild = lexical_json.read(database)["revision"] != state["version"]
     if rebuild:
-        build_database(database, rows, dict.fromkeys(selected, "other"), metadata, state["version"])
-    validate_database(database, {word: records[word] for word in selected}, taxonomy, config)
+        build_lexical_data(database, rows, dict.fromkeys(selected, "other"), metadata, state["version"])
+    validate_lexical_data(database, {word: records[word] for word in selected}, taxonomy, config)
     (candidate / "words.txt").write_text("\n".join(sorted(selected)) + ("\n" if selected else ""), encoding="utf-8")
     sources = {word: records[word]["sources"] for word in selected}
     dictionary.write_word_sources(candidate / "word_sources.jsonl.gz", sources)
     definitions = {"rights_policy": "wiktionary-provisional-v1", "rights_review": rights_review,
                    "sha256": dictionary.sha256_file(database), "generator": generator,
                    "counts": {"own": 0, "wiktionary": len(rows)}, "audit": {"passed": False},
-                   "user_version": state["version"], "guessability_evaluated": False}
+                   "revision": state["version"], "guessability_evaluated": False}
     selection = {"mode": "definition-coverage-v1", "ai_used": False, "parameters": config,
                  "sha256": json_digest(config), "config_file_sha256": dictionary.sha256_file(args.config),
                  "corpus_sha256": b["source"]["sha256"] if b["source"]["kind"] == "corpus" else None,
@@ -787,7 +728,7 @@ def build_reference_data(args, manifest, input_sha, config, taxonomy, a, b, cand
                "rejected_by_reason": reasons, "source_sha256": input_sha, "database": str(database),
                "words_file": str(candidate / "words.txt"), "candidate_directory": str(candidate),
                "missing_protected_words": missing, "published": False,
-               "sizes": {name: (candidate / name).stat().st_size for name in ("words.txt", "definitions.db")}}
+               "sizes": {name: (candidate / name).stat().st_size for name in ("words.txt", "lexical_data.json")}}
     atomic_json(candidate / "prototype_metadata.json", {"definitions": definitions, "selection": selection, "summary": summary})
     write_csv(reports / "definition_failures.csv", ["word", "reason"],
               [{"word": word, "reason": reason} for word in sorted(candidates - selected)
@@ -823,12 +764,7 @@ def build_reference_data(args, manifest, input_sha, config, taxonomy, a, b, cand
 
 def run(args):
     if args.check_release:
-        result = require_release_audit(args.out, args.overrides, args.config,
-                                       getattr(args, "allow_unaudited_release", False))
-        if not result.get("publishable", True):
-            print("ВНИМАНИЕ: release собирается по явному решению владельца без ручного аудита прав "
-                  "определений. Публикация запрещена: " + "; ".join(result["findings"]), file=sys.stderr)
-        return result
+        return require_release_audit(args.out, args.overrides, args.config)
     if args.verify_audit:
         return verify_audit(args.verify_audit, args.out, args.reviewer, args.overrides, args.config)
     if getattr(args, "definitions_source", "own") == "clean":
@@ -1024,11 +960,11 @@ def run(args):
     candidate.mkdir(parents=True, exist_ok=True)
     state_path = candidate / "state.json"
     previous_version, previous_content = 3, None
-    old_database = args.out / "definitions.db"
+    old_database = args.out / "lexical_data.json"
     if old_database.exists():
-        with sqlite3.connect(old_database) as db:
-            previous_version = db.execute("PRAGMA user_version").fetchone()[0]
-            previous_content = dict(db.execute("SELECT key,value FROM build_metadata")).get("content_sha256")
+        old = lexical_json.read(old_database)
+        previous_version = old["revision"]
+        previous_content = old["build_metadata"].get("content_sha256")
     if state_path.exists():
         state = json.loads(state_path.read_text())
     else:
@@ -1044,20 +980,19 @@ def run(args):
                  "retry_prompt_sha256": [prompt_hash(prompt + "\n" + retry.replace("{attempt}", str(attempt)))
                                          for attempt in range(1, config["definition_retries"] + 1)],
                  "guess_prompt_sha256": prompt_hash(guess_prompt)}
-    database = candidate / "definitions.db"
+    database = candidate / "lexical_data.json"
     metadata = {"rights_policy": rights, "content_sha256": content, "generator": json.dumps(generator, sort_keys=True),
                 "source_sha256": input_sha, "selection_sha256": json_digest(config),
                 "own_license": "<ЛИЦЕНЗИЯ — решает владелец>", "categories_sha256": json_digest(taxonomy)}
     rebuild = not database.exists()
     if not rebuild:
-        with sqlite3.connect(database) as db:
-            rebuild = db.execute("PRAGMA user_version").fetchone()[0] != state["version"]
+        rebuild = lexical_json.read(database)["revision"] != state["version"]
     if rebuild:
-        build_database(database, rows, {word: answers[word]["category"] for word in selected}, metadata, state["version"])
-    validate_database(database, selected_records, taxonomy, config)
+        build_lexical_data(database, rows, {word: answers[word]["category"] for word in selected}, metadata, state["version"])
+    validate_lexical_data(database, selected_records, taxonomy, config)
     definitions = {"rights_policy": rights, "sha256": dictionary.sha256_file(database), "generator": generator,
                    "counts": dict(Counter(row["origin"] for row in rows)), "audit": {"passed": False},
-                   "user_version": state["version"]}
+                   "revision": state["version"]}
     definitions["counts"] = {origin: definitions["counts"].get(origin, 0) for origin in ("own", "wiktionary")}
     dictionary.write_game_data(candidate, sources, manifest["source"]["dump_date"], input_sha, definitions)
     generated = json.loads((candidate / "manifest.json").read_text())
@@ -1077,7 +1012,7 @@ def run(args):
                     "without_definition_fraction": len(selected - with_definitions) / max(1, len(selected)),
                     "definition_reasons": dict(Counter(reason for word in selected - with_definitions for reason in failures.get(word, ["missing"]))),
                     "guessable_zero_fraction": sum(not row["guessable"] for row in rows) / max(1, len(rows)),
-                    "sizes": {name: (candidate / name).stat().st_size for name in ("definitions.db", "words.txt")},
+                    "sizes": {name: (candidate / name).stat().st_size for name in ("lexical_data.json", "words.txt")},
                     "audit_sample": str(sample), "below_target_minimum": len(selected) < config["target_min_size"]})
     write_csv(reports / "definitions_rewrite_candidates.csv", ["word", "origin", "category", "text"],
               [{key: row[key] for key in ("word", "origin", "category", "text")} for row in rows if not row["guessable"]])
@@ -1122,15 +1057,12 @@ def main():
     parser.add_argument("--verify-audit", type=Path)
     parser.add_argument("--reviewer", default="")
     parser.add_argument("--check-release", action="store_true")
-    parser.add_argument("--allow-unaudited-release", action="store_true",
-                        help="Разрешить техническую release-сборку без ручного аудита прав "
-                             "по явному решению владельца; публикация остаётся запрещённой.")
     args = parser.parse_args()
     try:
         if args.generation_date:
             datetime.date.fromisoformat(args.generation_date)
         print(json.dumps(run(args), ensure_ascii=False, indent=2))
-    except (ValueError, OSError, KeyError, sqlite3.Error) as error:
+    except (ValueError, OSError, KeyError) as error:
         parser.exit(2, "Ошибка: %s\n" % error)
 
 

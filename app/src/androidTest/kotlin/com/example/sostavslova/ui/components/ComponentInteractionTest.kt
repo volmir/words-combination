@@ -10,7 +10,6 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.sostavslova.R
-import com.example.sostavslova.data.Definition
 import com.example.sostavslova.core.LengthStat
 import com.example.sostavslova.core.Statistics
 import com.example.sostavslova.nav.Destination
@@ -69,14 +68,6 @@ class ComponentInteractionTest {
     }
 
     @Test
-    fun definitionKeepsAngleBracketsNewlinesAndCanHideWordLabel() {
-        val text = "<органы управления>\nВторая строка"
-        compose.setContent { WordsTheme { DefinitionBlock(Definition("портал", text), labelWord = null) } }
-        compose.onNodeWithText(text).assertIsDisplayed()
-        compose.onNodeWithText("портал", substring = true).assertDoesNotExist()
-    }
-
-    @Test
     fun statisticsShowsTotalsAndPercentFromCore() {
         compose.setContent { WordsTheme { StatsTable(Statistics(listOf(LengthStat(3, 2, 10), LengthStat(4, 1, 12), LengthStat(5, 0, 6)))) } }
         compose.onNodeWithText("3 / 28").assertIsDisplayed()
@@ -95,24 +86,6 @@ class ComponentInteractionTest {
         compose.setContent { WordsTheme { FoundWords(listOf("пар", "порт")) } }
         compose.onNodeWithText("пар").assertIsDisplayed().assertHasNoClickAction()
         compose.onNodeWithText("порт").assertIsDisplayed().assertHasNoClickAction()
-    }
-
-    @Test
-    fun definitionShowsOriginalArticleUrl() {
-        val source = "https://ru.wiktionary.org/wiki/портал"
-        compose.setContent { WordsTheme { DefinitionBlock(Definition("портал", "Тест", source = source)) } }
-        compose.onNodeWithText("Источник: $source").assertIsDisplayed()
-    }
-
-    @Test
-    fun hintDoesNotLeakAnswerThroughSourceUrl() {
-        val source = "https://ru.wiktionary.org/wiki/портал"
-        compose.setContent {
-            WordsTheme { DefinitionBlock(Definition("портал", "Тест", source = source), labelWord = null) }
-        }
-        compose.onNodeWithText("Тест").assertIsDisplayed()
-        compose.onNodeWithText(source, substring = true).assertDoesNotExist()
-        compose.onNodeWithText("портал", substring = true).assertDoesNotExist()
     }
 
     @Test

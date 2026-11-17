@@ -328,11 +328,11 @@ class LocalPipelineTest(unittest.TestCase):
         pipe.install(installing)
         pipe.install(installing)
         self.assertEqual(ready, {n: (self.installed / n).read_bytes() for n in pipe.PACKAGE_ARTIFACTS})
-        # A new baseline must not increase user_version for identical final data.
-        before_db = (self.installed / 'definitions.db').read_bytes()
+        # A new baseline must not increase revision for identical final data.
+        before_db = (self.installed / 'lexical_data.json').read_bytes()
         self.args.cache = self.root / 'cache-after-install'
         pipe.prepare(self.args)
-        self.assertEqual(before_db, (self.args.package / 'definitions.db').read_bytes())
+        self.assertEqual(before_db, (self.args.package / 'lexical_data.json').read_bytes())
 
     def test_failed_rerun_and_corrupted_ready_package_preserve_working_data(self):
         pipe.prepare(self.args)
@@ -396,7 +396,7 @@ class LocalPipelineTest(unittest.TestCase):
     def test_updated_verified_dump_rebuilds_data_and_version_without_cache_cleanup(self):
         pipe.prepare(self.args)
         pipe.install(NS(package=self.args.package, out=self.installed, java='unavailable', jvm_classpath=None))
-        before = pipe.read_json(self.installed / 'manifest.json')['definitions']['user_version']
+        before = pipe.read_json(self.installed / 'manifest.json')['definitions']['revision']
         entries = [json.loads(line) for line in self.dump.read_text().splitlines()]
         next(row for row in entries if row['word'] == 'атом')['forms'] = [{'form': 'атома'}]
         self.dump.write_text('\n'.join(json.dumps(row, ensure_ascii=False) for row in entries))
@@ -408,7 +408,7 @@ class LocalPipelineTest(unittest.TestCase):
         updated = pipe.read_json(self.args.package / 'manifest.json')
         self.assertEqual('2026-11-02', updated['source']['dump_date'])
         self.assertEqual(pipe.sha(self.dump), updated['source']['sha256_input'])
-        self.assertEqual(before + 1, updated['definitions']['user_version'])
+        self.assertEqual(before + 1, updated['definitions']['revision'])
 
     def test_prepare_cannot_target_data_or_installed_directory(self):
         self.args.package = self.installed

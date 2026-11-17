@@ -14,6 +14,7 @@ outside the candidate and outside the database until a separate owner decision.
 from __future__ import annotations
 
 import argparse
+import lexical_json
 from collections import Counter
 from copy import deepcopy
 from hashlib import sha256
@@ -21,7 +22,6 @@ import json
 from pathlib import Path
 import posixpath
 import re
-import sqlite3
 import subprocess
 import sys
 from xml.etree import ElementTree as ET
@@ -214,13 +214,12 @@ def _prepare_hint():
     return prepare
 
 
-def _safe_hint_for_db(db: sqlite3.Connection, word: str):
+def _safe_hint_for_db(db: dict, word: str):
     """Return the first safe project hint for a word, or None."""
-    row = db.execute("SELECT forms,related FROM word_metadata WHERE word=?", (word,)).fetchone()
-    forms = _json_list(row["forms"]) if row is not None else []
-    related = _json_list(row["related"]) if row is not None else []
+    info = db["word_metadata"].get(word, {})
+    forms, related = info.get("forms", []), info.get("related", [])
     prepare = _prepare_hint()
-    for row in db.execute("SELECT text FROM definitions WHERE word=? ORDER BY ord,id", (word,)):
+    for row in (r for r in db["definitions"] if r["word"] == word):
         text = row["text"] or ""
         if not text:
             continue
@@ -230,14 +229,13 @@ def _safe_hint_for_db(db: sqlite3.Connection, word: str):
     return None
 
 
-def _validate_hint_text(db: sqlite3.Connection, word: str, text: str) -> str:
+def _validate_hint_text(db: dict, word: str, text: str) -> str:
     """Reject a hint that is unusable, contradictory or reveals its answer."""
     text = str(text).strip()
     if not text:
         raise ValueError("HINT_REPLACE: пустой текст подсказки")
-    row = db.execute("SELECT forms,related FROM word_metadata WHERE word=?", (word,)).fetchone()
-    forms = _json_list(row["forms"]) if row is not None else []
-    related = _json_list(row["related"]) if row is not None else []
+    info = db["word_metadata"].get(word, {})
+    forms, related = info.get("forms", []), info.get("related", [])
     prepare = _prepare_hint()
     safe = prepare(word, text, forms, related)
     if safe is None:
@@ -294,7 +292,7 @@ def _verify_inputs(root: Path, snapshot_path: Path, workbook_path: Path,
     files = {
         "campaign.json": data / "campaign.json",
         "words.txt": data / "words.txt",
-        "definitions.db": data / "definitions.db",
+        "owned_riddles.json": data / "owned_riddles.json",
         "manifest.json": data / "manifest.json",
     }
     for name, path in files.items():
@@ -317,7 +315,7 @@ def _verify_inputs(root: Path, snapshot_path: Path, workbook_path: Path,
     required_hashes = {
         "campaign.json": "campaign_sha256",
         "words.txt": "dictionary_sha256",
-        "definitions.db": "definitions_sha256",
+        "owned_riddles.json": "definitions_sha256",
         "manifest.json": "manifest_sha256",
     }
     for name, key in required_hashes.items():
@@ -351,12 +349,12 @@ def _verify_inputs(root: Path, snapshot_path: Path, workbook_path: Path,
     expected_words = manifest.get("sha256_words_txt")
     if expected_words and expected_words != hashes["words.txt"]:
         raise ValueError("SHA-256 words.txt расходится с manifest.sha256_words_txt")
-    definitions = manifest.get("definitions") or {}
+    definitions = manifest.get("owned_riddles") or manifest.get("definitions") or {}
     if not isinstance(definitions, dict):
         raise ValueError("manifest.definitions должен быть объектом")
     expected_database = definitions.get("sha256")
-    if expected_database and expected_database != hashes["definitions.db"]:
-        raise ValueError("SHA-256 definitions.db расходится с manifest.definitions.sha256")
+    if expected_database and expected_database != hashes["owned_riddles.json"]:
+        raise ValueError("SHA-256 lexical_data.json расходится с manifest.definitions.sha256")
     return hashes, manifest
 
 
@@ -392,7 +390,7 @@ def _validate_direct_identity(values: list[str], task: dict, level: dict) -> Non
 
 
 def _apply_edits(campaign: dict, snapshot: dict, rows: dict[int, list[str]],
-                 header_row: int, dictionary: set[str], db: sqlite3.Connection,
+                 header_row: int, dictionary: set[str], db: dict,
                  categories: dict[str, str], category_sources: dict[str, str],
                  defined: set[str]) -> tuple[dict, list, list, list, set[int]]:
     candidate = deepcopy(campaign)
@@ -570,7 +568,7 @@ def _apply_edits(campaign: dict, snapshot: dict, rows: dict[int, list[str]],
             review_flags.append({
                 "code": "hint_override_runtime_integration_required",
                 "task": task_id, "word": old,
-                "note": "Текст только в pending-файле; definitions.db и права не изменяются",
+                "note": "Текст только в pending-файле; lexical_data.json и права не изменяются",
             })
             before, after = old, new_raw
 
@@ -740,18 +738,12 @@ def _validate_candidate(campaign: dict, original_campaign: dict, dictionary: set
                         f"Уровень {number}: набор R не достигает задания {task['id']}")
 
 
-def _read_database(path: Path) -> tuple[sqlite3.Connection, dict[str, str],
-                                         dict[str, str], set[str]]:
-    connection = sqlite3.connect(Path(path).resolve().as_uri() + "?mode=ro", uri=True)
-    connection.row_factory = sqlite3.Row
-    categories = {row["word"]: row["category"]
-                  for row in connection.execute("SELECT word,category FROM word_metadata")}
-    category_sources = {row["word"]: row["category_source"]
-                        for row in connection.execute(
-                            "SELECT word,category_source FROM word_metadata")}
-    defined = {row[0] for row in connection.execute(
-        "SELECT DISTINCT word FROM definitions")}
-    return connection, categories, category_sources, defined
+def _read_database(path: Path) -> tuple[dict, dict[str, str], dict[str, str], set[str]]:
+    document = lexical_json.review_data(path)
+    categories = {w: i['category'] for w,i in document['word_metadata'].items()}
+    sources = {w: i['category_source'] for w,i in document['word_metadata'].items()}
+    defined = {r['word'] for r in document['definitions']}
+    return document, categories, sources, defined
 
 
 def _write_json(path: Path, value: object, *, sort_keys: bool = False) -> bytes:
@@ -854,13 +846,13 @@ def stage(root: Path, snapshot_path: Path, workbook_path: Path, out: Path,
                   (root / "data" / "words.txt").read_text(encoding="utf-8").splitlines()
                   if word_norm(line)}
     db, categories, category_sources, defined = _read_database(
-        root / "data" / "definitions.db")
+        root / "data" / "owned_riddles.json")
     try:
         candidate, applied, flags, hints, affected = _apply_edits(
             campaign, snapshot, rows, header_row, dictionary, db, categories,
             category_sources, defined)
     finally:
-        db.close()
+        pass  # Plain immutable JSON has no connection to close.
 
     if applied and candidate != campaign:
         # The real DB is needed for changed targets' hints during _apply_edits;
@@ -948,7 +940,7 @@ def main(argv: list[str] | None = None) -> int:
             validator=args.validator,
         )
     except (OSError, ValueError, KeyError, TypeError, IndexError,
-            sqlite3.Error, BadZipFile) as error:
+            BadZipFile) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 2
     root = args.root.resolve()

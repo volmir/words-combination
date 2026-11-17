@@ -7,7 +7,6 @@ import hashlib
 import json
 import random
 import re
-import sqlite3
 from collections import Counter
 from functools import lru_cache
 from pathlib import Path
@@ -498,8 +497,8 @@ def run(args):
     generated["levels_source"]["replacements"] = changes
     atomic_json(candidate / "manifest.json", generated)
     if not args.prepare_only:
-        if (args.out / "definitions.db").exists():
-            raise ValueError("В --out уже есть definitions.db; требуется отдельная фильтрация базы определений")
+        if (args.out / "lexical_data.json").exists():
+            raise ValueError("В --out уже есть lexical_data.json; требуется отдельная фильтрация базы определений")
         publish(candidate, args.out, ARTIFACTS)
         summary["published"] = True
     summary.update(status="prepared" if args.prepare_only else "built", levels=changes,
@@ -526,7 +525,7 @@ def main():
     args = parser.parse_args()
     try:
         print(json.dumps(run(args), ensure_ascii=False, indent=2))
-    except (ValueError, OSError, KeyError, sqlite3.Error) as error:
+    except (ValueError, OSError, KeyError) as error:
         parser.exit(2, "Ошибка: %s\n" % error)
 
 

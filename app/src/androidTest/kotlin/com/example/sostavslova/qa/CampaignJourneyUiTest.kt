@@ -56,9 +56,9 @@ class CampaignJourneyUiTest {
     private lateinit var back: OnBackPressedDispatcher
     private lateinit var activity: Activity
 
-    private fun begin(meanings: QaCampaign.Meanings = QaCampaign.Meanings.SAFE, fullApp: Boolean = false) {
+    private fun begin(fullApp: Boolean = false) {
         file = File(temporary.root, "qa.preferences_pb")
-        container = QaCampaign.container(file, meanings).also { containers.add(it) }
+        container = QaCampaign.container(file).also { containers.add(it) }
         mounted.value = container
         compose.setContent {
             mounted.value?.let { current -> key(current) {
@@ -191,8 +191,8 @@ class CampaignJourneyUiTest {
     }
 
     @Test fun newInstallToFinaleRestartAndAllStars() = runTest {
-        // SAFE содержит тему, но определение Wiktionary исключается: проверяем fallback.
-        begin(QaCampaign.Meanings.SAFE)
+        // Текст загадки не раскрывает буквы: три оплачиваемых действия с первой бесплатной ступенью.
+        begin()
         assertEquals(1, saved().highestUnlockedLevel)
         val clean = saved()
         for (number in 2..3) {
@@ -206,8 +206,8 @@ class CampaignJourneyUiTest {
         }
         open(1, explanationExpected = true)
         assertTrue(setOf(TaskType.T1, TaskType.T2, TaskType.T4).all { it in saved().seenExplanations })
-        val stages = listOf(HintStage.THEME, HintStage.LENGTH, HintStage.FIRST_LETTER, HintStage.ANSWER)
-        val paidUnits = listOf(0, 0, 1, 2)
+        val stages = listOf(HintStage.FIRST_LETTER, HintStage.PATTERN, HintStage.ANSWER)
+        val paidUnits = listOf(0, 1, 2)
         compose.onNodeWithText("кот").assertDoesNotExist()
         stages.forEachIndexed { step, stage ->
             compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
@@ -223,7 +223,7 @@ class CampaignJourneyUiTest {
             assertEquals(stage, hints.ladder.stage)
             assertEquals(paidUnits[step], hints.paidUnits)
             compose.onNodeWithTag("game_hint_stage").performScrollTo()
-                .assertTextEquals("Подсказка · открыто ${step + 1} из 4 частей")
+                .assertTextEquals("Подсказка · открыто ${step + 1} из 3 частей")
             compose.onNodeWithTag("game_hint_part_${step + 1}").assertExists()
             compose.onNodeWithTag("game_hint_part_${step + 2}").assertDoesNotExist()
             if (stage != HintStage.ANSWER) {
@@ -240,7 +240,7 @@ class CampaignJourneyUiTest {
         restart()
         assertEquals(hinted, saved())
         open(1, explanationExpected = false)
-        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 4 из 4 частей")
+        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 3 из 3 частей")
         val campaign = requireNotNull(container.levelsRepository.getCampaign())
         val current = requireNotNull(CampaignRules.openLevel(campaign, saved(), 1, container.wordRepository.requireIndex()))
         assertEquals(3, HintRules.budget(current).remaining)
@@ -308,12 +308,11 @@ class CampaignJourneyUiTest {
         answer("кот", 1)
     }
 
-    @Test fun t4RemainsPlayableWithoutDatabase() = fallback(QaCampaign.Meanings.ABSENT)
-    @Test fun t4RemainsPlayableWhenEveryDefinitionIsFiltered() = fallback(QaCampaign.Meanings.FILTERED)
+    @Test fun t4UsesRiddleTextAndItsFirstLetterHintIsFree() = exactRiddle()
 
-    private fun fallback(meanings: QaCampaign.Meanings) = runTest {
-        begin(meanings); open(1)
-        compose.onNodeWithText("Слово из 3 букв, начинается на «К»").performScrollTo().assertIsDisplayed()
+    private fun exactRiddle() = runTest {
+        begin(); open(1)
+        compose.onNodeWithText("Синтетическое существо для проверки игрового сценария.").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("кот").assertDoesNotExist()
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled().performClick()
         awaitTag("game_hint_part_1")

@@ -6,11 +6,11 @@ import android.util.Log
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.example.sostavslova.BuildConfig
-import com.example.sostavslova.data.DefinitionsRepository
+import com.example.sostavslova.data.RiddlesRepository
 import com.example.sostavslova.data.LevelsRepository
 import com.example.sostavslova.data.PlayTimeRepository
 import com.example.sostavslova.data.ProgressRepository
-import com.example.sostavslova.data.SqliteDefinitionsRepository
+import com.example.sostavslova.data.JsonRiddlesRepository
 import com.example.sostavslova.data.WordRepository
 import com.example.sostavslova.data.readInstallEvidence
 import com.example.sostavslova.time.PlayTimeTracker
@@ -23,7 +23,7 @@ class AppContainer(
     context: Context,
     readCampaign: (suspend () -> String?)? = null,
     words: WordRepository? = null,
-    definitions: DefinitionsRepository? = null,
+    riddles: RiddlesRepository? = null,
     progressFile: (() -> File)? = null,
 ) {
     private val appContext = context.applicationContext
@@ -42,7 +42,9 @@ class AppContainer(
         },
         expectedCampaignSha256 = if (readCampaign == null) BuildConfig.CAMPAIGN_SHA256.takeIf { it.isNotBlank() } else null,
     )
-    val definitionsRepository: DefinitionsRepository = definitions ?: SqliteDefinitionsRepository(appContext)
+    val riddlesRepository: RiddlesRepository = riddles ?: JsonRiddlesRepository(
+        readAsset = { appContext.assets.open("owned_riddles.json").use { it.readBytes() } },
+    )
 
     private val progressFileProvider = progressFile ?: { appContext.preferencesDataStoreFile("progress") }
 

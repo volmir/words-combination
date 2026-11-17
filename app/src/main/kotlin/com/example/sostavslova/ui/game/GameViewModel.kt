@@ -5,17 +5,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.R
-import com.example.sostavslova.core.HintWordData
-import com.example.sostavslova.core.HintCategory
-import com.example.sostavslova.core.HintStage
-import com.example.sostavslova.data.CategoryNames
 import com.example.sostavslova.core.Campaign
 import com.example.sostavslova.core.CampaignSummary
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.TaskRules
 import com.example.sostavslova.core.TaskProgress
 import com.example.sostavslova.core.TaskType
-import com.example.sostavslova.core.HintText
 import com.example.sostavslova.core.CampaignLevelProgress
 import com.example.sostavslova.core.HintStep
 import com.example.sostavslova.core.HintRules
@@ -26,14 +21,12 @@ import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.data.LevelRouteRules
 import com.example.sostavslova.core.Alphabet
 import com.example.sostavslova.core.AnswerResult
-import com.example.sostavslova.core.DefinitionHint
 import com.example.sostavslova.core.Submission
 import com.example.sostavslova.core.GameState
 import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.core.Statistics
-import com.example.sostavslova.data.Definition
-import com.example.sostavslova.data.DefinitionsRepository
+import com.example.sostavslova.data.RiddlesRepository
 import com.example.sostavslova.data.LevelsRepository
 import com.example.sostavslova.data.ProgressRepository
 import com.example.sostavslova.data.WordRepository
@@ -82,11 +75,10 @@ internal fun submissionMessage(submission: Submission, answer: String, threeLett
 
 enum class GameDialog { Statistics, Tasks }
 
-data class GameHint(val length: Int, val firstLetter: String, val definitions: List<Definition>)
+data class GameHint(val length: Int, val firstLetter: String)
 
 // Только безопасный текст и открытая часть слова; полного ответа в UI-модели загадки нет.
-data class RiddleUiState(val text: String?, val length: Int, val firstLetter: String, val solved: Boolean = false,
-    val wiktionary: Boolean = false)
+data class RiddleUiState(val text: String, val solved: Boolean = false)
 
 data class GameUiState(
     val loading: Boolean = true,
@@ -110,7 +102,6 @@ data class GameUiState(
     val campaignHints: List<HintStep> = emptyList(),
     val hintCost: Int? = null,
     val hintRemaining: Int = 0,
-    val hintFallback: Boolean = false,
     val hintLoading: Boolean = false,
     val dialog: GameDialog? = null,
     val returnLevels: Boolean = false,
@@ -127,10 +118,9 @@ class GameViewModel(
     private val words: WordRepository,
     private val levels: LevelsRepository,
     private val progress: ProgressRepository,
-    private val definitions: DefinitionsRepository,
+    private val riddles: RiddlesRepository,
     private val random: Random = Random.Default,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
-    private val categoryText: (String) -> String? = { null },
     private val playTimeTracker: PlayTimeTracker? = null,
     private val playTimeOwner: String? = null,
 ) : ViewModel() {
@@ -209,7 +199,7 @@ class GameViewModel(
                             val restored = withContext(computationDispatcher) {
                                 current.copy(game = game.restoreFound(snapshot.found.map(Alphabet::normalize)),
                                     completedTaskIds = snapshot.completedTaskIds.intersect(current.level.tasks.map { it.id }.toSet()),
-                                    hints = snapshot.hints)
+                                    hints = snapshot.hints).let { HintRules.restore(it) }
                             }
                             publishSession(restored.game, level, restored, LevelProgress(),
                                 if (savedCampaign.finaleReached && !savedCampaign.finaleShown) {
@@ -262,7 +252,6 @@ class GameViewModel(
             finaleSummary = finaleSummary,
             campaignLevel = current, campaignHint = shownHints.lastOrNull(), campaignHints = shownHints,
             hintCost = cost, hintRemaining = current?.let { HintRules.budget(it).remaining } ?: 0,
-            hintFallback = shownHints.isNotEmpty() && current?.hints?.ladder?.steps?.none { step -> step.stage == HintStage.DEFINITION } == true,
             levelProgress = stars, statistics = stats, taskProgress = tasks,
             riddles = it.riddles.mapValues { (id, items) -> items.mapIndexed { index, riddle ->
                 riddle.copy(solved = solved[id]?.getOrNull(index) == true)
@@ -407,11 +396,8 @@ class GameViewModel(
                 val activeCampaign = campaign
                 if (activeCampaign != null) {
                     val current = requireNotNull(state.campaignLevel)
-                    val targetWord = current.hints.ladder.target?.word
-                    val metadata = if (targetWord == null || targetWord in current.game.found)
-                        loadHintWords(current) else emptyMap()
                     val result = progress.requestCampaignHint(activeCampaign, current.level.number,
-                        current.hints.shownSteps, words.requireIndex(), metadata)
+                        current.hints.shownSteps, words.requireIndex())
                     currentCoroutineContext().ensureActive()
                     if (result != null) {
                         uiState.first { (it.campaignLevel?.hints?.shownSteps ?: 0) >= result.state.hints.shownSteps }
@@ -429,29 +415,7 @@ class GameViewModel(
                 if (fallback == null) {
                     mutableState.update { it.copy(message = GameMessage(R.string.hint_all_found), hint = null) }
                 } else {
-                    val available = try { definitions.isAvailable() }
-                    catch (cancelled: CancellationException) { throw cancelled }
-                    catch (_: Exception) { false }
-                    var hint: GameHint? = null
-                    if (available) for (answer in candidates) {
-                        val meanings = try { definitions.definitionsFor(answer) }
-                        catch (cancelled: CancellationException) { throw cancelled }
-                        catch (_: Exception) { emptyList() }
-                        val safe = withContext(computationDispatcher) {
-                            meanings.filter { it.isOwnedHint }.firstNotNullOfOrNull { definition ->
-                                DefinitionHint.prepare(answer, definition.text, definition.forms, definition.related)?.let { text ->
-                                    // Вспомогательные поля, в том числе URL, могут раскрывать ответ.
-                                    definition.copy(display = "", text = text, source = "", notes = "", antonym = "", example = "",
-                                        forms = emptyList(), related = emptyList())
-                                }
-                            }
-                        }
-                        if (safe != null) {
-                            hint = GameHint(answer.length, answer.first().uppercaseChar().toString(), listOf(safe))
-                            break
-                        }
-                    }
-                    val result = hint ?: GameHint(fallback.length, fallback.first().uppercaseChar().toString(), emptyList())
+                    val result = GameHint(fallback.length, fallback.first().uppercaseChar().toString())
                     if (hintSequence == request && uiState.value.game == game) mutableState.update {
                         it.copy(hint = result)
                     }
@@ -465,57 +429,10 @@ class GameViewModel(
         }.also(progress::trackOperation)
     }
 
-    /** Только составимые ответы этого уровня; подготовленные шаги затем читаются из DataStore. */
-    private suspend fun loadHintWords(current: CurrentCampaignLevel): Map<String, HintWordData> {
-        val available = withContext(Dispatchers.IO) { optional { definitions.isAvailable() } ?: false }
-        return current.game.allWords.filter { it !in current.game.found }.associateWith { answer ->
-            val (category, meanings) = withContext(Dispatchers.IO) {
-                val key = if (available) optional { definitions.categoryFor(answer) } else null
-                val campaignKey = current.level.tasks.filterIsInstance<CampaignTask.T6>()
-                    .firstOrNull { answer in it.words }?.category
-                (campaignKey ?: key) to if (available) optional { definitions.definitionsFor(answer) }.orEmpty() else emptyList()
-            }
-            withContext(computationDispatcher) {
-                val safe = meanings.filter { it.isOwnedHint }.firstNotNullOfOrNull { meaning ->
-                    DefinitionHint.prepare(answer, meaning.text, meaning.forms, meaning.related)?.let { it to meaning }
-                }
-                HintWordData(
-                    category = category?.takeIf { it != "other" && CategoryNames.resource(it) != null }
-                        ?.let { key -> categoryText(key)?.let { HintCategory(key, it) } },
-                    definition = safe?.first, definitionWiktionary = safe?.second?.isWiktionary == true,
-                    forms = safe?.second?.forms.orEmpty().toSet(), related = safe?.second?.related.orEmpty().toSet(),
-                )
-            }
+    private suspend fun loadRiddles(current: CurrentCampaignLevel): Map<String, List<RiddleUiState>> =
+        current.level.tasks.filterIsInstance<CampaignTask.T4>().associate { task ->
+            task.id to task.targets.map { answer -> RiddleUiState(riddles.textFor(answer)) }
         }
-    }
-
-    private suspend fun <T> optional(read: suspend () -> T): T? = try { read() }
-    catch (cancelled: CancellationException) { throw cancelled }
-    catch (_: Exception) { null }
-
-    private suspend fun loadRiddles(current: CurrentCampaignLevel): Map<String, List<RiddleUiState>> {
-        val tasks = current.level.tasks.filterIsInstance<CampaignTask.T4>()
-        if (tasks.isEmpty()) return emptyMap()
-        val available = try { definitions.isAvailable() }
-        catch (cancelled: CancellationException) { throw cancelled }
-        catch (_: Exception) { false }
-        return tasks.associate { task ->
-            task.id to task.targets.map { answer ->
-                val meanings = if (available) try { definitions.definitionsFor(answer) }
-                catch (cancelled: CancellationException) { throw cancelled }
-                catch (_: Exception) { emptyList() } else emptyList()
-                val safe = withContext(computationDispatcher) {
-                    meanings.filter { it.isOwnedHint }.firstNotNullOfOrNull { meaning ->
-                        HintText.clean(meaning.text)?.let { text ->
-                            DefinitionHint.prepare(answer, text, meaning.forms, meaning.related)
-                        }?.let { it to (meaning.origin == "wiktionary") }
-                    }
-                }
-                RiddleUiState(safe?.first, answer.length, answer.first().uppercaseChar().toString(),
-                    wiktionary = safe?.second == true)
-            }
-        }
-    }
 
     // Подтверждаем только закрытие: до него событие восстанавливается из DataStore.
     fun onCloseFinale(toLevels: Boolean) {

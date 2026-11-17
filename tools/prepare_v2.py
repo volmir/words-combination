@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """PIPE-01: prepare a reproducible v2 package, or verify and install it offline."""
 import argparse
+import lexical_json
 import gzip
 import hashlib
 import json
@@ -8,7 +9,6 @@ import os
 from pathlib import Path
 import shlex
 import shutil
-import sqlite3
 import subprocess
 import tempfile
 from types import SimpleNamespace as NS
@@ -38,7 +38,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / 'tools'
 LEGACY = ROOT / 'core/src/test/resources/legacy_levels_v1.json'
 SELECTIVE_CONFIG = TOOLS / 'selective_config.json'
-PACKAGE_ARTIFACTS = (*clean.ARTIFACTS[:-1], 'definitions.db', 'campaign.json', 'known_words.bloom',
+PACKAGE_ARTIFACTS = (*clean.ARTIFACTS[:-1], 'lexical_data.json', 'campaign.json', 'known_words.bloom',
                      'input_manifest.json', 'lexical_profiles.json.gz', 'previous_levels.json',
                      'category_decisions.json', 'suitability_decisions.json', 'manifest.json')
 SELECTIVE_REPORT_SCHEMA = 'selective-report-v1'
@@ -265,10 +265,10 @@ def rebind_definitions(package, local_args, category_index):
     local_args.category_index = category_index
     second = definitions.run(local_args)
     second_dir = Path(second['database']).parent
-    for name in definitions.WORD_ARTIFACTS + ('definitions.db', 'manifest.json'):
+    for name in definitions.WORD_ARTIFACTS + ('lexical_data.json', 'manifest.json'):
         shutil.copyfile(second_dir / name, package / name)
     index = read_json(category_index)
-    index['database_sha256'] = sha(package / 'definitions.db')
+    index['database_sha256'] = sha(package / 'lexical_data.json')
     atomic_json(category_index, index)
     return second
 
@@ -309,9 +309,9 @@ def make_round(args, workspace, base_manifest, base, candidates, universe):
         category_index = category_args.reports / 'category_index.json'
         # Rebuild metadata so T6, hint categories and the shipped DB agree.
         rebind_definitions(package, local_args, category_index)
-        hints = jvm_hints(args, package / 'definitions.db', package / 'words.txt', directory)
+        hints = jvm_hints(args, package / 'lexical_data.json', package / 'words.txt', directory)
         prof_args = NS(words=package / 'words.txt', manifest=package / 'manifest.json',
-            database=package / 'definitions.db', dump=args.dump, frequency_list=args.frequency_list,
+            database=package / 'lexical_data.json', dump=args.dump, frequency_list=args.frequency_list,
             frequency_universe=universe, config=profiles.CONFIG, selection_config=TOOLS / 'selection_config.json',
             previous_levels=previous, categories=category_index, suitability=None, hints=hints,
             cache=args.cache / 'profiles', reports=directory / 'profiles', prepare_only=True)
@@ -513,9 +513,9 @@ def selective_round(args, config, journal, journal_path, workspace, number, word
         args, workspace, number, words, base_manifest, base, candidates, universe)
     local_index = local_args.reports / 'category_index.json'
     rebind_definitions(package, local_args, local_index)
-    hints = jvm_hints(args, package / 'definitions.db', package / 'words.txt', directory)
+    hints = jvm_hints(args, package / 'lexical_data.json', package / 'words.txt', directory)
     prof_args = NS(words=package / 'words.txt', manifest=package / 'manifest.json',
-        database=package / 'definitions.db', dump=args.dump, frequency_list=args.frequency_list,
+        database=package / 'lexical_data.json', dump=args.dump, frequency_list=args.frequency_list,
         frequency_universe=universe, config=profiles.CONFIG, selection_config=TOOLS / 'selection_config.json',
         previous_levels=previous, categories=local_index, suitability=None, hints=hints,
         cache=args.cache / 'profiles', reports=directory / 'profiles', prepare_only=True)
@@ -595,7 +595,7 @@ def selective_round(args, config, journal, journal_path, workspace, number, word
         rebind_definitions(package, local_args, carry_index)
         prof_args.categories, prof_args.suitability = carry_index, carry_ws
         prof_args.hints = rehead_hints(hints, directory / 'hints-current.jsonl',
-                                       package / 'definitions.db', package / 'words.txt')
+                                       package / 'lexical_data.json', package / 'words.txt')
         prof_args.prepare_only = False
         measured = profiles.run(prof_args)
         snapshot = Path(measured['cache_path'])
@@ -849,13 +849,13 @@ def verify_package(package, *, java='java', jvm_classpath=None):
     words = dictionary.read_list(package / 'words.txt')
     if (package / 'words.txt').read_bytes() != canonical(words) or len(words) != manifest['words']:
         raise ValueError('Неканонический словарь')
-    definitions.validate_database(package / 'definitions.db', set(words), definitions.load_settings(TOOLS / 'definition_import_config.json'))
-    with sqlite3.connect(package / 'definitions.db') as db:
-        metadata = dict(db.execute('SELECT key,value FROM build_metadata'))
-        if (metadata['dictionary_words_sha256'] != sha(package / 'words.txt') or
-                db.execute('PRAGMA user_version').fetchone()[0] != manifest['definitions']['user_version']):
-            raise ValueError('БД относится к другому словарю/версии')
-    if sha(package / 'definitions.db') != manifest['definitions']['sha256']:
+    definitions.validate_lexical_data(package / 'lexical_data.json', set(words), definitions.load_settings(TOOLS / 'definition_import_config.json'))
+    document = lexical_json.read(package / 'lexical_data.json')
+    metadata = document['build_metadata']
+    if (metadata['dictionary_words_sha256'] != sha(package / 'words.txt') or
+            document['revision'] != manifest['definitions']['revision']):
+        raise ValueError('Lexical JSON metadata does not match manifest')
+    if sha(package / 'lexical_data.json') != manifest['definitions']['sha256']:
         raise ValueError('Неверный SHA-256 определений')
     golden = read_json(package / 'golden_search.json')
     if set(golden) != set(dictionary.GOLDEN_WORDS):
@@ -893,7 +893,7 @@ def verify_package(package, *, java='java', jvm_classpath=None):
     document = selection.load_snapshot(package / 'lexical_profiles.json.gz', package / 'words.txt', package / 'previous_levels.json')
     args = NS(campaign=package / 'campaign.json', profiles=package / 'lexical_profiles.json.gz',
               words=package / 'words.txt', previous_levels=package / 'previous_levels.json',
-              database=package / 'definitions.db', manifest=package / 'input_manifest.json',
+              database=package / 'lexical_data.json', manifest=package / 'input_manifest.json',
               java=java, jvm_classpath=jvm_classpath)
     candidate, audit = validation.run(args)
     sources = {level['word'] for level in candidate['levels']}
@@ -942,7 +942,7 @@ def prepare(args):
     with game.exclusive_lock(args.cache / '.prepare.lock'):
         recover_ready(args.package)
         # Snapshot the version baseline under the installer's lock. A concurrent
-        # install cannot change user_version halfway through preparation.
+        # install cannot change revision halfway through preparation.
         baseline = args.cache / 'installed-baseline'
         baseline.mkdir(exist_ok=True)
         with game.exclusive_lock(installed.parent / ('.' + installed.name + '.publish.lock')):
@@ -951,10 +951,10 @@ def prepare(args):
             manifest_bytes = args.manifest.read_bytes()
             baseline_sha = sha(installed / 'manifest.json') if (installed / 'manifest.json').exists() else 'absent'
             (baseline / 'manifest.json').write_bytes(manifest_bytes)
-            database = baseline / 'definitions.db'
+            database = baseline / 'lexical_data.json'
             database.unlink(missing_ok=True)
-            if (installed / 'definitions.db').exists():
-                shutil.copyfile(installed / 'definitions.db', database)
+            if (installed / 'lexical_data.json').exists():
+                shutil.copyfile(installed / 'lexical_data.json', database)
         original = json.loads(manifest_bytes)
         manifest_sha = hashlib.sha256(manifest_bytes).hexdigest()
         input_manifest = baseline / 'manifest.json'

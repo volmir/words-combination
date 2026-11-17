@@ -214,12 +214,7 @@ fun AboutScreen() {
                 modifier = Modifier.testTag("about_code_license"),
             )
 
-            if (!BuildConfig.HAS_DEFINITIONS) {
-                Text(
-                    stringResource(R.string.definitions_unavailable),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
+
         }
     }
 }

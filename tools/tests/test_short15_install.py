@@ -1,6 +1,7 @@
 """Synthetic tests for tools/install_short15_package.py (no network, no real package)."""
 import hashlib
 import json
+import shutil
 from pathlib import Path
 import sys
 import tempfile
@@ -35,28 +36,9 @@ def campaign_json() -> dict:
 
 def write_package(directory: Path, *, installable: bool = True) -> Path:
     directory.mkdir(parents=True)
-    (directory / "words.txt").write_text("кот\nнос\n", encoding="utf-8")
-    (directory / "word_sources.jsonl.gz").write_bytes(b"synthetic")
-    (directory / "levels.json").write_text("[]\n", encoding="utf-8")
-    (directory / "golden_search.json").write_text("{}\n", encoding="utf-8")
-    (directory / "definitions.db").write_bytes(b"synthetic-db")
-    campaign = campaign_json()
-    (directory / "campaign.json").write_text(
-        json.dumps(campaign, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
-    campaign_sha = digest(directory / "campaign.json")
-    manifest = dict(
-        schema="dictionary-provenance-v1", words=2,
-        sha256_words_txt=digest(directory / "words.txt"),
-        sha256_word_sources=digest(directory / "word_sources.jsonl.gz"),
-        sha256_levels_json=digest(directory / "levels.json"),
-        sha256_golden_search=digest(directory / "golden_search.json"),
-        source=dict(license="CC-BY-SA-4.0"),
-        definitions=dict(sha256=digest(directory / "definitions.db"),
-                         dictionary_words_sha256=digest(directory / "words.txt"),
-                         audit=dict(passed=False)),
-    )
-    (directory / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, sort_keys=True) + "\n",
-                                             encoding="utf-8")
+    for name in installer.ARTIFACTS:
+        shutil.copyfile(TOOLS.parent/'data'/name,directory/name)
+    campaign_sha = digest(directory/'campaign.json')
     report = dict(schema="campaign-validation-v1", installable=installable,
                   unreachable=[], balance_deviations=[], parity_deviations=[],
                   levels=[dict(number=i) for i in range(1, 16)])
@@ -65,7 +47,7 @@ def write_package(directory: Path, *, installable: bool = True) -> Path:
                    hashes={"campaign.json": campaign_sha})
     (directory / "quality_report.json").write_text(json.dumps(quality) + "\n", encoding="utf-8")
     names = ("words.txt", "word_sources.jsonl.gz", "levels.json", "golden_search.json",
-             "definitions.db", "campaign.json", "manifest.json", "validation_report.json",
+             "owned_riddles.json", "campaign.json", "manifest.json", "validation_report.json",
              "quality_report.json")
     (directory / "SHA256SUMS").write_text(
         "".join(f"{digest(directory / name)}  {name}\n" for name in names), encoding="utf-8")
@@ -78,7 +60,7 @@ def write_old_data(directory: Path) -> None:
     (directory / "word_sources.jsonl.gz").write_bytes(b"old")
     (directory / "levels.json").write_text("[]\n", encoding="utf-8")
     (directory / "golden_search.json").write_text("{}\n", encoding="utf-8")
-    (directory / "definitions.db").write_bytes(b"old-db")
+    (directory / "owned_riddles.json").write_bytes(b"old-db")
     (directory / "manifest.json").write_text("{}\n", encoding="utf-8")
 
 
@@ -101,7 +83,7 @@ class InstallShort15Test(unittest.TestCase):
         self.assertEqual(digest(self.package / "campaign.json"), digest(self.output / "campaign.json"))
         self.assertEqual("старое\n", (self.backup / "words.txt").read_text(encoding="utf-8"))
         self.assertTrue((self.backup / "SHA256SUMS.rollback").is_file())
-        self.assertEqual("synthetic-db", (self.output / "definitions.db").read_text())
+        self.assertEqual((self.package/"owned_riddles.json").read_bytes(), (self.output/"owned_riddles.json").read_bytes())
 
     def test_second_install_keeps_original_rollback(self):
         installer.install(self.package, self.output, self.backup)
@@ -133,7 +115,7 @@ class InstallShort15Test(unittest.TestCase):
         manifest["campaign_source"] = dict(sha256="0" * 64)
         manifest_path.write_text(json.dumps(manifest, sort_keys=True) + "\n", encoding="utf-8")
         names = ("words.txt", "word_sources.jsonl.gz", "levels.json", "golden_search.json",
-                 "definitions.db", "campaign.json", "manifest.json", "validation_report.json",
+                 "owned_riddles.json", "campaign.json", "manifest.json", "validation_report.json",
                  "quality_report.json")
         (self.package / "SHA256SUMS").write_text(
             "".join(f"{digest(self.package / name)}  {name}\n" for name in names), encoding="utf-8")

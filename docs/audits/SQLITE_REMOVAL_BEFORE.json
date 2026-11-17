@@ -1,0 +1,1331 @@
+{
+  "note": "Historical inventory BEFORE JSON migration, 2026-11-17. Not build instructions.",
+  "snapshot": {
+    "data/campaign.json": {
+      "sha256": "1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e",
+      "bytes": 9651
+    },
+    "data/definitions.db": {
+      "sha256": "73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d",
+      "bytes": 1818624
+    },
+    "docs/owned_hints.json": {
+      "sha256": "061633244ec968aeec2e0dc50aca1b61ecb8ca735590c5510938ab5085b711b0",
+      "bytes": 30027
+    },
+    "docs/OWN_HINTS_OWNER_APPROVAL.json": {
+      "sha256": "50ea8dd86af6a32a13165e21378273b9734557f6980cc5ccea518a7d04e3e128",
+      "bytes": 574
+    },
+    "docs/OWN_HINTS_MANUAL_AUDIT.json": {
+      "sha256": "9f6bec48459ef460fab2d11f50745bf74db9c0322d4571f5092f1378daedaff1",
+      "bytes": 10167
+    },
+    "tools/owned_hint_index.json": {
+      "sha256": "81d4c21302c54a969466c289fa950e7d255d3eb35a5b7bb641b4f8facb392335",
+      "bytes": 330678
+    },
+    "data/manifest.json": {
+      "sha256": "248f326bd8538d127eb64747fe25c7f46838bf0773718164ba16a9f585361e61",
+      "bytes": 25180
+    },
+    "app/build/outputs/apk/debug/app-debug.apk": {
+      "sha256": "8ecc829a70a60ca2aa4f3554d926d95091f3c4529e215f9c08e630f110c27ac4",
+      "bytes": 13777247
+    },
+    "app/build/outputs/apk/release/app-release.apk": {
+      "sha256": "a6a264ad213e5e30b958f92438f8911968c1dd8a898ef3e78f747e0a67b04a34",
+      "bytes": 3594063
+    },
+    "t4_entries": [
+      {
+        "word": "артист",
+        "normalized": "артист",
+        "part_of_speech": "noun",
+        "hint": "Мужчина, который профессионально выступает перед публикой на сцене или в цирке.",
+        "roles": [
+          {
+            "level": 14,
+            "task_id": "l14-t4",
+            "type": "T4",
+            "selection_source": "campaign.targets"
+          },
+          {
+            "level": 14,
+            "task_id": "l14-t6",
+            "type": "T6",
+            "selection_source": "campaign.words"
+          }
+        ],
+        "provenance": "newly-authored-for-game",
+        "license_review": "pending-owner-approval",
+        "review_note": "T4 и T6; широкая профессия, возможны более узкие синонимы.",
+        "owner_text_approval": "pending",
+        "owner_license_approval": "pending"
+      },
+      {
+        "word": "банк",
+        "normalized": "банк",
+        "part_of_speech": "noun",
+        "hint": "Финансовая организация, где открывают счета, хранят вклады и выдают кредиты.",
+        "roles": [
+          {
+            "level": 14,
+            "task_id": "l14-t4",
+            "type": "T4",
+            "selection_source": "campaign.targets"
+          }
+        ],
+        "provenance": "newly-authored-for-game",
+        "license_review": "pending-owner-approval",
+        "review_note": "Не стеклянная ёмкость и не набор данных.",
+        "owner_text_approval": "pending",
+        "owner_license_approval": "pending"
+      },
+      {
+        "word": "билет",
+        "normalized": "билет",
+        "part_of_speech": "noun",
+        "hint": "Бумажный или электронный документ, с которым зрителя пропускают на спектакль.",
+        "roles": [
+          {
+            "level": 12,
+            "task_id": "l12-t4",
+            "type": "T4",
+            "selection_source": "campaign.targets"
+          }
+        ],
+        "provenance": "newly-authored-for-game",
+        "license_review": "pending-owner-approval",
+        "review_note": "Выбран вход в театр, не экзаменационный лист.",
+        "owner_text_approval": "pending",
+        "owner_license_approval": "pending"
+      },
+      {
+        "word": "весна",
+        "normalized": "весна",
+        "part_of_speech": "noun",
+        "hint": "Сезон пробуждения природы: снег сходит, появляются первые листья, а дни становятся длиннее.",
+        "roles": [
+          {
+            "level": 13,
+            "task_id": "l13-t4",
+            "type": "T4",
+            "selection_source": "campaign.targets"
+          }
+        ],
+        "provenance": "newly-authored-for-game",
+        "license_review": "pending-owner-approval",
+        "review_note": "Сезон в привычном российском климате. После сигнала о дословном совпадении текст заново составлен без чтения совпавшего фрагмента.",
+        "owner_text_approval": "pending",
+        "owner_license_approval": "pending"
+      },
+      {
+        "word": "десерт",
+        "normalized": "десерт",
+        "part_of_speech": "noun",
+        "hint": "Сладкое блюдо, которое подают в конце обеда, например мороженое.",
+        "roles": [
+          {
+            "level": 11,
+            "task_id": "l11-t4",
+            "type": "T4",
+            "selection_source": "campaign.targets"
+          }
+        ],
+        "provenance": "newly-authored-for-game",
+        "license_review": "pending-owner-approval",
+        "review_note": "Не весь приём пищи, а завершающее блюдо.",
+        "owner_text_approval": "pending",
+        "owner_license_approval": "pending"
+      },
+      {
+        "word": "ковер",
+        "normalized": "ковер",
+        "part_of_speech": "noun",
+        "hint": "Мягкое узорчатое полотно, которым застилают пол в комнате.",
+        "roles": [
+          {
+            "level": 13,
+            "task_id": "l13-t4",
+            "type": "T4",
+            "selection_source": "campaign.targets"
+          }
+        ],
+        "provenance": "newly-authored-for-game",
+        "license_review": "pending-owner-approval",
+        "review_note": "Нормализация ё→е; предмет интерьера.",
+        "owner_text_approval": "pending",
+        "owner_license_approval": "pending"
+      },
+      {
+        "word": "отель",
+        "normalized": "отель",
+        "part_of_speech": "noun",
+        "hint": "Здание, где путешественникам сдают комнаты для ночлега на несколько дней.",
+        "roles": [
+          {
+            "level": 11,
+            "task_id": "l11-t4",
+            "type": "T4",
+            "selection_source": "campaign.targets"
+          }
+        ],
+        "provenance": "newly-authored-for-game",
+        "license_review": "pending-owner-approval",
+        "review_note": "Синоним «гостиница» не составим из исходника.",
+        "owner_text_approval": "pending",
+        "owner_license_approval": "pending"
+      },
+      {
+        "word": "проблема",
+        "normalized": "проблема",
+        "part_of_speech": "noun",
+        "hint": "Трудный вопрос или затруднение, для которого пока не найдено решение.",
+        "roles": [
+          {
+            "level": 12,
+            "task_id": "l12-t4",
+            "type": "T4",
+            "selection_source": "campaign.targets"
+          }
+        ],
+        "provenance": "newly-authored-for-game",
+        "license_review": "pending-owner-approval",
+        "review_note": "Общеупотребительное затруднение; широкий смысл.",
+        "owner_text_approval": "pending",
+        "owner_license_approval": "pending"
+      },
+      {
+        "word": "работа",
+        "normalized": "работа",
+        "part_of_speech": "noun",
+        "hint": "Занятие, за которое сотрудник получает зарплату.",
+        "roles": [
+          {
+            "level": 9,
+            "task_id": "l09-t4",
+            "type": "T4",
+            "selection_source": "campaign.targets"
+          }
+        ],
+        "provenance": "newly-authored-for-game",
+        "license_review": "pending-owner-approval",
+        "review_note": "Общеупотребительное значение оплачиваемого занятия.",
+        "owner_text_approval": "pending",
+        "owner_license_approval": "pending"
+      },
+      {
+        "word": "стадион",
+        "normalized": "стадион",
+        "part_of_speech": "noun",
+        "hint": "Спортивное сооружение с полем и трибунами для зрителей вокруг него.",
+        "roles": [
+          {
+            "level": 14,
+            "task_id": "l14-t4",
+            "type": "T4",
+            "selection_source": "campaign.targets"
+          }
+        ],
+        "provenance": "newly-authored-for-game",
+        "license_review": "pending-owner-approval",
+        "review_note": "Выбрана спортивная площадка с трибунами.",
+        "owner_text_approval": "pending",
+        "owner_license_approval": "pending"
+      },
+      {
+        "word": "утро",
+        "normalized": "утро",
+        "part_of_speech": "noun",
+        "hint": "Часть суток после ночи, когда обычно просыпаются и умываются.",
+        "roles": [
+          {
+            "level": 10,
+            "task_id": "l10-t4",
+            "type": "T4",
+            "selection_source": "campaign.targets"
+          }
+        ],
+        "provenance": "newly-authored-for-game",
+        "license_review": "pending-owner-approval",
+        "review_note": "Время суток. После автоматической проверки родства убрано «завтракают»; старые тексты при правке не использовались.",
+        "owner_text_approval": "pending",
+        "owner_license_approval": "pending"
+      }
+    ]
+  },
+  "files": [
+    {
+      "path": ".gitignore",
+      "classification": "active dependency",
+      "matches": [
+        "20: app/src/main/assets/definitions.db"
+      ]
+    },
+    {
+      "path": "AGENTS.md",
+      "classification": "active dependency",
+      "matches": [
+        "35:                  DefinitionsRepository, SqliteDefinitionsRepository",
+        "97: * Читай адресно: `grep -rn` или `rg` по символу, затем нужный файл. Не читай целиком `data/words.txt` (около 113 тыс. строк), `data/word_sources.jsonl.gz`, `data/golden_search.json`, `definitions.db`: используй `head -n 30`, `grep -c`, короткие скрипты на Python."
+      ]
+    },
+    {
+      "path": "README.md",
+      "classification": "active dependency",
+      "matches": [
+        "13: | Определения | **39 собственных подсказок**, 0 определений Wiktionary, локальная SQLite, `user_version=10` |",
+        "40: ├── data/                       # Словарь, short15 campaign.json, исторические levels.json, definitions.db, манифест",
+        "103: Когда `definitions.db` уже подключена, очистка напрямую не заменяет рабочие данные. Сначала подготовьте словарь командой выше, затем передайте путь `candidate` из её вывода сборщику определений:",
+        "126: Для новой среды с другой SQLite или экспорта AI Studio без `definitions.db`"
+      ]
+    },
+    {
+      "path": "app/build.gradle.kts",
+      "classification": "active dependency",
+      "matches": [
+        "121:     inputs.files(dictionaryData.file(\"definitions.db\"))",
+        "150:         val database = dictionaryData.file(\"definitions.db\").asFile",
+        "263:         if (hasDefinitions) include(\"definitions.db\")",
+        "273:         exclude(\"words.txt\", \"levels.json\", \"campaign.json\", \"word_sources.jsonl.gz\", \"definitions.db\", \"THIRD_PARTY_NOTICES.txt\", \"LICENSE\", \"CC-BY-SA-4.0.txt\", \"Apache-2.0.txt\", \"LIBRARY_NOTICES.txt\", \"RUNTIME_LIBRARIES.json\")",
+        "282:             if (hasDefinitions) setOf(\"definitions.db\") else emptySet()",
+        "292:             sha256(File(assets, \"definitions.db\")) == definitions?.get(\"sha256\")) {"
+      ]
+    },
+    {
+      "path": "app/src/androidTest/kotlin/com/example/sostavslova/data/LevelsRepositoryTest.kt",
+      "classification": "active dependency",
+      "matches": [
+        "131:         assertEquals(BuildConfig.DEFINITIONS_SHA256, sha256(bytes(\"definitions.db\")))"
+      ]
+    },
+    {
+      "path": "app/src/androidTest/kotlin/com/example/sostavslova/data/SqliteDefinitionsRepositoryTest.kt",
+      "classification": "active dependency",
+      "matches": [
+        "5: import android.database.sqlite.SQLiteDatabase",
+        "23: class SqliteDefinitionsRepositoryTest {",
+        "27:     private val repositories = mutableListOf<SqliteDefinitionsRepository>()",
+        "50:     ) = SqliteDefinitionsRepository(",
+        "61:         SQLiteDatabase.openOrCreateDatabase(file, null).use { db ->",
+        "76:         val repository = SqliteDefinitionsRepository(context, databaseName = databaseName).also { repositories.add(it) }",
+        "88:         SQLiteDatabase.openDatabase(asset.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->",
+        "143:         val repo = SqliteDefinitionsRepository(context, databaseName = databaseName).also { repositories.add(it) }",
+        "148:         SQLiteDatabase.openDatabase(context.getDatabasePath(databaseName).path, null, SQLiteDatabase.OPEN_READONLY).use { db ->",
+        "186:         SQLiteDatabase.openDatabase(context.getDatabasePath(databaseName).path, null, SQLiteDatabase.OPEN_READONLY)",
+        "194:         SQLiteDatabase.openDatabase(installed.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->",
+        "201:         SQLiteDatabase.openDatabase(asset.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->",
+        "213:         SQLiteDatabase.openDatabase(installed.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->",
+        "253:         SQLiteDatabase.openDatabase(asset.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->",
+        "266:         val repository = SqliteDefinitionsRepository(context, databaseName = databaseName).also { repositories.add(it) }"
+      ]
+    },
+    {
+      "path": "app/src/androidTest/kotlin/com/example/sostavslova/ui/game/GameViewModelTest.kt",
+      "classification": "active dependency",
+      "matches": [
+        "414:         val meanings = SqliteDefinitionsRepository(context, databaseName = databaseName)"
+      ]
+    },
+    {
+      "path": "app/src/main/kotlin/com/example/sostavslova/data/SqliteDefinitionsRepository.kt",
+      "classification": "active dependency",
+      "matches": [
+        "4: import android.database.sqlite.SQLiteDatabase",
+        "5: import android.database.sqlite.SQLiteException",
+        "6: import android.database.sqlite.SQLiteOpenHelper",
+        "23: class SqliteDefinitionsRepository(",
+        "28:     private val databaseName: String = \"definitions.db\",",
+        "31:     private val openAsset = assetOpener ?: { appContext.assets.open(\"definitions.db\") }",
+        "76:             } catch (_: SQLiteException) {",
+        "100:             } catch (_: SQLiteException) { null }",
+        "104:     private fun wordMetadata(database: SQLiteDatabase, word: String): Pair<List<String>, List<String>> {",
+        "122:     private fun prepareDatabase(): SQLiteDatabase? {",
+        "138:                 throw SQLiteException(\"База не совпадает с проверенным asset\")",
+        "141:             if (assetVersion <= 0) throw SQLiteException(\"Некорректный PRAGMA user_version базы определений\")",
+        "165:         } catch (_: SQLiteException) {",
+        "189:     private fun readVersion(file: File): Int = SQLiteDatabase.openDatabase(",
+        "190:         file.path, null, SQLiteDatabase.OPEN_READONLY or SQLiteDatabase.NO_LOCALIZED_COLLATORS,",
+        "202:         SQLiteOpenHelper(context, name, null, version) {",
+        "203:         override fun onCreate(db: SQLiteDatabase) {",
+        "204:             throw SQLiteException(\"Ожидалась предварительно скопированная база определений\")",
+        "207:         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {",
+        "208:             throw SQLiteException(\"Обновление базы определений выполняется копированием assets\")",
+        "211:         override fun onOpen(db: SQLiteDatabase) {"
+      ]
+    },
+    {
+      "path": "app/src/main/kotlin/com/example/sostavslova/di/AppContainer.kt",
+      "classification": "active dependency",
+      "matches": [
+        "13: import com.example.sostavslova.data.SqliteDefinitionsRepository",
+        "45:     val definitionsRepository: DefinitionsRepository = definitions ?: SqliteDefinitionsRepository(appContext)"
+      ]
+    },
+    {
+      "path": "data/definitions.db",
+      "classification": "active dependency",
+      "matches": [
+        "binary signature or extension"
+      ]
+    },
+    {
+      "path": "data/manifest.json",
+      "classification": "active dependency",
+      "matches": [
+        "1: {\"alphabet\": \"абвгдежзийклмнопрстуфхцчшщъыьэюя\", \"campaign_source\": {\"contract\": \"docs/CAMPAIGN.md\", \"generator\": \"tools/build_campaign.py + tools/rebalance_campaign.py\", \"levels\": 15, \"max_stars\": 49, \"previous_levels_role\": \"historical comparison only; not v2 task source\", \"profile\": \"short15-release-v1\", \"quality_report_sha256\": \"de150d96d9adbf3b00097ea6339a97278d615d99a4166c88714e3160ca30d912\", \"sha256\": \"1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e\", \"validation_report_sha256\": \"df5200b3303e6027edbd6df3e8d477a03dd4430220df54734d064270915b0b2f\"}, \"definitions\": {\"audit\": {\"bad\": 0, \"campaign_sha256\": \"1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e\", \"candidate_sha256\": \"061633244ec968aeec2e0dc50aca1b61ecb8ca735590c5510938ab5085b711b0\", \"checked\": 39, \"database_sha256\": \"73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d\", \"owner_approval_sha256\": \"50ea8dd86af6a32a13165e21378273b9734557f6980cc5ccea518a7d04e3e128\", \"passed\": true, \"report_sha256\": \"9f6bec48459ef460fab2d11f50745bf74db9c0322d4571f5092f1378daedaff1\", \"reviewed_on\": \"2026-11-16\", \"reviewer\": \"Project Owner\"}, \"counts\": {\"own\": 39, \"wiktionary\": 0}, \"coverage\": {\"total\": 20120, \"words\": 39}, \"dictionary_words_sha256\": \"9c1aed9e0011e4173dffd0f4281832d821d4de90623d19273f7fc8e68c212489\", \"generator\": {\"candidate_sha256\": \"061633244ec968aeec2e0dc50aca1b61ecb8ca735590c5510938ab5085b711b0\", \"category_index_sha256\": \"81d4c21302c54a969466c289fa950e7d255d3eb35a5b7bb641b4f8facb392335\", \"provider\": \"local-owned-hints\"}, \"own_license\": \"CC0-1.0\", \"publication_status\": \"approved\", \"rights_policy\": \"owned-minimal-hints-v1\", \"rights_review\": {\"approval_sha256\": \"50ea8dd86af6a32a13165e21378273b9734557f6980cc5ccea518a7d04e3e128\", \"approved_on\": \"2026-11-16\", \"campaign_sha256\": \"1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e\", \"candidate_sha256\": \"061633244ec968aeec2e0dc50aca1b61ecb8ca735590c5510938ab5085b711b0\", \"passed\": true, \"replacement_required\": false, \"status\": \"approved\"}, \"semantic_coverage\": {\"T3\": 9, \"T4\": 11, \"T6\": 20, \"assignments\": 40, \"unique_targets\": 39}, \"sha256\": \"73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d\", \"user_version\": 10}, \"levels_source\": {\"changes\": \"Delivered v1 snapshot including owner-authorized replacements; v2 tasks are generated separately\", \"license\": \"MIT\", \"provenance\": \"historical v1 snapshot of this project\", \"role\": \"historical-v1-comparison-only\", \"snapshot_sha256\": \"e4ded7a9bdfc5855c69bd167abb03c25d5291652a1504956d3a0e99e4742e73a\", \"url\": null}, \"maxLen\": 30, \"minLen\": 3, \"schema\": \"dictionary-provenance-v1\", \"selection\": {\"audit\": {\"method\": \"automated-first-pass\", \"passed\": false}, \"candidate_limit\": null, \"config_file_sha256\": \"ce4bd8d46355d59aa1e18b28575c4635c691b2f70eb8ec19f778188cb37e861d\", \"definitions_required\": false, \"frequency_source\": {\"kind\": \"frequency-list\", \"license\": \"CC-BY-SA-3.0\", \"project\": \"FrequencyWords Russian full frequency list, OpenSubtitles 2018\", \"sha256\": \"32dfd94138aea2667ec455dcc8512029e39bd4b8ea70b09410d569b69d511a30\", \"snapshot\": \"f8a65e6ddc17e0baa2e366a909986798d8dbe55b\", \"url\": \"https://github.com/hermitdave/FrequencyWords\"}, \"generator_sha256\": \"56cd11e014e43787fc7a39677181149639e9bfae26289e75d43c3b0ed3928e25\", \"input_words\": 113413, \"input_words_sha256\": \"c419c65f916799955584130390527b60642ec6f26c6228bdd7058a95986d6415\", \"mode\": \"game-cleanup-v2\", \"old_overrides_used\": false, \"parameters\": {\"abbreviation_min_occurrences\": 100, \"label_patterns\": {\"abbreviation\": [\"сокр\\\\.\", \"аббр\\\\.\", \"сложносокр\\\\.\"], \"dialect\": [\"диал\\\\.\", \"обл\\\\.\", \"рег\\\\.\", \"прост\\\\.-диал\\\\.\", \"диалектн\\\\.\", \"народн\\\\.-разг\\\\.\"], \"diminutive\": [\"уменьш(?:ительно)?(?:[-.]ласк(?:ательное)?)?\\\\.\", \"ласк\\\\.\", \"уменьшительн(?:ое|ый|ая|о)(?:[- ]ласкательн(?:ое|ый|ая))?\", \"ласкательн(?:ое|ый|ая)\"], \"jargon\": [\"жарг\\\\.\", \"проф\\\\.\", \"спец\\\\.-жарг\\\\.\", \"блатн\\\\.\"], \"neologism\": [\"неол\\\\.\", \"авторск\\\\.\", \"окказ\\\\.\"], \"not_noun_sense\": [\"(?:как|в значении|в знач\\\\.)\\\\s+(?:междометие|междометия|наречие|наречия)\", \"межд\\\\.\"], \"obsolete\": [\"устар(?:евш)?\\\\.\", \"старин\\\\.\", \"архаич\\\\.\", \"церк\\\\.-слав\\\\.\", \"устарел\\\\.\"], \"offensive\": [\"обсц\\\\.\", \"неценз\\\\.\", \"матерн\\\\.\"], \"rare\": [\"редк\\\\.\", \"малоупотр\\\\.\"], \"slang\": [\"разг\\\\.-сниж\\\\.\", \"груб\\\\.\", \"вульг\\\\.\", \"бран\\\\.\", \"уничиж\\\\.\", \"пренебр\\\\.\", \"сниж\\\\.\", \"оскорб\\\\.\"]}, \"level_replacements\": {\"намеривание\": {\"letter\": \"в\", \"word\": \"взвешивание\"}, \"передвигание\": {\"letter\": \"г\", \"word\": \"магнитофон\"}, \"перетекание\": {\"letter\": \"п\", \"word\": \"переливание\"}, \"симфонизация\": {\"letter\": \"с\", \"word\": \"велосипед\"}}, \"lexicalized_abbreviations\": {\"зарплата\": \"established-common-noun; LEX-01\", \"профсоюз\": \"established-common-noun; LEX-01\"}, \"lexicalized_diminutives\": {\"ножка\": {\"base\": \"нога\", \"reason\": \"owner-confirmed-lexicalization; docs/CAMPAIGN.md\"}, \"ручка\": {\"base\": \"рука\", \"reason\": \"owner-confirmed-lexicalization; docs/CAMPAIGN.md\"}, \"рыбка\": {\"base\": \"рыба\", \"reason\": \"owner-confirmed-lexicalization; docs/CAMPAIGN.md\"}}, \"long_word_length\": 16, \"long_word_min_occurrences\": 100, \"min_occurrences\": 10, \"neutral_labels\": [\"разг\", \"перен\", \"собир\", \"прост\", \"шутл\", \"ирон\", \"поэт\", \"неодобр\", \"одобр\", \"неодуш\", \"одуш\", \"неизм\", \"ботан\", \"зоол\", \"анат\", \"кулин\", \"муз\", \"спорт\", \"воен\", \"книжн\", \"ритор\", \"экспр\", \"эвф\", \"гастрон\", \"фам\", \"нар.-поэт\"], \"policy_version\": \"sense-cleanup-v2.2-short15-05\", \"preferred_sources\": {\"реввоенсовет\": \"owner-preferred-source; requires-task-reachability; docs/CAMPAIGN.md\", \"селитроварня\": \"owner-preferred-source; requires-task-reachability; docs/CAMPAIGN.md\", \"хлопкопункт\": \"owner-preferred-source; requires-task-reachability; docs/CAMPAIGN.md\"}, \"productive_compound_prefixes\": [\"авиа\", \"агит\", \"воен\", \"гос\", \"глав\", \"парт\", \"полит\", \"пром\", \"проф\", \"рай\", \"рев\", \"сель\", \"сов\", \"соц\", \"спец\", \"тех\"], \"reference_diminutive_suffixes\": [\"ица\", \"ишка\", \"ушка\", \"юшка\", \"очка\", \"ечка\", \"онка\", \"енка\", \"ик\", \"чик\", \"ок\", \"ек\", \"ец\", \"ка\", \"очечка\"], \"restricted_labels\": [\"истор\", \"религ\", \"церк\", \"библ\", \"женск\", \"субстантивир\", \"субстант\", \"советск\"], \"reviewed_nouns\": {\"акмеист\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"specialist_labels\": [\"филол\"]}, \"анекдотист\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}, \"атомист\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}, \"бортник\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}, \"дуалист\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}, \"дуатлонист\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}, \"каноист\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}, \"канонир\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}, \"колумнист\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}, \"меланист\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}, \"мелодист\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}, \"методист\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}, \"моделист\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}, \"таксатор\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}, \"талмудист\": {\"allow_reasons\": [\"usage_unconfirmed\", \"low_frequency\", \"narrow_term\", \"restricted_usage_frequency\"], \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\"}}, \"role_exclusions\": {\"брудершафт\": \"owner-excluded-source-and-target; docs/CAMPAIGN.md\", \"праймериз\": \"owner-excluded-source-and-target; docs/CAMPAIGN.md\", \"прелюбодейка\": \"owner-excluded-source-and-target; docs/CAMPAIGN.md\"}, \"sample_seed\": 20261106, \"specialist_descriptions\": [\"^(?:органическое|неорганическое|химическое) соединение\", \"^(?:вид|род|семейство) .{0,80}(?:растений|животных|насекомых|моллюсков)\", \"^(?:инфекционное|хроническое|паразитарное) заболевание\"], \"specialist_labels\": [\"техн\", \"мед\", \"медиц\", \"фарм\", \"хим\", \"физ\", \"мат\", \"лингв\", \"грамм\", \"фонет\", \"геол\", \"минер\", \"палеонт\", \"металл\", \"стомат\", \"юрид\", \"электр\", \"радиотехн\", \"биохим\", \"генет\", \"энтом\", \"проф\", \"спец\", \"астрон\", \"фин\", \"экон\", \"полит\", \"энтомол\", \"орнитол\", \"горн\", \"строит\", \"краснод\"], \"specialist_min_occurrences\": 100, \"specialist_topics\": [\"chemistry\", \"entomology\", \"mathematics\", \"engineering\"], \"word_exclusions\": {\"менталист\": \"owner-excluded-all-roles; SHORT15-05\"}}, \"reference_checks\": {\"golden_excluded\": {\"грядка\": [\"ambiguous_diminutive_usage\"], \"дедушка\": [\"diminutive\", \"jargon\"]}, \"level_exceptions\": {}, \"original_levels_excluded\": [\"рекуперация\", \"хлопкопункт\", \"ратификация\", \"симфонизация\", \"субъективизм\", \"намеривание\", \"фисгармоника\", \"перетекание\", \"сурдоперевод\", \"колядование\", \"селитроварня\", \"реввоенсовет\", \"правоведение\", \"одноколейка\", \"передвигание\", \"переводчица\", \"питекантроп\", \"видеотехника\", \"мелодичность\", \"пудлинговка\"], \"role_exceptions\": [{\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"акмеист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"акмеист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"акмеист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 2, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"анекдотист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 2, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"анекдотист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 2, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"анекдотист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 1, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"атомист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 1, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"атомист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 1, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"атомист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 6, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"бортник\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 6, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"бортник\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 6, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"бортник\"}, {\"base_reasons\": \"\", \"decision\": \"exclude\", \"frequency\": 35, \"reason\": \"owner-excluded-source-and-target; docs/CAMPAIGN.md\", \"role\": \"source\", \"word\": \"брудершафт\"}, {\"base_reasons\": \"\", \"decision\": \"exclude\", \"frequency\": 35, \"reason\": \"owner-excluded-source-and-target; docs/CAMPAIGN.md\", \"role\": \"target\", \"word\": \"брудершафт\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"дуалист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"дуалист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"дуалист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"дуатлонист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"дуатлонист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"дуатлонист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 4789, \"reason\": \"established-common-noun; LEX-01\", \"role\": \"answer\", \"word\": \"зарплата\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 4789, \"reason\": \"established-common-noun; LEX-01\", \"role\": \"source\", \"word\": \"зарплата\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 4789, \"reason\": \"established-common-noun; LEX-01\", \"role\": \"target\", \"word\": \"зарплата\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 2, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"каноист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 2, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"каноист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 2, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"каноист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 44, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"канонир\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 44, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"канонир\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 44, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"канонир\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 10, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"колумнист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 10, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"колумнист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 10, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"колумнист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"меланист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"меланист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"меланист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 1, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"мелодист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 1, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"мелодист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 1, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"мелодист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 95, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"методист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 95, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"методист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 95, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"методист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 2, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"моделист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 2, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"моделист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 2, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"моделист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 1955, \"reason\": \"owner-confirmed-lexicalization; docs/CAMPAIGN.md\", \"role\": \"answer\", \"word\": \"ножка\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 1955, \"reason\": \"owner-confirmed-lexicalization; docs/CAMPAIGN.md\", \"role\": \"source\", \"word\": \"ножка\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 1955, \"reason\": \"owner-confirmed-lexicalization; docs/CAMPAIGN.md\", \"role\": \"target\", \"word\": \"ножка\"}, {\"base_reasons\": \"\", \"decision\": \"exclude\", \"frequency\": 145, \"reason\": \"owner-excluded-source-and-target; docs/CAMPAIGN.md\", \"role\": \"source\", \"word\": \"праймериз\"}, {\"base_reasons\": \"\", \"decision\": \"exclude\", \"frequency\": 145, \"reason\": \"owner-excluded-source-and-target; docs/CAMPAIGN.md\", \"role\": \"target\", \"word\": \"праймериз\"}, {\"base_reasons\": \"restricted_usage_frequency\", \"decision\": \"exclude\", \"frequency\": 24, \"reason\": \"owner-excluded-source-and-target; docs/CAMPAIGN.md\", \"role\": \"source\", \"word\": \"прелюбодейка\"}, {\"base_reasons\": \"restricted_usage_frequency\", \"decision\": \"exclude\", \"frequency\": 24, \"reason\": \"owner-excluded-source-and-target; docs/CAMPAIGN.md\", \"role\": \"target\", \"word\": \"прелюбодейка\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 1765, \"reason\": \"established-common-noun; LEX-01\", \"role\": \"answer\", \"word\": \"профсоюз\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 1765, \"reason\": \"established-common-noun; LEX-01\", \"role\": \"source\", \"word\": \"профсоюз\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 1765, \"reason\": \"established-common-noun; LEX-01\", \"role\": \"target\", \"word\": \"профсоюз\"}, {\"base_reasons\": \"abbreviation\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-preferred-source; requires-task-reachability; docs/CAMPAIGN.md\", \"role\": \"source\", \"word\": \"реввоенсовет\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 6462, \"reason\": \"owner-confirmed-lexicalization; docs/CAMPAIGN.md\", \"role\": \"answer\", \"word\": \"ручка\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 6462, \"reason\": \"owner-confirmed-lexicalization; docs/CAMPAIGN.md\", \"role\": \"source\", \"word\": \"ручка\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 6462, \"reason\": \"owner-confirmed-lexicalization; docs/CAMPAIGN.md\", \"role\": \"target\", \"word\": \"ручка\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 2362, \"reason\": \"owner-confirmed-lexicalization; docs/CAMPAIGN.md\", \"role\": \"answer\", \"word\": \"рыбка\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 2362, \"reason\": \"owner-confirmed-lexicalization; docs/CAMPAIGN.md\", \"role\": \"source\", \"word\": \"рыбка\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 2362, \"reason\": \"owner-confirmed-lexicalization; docs/CAMPAIGN.md\", \"role\": \"target\", \"word\": \"рыбка\"}, {\"base_reasons\": \"usage_unconfirmed\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-preferred-source; requires-task-reachability; docs/CAMPAIGN.md\", \"role\": \"source\", \"word\": \"селитроварня\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"таксатор\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"таксатор\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"таксатор\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 3, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"answer\", \"word\": \"талмудист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 3, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"source\", \"word\": \"талмудист\"}, {\"base_reasons\": \"\", \"decision\": \"keep\", \"frequency\": 3, \"reason\": \"owner-reviewed-existing-noun; SHORT15-05\", \"role\": \"target\", \"word\": \"талмудист\"}, {\"base_reasons\": \"usage_unconfirmed\", \"decision\": \"keep\", \"frequency\": 0, \"reason\": \"owner-preferred-source; requires-task-reachability; docs/CAMPAIGN.md\", \"role\": \"source\", \"word\": \"хлопкопункт\"}]}, \"sha256\": \"56193d684f4f316104801309ddda8bbc091c8754e91bdd50dfcc4e6fa7a5c3e4\", \"source_candidates\": [\"аккумулятор\", \"артикуляция\", \"аспирантура\", \"вегетарианец\", \"велосипед\", \"взвешивание\", \"видеотехника\", \"демонстрация\", \"колядование\", \"магнитофон\", \"мелодичность\", \"одноколейка\", \"окаменелость\", \"опровержение\", \"переводчица\", \"переливание\", \"питекантроп\", \"правоведение\", \"пудлинговка\", \"ратификация\", \"реввоенсовет\", \"регулировщик\", \"рекуперация\", \"селитроварня\", \"субординация\", \"субъективизм\", \"сурдоперевод\", \"фисгармоника\", \"хлопкопункт\", \"чемпионство\"], \"source_only\": [\"видеотехника\", \"колядование\", \"мелодичность\", \"одноколейка\", \"переводчица\", \"питекантроп\", \"правоведение\", \"пудлинговка\", \"ратификация\", \"реввоенсовет\", \"рекуперация\", \"селитроварня\", \"субъективизм\", \"сурдоперевод\", \"фисгармоника\", \"хлопкопункт\"]}, \"sha256_golden_search\": \"e80bedfdbc04d60935d632b2945c13a22700280ca181f60dcdd9e4b0e4132c8b\", \"sha256_levels_json\": \"e4ded7a9bdfc5855c69bd167abb03c25d5291652a1504956d3a0e99e4742e73a\", \"sha256_word_sources\": \"7f1f4e259916d5f9cb822737f6cf9886c3cef98215795ede69bf7a67eb2f4c9b\", \"sha256_words_txt\": \"9c1aed9e0011e4173dffd0f4281832d821d4de90623d19273f7fc8e68c212489\", \"source\": {\"dump_date\": \"2026-11-01\", \"extractor\": \"Kaikki.org / Wiktextract\", \"license\": \"CC-BY-SA-4.0\", \"license_url\": \"https://creativecommons.org/licenses/by-sa/4.0/\", \"project\": \"Русский Викисловарь\", \"selection\": \"Modern game nouns selected by structured fields, leading sense labels and wordform usage; level exceptions recorded\", \"sha256_input\": \"98bebfb8013064d23bc6f0981b64cd097f64e098c9e434ebb97684c9606cc2da\", \"url\": \"https://kaikki.org/ruwiktionary/rawdata.html\"}, \"words\": 20120}"
+      ]
+    },
+    {
+      "path": "docs/ANDROID_UI_HANG_DIAGNOSIS.md",
+      "classification": "historical record",
+      "matches": [
+        "181: правки `docs/SQLITE_REPRODUCIBILITY_AUDIT.md` и `docs/PRE_RELEASE_ANDROID_QA.md`"
+      ]
+    },
+    {
+      "path": "docs/CAMPAIGN.md",
+      "classification": "active dependency",
+      "matches": [
+        "373: SQLite-базы и временные каталоги `CODEX_HOME`; без неё инициализация",
+        "484: `definitions.db` `718db097687d2246baebc138c121a9a17e889a6d881d4f07a496eddc4158f9fc`,",
+        "501: - staging `definitions.db`: `6d0cd051b75babdb4435777f29e00419ff3ba7dbc8c0d9ae602cff7b18869d7f`,",
+        "639: `definitions.db` `718db097687d2246baebc138c121a9a17e889a6d881d4f07a496eddc4158f9fc`,"
+      ]
+    },
+    {
+      "path": "docs/CAMPAIGN_REVIEW.md",
+      "classification": "active dependency",
+      "matches": [
+        "6: `data/definitions.db` и `data/manifest.json`. Он не меняет игру, не ходит в",
+        "101: | `HINT_REPLACE` | D — слово, F — новый текст | Предложить безопасную подсказку; она сохраняется только в pending-файл и не меняет `definitions.db` или права |",
+        "110: категория в `data/definitions.db` может быть `other`, `sport`, `health` или",
+        "137: | Тема T6 | `word_metadata.category` в `data/definitions.db` | Проверенная категория, например `professions`; ключ, а не подпись |",
+        "138: | Определение | таблица `definitions` в `data/definitions.db` | Исходный текст и источник; в подсказке маскируется, но в базе не переписывается |",
+        "153: | `data/definitions.db` | `6d0cd051b75babdb4435777f29e00419ff3ba7dbc8c0d9ae602cff7b18869d7f` |",
+        "201: `campaign.json`, `words.txt`, `definitions.db` и `manifest.json` со снимком и",
+        "227: | `hint_overrides.pending.json` | Только предложенные `HINT_REPLACE`; `definitions.db` и права не меняются |"
+      ]
+    },
+    {
+      "path": "docs/CORE_CAMPAIGN.md",
+      "classification": "historical record",
+      "matches": [
+        "158: обращений к SQLite и классификации слов по тексту статьи здесь нет."
+      ]
+    },
+    {
+      "path": "docs/CUR03_ACCEPTANCE.md",
+      "classification": "historical record",
+      "matches": [
+        "21: | SQLite и определения | PASS | `integrity_check=ok`, `user_version=9`; 31 369 толкований для 20 117 слов; все строки БД совпали с повторным извлечением из локального дампа |",
+        "46: | `definitions.db` | `406d127a444b02d9eaddb30e820dd7cadc200b967338554a552f81468ee6c097` |",
+        "53: Проверены все связи manifest с этими файлами, словарём БД и версией SQLite.",
+        "125: python3 tools/pick_level_words.py --words data/words.txt --manifest data/manifest.json --database data/definitions.db --previous-levels data/levels.json --dump .local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz --frequency-list .local/frequency/frequencywords-2018-ru/ru_full.txt --categories build/reports/short15-05/definitions-reviewed/category_index.json --suitability build/reports/short15-05/suitability/word_suitability.json --hints build/reports/short15-05/hints.jvm.jsonl --cache build/reports/short15/cur03/profile-cache --reports build/reports/short15/cur03/profiles",
+        "127: python3 tools/validate_campaign.py --profile short15-release-v1 --campaign data/campaign.json --profiles build/reports/short15/cur03/profile-cache/0e645821aadcb2d4029adc62a658d143245649787fba7553853ffc0f64c33c52.json.gz --words data/words.txt --database data/definitions.db --previous-levels data/levels.json --manifest data/manifest.json --output build/reports/short15/cur03/gen04"
+      ]
+    },
+    {
+      "path": "docs/DATA_PIPELINE_V2.md",
+      "classification": "active dependency",
+      "matches": [
+        "18: `orchestrator/`. Установленный `definitions.db` читается как база версии;"
+      ]
+    },
+    {
+      "path": "docs/DEFINITIONS_POLICY.md",
+      "classification": "active dependency",
+      "matches": [
+        "129: Первая БД получает `PRAGMA user_version=4`, новые колонки `origin`, `category`, `guessable`. Старые колонки и их имена сохранены. `SqliteDefinitionsRepository` выбирает собственную проекцию, поэтому дополнительные колонки не мешают чтению. Для слов без определения категория хранится в отдельной таблице `word_metadata`, без пустых строк в `definitions`.",
+        "155: Gradle-задача `:app:verifyDefinitionsAudit` подключена к `preReleaseBuild`, `assembleRelease`, `bundleRelease`. При наличии `data/definitions.db` проверяет политику прав, аудит и хэш базы. В текущем локальном режиме флаг `hasDefinitions=true`, БД включается в assets и UI; отсутствие ручного аудита не блокирует debug. Публикация временной базы `wiktionary-provisional-v1` остаётся заблокированной. Техническая release-сборка возможна только по явному решению владельца: флаг `sostavslova.release.allowUnauditedDefinitions=true` в `gradle.properties` добавляет к проверке `--allow-unaudited-release`, печатает предупреждение и не меняет `audit.passed`/`rights_review.passed`. Без флага строгий `--check-release` по-прежнему отказывает. Результаты автоматической проверки маскирования не заменяют ручной аудит или проверку прав."
+      ]
+    },
+    {
+      "path": "docs/DICTIONARY_CLEANUP.md",
+      "classification": "active dependency",
+      "matches": [
+        "288: `definitions.db` в каталоге назначения остановит публикацию до его"
+      ]
+    },
+    {
+      "path": "docs/LCH01_REPORT.md",
+      "classification": "historical record",
+      "matches": [
+        "64: SqliteDefinitionsRepository, HintLadder, T3/T4/T6, категории и маскирование"
+      ]
+    },
+    {
+      "path": "docs/LCH03_REPORT.md",
+      "classification": "historical record",
+      "matches": [
+        "12:   минимальная SQLite-БД, прежняя схема DefinitionsRepository, отдельный",
+        "19: - `data/definitions.db`, `data/manifest.json`: установлены генератором через",
+        "23:   SQLite user_version=10, 1 818 624 байта вместо 17 240 064.",
+        "37:   самостоятельно. API и SQLite-схема сохранены для редакторских инструментов.",
+        "38: - `SqliteDefinitionsRepository.kt`: asset проверяется по BuildConfig SHA;",
+        "84: - `SqliteDefinitionsRepositoryTest`: реальный минимальный asset, категория,",
+        "133: Release APK прочитан как ZIP: SHA assets/definitions.db"
+      ]
+    },
+    {
+      "path": "docs/LEVEL_HINTS.md",
+      "classification": "active dependency",
+      "matches": [
+        "4: `docs/owned_hints.json` (LCH-02). В установленной SQLite-БД 39 собственных",
+        "73: равенство SQLite свежей сборке. Проверяются также пустые вспомогательные поля,",
+        "89: `SqliteDefinitionsRepository` на первом чтении сверяет asset с BuildConfig SHA,",
+        "105: (Python), SqliteDefinitionsRepositoryTest, CampaignProgressRepositoryTest,"
+      ]
+    },
+    {
+      "path": "docs/LOCAL_DEFINITIONS.md",
+      "classification": "active dependency",
+      "matches": [
+        "5: Текущий результат: **35 947 толкований для 23 390 из 23 393 слов**, SQLite",
+        "48: SQLite имеет `user_version >= 5`. Таблица `definitions` сохраняет прежние"
+      ]
+    },
+    {
+      "path": "docs/OWN_HINTS_LICENSE_RELEASE_AUDIT.md",
+      "classification": "historical record",
+      "matches": [
+        "36: | SQLite | `user_version=10`, **1 818 624** байта, `freelist_count=0` |",
+        "56: | `data/definitions.db` = сгенерированные assets = БД из APK | `8e35a322b2d4f726191231aacb20948ee310fa8750609650ba605bc860599268` |",
+        "101: Побайтная сверка с независимо созданной SQLite охватывает **все** таблицы,",
+        "159: Для смешанной SQLite-базы с новыми текстами нужно также решить лицензию",
+        "246: | `audit_public_package.py` на итоговом debug APK | PASS механических критериев; полный whitelist assets, одинаковая свежая SQLite, 39/40/11, provenance, 59 маркеров и 8 native-файлов |",
+        "261:   --legacy-db tools/cache/local_definitions/builds/106b79b09b43b3654e8d726621451c7bf7d4492d0e90e76ddc4be3840f37c10f/definitions.db \\",
+        "268: Android-тесты `GameViewModelTest`, `SqliteDefinitionsRepositoryTest`,"
+      ]
+    },
+    {
+      "path": "docs/OWN_HINTS_MANUAL_AUDIT.json",
+      "classification": "legal provenance evidence",
+      "matches": [
+        "8:   \"database_sha256\": \"73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d\","
+      ]
+    },
+    {
+      "path": "docs/OWN_HINTS_MANUAL_AUDIT.md",
+      "classification": "historical record",
+      "matches": [
+        "14: | `data/definitions.db` после первой сборки | `73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d` |"
+      ]
+    },
+    {
+      "path": "docs/OWN_HINTS_SCOPE.md",
+      "classification": "historical record",
+      "matches": [
+        "18: | `definitions.db` | `406d127a444b02d9eaddb30e820dd7cadc200b967338554a552f81468ee6c097` |"
+      ]
+    },
+    {
+      "path": "docs/OWN_HINTS_TOOLCHAIN.md",
+      "classification": "active dependency",
+      "matches": [
+        "3: `data/definitions.db` — утверждённый артефакт в Git. Текущий SHA-256:",
+        "4: `73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d`.",
+        "12: Git-коммита. Если Git-истории нет, либо системная SQLite отличается от",
+        "22: в Git, и пакет библиотеки SQLite из Ubuntu Security. URL привязаны к версии",
+        "35: Исходная проверенная среда: Python 3.10.12, SQLite 3.37.2, Ubuntu-пакет",
+        "36: `libsqlite3-0_3.37.2-2ubuntu0.8_amd64.deb`. Lock хранит SHA пакета и самой",
+        "37: библиотеки, SQLite source id и хэш полного набора compile options.",
+        "43: проверяет профиль SQLite перед записью. Системные библиотеки не заменяются;",
+        "44: SQLite CLI из Android SDK на этот выбор не влияет.",
+        "52: Python 3.10+ с модулем `sqlite3`. Подготовка пакета требует `dpkg-deb` и",
+        "55: номером версии. Другие архитектуры без совпадающей нативной SQLite требуют",
+        "60: - Исходный Python 3.10.12 / SQLite 3.37.2: строгий `--check` — PASS.",
+        "61: - Python 3.11.18 / системная SQLite 3.40.1: строгий `--check` через",
+        "64: - Изолированный контейнер Python 3.13.5 / системная SQLite 3.46.1:",
+        "83: Исследование причин расхождения SQLite и исторические альтернативы:",
+        "84: [SQLITE_REPRODUCIBILITY_AUDIT.md](SQLITE_REPRODUCIBILITY_AUDIT.md)."
+      ]
+    },
+    {
+      "path": "docs/OWN_HINTS_VERIFICATION.md",
+      "classification": "active dependency",
+      "matches": [
+        "44: акта в SQLite; тексты, строки definitions и word_metadata остаются прежними.",
+        "64: | database_sha256 | SHA-256 итоговой `data/definitions.db`, уже с метаданными фазы 1 |",
+        "83: в manifest. Аудит не входит в SQLite, поэтому циклического хэша БД нет.",
+        "90: Свежая сборка использует [закреплённую SQLite](OWN_HINTS_TOOLCHAIN.md)."
+      ]
+    },
+    {
+      "path": "docs/PRE_RELEASE_ANDROID_QA.md",
+      "classification": "historical record",
+      "matches": [
+        "125: Прочитана SQLite в режиме read-only: integrity_check=ok, user_version=10.",
+        "130: - definitions.db: `73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d`."
+      ]
+    },
+    {
+      "path": "docs/PROJECT_STATUS.md",
+      "classification": "active dependency",
+      "matches": [
+        "23: - **39 собственных описаний, 0 сторонних толкований**, SQLite `user_version=10`,"
+      ]
+    },
+    {
+      "path": "docs/RELEASE_RIGHTS_DECISION.md",
+      "classification": "historical record",
+      "matches": [
+        "36: | Определения, фактический COUNT | `data/definitions.db`, таблица `definitions`: **31 351** строка; `word_metadata`: 20 106; `build_metadata`: 7; `PRAGMA user_version=8`. Покрытие: **20 103 из 20 106** слов; без определений остаются `бунд`, `родные`, `хулиганье`. |",
+        "38: | SHA-256 БД | `6d0cd051b75babdb4435777f29e00419ff3ba7dbc8c0d9ae602cff7b18869d7f`; совпадает с `manifest.definitions.sha256` и с `assets/definitions.db` внутри APK (байт-в-байт). |",
+        "42: | Строгая проверка | `python3 tools/build_game_data.py --check-release --out data` → **exit 2**, «definitions.db не соответствует пройденному ручному аудиту». |",
+        "58: `assets/definitions.db`, `assets/word_sources.jsonl` (в APK без `.gz`; содержимое совпадает с `.gz`), `assets/THIRD_PARTY_NOTICES.txt`,",
+        "68: | `assets/definitions.db` | 17 223 680 | SHA `6d0cd051…d9d7f`; 31 351 строка |",
+        "83: | `data/` (7 файлов) | В Git: `words.txt`, `campaign.json`, `levels.json`, `manifest.json`, `golden_search.json`, `word_sources.jsonl.gz`, `definitions.db`. Этого достаточно для сборки текущего пакета. |",
+        "94: | `data/words.txt` | Локальный дамп Kaikki.org / Wiktextract от **2026-11-01**, SHA входа `98bebfb8013064d23bc6f0981b64cd097f64e098c9e434ebb97684c9606cc2da`; 113 413 входных слов → 20 106 после очистки; `data/manifest.json.source`. | В манифесте указана **CC BY-SA 4.0** (`license_url`), но это лицензия источника, а не отдельное явное заявление для выходного `words.txt`. | Атрибуция: «участники русского Викисловаря» + URL статей в `word_sources`; share-alike для производного списка **не оформлен явно**. Право на конкретный список как объект авторского права не доказано (в разных юрисдикциях списки слов могут не охраняться; здесь это не решается). | `assets/words.txt` в APK; основа кампании и поиска. | Нет явной лицензии на выходной файл, полного текста CC BY-SA 4.0 в APK и подтверждённой атрибуции для всех статей. | Добавить отдельный `DATA_LICENSE`/NOTICE: `words.txt`, `word_sources`, `definitions.db` распространяются на CC BY-SA 4.0; приложить полный текст или URI, список изменений и атрибуцию; проверить владельцем. |",
+        "95: | `data/definitions.db` | Тот же дамп; `tools/build_local_definitions.py`; `origin='wiktionary'`, `source='https://ru.wiktionary.org/wiki/…'`; 31 351 строка, 20 103 слова; `user_version=8`; SHA `6d0cd051…d9d7f`. | Заявлена **CC BY-SA 4.0**; фактическая политика — `wiktionary-provisional-v1`; индивидуальный статус прав **не проверен**. | Атрибуция по URL статьи; история авторов доступна на странице; share-alike для адаптированных текстов **не оформлен**. В выборке 5 000 записей ru-noun локального дампа нет полей `license`, `author`, `source` — только `word`, `pos`, `senses` и т. п.; по записи нельзя доказать конкретную лицензию/автора. | `assets/definitions.db`; подсказки, окно значения, T4-загадки. | **Главный правовой блокер:** 31 351 текст распространён как «provisional/unverified»; `audit.passed=false`, `rights_review.passed=false`, `replacement_required=true`; ручной аудит и проверка индивидуальных прав не выполнены. Это не доказывает нарушение, но и не даёт доказанного права на публикацию. | Маршрут A (аудит + CC BY-SA + атрибуция) либо B (замена) либо C (исключить БД); до этого публикацию не объявлять. |",
+        "145: 1. Нет доказанного права распространять 31 351 текст `definitions.db`; политика сама называет их",
+        "149: 3. Атрибуция/ShareAlike для `words.txt` и `definitions.db` не оформлены как единый, проверяемый",
+        "204: 3. Оформить `DATA-NOTICE`/`LICENSE-DATA`: `words.txt`, `word_sources`, `definitions.db` —",
+        "242: **Суть:** не распространять `definitions.db` и тексты Викисловаря; оставить словарь, кампанию и",
+        "248: - `SqliteDefinitionsRepository` при `hasDefinitions=false` удаляет старую БД и возвращает `null`",
+        "249:   (`app/src/main/kotlin/.../SqliteDefinitionsRepository.kt`);",
+        "259: 2. Ввести сборку/флаг `hasDefinitions=false`, исключить `definitions.db` из `syncDictionaryAssets`",
+        "263: 4. Прогнать strict `--check-release` на release-входе **без** `data/definitions.db`: текущий",
+        "264:    `require_release_audit` смотрит на `--out/definitions.db`, а не только на APK, поэтому одного",
+        "279:    либо в release-входе и APK нет `definitions.db`/`origin=wiktionary` (маршрут B/C).",
+        "283:    `definitions.db` (если есть), `word_sources` и APK-assets совпадают с manifest/BuildConfig;",
+        "284:    `definitions.db` COUNT/покрытие зафиксированы.",
+        "312:    конкретные тексты считаются CC BY-SA 4.0; разрешаете ли ShareAlike для `definitions.db` и",
+        "342: - **`data/` и `definitions.db` не изменялись**; `manifest.audit.passed`/`rights_review.passed`",
+        "350: import sqlite3",
+        "351: c = sqlite3.connect('file:data/definitions.db?mode=ro', uri=True)"
+      ]
+    },
+    {
+      "path": "docs/RIGHTS02_REPORT.md",
+      "classification": "historical record",
+      "matches": [
+        "15:   блок manifest и побайтная воспроизводимость БД. В SQLite меняются только"
+      ]
+    },
+    {
+      "path": "docs/RIGHTS03_REPORT.md",
+      "classification": "historical record",
+      "matches": [
+        "30: | `data/definitions.db` | `73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d` |",
+        "49: definitions.db и THIRD_PARTY_NOTICES.txt в assets совпадают с источниками."
+      ]
+    },
+    {
+      "path": "docs/RIGHTS_RELEASE_AUDIT.md",
+      "classification": "historical record",
+      "matches": [
+        "18: | Лицензия в установленных данных | PASS | [Манифест](../data/manifest.json) и build_metadata в [БД](../data/definitions.db): own_license=CC0-1.0, owner_approval_sha256 совпадает; audit и rights_review выведены из свидетельств |",
+        "39: | [БД](../data/definitions.db) | `73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d` |",
+        "65: | Изменить own_license в SQLite и обновить SHA БД в manifest | exit 2, выпуск запрещён |"
+      ]
+    },
+    {
+      "path": "docs/SELECTIVE_CAMPAIGN.md",
+      "classification": "active dependency",
+      "matches": [
+        "145: | `app/.../SqliteDefinitionsRepository.categoryFor` | необязательная подсказка; `other`, отсутствие таблицы/колонки → `null` |",
+        "154: | 1 | `dictionary.write_game_data` + `build_local_definitions.run` | определения, локальные категории, `classification_features`; очистка выполнена до `converge` | все слова словаря | `words.txt`, `definitions.db`, `category_index.json` |",
+        "267: | `app/SqliteDefinitionsRepository.categoryFor` | `word_metadata.category` | `null`; подсказка без темы |",
+        "966: `data/definitions.db`. Для staging-кандидата передавайте `--words`,",
+        "1018: 1. Сверить SHA-256 дампа, частотного списка, `words.txt`, `definitions.db`,",
+        "1245: - `definitions.db`: `71a9efd8dca65e435354bc285b950bd1331d57881fdc5fc462217d78fd9358bf`, `user_version=8`.",
+        "1323: `definitions.db` `95c64e52fe9f9b572f8c0cb6e4fc94fd2c26678930db80b2c81198f321cc7de8`,",
+        "1410: `definitions.db` `95c64e52fe9f9b572f8c0cb6e4fc94fd2c26678930db80b2c81198f321cc7de8`,",
+        "1510: staging `definitions.db` `6d0cd051b75babdb4435777f29e00419ff3ba7dbc8c0d9ae602cff7b18869d7f`,",
+        "1667: - **Итоговые хэши:** `words.txt`, `definitions.db`, `campaign.json`,"
+      ]
+    },
+    {
+      "path": "docs/SHORT15_05_REPORT.md",
+      "classification": "historical record",
+      "matches": [
+        "20: | `definitions.db` | `6d0cd051b75babdb4435777f29e00419ff3ba7dbc8c0d9ae602cff7b18869d7f` |",
+        "53: extract_records для этих лемм. SQLite integrity_check — ok.",
+        "99: - `data/definitions.db`",
+        "133: 4. `apply_short15_balance.py --category-index …/definitions/category_index.json --baseline-database data/definitions.db --output …/reviewed_categories.json`; повтор `build_local_definitions.py` с `--category-index …/reviewed_categories.json --reports …/definitions-reviewed --prepare-only` — обе проверки прошли. Сводный индекс категорий пересчитан; повтор БД дал идентичные байты.",
+        "157: | `definitions.db` | `406d127a444b02d9eaddb30e820dd7cadc200b967338554a552f81468ee6c097` |",
+        "206:   T3=24, T5=18; SQLite integrity_check=ok, определения всех 15 новых слов есть."
+      ]
+    },
+    {
+      "path": "docs/SHORT15_INSTALL.md",
+      "classification": "active dependency",
+      "matches": [
+        "25: | `data/definitions.db` | `6d0cd051b75babdb4435777f29e00419ff3ba7dbc8c0d9ae602cff7b18869d7f` |"
+      ]
+    },
+    {
+      "path": "docs/SHORT15_RELEASE_GATE.md",
+      "classification": "historical record",
+      "matches": [
+        "31: | `data/definitions.db` | `6d0cd051b75babdb4435777f29e00419ff3ba7dbc8c0d9ae602cff7b18869d7f` |",
+        "101:   --database data/definitions.db --hints \"$HINTS\" \\",
+        "160:   кодом 2: `Release заблокирован: definitions.db не соответствует пройденному",
+        "193: `words.txt`, `definitions.db`, `word_sources.jsonl`, `levels.json` и notices.",
+        "392:   --database data/definitions.db \\"
+      ]
+    },
+    {
+      "path": "docs/SQLITE_REPRODUCIBILITY_AUDIT.md",
+      "classification": "historical record",
+      "matches": [
+        "1: # PRE-03: диагностика воспроизводимости SQLite",
+        "11: другой сборкой SQLite получена логически идентичная БД с другим бинарным SHA.",
+        "13: Историческое несовпадение на SQLite 3.40.1 отдельно не воспроизведено.",
+        "16: проверенную среду Python + SQLite, включая сборку библиотеки и настройки.",
+        "19: не устраняет несовместимость строгого `--check` с другими версиями SQLite.",
+        "28: | Python-модуль `sqlite3` | 2.6.0 (`sqlite3.version`; это версия обёртки) |",
+        "29: | SQLite, используемый Python | 3.37.2 (`sqlite3.sqlite_version`) |",
+        "30: | SQLite source id в Python | `2022-01-06 13:25:41 872ba256cbf61d9290b571c0e6d82a20c224ca3ad82971edc46b29818d5dalt1` |",
+        "31: | Системный CLI | `/usr/bin/sqlite3`, 3.37.2, тот же source id |",
+        "32: | CLI из Android SDK | `<PROJECT_ROOT>/android-sdk/platform-tools/sqlite3`, 3.50.6, 64-bit |",
+        "33: | SQLite source id SDK CLI | `2025-09-22 18:50:24 9cc554372371e07bf01d8070a64d461ac85b91be6eef0e642ed129a0c7fa8105` |",
+        "34: | SQLite 3.40.1 | **NOT RUN**: отдельная среда этой версии не была доступна для проверки |",
+        "35: | Python, связанный с SQLite 3.50.6 | **NOT RUN**: второй Python runtime не использовался; выполнен SQL replay через CLI |",
+        "37: Важна версия библиотеки в Python, а не первая `sqlite3` в PATH: `command -v sqlite3`",
+        "53: command -v sqlite3",
+        "54: sqlite3 --version",
+        "55: /usr/bin/sqlite3 --version",
+        "56: python3 -c 'import sqlite3,sys,platform; print(sys.executable); print(platform.platform()); print(sqlite3.version); print(sqlite3.sqlite_version); print(sqlite3.connect(\":memory:\").execute(\"select sqlite_source_id()\").fetchone()[0])'",
+        "57: sha256sum data/definitions.db",
+        "60: mktemp -d /tmp/pre03-sqlite-XXXXXXXX",
+        "61: python3 /tmp/pre03-sqlite-UuG1Fzjs/audit.py",
+        "68: новые БД исключительно в изолированный `/tmp/pre03-sqlite-UuG1Fzjs`.",
+        "95: - H0: `73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d`",
+        "99: | Образец | SQLite / способ | SHA | Размер, байт | auto_vacuum | Страниц | Повтор |",
+        "101: | Утверждённая `data/definitions.db` | заголовок: 3.37.2 | H0 | 1 818 624 | 0 | 444 | исходник |",
+        "109: Все восемь файлов (исходник и семь контрольных) прочитаны системным Python SQLite",
+        "116: | `sqlite_schema` (type, name, tbl_name, SQL), включая отсутствие дополнительных объектов | 3 таблицы, 3 индекса | полное совпадение | полное совпадение |",
+        "137: `sqlite_autoindex_word_metadata_1`, `sqlite_autoindex_build_metadata_1`.",
+        "180: **A. Только бинарное представление SQLite — подтверждено для проверенной пары.**",
+        "190:    [спецификация SQLite](https://sqlite.org/fileformat2.html#write_library_version_number_and_version_valid_for_number).",
+        "193:    `sqlite_autoindex_word_metadata_1`. Вероятная причина — особенности записи",
+        "217: `data/definitions.db`. Полный Python gate с SQLite 3.50.6 **не запускался**;",
+        "233: библиотеки SQLite, её source id и compile options. Проверен отдельный writer",
+        "240: | A. Закрепить SQLite в toolchain | Сохраняет требование побайтного rebuild и текущий H0 | Рекомендуется: зафиксировать Python 3.10.12 + фактическую библиотеку SQLite 3.37.2 с source id, сборкой/параметрами; предпочтительно воспроизводимый образ с digest. Проверить на независимой среде, что он даёт H0. Только номера версии CLI недостаточно. Реализация — отдельная задача, не выполнена здесь. |",
+        "266: - Причина: переносимость проверки между версиями SQLite.",
+        "281: import collections, hashlib, json, pathlib, sqlite3, subprocess, sys",
+        "297: original_connect = sqlite3.connect",
+        "303: sqlite3.connect = traced_connect",
+        "307:     sqlite3.connect = original_connect",
+        "310: cli = '<PROJECT_ROOT>/android-sdk/platform-tools/sqlite3'",
+        "314:     ('cli337', '/usr/bin/sqlite3', ''),",
+        "322:     with sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True) as db:",
+        "323:         schema = db.execute('SELECT type,name,tbl_name,sql FROM sqlite_schema ORDER BY type,name').fetchall()",
+        "324:         tables = [r[0] for r in db.execute(\"SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name\")]",
+        "349: paths = {'approved':ROOT/'data/definitions.db', **{name:TEMP/(name+'.db') for name in ('native','native-repeat','cli','cli-repeat','cli337','cli350-av0','cli350-av0-repeat')}}",
+        "374: `SELECT sqlite_source_id()`, `PRAGMA secure_delete`; `dbstat` запрашивался",
+        "386: - NOT RUN: SQLite 3.40.1; полный Python `--check` с 3.50.6; независимая машина;"
+      ]
+    },
+    {
+      "path": "docs/audits/LCH04_PACKAGE_INVENTORY.json",
+      "classification": "historical record",
+      "matches": [
+        "21:   \"sqlite\": {",
+        "654:       \"path\": \"assets/definitions.db\",",
+        "1384:       \"path\": \"app/src/androidTest/kotlin/com/example/sostavslova/data/SqliteDefinitionsRepositoryTest.kt\",",
+        "1594:       \"path\": \"app/src/main/kotlin/com/example/sostavslova/data/SqliteDefinitionsRepository.kt\",",
+        "2069:       \"path\": \"data/definitions.db\","
+      ]
+    },
+    {
+      "path": "docs/decisions/2026-11-06-provisional-definitions.md",
+      "classification": "historical record",
+      "matches": [
+        "47: правки SQLite или `data/`. Можно использовать собственные определения,"
+      ]
+    },
+    {
+      "path": "docs/qa/pre04-17/coverage.json",
+      "classification": "historical record",
+      "matches": [
+        "397:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "399:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#upgradeToRealAssetReplacesSameOrHigherVersionAndEveryOldText\"",
+        "402:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "404:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#absentDefinitionsReturnFalseAndEmptyListWithoutCreatingDatabase\"",
+        "407:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "409:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#realAssetContainsOnlyMinimalOwnedHints\"",
+        "412:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "414:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#upgradeRemovesInstalledCopyWhenCurrentAssetIsMissing\"",
+        "417:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "419:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#readsFormsAndNearestCognatesFromWordMetadata\"",
+        "422:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "424:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#normalizedQueriesPreservePlainTextAndCopyAssetOnceOffMain\"",
+        "427:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "429:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#missingAssetIsAlsoSafeWhenBuildFlagIsTrue\"",
+        "432:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "434:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#newerBundledUserVersionReplacesInstalledDatabase\"",
+        "437:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "439:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#oldSchemaWithoutMetadataDoesNotBreakDefinitions\"",
+        "442:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "444:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#bundledDictionaryUsesOpenSourceOrRemainsOptional\"",
+        "447:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "449:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#sourceIsReadFromNewSchemaWithoutLosingOtherFields\"",
+        "452:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "454:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#bundledContentReplacesEvenHigherInstalledVersion\"",
+        "457:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "459:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#categorySchemaV8ReplacesInstalledV7AndPreservesDefinitionMetadata\"",
+        "462:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "464:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#categoriesAreOptionalNormalizedAndIndependentOfDefinitions\"",
+        "467:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "469:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#bundleWithoutDefinitionsDoesNotExposeOldInstalledCopy\"",
+        "2082:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2662:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2664:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#upgradeToRealAssetReplacesSameOrHigherVersionAndEveryOldText\",",
+        "2668:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2670:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#absentDefinitionsReturnFalseAndEmptyListWithoutCreatingDatabase\",",
+        "2674:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2676:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#realAssetContainsOnlyMinimalOwnedHints\",",
+        "2680:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2682:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#upgradeRemovesInstalledCopyWhenCurrentAssetIsMissing\",",
+        "2686:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2688:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#readsFormsAndNearestCognatesFromWordMetadata\",",
+        "2692:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2694:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#normalizedQueriesPreservePlainTextAndCopyAssetOnceOffMain\",",
+        "2698:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2700:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#missingAssetIsAlsoSafeWhenBuildFlagIsTrue\",",
+        "2704:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2706:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#newerBundledUserVersionReplacesInstalledDatabase\",",
+        "2710:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2712:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#oldSchemaWithoutMetadataDoesNotBreakDefinitions\",",
+        "2716:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2718:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#bundledDictionaryUsesOpenSourceOrRemainsOptional\",",
+        "2722:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2724:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#sourceIsReadFromNewSchemaWithoutLosingOtherFields\",",
+        "2728:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2730:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#bundledContentReplacesEvenHigherInstalledVersion\",",
+        "2734:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2736:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#categorySchemaV8ReplacesInstalledV7AndPreservesDefinitionMetadata\",",
+        "2740:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2742:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#categoriesAreOptionalNormalizedAndIndependentOfDefinitions\",",
+        "2746:       \"class\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\",",
+        "2748:       \"semantic_key\": \"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest#bundleWithoutDefinitionsDoesNotExposeOldInstalledCopy\","
+      ]
+    },
+    {
+      "path": "docs/qa/pre04-17/junit.xml",
+      "classification": "historical record",
+      "matches": [
+        "130:   <testsuite name=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" tests=\"15\" failures=\"0\" errors=\"0\" skipped=\"0\" time=\"1.571\" timestamp=\"2026-11-17T12:58:04\" hostname=\"localhost\">",
+        "136:     <testcase name=\"upgradeToRealAssetReplacesSameOrHigherVersionAndEveryOldText\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.203\" />",
+        "137:     <testcase name=\"absentDefinitionsReturnFalseAndEmptyListWithoutCreatingDatabase\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.028\" />",
+        "138:     <testcase name=\"realAssetContainsOnlyMinimalOwnedHints\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.153\" />",
+        "139:     <testcase name=\"upgradeRemovesInstalledCopyWhenCurrentAssetIsMissing\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.053\" />",
+        "140:     <testcase name=\"readsFormsAndNearestCognatesFromWordMetadata\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.054\" />",
+        "141:     <testcase name=\"normalizedQueriesPreservePlainTextAndCopyAssetOnceOffMain\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.103\" />",
+        "142:     <testcase name=\"missingAssetIsAlsoSafeWhenBuildFlagIsTrue\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.029\" />",
+        "143:     <testcase name=\"newerBundledUserVersionReplacesInstalledDatabase\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.156\" />",
+        "144:     <testcase name=\"oldSchemaWithoutMetadataDoesNotBreakDefinitions\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.077\" />",
+        "145:     <testcase name=\"bundledDictionaryUsesOpenSourceOrRemainsOptional\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.152\" />",
+        "146:     <testcase name=\"sourceIsReadFromNewSchemaWithoutLosingOtherFields\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.103\" />",
+        "147:     <testcase name=\"bundledContentReplacesEvenHigherInstalledVersion\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.128\" />",
+        "148:     <testcase name=\"categorySchemaV8ReplacesInstalledV7AndPreservesDefinitionMetadata\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.127\" />",
+        "149:     <testcase name=\"categoriesAreOptionalNormalizedAndIndependentOfDefinitions\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.127\" />",
+        "150:     <testcase name=\"bundleWithoutDefinitionsDoesNotExposeOldInstalledCopy\" classname=\"com.example.sostavslova.data.SqliteDefinitionsRepositoryTest\" time=\"0.078\" />"
+      ]
+    },
+    {
+      "path": "docs/uiux/SHORT15_REGRESSION.md",
+      "classification": "historical record",
+      "matches": [
+        "40: | `:app:assembleDebug` | Успешно; APK `app/build/outputs/apk/debug/app-debug.apk` — 17 289 516 байт; в APK есть `assets/campaign.json`, `assets/words.txt`, `assets/definitions.db` |"
+      ]
+    },
+    {
+      "path": "legal/THIRD_PARTY_NOTICES.txt",
+      "classification": "active dependency",
+      "matches": [
+        "43: В текущую definitions.db не входят толкования Викисловаря, литературные"
+      ]
+    },
+    {
+      "path": "orchestrator/PROGRESS.md",
+      "classification": "historical record",
+      "matches": [
+        "9: - [PRE-03] ✓ 2026-11-16T20:13:16+00:00 — Диагностика воспроизводимости SQLite — ИТОГ: Создан [диагностический отчёт](docs/SQLITE_REPRODUCIBILITY_AUDIT.md). На SQLite 3.37.2 БД воспроизводится побайтно; на 3.50.6 отличается бинарное представление при одинаковом содержимом. Рекомендовано закрепление среды. Данные и политика не изменены.",
+        "10: <!-- orchestrator:v1 {\"id\": \"PRE-03\", \"fingerprint\": \"25af54e7b3e7fd33ee7e629bb5b73412baf2b077b352c20c7c016cb40ea12117\", \"date\": \"2026-11-16T20:13:16+00:00\", \"gate\": \"passed\", \"manual\": false, \"summary\": \"ИТОГ: Создан [диагностический отчёт](docs/SQLITE_REPRODUCIBILITY_AUDIT.md). На SQLite 3.37.2 БД воспроизводится побайтно; на 3.50.6 отличается бинарное представление при одинаковом содержимом. Рекомендовано закрепление среды. Данные и политика не изменены.\", \"model\": \"gpt-6.1-sol\", \"effort\": \"medium\"} -->"
+      ]
+    },
+    {
+      "path": "orchestrator/TASKS.bak.md",
+      "classification": "historical record",
+      "matches": [
+        "29: 4. SQLite:",
+        "230: ## PRE-03: Диагностика воспроизводимости SQLite",
+        "239: Цель: исследовать различия бинарного результата SQLite",
+        "245: - утверждённая data/definitions.db уже находится",
+        "249: - в отдельном окружении с SQLite 3.40.1 ранее",
+        "258:    - версию sqlite3;",
+        "259:    - версию SQLite;",
+        "260:    - SHA-256 исходной data/definitions.db;",
+        "281:    A. Только бинарное представление SQLite.",
+        "285:    версией SQLite.",
+        "292:    docs/SQLITE_REPRODUCIBILITY_AUDIT.md",
+        "305:    A. Закрепление версии SQLite в toolchain.",
+        "314:    - замену data/definitions.db;",
+        "577:    - SQLite;",
+        "620: 10. Если проблема связана с SQLite,",
+        "674:   по SQLite приняты;"
+      ]
+    },
+    {
+      "path": "tools/apply_short15_balance.py",
+      "classification": "active dependency",
+      "matches": [
+        "11: import sqlite3",
+        "53:     with sqlite3.connect(Path(baseline_db).resolve().as_uri() + '?mode=ro', uri=True) as db:"
+      ]
+    },
+    {
+      "path": "tools/audit_public_package.py",
+      "classification": "active dependency",
+      "matches": [
+        "4: Checks every APK asset against its source, every SQLite byte against a fresh",
+        "15: import sqlite3",
+        "68:     with sqlite3.connect(database.resolve().as_uri() + '?mode=ro', uri=True) as db:",
+        "114:                 ('words.txt', 'word_sources.jsonl.gz', 'levels.json', 'campaign.json', 'definitions.db')}",
+        "155:             db_path = Path(temp) / 'definitions.db'",
+        "156:             db_path.write_bytes(archive.read('assets/definitions.db'))",
+        "157:             with sqlite3.connect(db_path) as db:",
+        "164:                 sqlite_version = db.execute('PRAGMA user_version').fetchone()[0]",
+        "190:                 sqlite=dict(tables=counts, origins=origins, freelist_count=free_pages, user_version=sqlite_version),",
+        "213:     print(json.dumps({key: result[key] for key in ('status', 'apk', 'coverage', 'sqlite')}, ensure_ascii=False))"
+      ]
+    },
+    {
+      "path": "tools/build_campaign.py",
+      "classification": "active dependency",
+      "matches": [
+        "592:     parser.add_argument('--database', type=Path, default=ROOT / 'data/definitions.db')"
+      ]
+    },
+    {
+      "path": "tools/build_dictionary.py",
+      "classification": "active dependency",
+      "matches": [
+        "185:     ap.add_argument(\"--db-out\", default=\"build/definitions.db\")"
+      ]
+    },
+    {
+      "path": "tools/build_game_data.py",
+      "classification": "active dependency",
+      "matches": [
+        "13: import sqlite3",
+        "33: ARTIFACTS = (\"words.txt\", \"word_sources.jsonl.gz\", \"levels.json\", \"golden_search.json\", \"definitions.db\", \"manifest.json\")",
+        "425:     with sqlite3.connect(path) as db:",
+        "456:     with sqlite3.connect(path) as db:",
+        "496:     with sqlite3.connect(candidate / \"definitions.db\") as db:",
+        "633:     if dictionary.sha256_file(candidate / \"definitions.db\") != binding[\"sha256_db\"]:",
+        "635:     if (output / \"definitions.db\").exists() and dictionary.sha256_file(output / \"definitions.db\") != binding[\"sha256_db\"]:",
+        "636:         with sqlite3.connect(output / \"definitions.db\") as current, sqlite3.connect(candidate / \"definitions.db\") as proposed:",
+        "668:     database = output / \"definitions.db\"",
+        "680:         raise ValueError(\"Release заблокирован: definitions.db изменена после генерации manifest\")",
+        "700:         raise ValueError(\"Release заблокирован: definitions.db не соответствует пройденному ручному аудиту\")",
+        "736:     old_database = args.out / \"definitions.db\"",
+        "739:         with sqlite3.connect(old_database) as db:",
+        "752:     database = candidate / \"definitions.db\"",
+        "759:         with sqlite3.connect(database) as db:",
+        "790:                \"sizes\": {name: (candidate / name).stat().st_size for name in (\"words.txt\", \"definitions.db\")}}",
+        "1027:     old_database = args.out / \"definitions.db\"",
+        "1029:         with sqlite3.connect(old_database) as db:",
+        "1047:     database = candidate / \"definitions.db\"",
+        "1053:         with sqlite3.connect(database) as db:",
+        "1080:                     \"sizes\": {name: (candidate / name).stat().st_size for name in (\"definitions.db\", \"words.txt\")},",
+        "1133:     except (ValueError, OSError, KeyError, sqlite3.Error) as error:"
+      ]
+    },
+    {
+      "path": "tools/build_local_definitions.py",
+      "classification": "active dependency",
+      "matches": [
+        "9: import sqlite3",
+        "178:     with sqlite3.connect(path) as db:",
+        "279:     installed = args.out / \"definitions.db\"",
+        "281:         with sqlite3.connect(installed) as db:",
+        "287:     database = candidate / \"definitions.db\"",
+        "290:         with sqlite3.connect(database) as db:",
+        "354:     except (ValueError, OSError, KeyError, sqlite3.Error) as error:"
+      ]
+    },
+    {
+      "path": "tools/build_owned_hints.py",
+      "classification": "active dependency",
+      "matches": [
+        "8: import sqlite3",
+        "45:     with sqlite3.connect(data / 'definitions.db') as db:",
+        "61:                             source_database_sha256=sha(data / 'definitions.db'),",
+        "140:     if not (data / 'definitions.db').exists():",
+        "142:     expected_block = definitions_block(data, data / 'definitions.db', candidate_path, index_path, candidate, metadata)",
+        "146:     # notes/examples, SQLite free pages and word_metadata. No hidden old prose.",
+        "148:         expected = Path(temp) / 'definitions.db'",
+        "160:         output = Path(temp) / 'definitions.db'",
+        "168:         publish(staging, data, ('definitions.db', 'manifest.json'))"
+      ]
+    },
+    {
+      "path": "tools/campaign_profiles.py",
+      "classification": "active dependency",
+      "matches": [
+        "378:                            else ROOT / 'data/definitions.db'),"
+      ]
+    },
+    {
+      "path": "tools/campaign_review_export.py",
+      "classification": "active dependency",
+      "matches": [
+        "5: ``data/definitions.db`` and ``data/manifest.json``. It performs no network calls,",
+        "18: import sqlite3",
+        "22: INPUT_FILES = (\"campaign.json\", \"words.txt\", \"definitions.db\", \"manifest.json\")",
+        "224:         raise ValueError(\"SHA-256 definitions.db расходится с manifest.definitions.sha256\")",
+        "227:         raise ValueError(\"definitions.db в manifest относится к другому словарю\")",
+        "237:         raise ValueError(\"manifest.definitions.coverage.words расходится с definitions.db\")",
+        "250:     database_sha = digest(paths[\"definitions.db\"])",
+        "265:     database_uri = Path(paths[\"definitions.db\"]).resolve().as_uri() + \"?mode=ro\"",
+        "266:     db = sqlite3.connect(database_uri, uri=True)",
+        "267:     db.row_factory = sqlite3.Row",
+        "423:                 \"definitions.db\": database_sha,",
+        "520:     except (OSError, ValueError, KeyError, sqlite3.Error) as error:"
+      ]
+    },
+    {
+      "path": "tools/campaign_review_import.py",
+      "classification": "active dependency",
+      "matches": [
+        "24: import sqlite3",
+        "217: def _safe_hint_for_db(db: sqlite3.Connection, word: str):",
+        "233: def _validate_hint_text(db: sqlite3.Connection, word: str, text: str) -> str:",
+        "297:         \"definitions.db\": data / \"definitions.db\",",
+        "320:         \"definitions.db\": \"definitions_sha256\",",
+        "358:     if expected_database and expected_database != hashes[\"definitions.db\"]:",
+        "359:         raise ValueError(\"SHA-256 definitions.db расходится с manifest.definitions.sha256\")",
+        "395:                  header_row: int, dictionary: set[str], db: sqlite3.Connection,",
+        "573:                 \"note\": \"Текст только в pending-файле; definitions.db и права не изменяются\",",
+        "743: def _read_database(path: Path) -> tuple[sqlite3.Connection, dict[str, str],",
+        "745:     connection = sqlite3.connect(Path(path).resolve().as_uri() + \"?mode=ro\", uri=True)",
+        "746:     connection.row_factory = sqlite3.Row",
+        "857:         root / \"data\" / \"definitions.db\")",
+        "951:             sqlite3.Error, BadZipFile) as error:"
+      ]
+    },
+    {
+      "path": "tools/clean_dictionary.py",
+      "classification": "active dependency",
+      "matches": [
+        "10: import sqlite3",
+        "501:         if (args.out / \"definitions.db\").exists():",
+        "502:             raise ValueError(\"В --out уже есть definitions.db; требуется отдельная фильтрация базы определений\")",
+        "529:     except (ValueError, OSError, KeyError, sqlite3.Error) as error:"
+      ]
+    },
+    {
+      "path": "tools/install_short15_package.py",
+      "classification": "active dependency",
+      "matches": [
+        "35:     \"definitions.db\",",
+        "148:     if (definitions.get(\"sha256\") != sha256(package / \"definitions.db\") or",
+        "150:         raise ValueError(\"definitions.db не связана с итоговым словарём\")",
+        "220:     if (definitions.get(\"sha256\") != sha256(directory / \"definitions.db\") or",
+        "222:         raise ValueError(\"Установленная definitions.db не совпадает с manifest\")"
+      ]
+    },
+    {
+      "path": "tools/owned_hints.py",
+      "classification": "active dependency",
+      "matches": [
+        "4: SQLite text is read only by compare_imported(), after validation of that input.",
+        "12: import sqlite3",
+        "213:     paths = {name: root/'data'/name for name in ['campaign.json', 'words.txt', 'manifest.json', 'definitions.db']}",
+        "238:     with sqlite3.connect(paths['definitions.db'].resolve().as_uri()+'?mode=ro', uri=True) as db:"
+      ]
+    },
+    {
+      "path": "tools/owned_hints_toolchain.json",
+      "classification": "active dependency",
+      "matches": [
+        "5:   \"sqlite\": {",
+        "11:     \"url\": \"https://security.ubuntu.com/ubuntu/pool/main/s/sqlite3/libsqlite3-0_3.37.2-2ubuntu0.8_amd64.deb\",",
+        "13:     \"library\": \"usr/lib/x86_64-linux-gnu/libsqlite3.so.0.8.6\",",
+        "17:     \"url\": \"https://raw.githubusercontent.com/volmir/words-combination/f38d660ca4ed36e96cfd31598db47471aa300c27/data/definitions.db\",",
+        "19:     \"sha256\": \"73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d\""
+      ]
+    },
+    {
+      "path": "tools/owned_hints_toolchain.py",
+      "classification": "active dependency",
+      "matches": [
+        "1: \"\"\"Pinned SQLite writer and byte-exact recovery. Network is opt-in setup only.\"\"\"",
+        "9: import sqlite3",
+        "19: LIBRARY = ROOT / '.local/owned-hints-toolchain/lib/libsqlite3.so.0'",
+        "37:     with closing(sqlite3.connect(':memory:')) as db:",
+        "39:         return dict(version=sqlite3.sqlite_version,",
+        "40:                     source_id=db.execute('SELECT sqlite_source_id()').fetchone()[0],",
+        "55:              lock['database']['git_revision'] + ':data/definitions.db'],",
+        "65:     path = data / 'definitions.db'",
+        "75:             raise ValueError('Approved definitions.db is missing and unavailable in Git. Run: ' + PREPARE)",
+        "77:     checked(content, artifact['sha256'], 'approved definitions.db')",
+        "89:     print('Restored approved definitions.db (SHA-256 verified)', file=sys.stderr)",
+        "94:         raise ValueError('Pinned SQLite library is missing. Run: ' + PREPARE)",
+        "100:         raise ValueError('Pinned SQLite worker requires Linux x86_64 with glibc >= 2.34')",
+        "111:         # Verify the entire .deb before extraction; do not install system packages.",
+        "114:             raise ValueError('Pinned SQLite package requires Linux x86_64')",
+        "116:             raise ValueError('Preparing pinned SQLite requires dpkg-deb')",
+        "121:             archive = temporary / 'sqlite.deb'",
+        "127:     elif runtime_profile() == lock['sqlite']:",
+        "130:         raise ValueError('SQLite runtime differs from the pinned writer. Run: ' + PREPARE)",
+        "137:     if runtime_profile() != lock['sqlite']:",
+        "138:         raise ValueError('SQLite worker does not match pinned source id / compile options')",
+        "145:     if runtime_profile() == lock['sqlite']:",
+        "159:         if runtime_profile() != load_lock()['sqlite']:",
+        "160:             raise ValueError('SQLite worker does not match the pinned runtime')",
+        "161:         print('Pinned SQLite runtime: PASS')"
+      ]
+    },
+    {
+      "path": "tools/pick_level_words.py",
+      "classification": "active dependency",
+      "matches": [
+        "10: import sqlite3",
+        "97:     with sqlite3.connect(database.resolve().as_uri() + '?mode=ro', uri=True) as db:",
+        "495:     parser.add_argument('--database', type=Path, default=ROOT / 'data/definitions.db')",
+        "516:     except (OSError, ValueError, KeyError, TypeError, StopIteration, sqlite3.Error) as error:"
+      ]
+    },
+    {
+      "path": "tools/prepare_v2.py",
+      "classification": "active dependency",
+      "matches": [
+        "11: import sqlite3",
+        "41: PACKAGE_ARTIFACTS = (*clean.ARTIFACTS[:-1], 'definitions.db', 'campaign.json', 'known_words.bloom',",
+        "268:     for name in definitions.WORD_ARTIFACTS + ('definitions.db', 'manifest.json'):",
+        "271:     index['database_sha256'] = sha(package / 'definitions.db')",
+        "312:         hints = jvm_hints(args, package / 'definitions.db', package / 'words.txt', directory)",
+        "314:             database=package / 'definitions.db', dump=args.dump, frequency_list=args.frequency_list,",
+        "516:     hints = jvm_hints(args, package / 'definitions.db', package / 'words.txt', directory)",
+        "518:         database=package / 'definitions.db', dump=args.dump, frequency_list=args.frequency_list,",
+        "598:                                        package / 'definitions.db', package / 'words.txt')",
+        "852:     definitions.validate_database(package / 'definitions.db', set(words), definitions.load_settings(TOOLS / 'definition_import_config.json'))",
+        "853:     with sqlite3.connect(package / 'definitions.db') as db:",
+        "858:     if sha(package / 'definitions.db') != manifest['definitions']['sha256']:",
+        "896:               database=package / 'definitions.db', manifest=package / 'input_manifest.json',",
+        "954:             database = baseline / 'definitions.db'",
+        "956:             if (installed / 'definitions.db').exists():",
+        "957:                 shutil.copyfile(installed / 'definitions.db', database)"
+      ]
+    },
+    {
+      "path": "tools/rebalance_campaign.py",
+      "classification": "active dependency",
+      "matches": [
+        "297:     parser.add_argument('--database', type=Path, default=ROOT / 'data/definitions.db')"
+      ]
+    },
+    {
+      "path": "tools/tests/test_build_dictionary.py",
+      "classification": "active dependency",
+      "matches": [
+        "28:         self.database = self.root / \"definitions.db\""
+      ]
+    },
+    {
+      "path": "tools/tests/test_campaign_review_export.py",
+      "classification": "active dependency",
+      "matches": [
+        "8: import sqlite3",
+        "75:     with sqlite3.connect(path) as db:",
+        "107:     database_path = data / \"definitions.db\"",
+        "214:         self.assertEqual(digest(self.root / \"data/definitions.db\"), snapshot[\"definitions_sha256\"])",
+        "250:         evidence = publication_fields(candidate, campaign, digest(ROOT / \"data/definitions.db\"),"
+      ]
+    },
+    {
+      "path": "tools/tests/test_campaign_review_import.py",
+      "classification": "active dependency",
+      "matches": [
+        "14: import sqlite3",
+        "111:         for name in (\"campaign.json\", \"words.txt\", \"definitions.db\", \"manifest.json\"):",
+        "120:         with sqlite3.connect(data / \"definitions.db\") as database:",
+        "126:         manifest[\"definitions\"][\"sha256\"] = digest(data / \"definitions.db\")",
+        "130:                            (\"campaign.json\", \"words.txt\", \"definitions.db\", \"manifest.json\")}",
+        "288:         self.assertEqual(self.data_hashes[\"definitions.db\"],",
+        "289:                          digest(self.root / \"data/definitions.db\"))"
+      ]
+    },
+    {
+      "path": "tools/tests/test_clean_dictionary.py",
+      "classification": "active dependency",
+      "matches": [
+        "329:         self.assertFalse((args.out / \"definitions.db\").exists())"
+      ]
+    },
+    {
+      "path": "tools/tests/test_game_data.py",
+      "classification": "active dependency",
+      "matches": [
+        "6: import sqlite3",
+        "103:         with sqlite3.connect(self.args.out / \"definitions.db\") as db:",
+        "160:         with sqlite3.connect(self.args.out / \"definitions.db\") as db:",
+        "185:         with sqlite3.connect(report[\"database\"]) as db:",
+        "196:         with sqlite3.connect(self.args.out / \"definitions.db\") as db:",
+        "202:         with sqlite3.connect(self.args.out / \"definitions.db\") as db:",
+        "397:         with sqlite3.connect(Path(binding[\"candidate\"]) / \"definitions.db\") as db:",
+        "406:         path = self.args.out / \"definitions.db\"",
+        "408:             with sqlite3.connect(path) as db:",
+        "413:             with sqlite3.connect(path) as db:",
+        "479:         game.build_database(self.candidate / \"definitions.db\", rows, dict.fromkeys(words, \"other\"), {}, 4)",
+        "480:         block = {\"sha256\": dictionary.sha256_file(self.candidate / \"definitions.db\"), \"rights_policy\": \"own-generated-v1\", \"audit\": {\"passed\": False}}",
+        "507:         with (self.out / \"definitions.db\").open(\"ab\") as output:",
+        "548:         with (self.candidate / \"definitions.db\").open(\"ab\") as output:"
+      ]
+    },
+    {
+      "path": "tools/tests/test_level_profiles.py",
+      "classification": "active dependency",
+      "matches": [
+        "6: import sqlite3",
+        "235:             with sqlite3.connect(database) as db:",
+        "280:             with sqlite3.connect(database) as db:"
+      ]
+    },
+    {
+      "path": "tools/tests/test_local_definitions.py",
+      "classification": "active dependency",
+      "matches": [
+        "4: import sqlite3",
+        "95:         with sqlite3.connect(self.args.out/'definitions.db') as db:",
+        "107:         with sqlite3.connect(self.args.out/'definitions.db') as db: version=db.execute('PRAGMA user_version').fetchone()[0]",
+        "110:         with sqlite3.connect(self.args.out/'definitions.db') as db:",
+        "123:         with sqlite3.connect(self.args.out / \"definitions.db\") as db:",
+        "133:         self.assertEqual(dictionary.sha256_file(self.args.out / \"definitions.db\"), index[\"database_sha256\"])",
+        "142:         with sqlite3.connect(self.args.out / \"definitions.db\") as db:",
+        "150:         with sqlite3.connect(self.args.out / \"definitions.db\") as db:",
+        "161:         with sqlite3.connect(self.args.out / \"definitions.db\") as db:",
+        "169:         with sqlite3.connect(self.args.out / \"definitions.db\") as db:",
+        "176:         snapshot = (self.args.out / \"definitions.db\").read_bytes()",
+        "179:         self.assertEqual(snapshot, (self.args.out / \"definitions.db\").read_bytes())",
+        "183:         self.assertEqual(snapshot, (self.args.out / \"definitions.db\").read_bytes())",
+        "189:         before = (self.args.out / 'definitions.db').read_bytes()",
+        "196:         self.assertEqual(before, (self.args.out / 'definitions.db').read_bytes())",
+        "208:         with sqlite3.connect(self.args.out / 'definitions.db') as db:",
+        "211:         before = (self.args.out / 'definitions.db').read_bytes()",
+        "216:         self.assertEqual(before, (self.args.out / 'definitions.db').read_bytes())"
+      ]
+    },
+    {
+      "path": "tools/tests/test_owned_hints_install.py",
+      "classification": "active dependency",
+      "matches": [
+        "6: import sqlite3",
+        "26:         for name in ('campaign.json', 'words.txt', 'manifest.json', 'definitions.db'):",
+        "47:         before = {name: sha(self.data / name) for name in ('campaign.json', 'words.txt', 'definitions.db', 'manifest.json')}",
+        "51:         with sqlite3.connect(self.data / 'definitions.db') as db:",
+        "58:         original = (self.data / 'definitions.db').read_bytes()",
+        "65:                 (self.data / 'definitions.db').write_bytes(original)",
+        "66:                 with sqlite3.connect(self.data / 'definitions.db') as db:",
+        "69:                 manifest['definitions']['sha256'] = sha(self.data / 'definitions.db')",
+        "98:         (self.data / 'definitions.db').unlink()",
+        "108:         (stage / 'definitions.db').write_bytes(b'synthetic-old-database')",
+        "109:         before = sha(self.data / 'definitions.db')",
+        "111:             publish(stage, self.data, ('definitions.db', 'manifest.json'))",
+        "112:         self.assertEqual(before, sha(self.data / 'definitions.db'))"
+      ]
+    },
+    {
+      "path": "tools/tests/test_owned_hints_rights.py",
+      "classification": "active dependency",
+      "matches": [
+        "10: import sqlite3",
+        "87:                     campaign_sha256=sha(self.data / 'campaign.json'), database_sha256=sha(self.data / 'definitions.db'),",
+        "102:         before = {n: sha(self.data / n) for n in ('manifest.json', 'definitions.db')}",
+        "127:         before = {n: sha(self.data / n) for n in ('manifest.json', 'definitions.db')}",
+        "152:         with sqlite3.connect(self.data / 'definitions.db') as db:",
+        "159:         before = {n: sha(self.data / n) for n in ('definitions.db', 'manifest.json')}",
+        "167:         with sqlite3.connect(self.data / 'definitions.db') as db:",
+        "249:         original = (self.data / 'definitions.db').read_bytes()",
+        "256:                 (self.data / 'definitions.db').write_bytes(original)",
+        "257:                 with sqlite3.connect(self.data / 'definitions.db') as db:",
+        "259:                 digest = sha(self.data / 'definitions.db')"
+      ]
+    },
+    {
+      "path": "tools/tests/test_owned_hints_toolchain.py",
+      "classification": "active dependency",
+      "matches": [
+        "31:         self.assertEqual(self.content, (self.data / 'definitions.db').read_bytes())",
+        "35:         path = self.data / 'definitions.db'",
+        "38:         subprocess.run(['git', '-C', str(self.root), 'add', 'data/definitions.db'], check=True)",
+        "48:         path = self.data / 'definitions.db'",
+        "59:         self.assertFalse((self.data / 'definitions.db').exists())",
+        "79:         self.assertEqual(self.content, (self.data / 'definitions.db').read_bytes())",
+        "86:         self.assertFalse((self.data / 'definitions.db').exists())",
+        "89:         library = self.root / 'libsqlite3.so.0'",
+        "94:     def test_different_sqlite_requires_prepared_library_without_network(self):",
+        "103:         with patch.object(toolchain, 'runtime_profile', return_value=self.lock['sqlite']), \\",
+        "111:                 self.assertRaisesRegex(ValueError, 'SQLite'):"
+      ]
+    },
+    {
+      "path": "tools/tests/test_prepare_v2.py",
+      "classification": "active dependency",
+      "matches": [
+        "332:         before_db = (self.installed / 'definitions.db').read_bytes()",
+        "335:         self.assertEqual(before_db, (self.args.package / 'definitions.db').read_bytes())"
+      ]
+    },
+    {
+      "path": "tools/tests/test_public_package_audit.py",
+      "classification": "active dependency",
+      "matches": [
+        "7: import sqlite3",
+        "35:         expected = {'word_sources.jsonl.gz': gzip.compress(b'synthetic provenance'), 'definitions.db': b'own db'}",
+        "37:                            'assets/definitions.db': b'own db'}) as archive:",
+        "41:         expected = {'word_sources.jsonl.gz': gzip.compress(b'synthetic provenance'), 'definitions.db': b'own db'}",
+        "42:         assets = {'assets/word_sources.jsonl.gz': expected['word_sources.jsonl.gz'], 'assets/definitions.db': b'own db'}",
+        "44:                          {**assets, 'assets/definitions.db': b'synthetic foreign db'}):",
+        "63:             with sqlite3.connect(db_path) as db:"
+      ]
+    },
+    {
+      "path": "tools/tests/test_rights_release_gate.py",
+      "classification": "active dependency",
+      "matches": [
+        "6: import sqlite3",
+        "26:             'data': ('campaign.json', 'words.txt', 'manifest.json', 'definitions.db'),",
+        "95:         path = self.root / 'data/definitions.db'",
+        "96:         with sqlite3.connect(path) as db:"
+      ]
+    },
+    {
+      "path": "tools/tests/test_short15_balance.py",
+      "classification": "active dependency",
+      "matches": [
+        "5: import sqlite3",
+        "53:             with sqlite3.connect(path) as db:"
+      ]
+    },
+    {
+      "path": "tools/tests/test_short15_install.py",
+      "classification": "active dependency",
+      "matches": [
+        "42:     (directory / \"definitions.db\").write_bytes(b\"synthetic-db\")",
+        "54:         definitions=dict(sha256=digest(directory / \"definitions.db\"),",
+        "68:              \"definitions.db\", \"campaign.json\", \"manifest.json\", \"validation_report.json\",",
+        "81:     (directory / \"definitions.db\").write_bytes(b\"old-db\")",
+        "104:         self.assertEqual(\"synthetic-db\", (self.output / \"definitions.db\").read_text())",
+        "136:                  \"definitions.db\", \"campaign.json\", \"manifest.json\", \"validation_report.json\","
+      ]
+    },
+    {
+      "path": "tools/validate_campaign.py",
+      "classification": "active dependency",
+      "matches": [
+        "11: import sqlite3",
+        "534:     with sqlite3.connect(Path(database).resolve().as_uri() + '?mode=ro', uri=True) as db:",
+        "630:     parser.add_argument('--database', type=Path, default=ROOT / 'data/definitions.db')",
+        "642:     except (OSError, ValueError, KeyError, TypeError, IndexError, sqlite3.Error) as error:"
+      ]
+    }
+  ]
+}

@@ -168,7 +168,7 @@ def quarantine_definitions(path):
         return None
     directory = os.path.join(os.path.dirname(os.path.abspath(path)), "quarantine")
     os.makedirs(directory, exist_ok=True)
-    destination = os.path.join(directory, "defs-unreviewed-%s.db" % sha256_file(path))
+    destination = os.path.join(directory, "lexical-unreviewed-%s.json" % sha256_file(path))
     os.replace(path, destination)
     return destination
 
@@ -182,7 +182,7 @@ def main():
     ap.add_argument("--sql", help="Не поддерживается: прежний SQL-источник исключён")
     ap.add_argument("--with-definitions", action="store_true")
     ap.add_argument("--definitions-only", action="store_true")
-    ap.add_argument("--db-out", default="build/definitions.db")
+    ap.add_argument("--db-out", default="build/lexical_data.json")
     ap.add_argument("--audit-out", default="build/reports/licensing")
     a = ap.parse_args()
     if a.sql:

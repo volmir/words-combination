@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """GEN-04: independent dictionary recount and JVM parity; never installs into data/."""
 import argparse
+import lexical_json
 from collections import Counter
 import gzip
 import hashlib
@@ -8,7 +9,6 @@ from itertools import combinations
 import json
 from pathlib import Path
 import shlex
-import sqlite3
 import subprocess
 import tempfile
 
@@ -529,15 +529,15 @@ def compare_jvm(report, jvm, hint_inputs):
 
 
 def load_hint_inputs(database, words):
-    """Read-only DB; full texts exist only in temporary JVM input, never in reports."""
+    """Read-only JSON; full texts exist only in temporary JVM input, never in reports."""
     result = {w: dict(forms=[w], related=[], definitions=[]) for w in words}
-    with sqlite3.connect(Path(database).resolve().as_uri() + '?mode=ro', uri=True) as db:
-        for word, forms, related in db.execute('SELECT word,forms,related FROM word_metadata'):
-            if word in result:
-                result[word].update(forms=json.loads(forms), related=json.loads(related))
-        for word, text in db.execute('SELECT word,text FROM definitions ORDER BY word,ord,id'):
-            if word in result and word not in BANNED:
-                result[word]['definitions'].append(text)
+    document = lexical_json.read(database)
+    for word, info in document['word_metadata'].items():
+        if word in result:
+            result[word].update(forms=info['forms'], related=info['related'])
+    for row in document['definitions']:
+        if row['word'] in result and row['word'] not in BANNED:
+            result[row['word']]['definitions'].append(row['text'])
     return result
 
 
@@ -575,7 +575,7 @@ def run(args):
             alphabet_required=profile['alphabet_required'],
             source_sha256=campaign_profiles.source_hashes(
                 words=args.words, levels=args.previous_levels,
-                manifest=args.manifest, definitions_db=args.database),
+                manifest=args.manifest, lexical_data=args.database),
             campaign_profiles_sha256=campaign_profiles.profiles_file_sha256())
         report['inputs']['campaign_profiles_sha256'] = campaign_profiles.profiles_file_sha256()
     report['inputs']['core_processors'] = {name: file_hash(ROOT / 'core/src/main/kotlin/com/example/sostavslova/core' / name)
@@ -627,7 +627,7 @@ def main():
     parser.add_argument('--profiles', type=Path)
     parser.add_argument('--words', type=Path, default=ROOT / 'data/words.txt')
     parser.add_argument('--previous-levels', type=Path, default=ROOT / 'data/levels.json')
-    parser.add_argument('--database', type=Path, default=ROOT / 'data/definitions.db')
+    parser.add_argument('--database', type=Path, default=ROOT / 'data/lexical_data.json')
     parser.add_argument('--manifest', type=Path, default=ROOT / 'data/manifest.json')
     parser.add_argument('--output', type=Path, default=ROOT / 'build/reports/campaign_validation')
     parser.add_argument('--jvm-classpath', help='Optional freshly compiled core+audit runtime classpath; JVM check remains mandatory')
@@ -639,7 +639,7 @@ def main():
     target.unlink(missing_ok=True)
     try:
         candidate, report = run(args)
-    except (OSError, ValueError, KeyError, TypeError, IndexError, sqlite3.Error) as error:
+    except (OSError, ValueError, KeyError, TypeError, IndexError) as error:
         candidate = None
         report = dict(schema='campaign-validation-v1', installable=False, jvm_checked=False,
                       unreachable=[dict(code='input_error', level=None, task=None, reason=str(error))],

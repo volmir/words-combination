@@ -47,10 +47,7 @@ class GameSubmissionUiTest {
                     "levels":[{"number":1,"word":"вегетарианец","stage":1,"requiredStars":1,
                     "tasks":[{"id":"count","type":"T1","n":1}]}]}"""
             })
-            val definitions = object : DefinitionsRepository {
-                override suspend fun isAvailable() = false
-                override suspend fun definitionsFor(word: String) = emptyList<Definition>()
-            }
+            val definitions = RiddlesRepository { error("No riddle task") }
             val model = withContext(Dispatchers.Main) {
                 ViewModelProvider(owner, viewModelFactory { initializer {
                     GameViewModel(SavedStateHandle(mapOf("index" to "1")), words, levels, repository, definitions)

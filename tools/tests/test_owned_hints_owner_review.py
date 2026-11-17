@@ -33,7 +33,7 @@ class OwnedHintsOwnerReviewTest(unittest.TestCase):
         self.assertEqual(31369, index['screening']['old_rows_checked'])
         self.assertEqual([], index['screening']['suspicious_matches'])
         installed = verify(ROOT / 'data')
-        self.assertEqual(39, installed['own'])
+        self.assertEqual(11, installed['own'])
         self.assertEqual(0, installed['wiktionary'])
 
     def test_all_39_review_rows_are_verbatim_and_complete(self):

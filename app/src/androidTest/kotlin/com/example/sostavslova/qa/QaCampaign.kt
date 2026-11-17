@@ -5,8 +5,7 @@ import android.content.ContextWrapper
 import android.os.Looper
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.core.WordIndex
-import com.example.sostavslova.data.Definition
-import com.example.sostavslova.data.DefinitionsRepository
+import com.example.sostavslova.data.RiddlesRepository
 import com.example.sostavslova.data.WordRepository
 import com.example.sostavslova.di.AppContainer
 import java.io.File
@@ -37,9 +36,7 @@ internal object QaCampaign {
            {"id":"count3","type":"T1","n":3}]}]}
     """.trimIndent()
 
-    enum class Meanings { SAFE, ABSENT, FILTERED }
-
-    fun container(file: File, meanings: Meanings = Meanings.SAFE, words: WordRepository? = null): AppContainer =
+    fun container(file: File, words: WordRepository? = null): AppContainer =
         AppContainer(object : ContextWrapper(InstrumentationRegistry.getInstrumentation().targetContext) {
             override fun getApplicationContext(): Context = this
             // Новый progress получает новое время; restart того же progress сохраняет оба файла.
@@ -47,17 +44,7 @@ internal object QaCampaign {
         },
             readCampaign = { json },
             words = words ?: WordRepository({ this.words.joinToString("\n") }),
-            definitions = object : DefinitionsRepository {
-                override suspend fun isAvailable() = meanings != Meanings.ABSENT
-                override suspend fun categoryFor(word: String) =
-                    if (meanings == Meanings.SAFE) "animals" else null
-                override suspend fun definitionsFor(word: String): List<Definition> = when (meanings) {
-                    Meanings.ABSENT -> error("Unavailable database must not be read")
-                    Meanings.FILTERED -> listOf(Definition(word, word))
-                    Meanings.SAFE -> listOf(Definition(word,
-                        "Синтетическое существо для проверки игрового сценария.", origin = "wiktionary"))
-                }
-            },
+            riddles = RiddlesRepository { "Синтетическое существо для проверки игрового сценария." },
             progressFile = { file },
         ).also { it.random = Random(42) }
 }

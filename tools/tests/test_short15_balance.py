@@ -1,8 +1,8 @@
 """Owner-approved staging edits: synthetic data, no dictionary article texts."""
 from copy import deepcopy
 import json
+from tools import lexical_json
 from pathlib import Path
-import sqlite3
 import sys
 import tempfile
 import unittest
@@ -49,10 +49,8 @@ class Short15BalanceTest(unittest.TestCase):
                                       'forms': [w], 'related': []}
                                    for w in balance.PROFESSIONS + ['кот']}}
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / 'baseline.db'
-            with sqlite3.connect(path) as db:
-                db.execute('CREATE TABLE word_metadata(word,category,category_source)')
-                db.execute("INSERT INTO word_metadata VALUES ('кот','animals','sense.categories:animals')")
+            path = Path(tmp) / 'baseline.json'
+            lexical_json.build(path, [], {'кот':dict(category='animals',category_source='sense.categories:animals')}, {}, 8)
             result = balance.reviewed_categories(index, path)
         self.assertEqual('animals', result['word_metadata']['кот']['category'])
         for word in balance.PROFESSIONS:

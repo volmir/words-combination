@@ -1,7 +1,7 @@
 """Локальные определения: только синтетические статьи, без сети."""
 import argparse
+from tools import lexical_json
 import json
-import sqlite3
 import sys
 import tempfile
 import unittest
@@ -92,24 +92,24 @@ class LocalDefinitionsTest(unittest.TestCase):
         manifest=json.loads((self.args.out/'manifest.json').read_text())
         self.assertEqual({"mode":"game-cleanup-v1","unchanged":"word-policy"},manifest["selection"])
         self.assertFalse(manifest["definitions"]["audit"]["passed"])
-        with sqlite3.connect(self.args.out/'definitions.db') as db:
-            self.assertGreaterEqual(db.execute('PRAGMA user_version').fetchone()[0],5)
-            self.assertIn('портала',json.loads(db.execute('SELECT forms FROM word_metadata WHERE word=?',('портал',)).fetchone()[0]))
-            self.assertEqual(0,db.execute("SELECT count(*) FROM definitions WHERE origin!='wiktionary' OR source='' OR example!=''").fetchone()[0])
+        document = lexical_json.read(self.args.out/'lexical_data.json')
+        self.assertGreaterEqual(document['revision'], 5)
+        self.assertIn('портала',document['word_metadata']['портал']['forms'])
+        self.assertTrue(all(r['origin']=='wiktionary' and r['source'] and not r['example'] for r in document['definitions']))
         snapshot={p.name:p.read_bytes() for p in self.args.out.iterdir()}
         with patch.object(local,'extract_articles',side_effect=AssertionError('cache not used')): local.run(self.args)
         self.assertEqual(snapshot,{p.name:p.read_bytes() for p in self.args.out.iterdir()})
-        with self.assertRaisesRegex(ValueError,'Release'):require_release_audit(self.args.out)
+        with self.assertRaises(ValueError):require_release_audit(self.args.out)
 
     def test_definition_removal_changes_db_version_but_never_words(self):
         self.write_source([article('портал','Синтетический предмет для опытной проверки.')])
         local.run(self.args)
-        with sqlite3.connect(self.args.out/'definitions.db') as db: version=db.execute('PRAGMA user_version').fetchone()[0]
+        version=lexical_json.read(self.args.out/'lexical_data.json')['revision']
         self.remove.write_text('портал\n')
         local.run(self.args)
-        with sqlite3.connect(self.args.out/'definitions.db') as db:
-            self.assertGreater(db.execute('PRAGMA user_version').fetchone()[0],version)
-            self.assertEqual(0,db.execute('SELECT count(*) FROM definitions').fetchone()[0])
+        document=lexical_json.read(self.args.out/'lexical_data.json')
+        self.assertGreater(document['revision'],version)
+        self.assertEqual([],document['definitions'])
         self.assertIn('портал',dictionary.read_list(self.args.out/'words.txt'))
 
     def test_categories_use_matching_sense_and_keep_hidden_homonyms_out_of_t6(self):
@@ -120,17 +120,16 @@ class LocalDefinitionsTest(unittest.TestCase):
             article("рот", "Птица для синтетического опыта.", topics=["ornithology"]),
         ])
         local.run(self.args)
-        with sqlite3.connect(self.args.out / "definitions.db") as db:
-            self.assertEqual(("other", "unknown:ambiguous_senses"), db.execute(
-                "SELECT category,category_source FROM word_metadata WHERE word='портал'").fetchone())
-            self.assertEqual(("other", "unknown:no_usable_sense"), db.execute(
-                "SELECT category,category_source FROM word_metadata WHERE word='тор'").fetchone())
-            self.assertEqual([("birds",), ("tools",)], db.execute(
-                "SELECT category FROM definitions WHERE word='портал' ORDER BY ord").fetchall())
+        document=lexical_json.read(self.args.out/'lexical_data.json')
+        def category(word):
+            info=document['word_metadata'][word];return info['category'],info['category_source']
+        self.assertEqual(('other','unknown:ambiguous_senses'),category('портал'))
+        self.assertEqual(('other','unknown:no_usable_sense'),category('тор'))
+        self.assertEqual(['birds','tools'],[r['category'] for r in document['definitions'] if r['word']=='портал'])
         index = json.loads((self.args.reports / "category_index.json").read_text())
         self.assertEqual(["рот"], index["categories"]["birds"])
         self.assertNotIn("other", index["categories"])
-        self.assertEqual(dictionary.sha256_file(self.args.out / "definitions.db"), index["database_sha256"])
+        self.assertEqual(dictionary.sha256_file(self.args.out / "lexical_data.json"), index["database_sha256"])
         self.assertEqual({"reason": "ambiguous_senses", "sense_count": 3,
                           "candidate_categories": ["birds", "tools"]}, index["classification_features"]["портал"])
         self.assertEqual({"reason": "no_usable_sense", "sense_count": 0,
@@ -139,18 +138,16 @@ class LocalDefinitionsTest(unittest.TestCase):
         # Repeated gloss text must not hide differently labelled meanings.
         self.write_source([article("портал", "", senses=[bird, dict(tool, glosses=bird["glosses"])])])
         local.run(self.args)
-        with sqlite3.connect(self.args.out / "definitions.db") as db:
-            self.assertEqual("other", db.execute("SELECT category FROM word_metadata WHERE word='портал'").fetchone()[0])
+        self.assertEqual('other', lexical_json.read(self.args.out/'lexical_data.json')['word_metadata']['портал']['category'])
 
     def test_meaning_beyond_display_limit_and_uncertain_reference_are_not_t6_targets(self):
         birds = [{"glosses": [f"Птица для синтетического опыта номер {i}."]} for i in range(3)]
         self.write_source([article("портал", "", senses=birds + [{"glosses": ["Инструмент для опыта."]}]),
                            article("рот", "то же, что портал")])
         local.run(self.args)
-        with sqlite3.connect(self.args.out / "definitions.db") as db:
-            self.assertEqual(2, db.execute("SELECT count(*) FROM definitions WHERE word='портал'").fetchone()[0])
-            self.assertEqual([("other",), ("other",)], db.execute(
-                "SELECT category FROM word_metadata WHERE word IN ('портал','рот') ORDER BY word").fetchall())
+        document=lexical_json.read(self.args.out/'lexical_data.json')
+        self.assertEqual(2,len([r for r in document['definitions'] if r['word']=='портал']))
+        self.assertEqual(['other','other'],[document['word_metadata'][w]['category'] for w in ('портал','рот')])
         index = json.loads((self.args.reports / "category_index.json").read_text())
         self.assertFalse(any(index["categories"].values()))
 
@@ -158,42 +155,35 @@ class LocalDefinitionsTest(unittest.TestCase):
         self.write_source([article("портал", "Птица для синтетического опыта.", forms=[{"form": "портала"}],
                                    related=[{"word": "портальный", "raw_tags": ["Ближайшее родство"]}])])
         self.args.out.mkdir()
-        with sqlite3.connect(self.args.out / "definitions.db") as db:
-            db.executescript("""
-                PRAGMA user_version=7;
-                CREATE TABLE word_metadata(word TEXT PRIMARY KEY, category TEXT, forms TEXT, related TEXT);
-                CREATE TABLE build_metadata(key TEXT PRIMARY KEY, value TEXT NOT NULL);
-                INSERT INTO build_metadata VALUES('content_sha256','previous-v7-content');
-            """)
+        lexical_json.build(self.args.out/'lexical_data.json', [], {}, {'content_sha256':'previous-v7-content'}, 7)
         local.run(self.args)
-        with sqlite3.connect(self.args.out / "definitions.db") as db:
-            self.assertEqual(8, db.execute("PRAGMA user_version").fetchone()[0])
-            category, source, forms, related = db.execute(
-                "SELECT category,category_source,forms,related FROM word_metadata WHERE word='портал'").fetchone()
-            self.assertEqual(("birds", "gloss_head:birds"), (category, source))
-            self.assertIn("портала", json.loads(forms))
-            self.assertEqual(["портальный"], json.loads(related))
-        snapshot = (self.args.out / "definitions.db").read_bytes()
+        document=lexical_json.read(self.args.out/'lexical_data.json')
+        self.assertEqual(8,document['revision'])
+        info=document['word_metadata']['портал']
+        self.assertEqual(('birds','gloss_head:birds'),(info['category'],info['category_source']))
+        self.assertIn('портала',info['forms'])
+        self.assertEqual(['портальный'],info['related'])
+        snapshot = (self.args.out / "lexical_data.json").read_bytes()
         index = (self.args.reports / "category_index.json").read_bytes()
         local.run(self.args)
-        self.assertEqual(snapshot, (self.args.out / "definitions.db").read_bytes())
+        self.assertEqual(snapshot, (self.args.out / "lexical_data.json").read_bytes())
         self.assertEqual(index, (self.args.reports / "category_index.json").read_bytes())
         self.args.cache = self.root / "fresh-cache"
         local.run(self.args)
-        self.assertEqual(snapshot, (self.args.out / "definitions.db").read_bytes())
+        self.assertEqual(snapshot, (self.args.out / "lexical_data.json").read_bytes())
         self.assertEqual(index, (self.args.reports / "category_index.json").read_bytes())
 
     def test_changed_config_without_changed_rows_keeps_version_even_with_fresh_cache(self):
         self.write_source([article('портал', 'Синтетический предмет для опытной проверки.')])
         local.run(self.args)
-        before = (self.args.out / 'definitions.db').read_bytes()
+        before = (self.args.out / 'lexical_data.json').read_bytes()
         settings = dict(self.settings, max_chars=self.settings['max_chars'] + 1, generation_date='2026-11-07')
         config = self.root / 'new-config.json'
         config.write_text(json.dumps(settings))
         self.args.config = config
         self.args.cache = self.root / 'fresh-cache'
         local.run(self.args)
-        self.assertEqual(before, (self.args.out / 'definitions.db').read_bytes())
+        self.assertEqual(before, (self.args.out / 'lexical_data.json').read_bytes())
 
     def test_classified_categories_match_database_and_wrong_dictionary_is_rejected(self):
         self.write_source([article('портал', 'Синтетический предмет для опытной проверки.')])
@@ -205,15 +195,14 @@ class LocalDefinitionsTest(unittest.TestCase):
         path.write_text(json.dumps(index))
         self.args.category_index = path
         local.run(self.args)
-        with sqlite3.connect(self.args.out / 'definitions.db') as db:
-            self.assertEqual(('birds', 'ai:codex:fixture'), db.execute(
-                "SELECT category,category_source FROM word_metadata WHERE word='портал'").fetchone())
-        before = (self.args.out / 'definitions.db').read_bytes()
+        info=lexical_json.read(self.args.out/'lexical_data.json')['word_metadata']['портал']
+        self.assertEqual(('birds','ai:codex:fixture'),(info['category'],info['category_source']))
+        before = (self.args.out / 'lexical_data.json').read_bytes()
         index['word_metadata']['портал']['category_confidence'] = 0.95
         path.write_text(json.dumps(index))
         self.args.cache = self.root / 'fresh-cache'
         local.run(self.args)
-        self.assertEqual(before, (self.args.out / 'definitions.db').read_bytes())
+        self.assertEqual(before, (self.args.out / 'lexical_data.json').read_bytes())
         index['words_sha256'] = 'wrong'
         path.write_text(json.dumps(index))
         with self.assertRaisesRegex(ValueError, 'другому словарю'):

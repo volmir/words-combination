@@ -126,18 +126,18 @@ object CampaignDatasetAudit {
                             error("T4 has no useful masked hint: $word", level, task)
                         } else {
                             val oneRiddle = CampaignTask.T4(task.id, listOf(word))
-                            var state = single.copy(level = single.level.copy(tasks = listOf(oneRiddle)))
+                            val state = single.copy(level = single.level.copy(tasks = listOf(oneRiddle)))
                             val ladder = HintLadder.build(HintTarget(word, task.id, task.type), oneRiddle, data, Random(0))
-                            if (ladder.steps.firstOrNull { it.stage == HintStage.DEFINITION }?.text != text) {
-                                error("T4 ladder differs from prepared hint: $word", level, task)
+                            if (DefinitionHint.prepare(word, data.definition.orEmpty(), data.forms, data.related) != text) {
+                                error("T4 riddle differs from prepared hint: $word", level, task)
                             }
-                            // Definition/length are free for a riddle; use public runtime API as well.
-                            repeat(2) {
-                                val hint = HintRules.next(state, mapOf(word to data), campaign.countMinLength, Random(0))
-                                if (hint.status != HintStatus.SHOWN || hint.state.hints.paidUnits != 0) {
-                                    error("T4 free hint unavailable: $word", level, task)
-                                }
-                                state = hint.state
+                            if (ladder.steps.any { it.stage in setOf(HintStage.THEME, HintStage.DEFINITION, HintStage.LENGTH) }) {
+                                error("T4 ladder contains metadata: $word", level, task)
+                            }
+                            // Only the first informative letter step is free.
+                            val hint = HintRules.next(state, mapOf(word to data), campaign.countMinLength, Random(0))
+                            if (hint.status != HintStatus.SHOWN || hint.state.hints.paidUnits != 0) {
+                                error("T4 free hint unavailable: $word", level, task)
                             }
                         }
                     }

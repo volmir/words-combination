@@ -5,10 +5,10 @@ The dictionary and definitions must already have been regenerated from the pinne
 local sources. This tool never installs data and never edits definition texts.
 """
 import argparse
+import lexical_json
 from copy import deepcopy
 import json
 from pathlib import Path
-import sqlite3
 import shutil
 
 import campaign_profiles
@@ -50,8 +50,9 @@ def reviewed_categories(index, baseline_db):
     result = deepcopy(index)
     # Keep existing independently sourced classifications for unchanged lexemes.
     # Forms/relatives always come from the newly extracted source index.
-    with sqlite3.connect(Path(baseline_db).resolve().as_uri() + '?mode=ro', uri=True) as db:
-        for word, category, source in db.execute('SELECT word,category,category_source FROM word_metadata'):
+    if baseline_db is not None:
+        for word, info in lexical_json.read(baseline_db)['word_metadata'].items():
+            category, source = info['category'], info['category_source']
             if word in result['word_metadata']:
                 result['word_metadata'][word].update(category=category, category_source=source)
     if not set(PROFESSIONS) <= result['word_metadata'].keys():

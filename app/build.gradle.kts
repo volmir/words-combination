@@ -17,7 +17,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val hasDefinitions = true
 val dictionaryData = rootProject.layout.projectDirectory.dir("data")
 
 // Только локальные секреты. Переменные окружения имеют приоритет для каждого поля.
@@ -97,8 +96,8 @@ val installedManifest: Map<*, *>? = runCatching {
 val campaignSha256: String =
     ((installedManifest?.get("campaign_source") as? Map<*, *>)?.get("sha256") as? String).orEmpty()
 val wordsSha256: String = (installedManifest?.get("sha256_words_txt") as? String).orEmpty()
-val definitionsSha256: String =
-    ((installedManifest?.get("definitions") as? Map<*, *>)?.get("sha256") as? String).orEmpty()
+val riddlesSha256: String =
+    ((installedManifest?.get("owned_riddles") as? Map<*, *>)?.get("sha256") as? String).orEmpty()
 
 val verifyDefinitionsAudit = tasks.register<Exec>("verifyDefinitionsAudit") {
     description = "Требует решение владельца и отдельный полный ручной аудит подсказок; waiver недопустим."
@@ -113,12 +112,12 @@ tasks.matching { it.name in setOf("preReleaseBuild", "assembleRelease", "bundleR
 }
 
 val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
-    description = "Проверяет происхождение и хэши словаря, уровней, кампании и включённых определений."
+    description = "Проверяет происхождение и хэши словаря, уровней, кампании и JSON-загадок."
     group = "verification"
     dependsOn("verifyOwnedHints", "verifyRuntimeNotices")
     inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("word_sources.jsonl.gz"), dictionaryData.file("levels.json"))
     inputs.files(dictionaryData.file("campaign.json"))
-    inputs.files(dictionaryData.file("definitions.db"))
+    inputs.files(dictionaryData.file("owned_riddles.json"))
     doLast {
         val manifest = JsonSlurper().parse(dictionaryData.file("manifest.json").asFile) as Map<*, *>
         val source = manifest["source"] as? Map<*, *>
@@ -147,13 +146,11 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
         check(campaignLevels?.size == 15 && campaignStars == 49) {
             "campaign.json должен содержать 15 уровней и 49 заданий/звёзд."
         }
-        val database = dictionaryData.file("definitions.db").asFile
-        if (hasDefinitions || database.exists()) {
-            val definitions = manifest["definitions"] as? Map<*, *>
-            check(database.isFile && definitions != null && definitions["sha256"] == sha256(database) &&
-                definitions["dictionary_words_sha256"] == manifest["sha256_words_txt"]) {
-                "База подсказок отсутствует, изменена или собрана для другого словаря. Пересоберите tools/build_owned_hints.py."
-            }
+        val riddles = dictionaryData.file("owned_riddles.json").asFile
+        val block = manifest["owned_riddles"] as? Map<*, *>
+        check(riddles.isFile && block?.get("sha256") == sha256(riddles) &&
+            block?.get("dictionary_words_sha256") == manifest["sha256_words_txt"] && block?.get("count") == 11) {
+            "Загадки отсутствуют или изменены: пересоберите tools/build_owned_hints.py."
         }
     }
 }
@@ -202,10 +199,9 @@ android {
         versionCode = 1
         versionName = "1.0.0"
         testInstrumentationRunner = "com.example.sostavslova.WordsTestRunner"
-        buildConfigField("boolean", "HAS_DEFINITIONS", hasDefinitions.toString())
         buildConfigField("String", "CAMPAIGN_SHA256", "\"$campaignSha256\"")
         buildConfigField("String", "WORDS_SHA256", "\"$wordsSha256\"")
-        buildConfigField("String", "DEFINITIONS_SHA256", "\"$definitionsSha256\"")
+        buildConfigField("String", "RIDDLES_SHA256", "\"$riddlesSha256\"")
     }
 
     signingConfigs {
@@ -255,12 +251,12 @@ kotlin {
 }
 
 val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
-    description = "Копирует сгенерированные словари, кампанию и опциональные определения в assets."
+    description = "Копирует сгенерированные словари, кампанию и утверждённые JSON-загадки в assets."
     group = "build"
     dependsOn(verifyDictionaryLicenses)
     from(dictionaryData) {
         include("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz")
-        if (hasDefinitions) include("definitions.db")
+        include("owned_riddles.json")
     }
     from(rootProject.layout.projectDirectory.dir("legal")) {
         include("THIRD_PARTY_NOTICES.txt", "Apache-2.0.txt", "CC-BY-SA-4.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
@@ -270,16 +266,15 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
     }
     into(layout.projectDirectory.dir("src/main/assets"))
     preserve {
-        exclude("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz", "definitions.db", "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
+        exclude("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz", "owned_riddles.json", "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
     }
     doLast {
         val manifest = JsonSlurper().parse(dictionaryData.file("manifest.json").asFile) as Map<*, *>
-        val definitions = manifest["definitions"] as? Map<*, *>
+        val riddles = manifest["owned_riddles"] as? Map<*, *>
         val assets = layout.projectDirectory.dir("src/main/assets").asFile
         val expectedAssets = setOf("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz",
             "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt",
-            "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json") +
-            if (hasDefinitions) setOf("definitions.db") else emptySet()
+            "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json", "owned_riddles.json")
         val actualAssets = assets.walkTopDown().filter { it.isFile }
             .map { it.relativeTo(assets).invariantSeparatorsPath }.toSet()
         check(actualAssets == expectedAssets) {
@@ -289,8 +284,8 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
             "Скопированный campaign.json не совпадает с manifest.campaign_source."
         }
         check(sha256(File(assets, "words.txt")) == manifest["sha256_words_txt"] &&
-            sha256(File(assets, "definitions.db")) == definitions?.get("sha256")) {
-            "Скопированные словарь или определения не совпадают с manifest."
+            sha256(File(assets, "owned_riddles.json")) == riddles?.get("sha256")) {
+            "Скопированные словарь или загадки не совпадают с manifest."
         }
     }
 }

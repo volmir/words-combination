@@ -143,6 +143,47 @@ class CampaignProgressRepositoryTest {
         assertEquals(1234L, store.data.first()[unrelatedTime])
     }
 
+    @Test fun oldLetterPurchaseMigratesWithoutReplayChargeAndSurvivesNewStore() = runTest {
+        store.edit { it[key] = """{"version":2,"highestUnlockedLevel":2,"levels":{"картотека":{
+            "found":["крот"],"completedTaskIds":["count","initial"],"hints":{
+            "ownedContentVersion":1,
+            "target":{"word":"торт","taskId":"riddle","taskType":"T4"},
+            "steps":[{"stage":"THEME","text":"Синтетическая тема"},
+                     {"stage":"DEFINITION","text":"Синтетическое описание"},
+                     {"stage":"LENGTH","length":4},
+                     {"stage":"FIRST_LETTER","text":"т","revealedPositions":[0]},
+                     {"stage":"PATTERN","text":"т__т","revealedPositions":[0,3]},
+                     {"stage":"ANSWER","text":"торт","revealedPositions":[0,1,2,3]}],
+            "nextStepIndex":4,"revealedPositions":[0],"shownSteps":7,"paidUnits":2}}}}""" }
+        val before = snapshot()
+        val restored = checkNotNull(CampaignRules.openLevel(campaign, before, 1, index))
+        assertEquals(listOf("т___"), restored.hints.ladder.shown.map { it.text })
+        assertEquals(4, restored.hints.ladder.steps.size)
+        assertEquals(2, restored.hints.paidUnits)
+        assertEquals(1, HintRules.nextCost(restored))
+        val bought = checkNotNull(repository.requestCampaignHint(campaign, 1, 7, index))
+        assertEquals(HintStatus.SHOWN, bought.status)
+        assertEquals("т__т", bought.step?.text)
+        assertEquals(3, bought.state.hints.paidUnits)
+        assertEquals(8, bought.state.hints.shownSteps)
+        val persisted = snapshot()
+        assertEquals(before.levels.getValue("картотека").found, persisted.levels.getValue("картотека").found)
+        assertEquals(before.levels.getValue("картотека").completedTaskIds,
+            persisted.levels.getValue("картотека").completedTaskIds)
+        assertEquals(2, persisted.highestUnlockedLevel)
+        assertFalse(checkNotNull(store.data.first()[key]).contains("Синтетическое"))
+        assertNull(repository.requestCampaignHint(campaign, 1, 7, index))
+        assertEquals(persisted, snapshot())
+        restart()
+        assertEquals(persisted, snapshot())
+        assertEquals(bought.state.hints, CampaignRules.openLevel(campaign, snapshot(), 1, index)?.hints)
+        assertNull(repository.requestCampaignHint(campaign, 1, 7, index))
+        assertEquals(persisted, snapshot())
+        val next = checkNotNull(repository.requestCampaignHint(campaign, 1, 8, index))
+        assertEquals(3, next.step?.revealedPositions?.size)
+        assertEquals(4, next.state.hints.paidUnits)
+    }
+
     @Test fun oneAnswerPersistsSeveralStarsAndUnlockInOneTransactionAndOneSnapshot() = runTest {
         assertEquals(CampaignProgress(), snapshot())
         val result = answer(" КРОТ ")
@@ -317,7 +358,7 @@ class CampaignProgressRepositoryTest {
         assertEquals(CampaignProgress(), snapshot())
         assertTrue(store.committed.isEmpty())
         assertEquals(AnswerResult.CORRECT, answer("крот").result)
-        repository.requestCampaignHint(campaign, 1, 0, index) // Бесплатная длина T4.
+        repository.requestCampaignHint(campaign, 1, 0, index) // Бесплатная первая буква T4.
         val before = snapshot()
         store.failNext.set(true)
         assertTrue(runCatching { repository.requestCampaignHint(campaign, 1, 1, index) }.exceptionOrNull() is IOException)

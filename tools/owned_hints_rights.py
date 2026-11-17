@@ -74,18 +74,11 @@ def owner_decision(candidate_path, campaign_path):
                 candidate_sha256=sha(candidate_path), campaign_sha256=sha(campaign_path))
 
 
-def database_metadata(decision):
-    """Only service metadata changes; hint text and candidate bytes never do."""
-    if decision is None:
-        return dict(own_license=PLACEHOLDER)
-    return dict(own_license='CC0-1.0', owner_approval_sha256=decision['approval_sha256'])
-
-
-def publication_fields(candidate_path, campaign_path, database_sha256, decision):
+def publication_fields(candidate_path, campaign_path, decision):
     """Derive flags from both independent evidence files, never manifest flags."""
     result = dict(audit=dict(passed=False),
                   rights_review=dict(passed=False, status='pending-owner-approval', replacement_required=False),
-                  own_license=database_metadata(decision)['own_license'],
+                  own_license='CC0-1.0' if decision else PLACEHOLDER,
                   publication_status='draft-not-for-public-release')
     if decision is not None:
         result['rights_review'].update(status='pending-manual-audit', **decision)
@@ -106,12 +99,14 @@ def publication_fields(candidate_path, campaign_path, database_sha256, decision)
             for e in entries]
     expected = dict(schema='owned-hints-human-audit', version=1, reviewer=value['reviewer'],
                     reviewed_on=value['reviewed_on'], candidate_sha256=sha(candidate_path),
-                    campaign_sha256=sha(campaign_path), database_sha256=database_sha256,
+                    campaign_sha256=sha(campaign_path), database_sha256=value.get('database_sha256'),
                     owner_approval_sha256=decision['approval_sha256'], checked=39, bad=0, entries=rows)
+    if not isinstance(value.get('database_sha256'), str) or not re.fullmatch('[0-9a-f]{64}', value['database_sha256']):
+        raise ValueError('Invalid historical package evidence')
     if not exact(value, expected):
         raise ValueError('Human audit must cover exact package, 39/39 texts and zero problems')
     result['audit'] = dict(passed=True, checked=39, bad=0, reviewer=value['reviewer'],
-                           reviewed_on=value['reviewed_on'], database_sha256=database_sha256,
+                           reviewed_on=value['reviewed_on'],
                            candidate_sha256=sha(candidate_path), campaign_sha256=sha(campaign_path),
                            owner_approval_sha256=decision['approval_sha256'], report_sha256=sha(path))
     result['rights_review'].update(passed=True, status='approved')

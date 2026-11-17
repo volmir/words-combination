@@ -7,8 +7,8 @@ import hashlib
 import json
 from pathlib import Path
 import re
-import sqlite3
 import time
+import lexical_json
 
 import assess_word_suitability as semantic
 import build_dictionary as dictionary
@@ -91,14 +91,13 @@ def hint_header(database, words_path):
 
 
 def export_hint_inputs(database, words_path, output):
-    """Export the real DB for core:auditDefinitionHints. Never inspect guessable."""
+    """Export the preparation JSON for core:auditDefinitionHints. Never inspect guessable."""
     words = set(dictionary.read_list(words_path))
     rows = defaultdict(list)
-    with sqlite3.connect(database.resolve().as_uri() + '?mode=ro', uri=True) as db:
-        metadata = {word: (json.loads(forms), json.loads(related)) for word, forms, related in
-                    db.execute('SELECT word, forms, related FROM word_metadata')}
-        for word, text in db.execute('SELECT word,text FROM definitions ORDER BY word,ord,id'):
-            rows[word].append(text)
+    document = lexical_json.read(database)
+    metadata = {word: (info['forms'], info['related']) for word, info in document['word_metadata'].items()}
+    for row in document['definitions']:
+        rows[row['word']].append(row['text'])
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open('w', encoding='utf-8') as target:
         target.write(json.dumps(hint_header(database, words_path), ensure_ascii=False) + '\n')
@@ -492,7 +491,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--words', type=Path, default=ROOT / 'data/words.txt')
     parser.add_argument('--manifest', type=Path, default=ROOT / 'data/manifest.json')
-    parser.add_argument('--database', type=Path, default=ROOT / 'data/definitions.db')
+    parser.add_argument('--database', type=Path, default=ROOT / 'data/lexical_data.json')
     parser.add_argument('--dump', type=Path, default=ROOT / '.local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz')
     parser.add_argument('--frequency-list', type=Path)
     parser.add_argument('--frequency-universe', type=Path, help='Фиксированный снимок FREQ-01 JSON либо words.txt; по умолчанию source-vocabulary из кэша cleanup')
@@ -513,7 +512,7 @@ def main():
             print(str(args.export_hints))
         else:
             print(json.dumps(run(args), ensure_ascii=False, sort_keys=True))
-    except (OSError, ValueError, KeyError, TypeError, StopIteration, sqlite3.Error) as error:
+    except (OSError, ValueError, KeyError, TypeError, StopIteration) as error:
         parser.exit(2, 'Ошибка профилирования: ' + str(error) + '\n')
 
 

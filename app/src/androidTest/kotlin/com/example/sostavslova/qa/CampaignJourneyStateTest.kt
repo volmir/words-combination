@@ -49,8 +49,7 @@ class CampaignJourneyStateTest {
             listOf("кот", "кот", "кот", "крот"),
             listOf("крот", "трек", "кот", "рак"),
         ).withIndex()) {
-            val app = QaCampaign.container(File(temporary.root, "route$number.preferences_pb"),
-                QaCampaign.Meanings.ABSENT).also { containers.add(it) }
+            val app = QaCampaign.container(File(temporary.root, "route$number.preferences_pb")).also { containers.add(it) }
             val campaign = requireNotNull(app.levelsRepository.getCampaign())
             val index = app.wordRepository.requireIndex()
             val progress = app.progressRepository
@@ -86,7 +85,7 @@ class CampaignJourneyStateTest {
             .also { owners.add(it) }
         ViewModelProvider(owner, viewModelFactory { initializer {
             GameViewModel(SavedStateHandle(mapOf("index" to "1")), app.wordRepository,
-                app.levelsRepository, app.progressRepository, app.definitionsRepository)
+                app.levelsRepository, app.progressRepository, app.riddlesRepository)
         } })[GameViewModel::class.java]
     }
 

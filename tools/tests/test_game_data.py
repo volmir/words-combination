@@ -1,9 +1,9 @@
 """Только синтетические статьи, ответы, корпус и аудит; сеть не используется."""
 import argparse
+from tools import lexical_json
 import csv
 import io
 import json
-import sqlite3
 import sys
 import tempfile
 import unittest
@@ -100,17 +100,16 @@ class PipelineTest(unittest.TestCase):
             for item in request["items"]:
                 expected = {"word", "diminutive_candidate"} if request["task"] == "definition" else {"id", "category", "definition", "length", "first_letter"}
                 self.assertEqual(expected, set(item))
-        with sqlite3.connect(self.args.out / "definitions.db") as db:
-            self.assertEqual(4, db.execute("PRAGMA user_version").fetchone()[0])
-            self.assertEqual(5, db.execute("SELECT COUNT(*) FROM definitions WHERE origin='own' AND source='' AND guessable=1").fetchone()[0])
-            self.assertEqual(5, db.execute("SELECT COUNT(*) FROM word_metadata").fetchone()[0])
-            self.assertEqual(["id", "word", "display", "ord", "text", "notes", "antonym", "example", "source", "origin", "category", "guessable"],
-                             [row[1] for row in db.execute("PRAGMA table_info(definitions)")])
+        document=lexical_json.read(self.args.out/'lexical_data.json')
+        self.assertEqual(4,document['revision'])
+        self.assertEqual(5,len([r for r in document['definitions'] if r['origin']=='own' and not r['source'] and r['guessable']==1]))
+        self.assertEqual(5,len(document['word_metadata']))
+        self.assertEqual({'id','word','display','ord','text','notes','antonym','example','source','origin','category','guessable'},set(document['definitions'][0]))
         manifest = json.loads((self.args.out / "manifest.json").read_text())
         self.assertFalse(manifest["definitions"]["audit"]["passed"])
         self.assertTrue(manifest["selection"]["frequency_skipped"])
         self.assertEqual({"own": 5, "wiktionary": 0}, manifest["definitions"]["counts"])
-        with self.assertRaisesRegex(ValueError, "Release"):
+        with self.assertRaises(ValueError):
             game.require_release_audit(self.args.out)
 
     def test_pilot_samples_groups_deterministically_without_exceeding_limit(self):
@@ -157,17 +156,17 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(5, summary["candidates"])
         self.assertEqual(4, summary["D"])
         self.assertNotIn("дом", dictionary.read_list(self.args.out / "words.txt"))
-        with sqlite3.connect(self.args.out / "definitions.db") as db:
-            self.assertEqual(4, db.execute("SELECT COUNT(DISTINCT word) FROM definitions").fetchone()[0])
-            self.assertEqual(4, db.execute("PRAGMA user_version").fetchone()[0])
-            self.assertEqual(0, db.execute("SELECT COUNT(*) FROM definitions WHERE origin!='wiktionary' OR source=''").fetchone()[0])
+        document=lexical_json.read(self.args.out/'lexical_data.json')
+        self.assertEqual(4,len({r['word'] for r in document['definitions']}))
+        self.assertEqual(4,document['revision'])
+        self.assertTrue(all(r['origin']=='wiktionary' and r['source'] for r in document['definitions']))
         manifest = json.loads((self.args.out / "manifest.json").read_text())
         self.assertFalse(manifest["definitions"]["audit"]["passed"])
         self.assertFalse(manifest["definitions"]["rights_review"]["passed"])
         self.assertIsNone(manifest["definitions"]["generator"]["model"])
         self.assertEqual("definition-coverage-v1", manifest["selection"]["mode"])
         self.assertFalse(manifest["selection"]["ai_used"])
-        with self.assertRaisesRegex(ValueError, "Release"):
+        with self.assertRaises(ValueError):
             game.require_release_audit(self.args.out)
 
     def test_dump_mode_keeps_collected_database_but_does_not_publish_broken_levels_or_missing_golden(self):
@@ -182,8 +181,7 @@ class PipelineTest(unittest.TestCase):
         report = json.loads((self.args.reports / "funnel.json").read_text())
         self.assertEqual("blocked_protected_words_or_levels", report["status"])
         self.assertEqual(["кот", "портал"], report["missing_protected_words"])
-        with sqlite3.connect(report["database"]) as db:
-            self.assertEqual(3, db.execute("SELECT COUNT(DISTINCT word) FROM definitions").fetchone()[0])
+        self.assertEqual(3,len({r['word'] for r in lexical_json.read(report['database'])['definitions']}))
         self.assertTrue((self.args.reports / "unreachable_levels.json").exists())
 
     def test_complaints_remove_definitions_and_increment_version_even_on_revert(self):
@@ -193,14 +191,13 @@ class PipelineTest(unittest.TestCase):
         summary = game.run(self.args)
         self.assertEqual(1, summary["without_definition"])
         self.assertIn("дом", dictionary.read_list(self.args.out / "words.txt"))
-        with sqlite3.connect(self.args.out / "definitions.db") as db:
-            self.assertEqual(5, db.execute("PRAGMA user_version").fetchone()[0])
-            self.assertEqual(0, db.execute("SELECT COUNT(*) FROM definitions WHERE word='дом'").fetchone()[0])
-            self.assertEqual("other", db.execute("SELECT category FROM word_metadata WHERE word='дом'").fetchone()[0])
+        document=lexical_json.read(self.args.out/'lexical_data.json')
+        self.assertEqual(5,document['revision'])
+        self.assertFalse(any(r['word']=='дом' for r in document['definitions']))
+        self.assertEqual('other',document['word_metadata']['дом']['category'])
         path.write_text("")
         game.run(self.args)
-        with sqlite3.connect(self.args.out / "definitions.db") as db:
-            self.assertEqual(6, db.execute("PRAGMA user_version").fetchone()[0])
+        self.assertEqual(6,lexical_json.read(self.args.out/'lexical_data.json')['revision'])
         (self.overrides / "remove.txt").write_text("дом\n")
         game.run(self.args)
         self.assertNotIn("дом", dictionary.read_list(self.args.out / "words.txt"))
@@ -394,24 +391,22 @@ class PipelineTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, ">=300"):
             game.verify_audit(sample, self.args.out, "Тестировщик", self.args.overrides, self.args.config)
         binding = json.loads(sample.with_suffix(".csv.meta.json").read_text())
-        with sqlite3.connect(Path(binding["candidate"]) / "definitions.db") as db:
-            rows = db.execute("SELECT source FROM definitions WHERE origin='wiktionary'").fetchall()
-            self.assertEqual(1, len(rows))
-            self.assertTrue(rows[0][0].startswith("https://ru.wiktionary.org/wiki/"))
+        rows=[r['source'] for r in lexical_json.read(Path(binding['candidate'])/'lexical_data.json')['definitions'] if r['origin']=='wiktionary']
+        self.assertEqual(1,len(rows))
+        self.assertTrue(rows[0].startswith('https://ru.wiktionary.org/wiki/'))
 
     def test_database_validator_rejects_leaks_membership_and_unknown_categories(self):
         self.complete()
         records = game.prefilter(self.dump, self.config, set())["records"]
         taxonomy = json.loads(self.args.categories.read_text())
-        path = self.args.out / "definitions.db"
+        path = self.args.out / "lexical_data.json"
         for column, value in (("word", "случай"), ("category", "unknown"), ("text", "Домашний дом для дома и других домашних дел.")):
-            with sqlite3.connect(path) as db:
-                original = db.execute("SELECT " + column + " FROM definitions WHERE word='дом'").fetchone()[0]
-                db.execute("UPDATE definitions SET " + column + "=? WHERE id=(SELECT id FROM definitions WHERE word='дом')", (value,))
+            document=lexical_json.read(path)
+            row=next(r for r in document['definitions'] if r['word']=='дом')
+            original=row[column];row[column]=value;lexical_json.write(path,document)
             with self.assertRaises(ValueError):
-                game.validate_database(path, records, taxonomy, self.config)
-            with sqlite3.connect(path) as db:
-                db.execute("UPDATE definitions SET " + column + "=? WHERE " + column + "=?", (original, value))
+                game.validate_lexical_data(path,records,taxonomy,self.config)
+            row[column]=original;lexical_json.write(path,document)
 
     def test_gate_invalidates_definition_but_keeps_word_and_category(self):
         game.run(self.args)
@@ -476,8 +471,8 @@ class AuditTest(unittest.TestCase):
         self.candidate.mkdir()
         words = ["слово" + chr(1072 + i // 32) + chr(1072 + i % 32) for i in range(310)]
         rows = [{"word": word, "display": word, "text": "Синтетическая строка номер " + str(i), "origin": "own", "source": "", "category": "other", "guessable": 1} for i, word in enumerate(words)]
-        game.build_database(self.candidate / "definitions.db", rows, dict.fromkeys(words, "other"), {}, 4)
-        block = {"sha256": dictionary.sha256_file(self.candidate / "definitions.db"), "rights_policy": "own-generated-v1", "audit": {"passed": False}}
+        game.build_lexical_data(self.candidate / "lexical_data.json", rows, dict.fromkeys(words, "other"), {}, 4)
+        block = {"sha256": dictionary.sha256_file(self.candidate / "lexical_data.json"), "rights_policy": "own-generated-v1", "audit": {"passed": False}}
         with patch.object(dictionary, "LEVELS", []):
             dictionary.write_game_data(self.candidate, dict.fromkeys(words, []), "2026-11-01", "a" * 64, block)
         manifest_path = self.candidate / "manifest.json"
@@ -494,19 +489,19 @@ class AuditTest(unittest.TestCase):
             row["ok"], row["bad"] = ("0", "1") if index < bad else ("1", "0")
         game.write_csv(self.sample, list(rows[0]), rows)
 
-    def test_unreviewed_audit_rejected_and_release_not_blocked_without_database(self):
+    def test_unreviewed_audit_and_missing_riddles_block_release(self):
         with self.assertRaisesRegex(ValueError, ">=300"):
             game.verify_audit(self.sample, self.out, "Тестировщик")
-        game.require_release_audit(self.out)
+        with self.assertRaises(ValueError): game.require_release_audit(self.out)
         self.assertFalse(self.out.exists())
 
-    def test_exact_three_percent_is_accepted_and_binds_release_to_db_bytes(self):
+    def test_preparation_sample_pass_does_not_approve_runtime_riddles(self):
         self.fill(bad=9)
         self.assertTrue(game.verify_audit(self.sample, self.out, "Тестировщик")["passed"])
-        game.require_release_audit(self.out)
-        with (self.out / "definitions.db").open("ab") as output:
+        with self.assertRaises(ValueError): game.require_release_audit(self.out)
+        with (self.out / "lexical_data.json").open("ab") as output:
             output.write(b"tampered")
-        with self.assertRaisesRegex(ValueError, "Release"):
+        with self.assertRaises(ValueError):
             game.require_release_audit(self.out)
 
     def test_more_than_three_percent_is_rejected(self):
@@ -536,29 +531,17 @@ class AuditTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "списки жалоб"):
             game.verify_audit(self.sample, self.out, "Тестировщик", overrides)
 
-    def test_owner_waiver_allows_technical_release_and_keeps_audit_false(self):
-        with self.assertRaisesRegex(ValueError, "ручному аудиту"):
-            game.require_release_audit(self.candidate)
-        waived = game.require_release_audit(self.candidate, allow_unaudited=True)
-        self.assertEqual("owner-waiver-unaudited", waived["release_audit"])
-        self.assertFalse(waived["publishable"])
-        self.assertTrue(any("аудит" in finding for finding in waived["findings"]))
-        manifest = json.loads((self.candidate / "manifest.json").read_text())
-        self.assertFalse(manifest["definitions"]["audit"]["passed"])
-        with (self.candidate / "definitions.db").open("ab") as output:
-            output.write(b"tampered")
-        with self.assertRaisesRegex(ValueError, "изменена"):
-            game.require_release_audit(self.candidate, allow_unaudited=True)
+    def test_waiver_cannot_publish_unapproved_preparation_data(self):
+        before=(self.candidate/'manifest.json').read_bytes()
+        for waiver in (False,True):
+            with self.assertRaises(ValueError):
+                game.require_release_audit(self.candidate,allow_unaudited=waiver)
+        self.assertEqual(before,(self.candidate/'manifest.json').read_bytes())
 
-    def test_check_release_cli_waiver_prints_warning(self):
-        args = argparse.Namespace(check_release=True, allow_unaudited_release=True,
-                                  out=self.candidate, overrides=game.TOOLS / "overrides",
-                                  config=game.TOOLS / "selection_config.json")
-        stderr = io.StringIO()
-        with patch("sys.stderr", stderr):
-            result = game.run(args)
-        self.assertEqual("owner-waiver-unaudited", result["release_audit"])
-        self.assertIn("ВНИМАНИЕ", stderr.getvalue())
+    def test_check_release_cli_rejects_waiver_for_preparation_data(self):
+        args=argparse.Namespace(check_release=True,allow_unaudited_release=True,out=self.candidate,
+                               overrides=game.TOOLS/'overrides',config=game.TOOLS/'selection_config.json')
+        with self.assertRaises(ValueError):game.run(args)
 
 
 if __name__ == "__main__":

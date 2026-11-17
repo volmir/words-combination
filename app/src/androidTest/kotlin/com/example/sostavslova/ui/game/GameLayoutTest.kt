@@ -8,7 +8,6 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
 import com.example.sostavslova.core.*
-import com.example.sostavslova.data.Definition
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.*
 import org.junit.Rule
@@ -19,7 +18,7 @@ class GameLayoutTest {
     private val game = GameState("а".repeat(30), listOf("демонстрация", "окаменелость"), listOf("демонстрация"))
     private val initial = GameUiState(loading = false, game = game,
         level = Level(1, game.word, 8, 21, 'д', 5), statistics = game.statistics(),
-        hint = GameHint(11, "О", listOf(Definition("", "Длинное определение <с угловыми скобками>\nВторая строка подсказки"))))
+        hint = GameHint(11, "О"))
 
     @Test fun gameAndDialogsWrapAndKeep48DpTargets() {
         val state = mutableStateOf(initial)

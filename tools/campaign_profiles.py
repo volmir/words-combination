@@ -359,7 +359,7 @@ def simulation_config_for(name, base, path=CONFIG):
     return config
 
 
-def source_hashes(path=CONFIG, words=None, levels=None, manifest=None, definitions_db=None):
+def source_hashes(path=CONFIG, words=None, levels=None, manifest=None, lexical_data=None):
     """SHA-256 входов, от которых зависит профиль и его проверки.
 
     Пути можно переопределить для staged-словаря; по умолчанию остаются data/.
@@ -374,8 +374,8 @@ def source_hashes(path=CONFIG, words=None, levels=None, manifest=None, definitio
         'words': Path(words) if words is not None else ROOT / 'data/words.txt',
         'levels': Path(levels) if levels is not None else ROOT / 'data/levels.json',
         'manifest': Path(manifest) if manifest is not None else ROOT / 'data/manifest.json',
-        'definitions_db': (Path(definitions_db) if definitions_db is not None
-                           else ROOT / 'data/definitions.db'),
+        'lexical_data': (Path(lexical_data) if lexical_data is not None
+                           else ROOT / 'data/lexical_data.json'),
     }
     return {key: sha256_file(file) for key, file in paths.items() if Path(file).exists()}
 

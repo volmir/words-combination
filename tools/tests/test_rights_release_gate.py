@@ -3,7 +3,6 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
-import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -23,7 +22,7 @@ class RightsReleaseGateTest(unittest.TestCase):
         for folder, names in {
             'docs': ('owned_hints.json', 'OWN_HINTS_OWNER_APPROVAL.json',
                      'OWN_HINTS_MANUAL_AUDIT.json'),
-            'data': ('campaign.json', 'words.txt', 'manifest.json', 'definitions.db'),
+            'data': ('campaign.json', 'words.txt', 'manifest.json', 'owned_riddles.json'),
         }.items():
             (self.root / folder).mkdir()
             for name in names:
@@ -83,7 +82,7 @@ class RightsReleaseGateTest(unittest.TestCase):
 
     def test_changed_manifest_database_sha_blocks(self):
         self.change_json('data/manifest.json',
-                         lambda v: v['definitions'].update(sha256='0' * 64))
+                         lambda v: v['owned_riddles'].update(sha256='0' * 64))
         self.assert_blocked()
 
     def test_changed_audit_database_sha_blocks(self):
@@ -92,12 +91,11 @@ class RightsReleaseGateTest(unittest.TestCase):
         self.assert_blocked()
 
     def test_changed_database_license_even_with_updated_sha_blocks(self):
-        path = self.root / 'data/definitions.db'
-        with sqlite3.connect(path) as db:
-            db.execute("UPDATE build_metadata SET value='MIT' WHERE key='own_license'")
+        path = self.root / 'data/owned_riddles.json'
+        self.change_json('data/owned_riddles.json', lambda value: value.update(license='MIT'))
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         self.change_json('data/manifest.json',
-                         lambda v: v['definitions'].update(sha256=digest))
+                         lambda v: v['owned_riddles'].update(sha256=digest))
         self.assert_blocked()
 
 

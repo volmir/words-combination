@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""LCH-03: reproducible minimal descriptions; never imports dictionary prose."""
+"""Deterministic offline runtime subset of the owner's 39 approved CC0 texts."""
 import argparse
 from collections import Counter
 import json
 import re
 from pathlib import Path
-import sqlite3
 import shutil
 import sys
 import tempfile
@@ -13,17 +12,17 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 sys.path.insert(0, str(ROOT))
-from tools.owned_hints import validate, load_metadata, sha, compare_imported
-from tools.owned_hints_rights import owner_decision, database_metadata, publication_fields, exact
+from tools.check_text_storage import check as check_text_storage
+from tools.owned_hints import validate, sha
+from tools.owned_hints_rights import owner_decision, publication_fields, exact, read_json
 from build_game_data import publish
 from game_data_providers import atomic_json
-from tools.owned_hints_toolchain import build_database, restore_database
 
-POLICY = 'owned-minimal-hints-v1'
 INDEX = ROOT / 'tools/owned_hint_index.json'
 CANDIDATE = ROOT / 'docs/owned_hints.json'
-VERSION = 10
+CONTRACT = ROOT / 'tools/owned_riddles_contract.json'
 EXPECTED_COVERAGE = dict(unique_targets=39, assignments=40, T3=9, T4=11, T6=20)
+ASSET = 'owned_riddles.json'
 
 
 def coverage(candidate, campaign):
@@ -36,38 +35,10 @@ def coverage(candidate, campaign):
     return actual
 
 
-def extract_index(data, candidate_path, output, dump):
-    """One-time text-free snapshot. Imported prose is screened, never exported."""
-    manifest = json.loads((data / 'manifest.json').read_text())
-    if sha(dump) != manifest['source']['sha256_input']:
-        raise ValueError('Dump SHA mismatch')
-    candidate = json.loads(candidate_path.read_text())
-    with sqlite3.connect(data / 'definitions.db') as db:
-        metadata = load_metadata(db)
-        validate(candidate, json.loads((data / 'campaign.json').read_text()), sha(data / 'campaign.json'),
-                 set((data / 'words.txt').read_text().splitlines()), metadata)
-        comparison = compare_imported(candidate['entries'], db.execute('SELECT word,text FROM definitions'))
-    if comparison['suspicious_matches']:
-        raise ValueError('Suspected imported prose')
-    own_words = {e['word'] for e in candidate['entries']}
-    # Only category keys/provenance and observed lexical forms for masking 39 texts.
-    # No glosses, labels copied from prose, examples, or other free text fields.
-    compact = {word: dict(category=info['category'], category_source=info['category_source'],
-                          forms=info['forms'] if word in own_words else [],
-                          related=info['related'] if word in own_words else [])
-               for word, info in sorted(metadata.items())
-               if info['category'] != 'other' or word in own_words}
-    atomic_json(output, dict(schema='owned-hint-category-index-v1', words_sha256=manifest['sha256_words_txt'],
-                            source_database_sha256=sha(data / 'definitions.db'),
-                            source_dump_sha256=sha(dump), license='CC-BY-SA-4.0',
-                            source='word_metadata:categories-and-observed-forms-only',
-                            candidate_sha256=sha(candidate_path), screening=comparison, word_metadata=compact))
-
-
 def inputs(data, candidate_path=None, index_path=None):
     candidate_path, index_path = candidate_path or CANDIDATE, index_path or INDEX
-    candidate = json.loads(candidate_path.read_text())
-    index = json.loads(index_path.read_text())
+    candidate = read_json(candidate_path)
+    index = read_json(index_path)
     manifest = json.loads((data / 'manifest.json').read_text())
     campaign = json.loads((data / 'campaign.json').read_text())
     words = set((data / 'words.txt').read_text().splitlines())
@@ -108,64 +79,75 @@ def inputs(data, candidate_path=None, index_path=None):
     return candidate, index, metadata, manifest
 
 
-def generate(data, output, candidate_path=None, index_path=None):
+
+def approved_inputs(data, candidate_path=None, index_path=None):
     candidate_path, index_path = candidate_path or CANDIDATE, index_path or INDEX
     candidate, index, metadata, manifest = inputs(data, candidate_path, index_path)
+    contract = read_json(CONTRACT)
+    if (contract['schema'] != 'owned-riddles-source-contract-v1' or
+            sha(candidate_path) != contract['candidate_sha256'] or sha(index_path) != contract['index_sha256']):
+        raise ValueError('Authored source/index differ from approved contract')
     decision = owner_decision(candidate_path, data / 'campaign.json')
-    rows = [dict(word=e['word'], display=e['word'], text=e['hint'], source='', origin='own',
-                 category=metadata[e['word']]['category'], guessable=1) for e in candidate['entries']]
-    build_database(output, rows, metadata, dict(rights_policy=POLICY,
-                   **database_metadata(decision),
-                   dictionary_words_sha256=sha(data / 'words.txt'), candidate_sha256=sha(candidate_path),
-                   category_index_sha256=sha(index_path)), VERSION)
-    return candidate, index, metadata, manifest
+    rights = publication_fields(candidate_path, data / 'campaign.json', decision)
+    if (rights['publication_status'] != 'approved' or
+            rights['rights_review']['approval_sha256'] != contract['approval_sha256'] or
+            rights['audit']['report_sha256'] != contract['audit_sha256']):
+        raise ValueError('Owner approval and full human audit are required; no waiver')
+    keys = sorted({w for l in read_json(data / 'campaign.json')['levels']
+                   for t in l['tasks'] if t['type'] == 'T4' for w in t['targets']})
+    if keys != contract['t4_keys'] or len(keys) != 11:
+        raise ValueError('Exactly 11 approved T4 targets are required')
+    payload = dict(schema='owned-riddles', version=1, license='CC0-1.0',
+                   riddles={e['word']: e['hint'] for e in candidate['entries'] if e['word'] in keys})
+    return payload, manifest, rights
 
 
-def definitions_block(data, database, candidate_path, index_path, candidate, metadata):
-    decision = owner_decision(candidate_path, data / 'campaign.json')
-    return dict(rights_policy=POLICY, sha256=sha(database), user_version=VERSION,
-        counts=dict(own=len(candidate['entries']), wiktionary=0),
-        coverage=dict(words=len(candidate['entries']), total=len(metadata)),
-        semantic_coverage=coverage(candidate, json.loads((data / 'campaign.json').read_text())),
-        dictionary_words_sha256=sha(data / 'words.txt'),
-        generator=dict(provider='local-owned-hints', candidate_sha256=sha(candidate_path),
-                       category_index_sha256=sha(index_path)),
-        **publication_fields(candidate_path, data / 'campaign.json', sha(database), decision))
+def encoded(payload):
+    return (json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(',', ':')) + '\n').encode('utf-8')
+
+
+def riddles_block(data, output, candidate_path, index_path, rights):
+    return dict(schema='owned-riddles', version=1, sha256=sha(output), count=11, tasks=6,
+                license='CC0-1.0', provenance='newly-authored-for-game',
+                campaign_sha256=sha(data / 'campaign.json'), dictionary_words_sha256=sha(data / 'words.txt'),
+                candidate_sha256=sha(candidate_path), category_index_sha256=sha(index_path), **rights)
+
+
+def generate(data, output, candidate_path=None, index_path=None):
+    payload, _, _ = approved_inputs(data, candidate_path, index_path)
+    output.write_bytes(encoded(payload))
+    return payload
 
 
 def verify(data, candidate_path=None, index_path=None):
     candidate_path, index_path = candidate_path or CANDIDATE, index_path or INDEX
-    candidate, index, metadata, manifest = inputs(data, candidate_path, index_path)
-    block = manifest.get('definitions', {})
-    if not (data / 'definitions.db').exists():
-        restore_database(data)
-    expected_block = definitions_block(data, data / 'definitions.db', candidate_path, index_path, candidate, metadata)
-    if not exact(block, expected_block):
-        raise ValueError('Owned hints manifest differs from verified evidence/state')
-    # Byte equality with a fresh rebuild covers ALL columns/tables, including
-    # notes/examples, SQLite free pages and word_metadata. No hidden old prose.
-    with tempfile.TemporaryDirectory() as temp:
-        expected = Path(temp) / 'definitions.db'
-        generate(data, expected, candidate_path, index_path)
-        if sha(expected) != block['sha256']:
-            raise ValueError('Database differs from reproducible owned-only build')
-    return dict(own=len(candidate['entries']), wiktionary=0, t4=sum(r['type'] == 'T4' for e in candidate['entries'] for r in e['roles']),
-                category_index_sha256=sha(index_path), publication_status=expected_block['publication_status'])
+    payload, manifest, rights = approved_inputs(data, candidate_path, index_path)
+    output = data / ASSET
+    if not output.is_file():
+        raise ValueError('Missing required owned_riddles.json')
+    actual = read_json(output)
+    if not exact(actual, payload) or output.read_bytes() != encoded(payload):
+        raise ValueError('Riddles differ from exact deterministic approved subset')
+    block = riddles_block(data, output, candidate_path, index_path, rights)
+    if 'definitions' in manifest or not exact(manifest.get('owned_riddles'), block):
+        raise ValueError('Riddles manifest differs from verified evidence/state')
+    return dict(own=11, wiktionary=0, t4=11, tasks=6, sha256=sha(output), publication_status='approved')
 
 
 def install(data, candidate_path=None, index_path=None):
     candidate_path, index_path = candidate_path or CANDIDATE, index_path or INDEX
-    # Read and validate every input before replacing installed files.
+    payload, manifest, rights = approved_inputs(data, candidate_path, index_path)
     with tempfile.TemporaryDirectory() as temp:
-        output = Path(temp) / 'definitions.db'
-        candidate, index, metadata, manifest = generate(data, output, candidate_path, index_path)
-        manifest['definitions'] = definitions_block(data, output, candidate_path, index_path, candidate, metadata)
         staging = Path(temp)
+        output = staging / ASSET
+        output.write_bytes(encoded(payload))
+        manifest.pop('definitions', None)
+        manifest['owned_riddles'] = riddles_block(data, output, candidate_path, index_path, rights)
         for name in ('words.txt', 'campaign.json'):
             shutil.copyfile(data / name, staging / name)
         atomic_json(staging / 'manifest.json', manifest)
         verify(staging, candidate_path, index_path)
-        publish(staging, data, ('definitions.db', 'manifest.json'))
+        publish(staging, data, (ASSET, 'manifest.json'))
     return verify(data, candidate_path, index_path)
 
 
@@ -173,15 +155,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--data', type=Path, default=ROOT / 'data')
     parser.add_argument('--check', action='store_true')
-    parser.add_argument('--extract-index', action='store_true')
-    parser.add_argument('--dump', type=Path)
     args = parser.parse_args()
-    if args.extract_index:
-        if args.dump is None:
-            parser.error('--extract-index requires --dump')
-        extract_index(args.data, CANDIDATE, INDEX, args.dump)
-        return
-    print(json.dumps(verify(args.data) if args.check else install(args.data), ensure_ascii=False))
+    try:
+        check_text_storage(ROOT)
+        print(json.dumps(verify(args.data) if args.check else install(args.data), ensure_ascii=False))
+    except (ValueError, OSError, KeyError) as error:
+        parser.exit(2, str(error) + '\n')
 
 
 if __name__ == '__main__':

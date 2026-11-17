@@ -43,10 +43,7 @@ class GameViewModelTest {
     private val level = Level(1, "торт", 2, 3, 'т', 2)
     private var route = "1"
     private val levels = LevelsRepository({ """[{"index":1,"word":"торт","answers":2,"words":3,"letter":"т","letterCount":2},{"index":2,"word":"портал","answers":2,"words":3,"letter":"п","letterCount":1}]""" })
-    private val noDefinitions = object : DefinitionsRepository {
-        override suspend fun isAvailable() = false
-        override suspend fun definitionsFor(word: String) = emptyList<Definition>()
-    }
+    private val noDefinitions = RiddlesRepository { "Синтетическое существо для проверки подсказок." }
 
     @Before fun setUp() {
         directory = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir,
@@ -63,15 +60,13 @@ class GameViewModelTest {
     }
 
     private suspend fun model(handle: SavedStateHandle = SavedStateHandle(mapOf("index" to route)),
-        repository: ProgressRepository = progress, meanings: DefinitionsRepository = noDefinitions,
+        repository: ProgressRepository = progress, meanings: RiddlesRepository = noDefinitions,
         wordRepository: WordRepository = words, levelRepository: LevelsRepository = levels,
         retainedOwner: ViewModelStoreOwner? = null): GameViewModel = withContext(Dispatchers.Main) {
         val owner = retainedOwner ?: object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
         if (owner !in owners) owners.add(owner)
         ViewModelProvider(owner, viewModelFactory { initializer {
-            GameViewModel(handle, wordRepository, levelRepository, repository, meanings, Random(42), categoryText = { key ->
-                CategoryNames.resource(key)?.let { InstrumentationRegistry.getInstrumentation().targetContext.getString(it) }
-            })
+            GameViewModel(handle, wordRepository, levelRepository, repository, meanings, Random(42))
         } })[GameViewModel::class.java]
     }
 
@@ -312,94 +307,15 @@ class GameViewModelTest {
         assertEquals(state.game?.found, saved().filterNot { it == "нос" })
     }
 
-    @Test fun hintNeverUsesFoundWordAndSuppressesWordAndUrlInDefinitions() = runTest {
-        seed("портал", listOf("пар", "рот", "лот"))
-        var requested = ""
-        val meanings = object : DefinitionsRepository {
-            override suspend fun isAvailable() = true
-            override suspend fun definitionsFor(word: String): List<Definition> {
-                requested = word
-                return listOf(Definition(word, "Безопасное толкование для условного примера", origin = "own"),
-                    Definition(word, "Ответ — ${word.uppercase()}."), Definition(word, "Текст", example = word))
-            }
-        }
-        val model = model(meanings = meanings); model.ready()
+    @Test fun legacyLetterHintNeverReadsRiddlesOrChangesSavedAnswers() = runTest {
+        seed("портал", listOf("пар", "лот"))
+        val model = model(meanings = RiddlesRepository { error("Legacy hint must not read riddles") })
+        model.ready(); val before = saved()
         withContext(Dispatchers.Main) { model.onHint() }
         val hint = checkNotNull(model.await { it.hint != null && !it.hintLoading }.hint)
-        assertEquals("тор", requested)
-        assertEquals(3, hint.length); assertEquals("Т", hint.firstLetter)
-        assertEquals(1, hint.definitions.size)
-        assertEquals("", hint.definitions.single().display)
-        assertEquals("", hint.definitions.single().source)
-        assertEquals("", hint.definitions.single().notes)
-        assertEquals("", hint.definitions.single().example)
-        model.answer("тор")
-        assertNull(model.uiState.value.hint)
-        withContext(Dispatchers.Main) { model.onHint() }
-        model.await { !it.hintLoading && it.message?.text == R.string.hint_all_found }
-    }
-
-    @Test fun hintMasksRootsAndFormsInsteadOfDiscardingUsefulDefinition() = runTest {
-        seed("портал", listOf("пар", "рот", "лот"))
-        val meanings = object : DefinitionsRepository {
-            override suspend fun isAvailable() = true
-            override suspend fun definitionsFor(word: String) = listOf(Definition(word,
-                "${word.uppercase()} и ${word}овый предмет служат условным примером.",
-                notes = word, example = word, forms = listOf(word), origin = "own"))
-        }
-        val model = model(meanings = meanings); model.ready()
-        withContext(Dispatchers.Main) { model.onHint() }
-        val hint = checkNotNull(model.await { it.hint != null && !it.hintLoading }.hint)
-        val definition = hint.definitions.single()
-        assertEquals("*** и *** предмет служат условным примером.", definition.text)
-        assertEquals("", definition.display)
-        assertEquals("", definition.source)
-        assertEquals("", definition.example)
-        assertTrue(definition.forms.isEmpty())
-        assertTrue(definition.related.isEmpty())
-    }
-
-    @Test fun hintFallsBackWhenUnavailableMissingOrLeaking() = runTest {
-        seed("портал", listOf("пар", "рот", "лот"))
-        val leaking = object : DefinitionsRepository {
-            override suspend fun isAvailable() = true
-            override suspend fun definitionsFor(word: String) = listOf(Definition(word, word, origin = "own"))
-        }
-        for (definitions in listOf(noDefinitions, leaking)) {
-            val model = model(meanings = definitions); model.ready()
-            withContext(Dispatchers.Main) { model.onHint() }
-            assertTrue(checkNotNull(model.await { !it.hintLoading && it.hint != null }.hint).definitions.isEmpty())
-        }
-    }
-
-    @Test fun importedTextsNeverEnterLegacyHintCampaignRiddleOrLadder() = runTest {
-        val imported = object : DefinitionsRepository {
-            override suspend fun isAvailable() = true
-            override suspend fun categoryFor(word: String) = "animals"
-            override suspend fun definitionsFor(word: String) = listOf(Definition(word,
-                "Синтетический маркер стороннего текста", origin = "wiktionary"))
-        }
-        seed("портал", listOf("пар", "рот", "лот"))
-        val legacy = model(meanings = imported); legacy.ready()
-        withContext(Dispatchers.Main) { legacy.onHint() }
-        assertTrue(checkNotNull(legacy.await { !it.hintLoading && it.hint != null }.hint).definitions.isEmpty())
-        withContext(Dispatchers.Main) { owners.last().viewModelStore.clear() }
-        progress.clearAll()
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
-        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
-        // The fresh campaign starts at level 1; seed("портал") selected legacy route 2.
-        val game = model(handle = SavedStateHandle(mapOf("index" to "1")),
-            meanings = imported, wordRepository = campaignWords, levelRepository = campaignLevels)
-        assertTrue(game.ready().riddles.values.flatten().all { it.text == null && !it.wiktionary })
-        repeat(2) { count ->
-            withContext(Dispatchers.Main) { game.onHint() }
-            game.await { !it.hintLoading && it.campaignHints.size == count + 1 }
-        }
-        val state = game.uiState.value
-        assertEquals(listOf(com.example.sostavslova.core.HintStage.THEME,
-            com.example.sostavslova.core.HintStage.LENGTH), state.campaignHints.map { it.stage })
-        assertEquals(0, state.campaignLevel?.hints?.paidUnits)
-        assertFalse(state.toString().contains("Синтетический маркер стороннего текста"))
+        assertEquals(3, hint.length)
+        assertTrue(hint.firstLetter in setOf("Р", "Т"))
+        assertEquals(before, saved())
     }
 
     @Test fun installedMinimalAssetSuppliesEveryMandatoryRiddleToGameUi() = runTest {
@@ -410,8 +326,8 @@ class GameViewModelTest {
         val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { asset("campaign.json") })
         val campaignWords = WordRepository({ asset("words.txt") })
         val campaign = requireNotNull(campaignLevels.getCampaign())
-        val databaseName = "owned-ui-${UUID.randomUUID()}.db"
-        val meanings = SqliteDefinitionsRepository(context, databaseName = databaseName)
+        val meanings = JsonRiddlesRepository({ context.assets.open("owned_riddles.json").use { it.readBytes() } })
+        val exact = org.json.JSONObject(asset("owned_riddles.json")).getJSONObject("riddles")
         var riddlesChecked = 0
         try {
             for (level in campaign.levels.filter { row -> row.tasks.any { it is com.example.sostavslova.core.CampaignTask.T4 } }) {
@@ -428,53 +344,33 @@ class GameViewModelTest {
                 val initial = game.ready()
                 val riddles = initial.riddles.values.flatten()
                 assertTrue(riddles.isNotEmpty())
-                assertTrue(riddles.all { !it.text.isNullOrBlank() && !it.wiktionary })
+                assertTrue(riddles.all { it.text.isNotBlank() })
+                level.tasks.filterIsInstance<com.example.sostavslova.core.CampaignTask.T4>().forEach { task ->
+                    task.targets.forEachIndexed { index, word -> assertEquals(exact.getString(word), initial.riddles.getValue(task.id)[index].text) }
+                }
                 riddlesChecked += riddles.size
                 withContext(Dispatchers.Main) { game.onHint() }
                 val hinted = game.await { !it.hintLoading && it.campaignHint != null }
-                assertTrue(checkNotNull(hinted.campaignLevel).hints.ladder.steps.any {
-                    it.stage == com.example.sostavslova.core.HintStage.DEFINITION && !it.wiktionary
+                assertTrue(checkNotNull(hinted.campaignLevel).hints.ladder.steps.all {
+                    it.stage in setOf(com.example.sostavslova.core.HintStage.FIRST_LETTER,
+                        com.example.sostavslova.core.HintStage.PATTERN, com.example.sostavslova.core.HintStage.ANSWER)
                 })
                 assertTrue(hinted.game?.found.orEmpty().isEmpty())
                 assertEquals(0, hinted.campaignLevel?.hints?.paidUnits)
                 withContext(Dispatchers.Main) { owners.last().viewModelStore.clear() }
             }
             assertEquals(11, riddlesChecked)
-            assertTrue(meanings.definitionsFor("бык").isEmpty())
         } finally {
-            meanings.close()
-            context.deleteDatabase(databaseName)
+            withContext(Dispatchers.Main) { owners.forEach { it.viewModelStore.clear() } }
         }
     }
 
-    @Test fun hintTriesAnotherRemainingWordWhenFirstMeaningIsUnusable() = runTest {
-        seed("портал", listOf("пар", "лот"))
-        val requested = mutableListOf<String>()
-        val meanings = object : DefinitionsRepository {
-            override suspend fun isAvailable() = true
-            override suspend fun definitionsFor(word: String): List<Definition> {
-                requested.add(word)
-                return listOf(Definition(word, if (requested.size == 1) word else "Синтетический предмет служит условным примером.", origin = "own"))
-            }
-        }
-        val model = model(meanings = meanings); model.ready()
-        withContext(Dispatchers.Main) { model.onHint() }
-        val hint = checkNotNull(model.await { it.hint != null && !it.hintLoading }.hint)
-        assertEquals(setOf("рот", "тор"), requested.toSet())
-        assertEquals(2, requested.size)
-        assertEquals(1, hint.definitions.size)
-    }
+
 
     @Test fun statisticsAndTasksDoNotLoadWordDefinitionsOrChangeProgress() = runTest {
         seed("портал", listOf("пар"))
         val reads = AtomicInteger()
-        val meanings = object : DefinitionsRepository {
-            override suspend fun isAvailable(): Boolean { reads.incrementAndGet(); return true }
-            override suspend fun definitionsFor(word: String): List<Definition> {
-                reads.incrementAndGet()
-                return emptyList()
-            }
-        }
+        val meanings = RiddlesRepository { reads.incrementAndGet(); error("No riddle task") }
         val model = model(meanings = meanings); model.ready()
         val before = model.uiState.value.game
         val saved = saved()
@@ -546,26 +442,26 @@ class GameViewModelTest {
     @Test fun hintLadderAccumulatesAndRestoresAcrossReturnRotationAndNewStore() = runTest {
         val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
-        val meanings = object : DefinitionsRepository {
-            override suspend fun isAvailable() = true
-            override suspend fun categoryFor(word: String) = "animals"
-            override suspend fun definitionsFor(word: String) = listOf(Definition(word,
-                "Синтетическое существо для проверки подсказок.", origin = "own"))
-        }
+        val reads = AtomicInteger()
+        val meanings = RiddlesRepository { reads.incrementAndGet(); "Синтетическое существо для проверки подсказок." }
         val owner = object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
         val model = model(meanings = meanings, wordRepository = campaignWords, levelRepository = campaignLevels,
             retainedOwner = owner)
         model.ready()
-        repeat(3) {
-            withContext(Dispatchers.Main) { model.onHint() }
+        val riddleReads = reads.get()
+        repeat(2) {
+            withContext(Dispatchers.Main) { repeat(20) { model.onHint() } }
             model.await { state -> !state.hintLoading && state.campaignHints.size == it + 1 }
         }
         val shown = model.uiState.value
-        assertEquals(listOf(com.example.sostavslova.core.HintStage.THEME,
-            com.example.sostavslova.core.HintStage.DEFINITION, com.example.sostavslova.core.HintStage.LENGTH),
+        assertEquals(listOf(com.example.sostavslova.core.HintStage.FIRST_LETTER,
+            com.example.sostavslova.core.HintStage.PATTERN),
             shown.campaignHints.map { it.stage })
         assertFalse(shown.campaignHints[1].wiktionary)
-        assertEquals(0, shown.campaignLevel?.hints?.paidUnits)
+        assertEquals(1, shown.campaignLevel?.hints?.paidUnits)
+        assertEquals(riddleReads, reads.get())
+        assertEquals(1, shown.hintCost)
+        assertEquals(3, shown.campaignLevel?.hints?.ladder?.steps?.size)
         assertEquals("кот", shown.campaignLevel?.hints?.ladder?.target?.word)
         assertTrue(shown.campaignHints.none { it.text?.contains("https://") == true })
         // Повторный вход с тем же владельцем (поворот) не производит событий.
@@ -574,6 +470,8 @@ class GameViewModelTest {
         assertSame(model, rotated)
         withContext(Dispatchers.Main) { rotated.onGameOpened() }
         assertEquals(shown.campaignHints, rotated.uiState.value.campaignHints)
+        assertEquals(shown.hintCost, rotated.uiState.value.hintCost)
+        assertEquals(shown.hintRemaining, rotated.uiState.value.hintRemaining)
         val returned = model(wordRepository = campaignWords, levelRepository = campaignLevels).ready()
         assertEquals(shown.campaignHints, returned.campaignHints)
         assertEquals(shown.campaignLevel?.hints, returned.campaignLevel?.hints)
@@ -588,8 +486,9 @@ class GameViewModelTest {
         assertEquals(shown.campaignHints, restored.campaignHints)
         assertEquals(shown.campaignLevel?.hints, restored.campaignLevel?.hints)
         withContext(Dispatchers.Main) { fresh.onHint() }
-        val paid = fresh.await { !it.hintLoading && it.campaignHints.size == 4 }
-        assertEquals(1, paid.campaignLevel?.hints?.paidUnits)
+        val paid = fresh.await { !it.hintLoading && it.campaignHints.size == 3 }
+        assertEquals(2, paid.campaignLevel?.hints?.paidUnits)
+        assertEquals(com.example.sostavslova.core.HintStage.ANSWER, paid.campaignHint?.stage)
         fresh.answer("кот")
         assertTrue(fresh.uiState.value.campaignHints.isEmpty())
         withContext(Dispatchers.Main) { fresh.onHint() }
@@ -597,7 +496,7 @@ class GameViewModelTest {
         assertNotEquals("кот", another.campaignLevel?.hints?.ladder?.target?.word)
     }
 
-    @Test fun campaignCategoryProvidesOptionalThemeWithoutDatabase() = runTest {
+    @Test fun campaignHintStartsWithUnknownPositionWithoutDatabase() = runTest {
         val json = miniCampaignJson.replace(
             """{"id": "ending", "type": "T5", "ending": "ка", "minLength": 3}""",
             """{"id": "theme_first", "type": "T6", "category": "animals", "n": 1, "words": ["кот"]}""")
@@ -607,12 +506,14 @@ class GameViewModelTest {
         model.ready()
         withContext(Dispatchers.Main) { model.onHint() }
         val state = model.await { !it.hintLoading && it.campaignHint != null }
-        assertEquals(com.example.sostavslova.core.HintStage.THEME, state.campaignHint?.stage)
-        assertEquals("Животные", state.campaignHint?.text)
+        assertEquals(com.example.sostavslova.core.HintStage.FIRST_LETTER, state.campaignHint?.stage)
+        assertEquals(3, state.campaignHint?.text?.length)
+        assertEquals(1, state.campaignHint?.revealedPositions?.size)
+        assertTrue(0 in checkNotNull(state.campaignHint).revealedPositions)
         assertEquals(0, state.campaignLevel?.hints?.paidUnits)
     }
 
-    @Test fun noDatabaseSkipsPaidMetadataAndFreeT4LengthWorksAtZero() = runTest {
+    @Test fun noDatabaseFreeT4UnknownLetterWorksAtZero() = runTest {
         val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val campaign = requireNotNull(campaignLevels.getCampaign())
@@ -626,10 +527,10 @@ class GameViewModelTest {
         assertEquals(0, ready.hintCost)
         withContext(Dispatchers.Main) { model.onHint() }
         val free = model.await { !it.hintLoading && it.campaignHint != null }
-        assertEquals(com.example.sostavslova.core.HintStage.LENGTH, free.campaignHint?.stage)
+        assertEquals(com.example.sostavslova.core.HintStage.FIRST_LETTER, free.campaignHint?.stage)
+        assertEquals(1, free.campaignHint?.revealedPositions?.size)
         assertEquals(5, free.campaignLevel?.hints?.paidUnits)
         assertEquals(6, free.campaignLevel?.hints?.shownSteps)
-        assertTrue(free.hintFallback)
         assertEquals(1, free.hintCost)
         withContext(Dispatchers.Main) { model.onHint() }
         model.await { !it.hintLoading && it.message?.text == R.string.hint_budget_exhausted }
@@ -923,55 +824,28 @@ class GameViewModelTest {
         assertNull(second.uiState.value.message)
     }
 
-    @Test fun campaignRiddlesKeepAssignedAnswersWithMissingCorruptAndUnusableDefinitions() = runTest {
-        val repositories = listOf(noDefinitions,
-            object : DefinitionsRepository {
-                override suspend fun isAvailable(): Boolean = throw IOException("Broken database")
-                override suspend fun definitionsFor(word: String): List<Definition> = error("Must not read")
-            },
-            object : DefinitionsRepository {
-                override suspend fun isAvailable() = true
-                override suspend fun definitionsFor(word: String): List<Definition> = throw IOException("Broken table")
-            },
-            object : DefinitionsRepository {
-                override suspend fun isAvailable() = true
-                override suspend fun definitionsFor(word: String) = listOf(Definition(word, word, source = "https://example.org/$word"))
-            })
-        val json = miniCampaignJson.replace("[\"кот\"]", "[\"кот\", \"крот\"]")
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { json })
+    @Test fun missingOrCorruptMandatoryJsonFailsWithoutFallbackOrProgressReset() = runTest {
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
-        for (meanings in repositories) {
-            progress.clearAll()
-            val model = model(meanings = meanings, wordRepository = campaignWords, levelRepository = campaignLevels)
-            val initial = model.ready()
-            val riddles = initial.riddles.getValue("riddle")
-            assertEquals(listOf(3, 4), riddles.map { it.length })
-            assertTrue(riddles.all { it.text == null && it.firstLetter == "К" && !it.solved })
-            val first = model.answer("кот")
-            assertEquals(R.string.correct_three_letter_answer, first.message?.text)
-            assertEquals(listOf(true, false), first.riddles.getValue("riddle").map { it.solved })
-            assertFalse("riddle" in first.campaignLevel?.completedTaskIds.orEmpty())
-            assertTrue(first.taskProgress.filter { it.id == "count" || it.id == "initial" }.all { it.current == 0 })
-            val second = model.answer("крот")
-            assertTrue(second.riddles.getValue("riddle").all { it.solved })
-            assertTrue("riddle" in second.campaignLevel?.completedTaskIds.orEmpty())
-            assertEquals(setOf("кот", "крот"), second.game?.found?.toSet())
-            withContext(Dispatchers.Main) { owners.last().viewModelStore.clear() }
+        val campaign = requireNotNull(campaignLevels.getCampaign())
+        progress.migrateCampaign(campaign, campaignWords.requireIndex())
+        val before = saved()
+        for (failure in listOf(IOException("Missing JSON"), IllegalArgumentException("Corrupt JSON"))) {
+            val model = model(meanings = RiddlesRepository { throw failure }, wordRepository = campaignWords, levelRepository = campaignLevels)
+            val state = model.await { it.loadError }
+            assertFalse(state.canPlay)
+            assertTrue(state.riddles.isEmpty())
+            assertEquals(before, saved())
         }
     }
 
     @Test fun campaignSafeRiddleTextHasNoMetadataAndProgressSurvivesRecreation() = runTest {
-        val meanings = object : DefinitionsRepository {
-            override suspend fun isAvailable() = true
-            override suspend fun definitionsFor(word: String) = listOf(Definition(word,
-                "Условное безопасное описание для синтетического теста", origin = "own"))
-        }
+        val meanings = RiddlesRepository { "Условное безопасное описание для синтетического теста" }
         val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val model = model(meanings = meanings, wordRepository = campaignWords, levelRepository = campaignLevels)
         val riddle = model.ready().riddles.getValue("riddle").single()
         assertNotNull(riddle.text)
-        assertFalse(riddle.wiktionary)
         assertFalse(riddle.toString().contains("кот"))
         assertFalse(riddle.toString().contains("https"))
         model.answer("кот")
