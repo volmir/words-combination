@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.time
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
@@ -8,6 +9,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
 import com.example.sostavslova.core.*
+import com.example.sostavslova.ui.assertTextLayoutFits
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.*
 import org.junit.Rule
@@ -58,16 +60,60 @@ class TimeScreenTest {
             compose.onNodeWithTag("time_level_$level").assertExists()
                 .assertTextContains("Уровень $level · достопримечательность")
                 .assertTextContains("До всех M звёзд (M = 2): Время отсутствует")
-            val textNodes = compose.onAllNodes(
-                SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult) and
-                    hasAnyAncestor(hasTestTag("time_level_$level")), useUnmergedTree = true,
-            ).fetchSemanticsNodes()
-            assertTrue("Every field must expose readable text", textNodes.size >= 5)
-            textNodes.forEach { node ->
-                val action = requireNotNull(node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action)
-                val layouts = mutableListOf<TextLayoutResult>()
-                action(layouts)
-                layouts.forEach { assertFalse("Text must wrap without clipping", it.hasVisualOverflow) }
+            assertLevelFieldsFit(level)
+        }
+    }
+
+    @Test fun longLevelNameRemainsFullyReadable() {
+        compose.setContent { WordsTheme { TimeScreen(ready()) } }
+        compose.onNodeWithTag("time_screen").performScrollToKey("level_15")
+        compose.onNodeWithTag("time_level_15")
+            .assertTextContains("Уровень 15 · достопримечательность")
+            .assertHasNoClickAction()
+        assertLevelFieldsFit(15)
+    }
+
+    @Test fun veryLongDurationRemainsFullyReadableInSummaryAndLevel() {
+        compose.setContent { WordsTheme { TimeScreen(ready(Long.MAX_VALUE)) } }
+        val duration = "2562047788015 ч 12 мин 55 с"
+        compose.onNodeWithTag("time_screen").performScrollToIndex(1)
+        val total = compose.onNodeWithTag("time_total")
+            .assertTextEquals("Общее активное время: $duration")
+        val layouts = mutableListOf<TextLayoutResult>()
+        val getLayout = requireNotNull(total.fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action)
+        assertTrue("Summary layout must be available", getLayout(layouts))
+        assertTrue("Summary must expose readable text", layouts.isNotEmpty())
+        layouts.forEach { assertTextLayoutFits(it, "total duration") }
+        compose.onNodeWithTag("time_screen").performScrollToKey("level_1")
+        compose.onNodeWithTag("time_level_1")
+            .assertTextContains("Активное время: $duration")
+            .assertTextContains("До R звёзд (R = 1): $duration")
+        assertLevelFieldsFit(1)
+    }
+
+    private fun assertLevelFieldsFit(level: Int) {
+        val textNodes = compose.onAllNodes(
+            SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult) and
+                hasAnyAncestor(hasTestTag("time_level_$level")), useUnmergedTree = true,
+        ).fetchSemanticsNodes()
+        assertTrue("Every field must expose readable text", textNodes.size >= 5)
+        textNodes.forEach { node ->
+            val action = requireNotNull(node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action)
+            val layouts = mutableListOf<TextLayoutResult>()
+            assertTrue("Text layout must be available", action(layouts))
+            assertTrue("Text layout must not be empty", layouts.isNotEmpty())
+            layouts.forEach { layout ->
+                val details = "level=$level text=${layout.layoutInput.text} " +
+                    "constraints=${layout.layoutInput.constraints} size=${layout.size} " +
+                    "paragraph=${layout.multiParagraph.width}x${layout.multiParagraph.height} " +
+                    "lines=${layout.lineCount} widthOverflow=${layout.didOverflowWidth} " +
+                    "heightOverflow=${layout.didOverflowHeight} " +
+                    "lineBounds=" + (0 until layout.lineCount).map { line ->
+                        listOf(layout.getLineLeft(line), layout.getLineTop(line),
+                            layout.getLineRight(line), layout.getLineBottom(line))
+                    }
+                Log.i("G15Layout", details)
+                assertTextLayoutFits(layout, details)
             }
         }
     }
