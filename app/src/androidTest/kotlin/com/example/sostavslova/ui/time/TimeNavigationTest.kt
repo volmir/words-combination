@@ -2,19 +2,21 @@ package com.example.sostavslova.ui.time
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.MainActivity
-import com.example.sostavslova.WordsApplication
 import com.example.sostavslova.ui.dismissWelcomeIfShown
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.RuleChain
+import com.example.sostavslova.ui.IsolatedGameStorageRule
 
 class TimeNavigationTest {
-    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
-    private val container get() = (InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as WordsApplication).container
+    private val storage = IsolatedGameStorageRule()
+    val compose = createAndroidComposeRule<MainActivity>()
+    @get:Rule val rules: RuleChain = RuleChain.outerRule(storage).around(compose)
+    private val container get() = storage.container
     private fun awaitTag(tag: String) {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
     }
@@ -67,7 +69,7 @@ class TimeNavigationTest {
         compose.onNodeWithTag("levels_screen").assertIsDisplayed()
         compose.onNodeWithTag("level_card_1").performClick()
         awaitTag("game_tasks_summary")
-        compose.onNode(hasSetTextAction()).assertTextEquals("черновик")
+        compose.onNode(hasSetTextAction()).assertTextEquals("")
         compose.onNodeWithText("Статистика слов").performScrollTo().performClick()
         compose.onNodeWithText("Статистика по слову", substring = true).assertExists()
         compose.onNodeWithText("Закрыть").performScrollTo().performClick()

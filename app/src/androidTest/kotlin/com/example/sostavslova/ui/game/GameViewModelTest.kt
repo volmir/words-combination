@@ -157,9 +157,10 @@ class GameViewModelTest {
         val long = "а".repeat(31)
         withContext(Dispatchers.Main) { model.onInputChanged(long) }
         assertEquals(long, model.uiState.value.input)
+        assertFalse(handle.contains("game.input"))
         val snapshot = withContext(Dispatchers.Main) { handle.keys().associateWith { handle.get<Any?>(it) } }
         val restored = model(SavedStateHandle(snapshot))
-        assertEquals(long, restored.ready().input)
+        assertEquals("", restored.ready().input)
     }
 
     @Test fun firstStarsEmitEventsAndFinishedIsAnEventOnlyOnce() = runTest {
@@ -408,16 +409,19 @@ class GameViewModelTest {
         assertNull(store.data.first()[androidx.datastore.preferences.core.stringPreferencesKey("currentGame")])
     }
 
-    @Test fun routeAndDraftRestoreAfterViewModelRecreation() = runTest {
+    @Test fun routeAndProgressRestoreButOldDraftIsIgnoredAfterViewModelRecreation() = runTest {
         seed("портал", listOf("пар"))
         val handle = SavedStateHandle(mapOf("index" to "2"))
         val model = model(handle); model.ready()
         withContext(Dispatchers.Main) { model.onInputChanged("ЧеРнОвИк") }
         val snapshot = withContext(Dispatchers.Main) { handle.keys().associateWith { handle.get<Any?>(it) } }
-        val restored = model(SavedStateHandle(snapshot)); val state = restored.ready()
+        // Снимок старой версии с сохранённым черновиком также не восстанавливает ввод.
+        val restored = model(SavedStateHandle(snapshot + mapOf(
+            "game.input" to "Старый черновик", "game.source" to "портал")))
+        val state = restored.ready()
         assertEquals("портал", state.game?.word)
         assertEquals(listOf("пар"), state.game?.found)
-        assertEquals("ЧеРнОвИк", state.input)
+        assertEquals("", state.input)
     }
 
     @Test fun hintLadderAccumulatesAndRestoresAcrossReturnRotationAndNewStore() = runTest {
@@ -672,7 +676,8 @@ class GameViewModelTest {
             first.onInputChanged("черновик")
             repeat(5) { first.onGameOpened() }
         }
-        // Смена конфигурации сохраняет NavBackStackEntry и его ViewModelStore.
+        // Activity уничтожает экран, но сохраняет NavBackStackEntry и ViewModelStore.
+        withContext(Dispatchers.Main) { first.onScreenClosed() }
         val retained = model(handle, wordRepository = countedWords, retainedOwner = owner)
         assertSame(first, retained)
         progress.saveLevelResult(level, listOf("рот", "тор"))
@@ -680,7 +685,7 @@ class GameViewModelTest {
         assertSame(initial.game?.allWords, updated.game?.allWords)
         assertEquals(LevelProgress(completed = true), updated.levelProgress)
         assertEquals(2, updated.statistics.totalFound)
-        assertEquals("черновик", updated.input)
+        assertEquals("", updated.input)
         assertEquals(1, reads.get())
         assertEquals(count, computations.get())
     }

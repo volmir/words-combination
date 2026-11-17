@@ -75,8 +75,8 @@ import java.util.Locale
 import kotlinx.coroutines.delay
 
 @Composable
-fun GameRoute(playTimeOwner: String, onReturnLevels: (Int, Boolean) -> Unit) {
-    BackHandler { onReturnLevels(0, true) }
+fun GameRoute(playTimeOwner: String, onReturnLevels: (Int) -> Unit) {
+    BackHandler { onReturnLevels(0) }
     val container = appContainer()
     val factory = remember(container, playTimeOwner) {
         viewModelFactory { initializer {
@@ -88,6 +88,9 @@ fun GameRoute(playTimeOwner: String, onReturnLevels: (Int, Boolean) -> Unit) {
         } }
     }
     val model: GameViewModel = viewModel(factory = factory)
+    DisposableEffect(model) {
+        onDispose { model.onScreenClosed() }
+    }
     val state by model.uiState.collectAsStateWithLifecycle()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(model, lifecycle, playTimeOwner) {
@@ -112,7 +115,7 @@ fun GameRoute(playTimeOwner: String, onReturnLevels: (Int, Boolean) -> Unit) {
             } finally { notice = null }
         }
     }
-    LaunchedEffect(state.returnLevels) { if (state.returnLevels) onReturnLevels(state.levelsMessage, false) }
+    LaunchedEffect(state.returnLevels) { if (state.returnLevels) onReturnLevels(state.levelsMessage) }
     GameScreen(state, model::onInputChanged, model::onSubmit, model::onHint,
         model::onDialog, model::onDismissDialog, model::onRetry, notice, model::onDismissExplanations, model::onCloseFinale)
 }

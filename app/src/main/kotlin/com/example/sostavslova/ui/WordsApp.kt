@@ -107,7 +107,7 @@ fun WordsApp() {
                         scope.launch { drawerState.close() }
                     },
                 ) { destination ->
-                    if (inLevel) navController.returnToLevels(saveLevelState = true)
+                    if (inLevel) navController.returnToLevels()
                     navController.navigate(destination.route) {
                         popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                         launchSingleTop = true
@@ -128,7 +128,7 @@ fun WordsApp() {
                             Text(stringResource(R.string.play_time_save_error))
                         }
                     },
-                    topBar = { WordsTopBar(onBack = if (inLevel) ({ navController.returnToLevels(saveLevelState = true) }) else null) {
+                    topBar = { WordsTopBar(onBack = if (inLevel) ({ navController.returnToLevels() }) else null) {
                         tracker.setDrawerOpen(true)
                         scope.launch { drawerState.open() }
                     } },

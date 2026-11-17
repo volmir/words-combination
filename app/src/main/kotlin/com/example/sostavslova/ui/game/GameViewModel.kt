@@ -120,7 +120,7 @@ data class GameUiState(
 }
 
 class GameViewModel(
-    private val savedState: SavedStateHandle,
+    savedState: SavedStateHandle,
     private val words: WordRepository,
     private val levels: LevelsRepository,
     private val progress: ProgressRepository,
@@ -131,7 +131,7 @@ class GameViewModel(
     private val playTimeTracker: PlayTimeTracker? = null,
     private val playTimeOwner: String? = null,
 ) : ViewModel() {
-    private val mutableState = MutableStateFlow(GameUiState(input = savedState.get<String>(INPUT).orEmpty()))
+    private val mutableState = MutableStateFlow(GameUiState())
     val uiState = mutableState.asStateFlow()
     // Одноразовые уведомления не выводятся из isFinished при каждой перерисовке.
     private val notices = Channel<GameMessage>(Channel.UNLIMITED)
@@ -197,9 +197,6 @@ class GameViewModel(
                         riddles = riddles, explanations = explanations) }
                 } else mutableState.update { it.copy(totalLevels = legacy.size) }
                 currentCoroutineContext().ensureActive()
-                val previousWord = savedState.get<String>(SOURCE)
-                if (previousWord != null && previousWord != game.word) onInputChanged("")
-                savedState[SOURCE] = game.word
                 // Поток — единственный источник игрового снимка. Результат записи не
                 // публикуется отдельно: он мог уже уступить место более свежей транзакции.
                 if (current != null) {
@@ -282,10 +279,12 @@ class GameViewModel(
         playTimeOwner?.let { playTimeTracker?.detachLevel(it) }
     }
 
+    // Черновик живёт только пока открыт экран, даже если ViewModel пережила Activity.
+    fun onScreenClosed() { mutableState.update { it.copy(input = "") } }
+
     fun onInputChanged(raw: String) {
         // Правильный ответ не длиннее исходника (≤ MAX_WORD_LENGTH), поэтому
         // произвольный ввод не обрезаем: скрытая потеря последних символов недопустима.
-        savedState[INPUT] = raw
         mutableState.update { it.copy(input = raw, message = null) }
     }
 
@@ -330,7 +329,6 @@ class GameViewModel(
                 val message = submissionMessage(submission, answer,
                     threeLetterCampaignAnswer = activeCampaign != null && answer.length == 3)
                 if (uiState.value.input == raw) {
-                    savedState[INPUT] = ""
                     mutableState.update { it.copy(input = "") }
                 }
                 mutableState.update { it.copy(message = message) }
@@ -515,10 +513,5 @@ class GameViewModel(
     private fun leave(@StringRes message: Int = 0) {
         mutableState.update { it.copy(loading = false, returnLevels = true, levelsMessage = message) }
         syncPlayTime()
-    }
-
-    companion object {
-        internal const val INPUT = "game.input"
-        internal const val SOURCE = "game.source"
     }
 }

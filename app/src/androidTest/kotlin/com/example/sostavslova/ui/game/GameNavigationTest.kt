@@ -8,29 +8,29 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.MainActivity
-import com.example.sostavslova.WordsApplication
+import com.example.sostavslova.R
 import com.example.sostavslova.ui.dismissWelcomeIfShown
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.json.JSONObject
+import org.junit.rules.RuleChain
+import com.example.sostavslova.ui.IsolatedGameStorageRule
 
 @RunWith(AndroidJUnit4::class)
 class GameNavigationTest {
-    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
-    private val container get() = (InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as WordsApplication).container
+    private val storage = IsolatedGameStorageRule()
+    val compose = createAndroidComposeRule<MainActivity>()
+    @get:Rule val rules: RuleChain = RuleChain.outerRule(storage).around(compose)
+    private val container get() = storage.container
     @Before fun setUp() = runTest {
-        container.progressRepository.clearAll()
         container.wordRepository.ensureLoaded()
         compose.waitUntil(10_000) { compose.onNodeWithTag("level_card_1").isEnabled() }
         compose.dismissWelcomeIfShown()
     }
-    @After fun tearDown() = runTest { container.progressRepository.clearAll() }
     private suspend fun source() = container.levelsRepository.getCampaign()?.levels?.first()?.word
         ?: container.levelsRepository.getLevels().first().word
     private fun validAnswer(source: String) = if (source == "чемпионство") "нос" else "пар"
@@ -60,17 +60,38 @@ class GameNavigationTest {
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement(raw)
         compose.onNode(hasSetTextAction()).performImeAction()
     }
+    private suspend fun awaitCorrectAnswer(answer: String) {
+        val message = if (answer.length == 3 && container.levelsRepository.getCampaign() != null)
+            R.string.correct_three_letter_answer else R.string.correct_answer
+        awaitText(InstrumentationRegistry.getInstrumentation().targetContext.getString(message))
+    }
     private suspend fun awaitOpenedHint() {
         val tag = if (container.levelsRepository.getCampaign() != null) "game_hint_part_1" else "game_hint"
         compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
     }
     private fun back() = compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
 
+    @Test fun unsubmittedAnswerIsDiscardedOnBackAndRecreation() = runTest {
+        val source = source()
+        start()
+        val saved = container.progressRepository.observeCampaignProgress().first()
+        compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("Без отправки")
+        back()
+        start()
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("")
+        compose.onNode(hasSetTextAction()).performTextReplacement("Снова без отправки")
+        compose.activityRule.scenario.recreate()
+        awaitText("Найденные слова · 0 из")
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("")
+        assertTrue(foundAnswers(source).isEmpty())
+        assertEquals(saved, container.progressRepository.observeCampaignProgress().first())
+    }
+
     @Test fun levelAnswersStatisticsAndNonInteractiveFoundWordsRemainAvailable() = runTest {
         start()
         val source = source()
         val valid = validAnswer(source)
-        answer(valid); awaitText("Правильно!")
+        answer(valid); awaitCorrectAnswer(valid)
         compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsFocused()
         assertEquals(listOf(valid), foundAnswers(source))
         awaitText("Найденные слова · 1 из")
@@ -96,7 +117,7 @@ class GameNavigationTest {
     @Test fun hintAndBackKeepSavedAnswers() = runTest {
         val source = source()
         val valid = validAnswer(source)
-        start(); answer(valid); awaitText("Правильно!")
+        start(); answer(valid); awaitCorrectAnswer(valid)
         compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
         awaitOpenedHint()
         compose.onNodeWithTag("game_hint").performScrollTo().assertIsDisplayed()
@@ -105,22 +126,30 @@ class GameNavigationTest {
         assertEquals(listOf(valid), foundAnswers(source))
     }
 
-    @Test fun recreationAndBackContinueRestoreAnswersAndDraft() = runTest {
+    @Test fun recreationAndBackKeepAnswersAndDiscardDraft() = runTest {
         val source = source()
         val valid = validAnswer(source)
-        start(); answer(valid); awaitText("Правильно!")
+        start(); answer(valid); awaitCorrectAnswer(valid)
         compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
         awaitOpenedHint()
+        val saved = container.progressRepository.observeCampaignProgress().first()
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("ЧеРнОвИк")
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Найденные слова · 1 из", substring = true).fetchSemanticsNodes().isNotEmpty() }
-        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("ЧеРнОвИк")
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("")
+        assertEquals(saved, container.progressRepository.observeCampaignProgress().first())
+        compose.onNode(hasSetTextAction()).performTextReplacement("После пересоздания")
         back()
         compose.onNodeWithTag("level_card_1").performClick()
         awaitText("Найденные слова · 1 из")
-        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("ЧеРнОвИк")
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("")
         awaitOpenedHint()
         assertEquals(listOf(valid), foundAnswers(source))
+        assertEquals(saved, container.progressRepository.observeCampaignProgress().first())
+        compose.onNodeWithText("Статистика слов").performScrollTo().performClick()
+        val total = container.wordRepository.startGame(source).total
+        compose.onNodeWithText("1 / $total").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Закрыть").performScrollTo().performClick()
         container.levelsRepository.getCampaign()?.levels?.first()?.let { level ->
             val saved = container.progressRepository.observeCampaignProgress().first().levels[source]
             val completed = level.tasks.count { it.id in saved?.completedTaskIds.orEmpty() }
@@ -131,15 +160,16 @@ class GameNavigationTest {
             }
         }
         val beforeReturn = container.progressRepository.observeCampaignProgress().first()
+        compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("Перед выходом")
         compose.onNodeWithTag("game_back").performClick()
         compose.onNodeWithTag("level_card_1").performClick()
         awaitText("Найденные слова · 1 из")
-        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("ЧеРнОвИк")
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("")
         awaitOpenedHint()
         assertEquals(beforeReturn, container.progressRepository.observeCampaignProgress().first())
     }
 
-    @Test fun mapRecreationKeepsDraftsSeparateForDifferentLevels() = runTest {
+    @Test fun mapRecreationDiscardsDraftsWithoutTransferringThemBetweenLevels() = runTest {
         val campaign = requireNotNull(container.levelsRepository.getCampaign())
         com.example.sostavslova.core.TaskType.entries.forEach {
             container.progressRepository.markCampaignExplanationSeen(it)
@@ -152,25 +182,28 @@ class GameNavigationTest {
         for ((number, draft) in listOf(1 to "Первый черновик", 2 to "Второй черновик")) {
             compose.onNodeWithTag("level_card_$number").performScrollTo().performClick()
             compose.waitUntil(10_000) { compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
-            compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement(draft)
+            compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("")
+                .performTextReplacement(draft)
             compose.onNodeWithTag("game_back").performClick()
         }
         val saved = container.progressRepository.observeCampaignProgress().first()
+        val first = campaign.levels.first()
+        assertTrue(saved.levels[first.word]?.completedTaskIds.orEmpty().size >= first.requiredStars)
         compose.activityRule.scenario.recreate()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("level_card_1").fetchSemanticsNodes().isNotEmpty() }
-        for ((number, draft) in listOf(1 to "Первый черновик", 2 to "Второй черновик")) {
+        for (number in listOf(1, 2)) {
             compose.onNodeWithTag("level_card_$number").performScrollTo().performClick()
             compose.waitUntil(10_000) { compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
-            compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals(draft)
+            compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("")
             back()
         }
         assertEquals(saved, container.progressRepository.observeCampaignProgress().first())
     }
 
-    @Test fun repeatedResumeAndRotationKeepHintAnswersAndDraft() = runTest {
+    @Test fun repeatedResumeKeepsSessionAndRecreationDiscardsDraft() = runTest {
         val source = source()
         val valid = validAnswer(source)
-        start(); answer(valid); awaitText("Правильно!")
+        start(); answer(valid); awaitCorrectAnswer(valid)
         compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
         awaitOpenedHint()
         fun hintText() = compose.onAllNodes(hasAnyAncestor(hasTestTag("game_hint")), useUnmergedTree = true)
@@ -186,7 +219,7 @@ class GameNavigationTest {
         }
         compose.activityRule.scenario.recreate()
         awaitOpenedHint()
-        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("ЧеРнОвИк")
+        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("")
         assertEquals(hint, hintText())
         assertEquals(saved, foundAnswers(source))
     }
