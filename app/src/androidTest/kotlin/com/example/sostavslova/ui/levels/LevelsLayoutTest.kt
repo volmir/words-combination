@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.levels
 
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -7,6 +8,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.R
 import com.example.sostavslova.core.LevelProgress
@@ -44,7 +46,9 @@ class LevelsLayoutTest {
         }
         compose.onNodeWithTag("level_card_1").assertIsEnabled()
             .assertTextContains("Открыт", substring = true)
-            .assert(hasContentDescription("Звёзды"))
+        assertStars(context.getString(R.string.level_stars_label),
+            context.resources.getQuantityString(R.plurals.level_stars_progress, items.first().maxStars,
+                0, items.first().maxStars))
         compose.onNodeWithTag("level_card_2").assertIsEnabled()
             .assertTextContains("Закрыт", substring = true)
         // Ряд звёзд на карте только показывает прогресс: «Задания» здесь вводит в заблуждение.
@@ -63,7 +67,9 @@ class LevelsLayoutTest {
             if (i == 0) item.copy(campaignStars = item.maxStars)
             else if (i == 1) item.copy(unlocked = true) else item
         }) }
-        val starsDescription = context.resources.getQuantityString(R.plurals.level_stars_progress, 1, 1, 1)
+        val maxStars = items.first().maxStars
+        val starsDescription = context.resources.getQuantityString(R.plurals.level_stars_progress, maxStars, maxStars, maxStars)
+        assertStars(context.getString(R.string.level_stars_label), starsDescription)
         compose.onNodeWithTag("level_card_1")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, starsDescription))
             .assertTextContains("Все звёзды", substring = true)
@@ -75,6 +81,33 @@ class LevelsLayoutTest {
         compose.onNodeWithTag("level_card_15").assertExists()
         compose.onAllNodesWithTag("level_card_16").assertCountEquals(0)
         checkLayout()
+    }
+
+    private fun assertStars(label: String, description: String) {
+        val state = SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, description)
+        for (unmerged in listOf(false, true)) {
+            val card = compose.onNodeWithTag("level_card_1", useUnmergedTree = unmerged)
+            card.assert(state)
+            card.printToLog("G04_${if (unmerged) "unmerged" else "merged"}")
+            // StarsRow — самостоятельный merging-node внутри кнопки уровня.
+            compose.onNode(hasContentDescription(label) and hasAnyAncestor(hasTestTag("level_card_1")),
+                useUnmergedTree = unmerged).assert(state)
+        }
+        // Проверяем и экспорт в Android accessibility tree, который читает TalkBack.
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        automation.waitForIdle(100, 5_000)
+        fun exposesStars(node: AccessibilityNodeInfo, parentState: CharSequence? = null): Boolean {
+            val nodeState = AccessibilityNodeInfoCompat.wrap(node).stateDescription ?: parentState
+            // Android может экспортировать label в виртуальный дочерний узел узла со state.
+            if (node.isVisibleToUser && node.contentDescription?.toString() == label &&
+                nodeState?.toString() == description) return true
+            return (0 until node.childCount).any { index ->
+                node.getChild(index)?.let { exposesStars(it, nodeState) } == true
+            }
+        }
+        val root = automation.rootInActiveWindow
+        val exposed = root?.packageName == InstrumentationRegistry.getInstrumentation().targetContext.packageName && exposesStars(root)
+        assertTrue("Android accessibility: $label, $description", exposed)
     }
 
     private fun checkLayout() {

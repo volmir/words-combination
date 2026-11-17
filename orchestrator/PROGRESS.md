@@ -17,3 +17,6 @@
 
 - [PRE04-03] ✓ 2026-11-17T07:23:48+00:00 — Проверить переполнение букв и заголовков на штатном экране — G01 — Выполнено вручную; проверка запущена оркестратором.
 <!-- orchestrator:v1 {"id": "PRE04-03", "fingerprint": "6fd27c1ffdd818b9cd5c2afb01f000bceee856e5dac02db54daa9999f8c2ff28", "date": "2026-11-17T07:23:48+00:00", "gate": "passed", "manual": true, "summary": "Выполнено вручную; проверка запущена оркестратором.", "model": "gpt-6.1-sol", "effort": "high"} -->
+
+- [PRE04-04] ✓ 2026-11-17T07:39:49+00:00 — Исправить проверку доступности звёзд — G04 — ИТОГ: Исправлен matcher G04 в `LevelsLayoutTest`. Описание ряда и динамический счёт проверяются на соответствующих узлах; production UI не менялся. Отчёт: [PRE04_FIX_G04.md](docs/PRE04_FIX_G04.md).
+<!-- orchestrator:v1 {"id": "PRE04-04", "fingerprint": "537c8990ca2fe97fb7ce98c611126cdcd8f4d119cb153548c8170ad8f3630b8f", "date": "2026-11-17T07:39:49+00:00", "gate": "passed", "manual": false, "summary": "ИТОГ: Исправлен matcher G04 в `LevelsLayoutTest`. Описание ряда и динамический счёт проверяются на соответствующих узлах; production UI не менялся. Отчёт: [PRE04_FIX_G04.md](docs/PRE04_FIX_G04.md).", "model": "gpt-6.1-sol", "effort": "medium"} -->
