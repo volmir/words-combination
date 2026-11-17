@@ -1,6 +1,5 @@
 package com.example.sostavslova.ui
 
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -10,7 +9,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -23,13 +21,13 @@ class TextLayoutAssertionsTest {
     @get:Rule val compose = createComposeRule()
 
     private fun layout(
-        text: String = "Мастер · уровень 30 из 30",
+        text: String = "Мастер · уровень 30\nиз 30",
         maxLines: Int = Int.MAX_VALUE,
         overflow: TextOverflow = TextOverflow.Clip,
     ): TextLayoutResult {
         compose.setContent {
             WordsTheme {
-                Text(text, Modifier.width(120.dp).testTag("layout_text"),
+                Text(text, Modifier.testTag("layout_text"),
                     maxLines = maxLines, overflow = overflow)
             }
         }

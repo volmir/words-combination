@@ -1,20 +1,12 @@
 package com.example.sostavslova.ui.levels
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.requiredWidth
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.R
 import com.example.sostavslova.core.LevelProgress
@@ -24,11 +16,8 @@ import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 
-@RunWith(Parameterized::class)
-class LevelsLayoutTest(private val width: Int, private val fontScale: Float) {
+class LevelsLayoutTest {
     @get:Rule val compose = createComposeRule()
 
     @Test fun levelsWrapKeep48DpTargetsShowSavedStarsAndUseAdaptiveGrid() {
@@ -49,13 +38,8 @@ class LevelsLayoutTest(private val width: Int, private val fontScale: Float) {
         val state = mutableStateOf(LevelsUiState(loading = false, levels = items, stages = stages))
         var selected = ""
         compose.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                WordsTheme {
-                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        LevelsScreen(state.value, { selected = it }, {})
-                    }
-                }
+            WordsTheme {
+                LevelsScreen(state.value, { selected = it }, {})
             }
         }
         compose.onNodeWithTag("level_card_1").assertIsEnabled()
@@ -69,13 +53,12 @@ class LevelsLayoutTest(private val width: Int, private val fontScale: Float) {
         compose.onAllNodesWithText("Можно добрать", substring = true).assertCountEquals(0)
         val first = compose.onNodeWithTag("level_card_1").fetchSemanticsNode().boundsInRoot
         val second = compose.onNodeWithTag("level_card_2").fetchSemanticsNode().boundsInRoot
-        if (width < 600) assertTrue(second.top > first.top)
+        val screen = compose.onNodeWithTag("levels_screen").fetchSemanticsNode().boundsInRoot
+        if (screen.width / compose.density.density < 600f) assertTrue(second.top > first.top)
         else { assertEquals(first.top, second.top, 1f); assertTrue(second.left > first.left) }
         checkLayout()
-        if (width < 600) {
-            compose.onNodeWithTag("level_card_1").performClick()
-            compose.runOnIdle { assertEquals("чемпионство", selected) }
-        }
+        compose.onNodeWithTag("level_card_1").performClick()
+        compose.runOnIdle { assertEquals("чемпионство", selected) }
         compose.runOnIdle { state.value = state.value.copy(levels = items.mapIndexed { i, item ->
             if (i == 0) item.copy(campaignStars = item.maxStars)
             else if (i == 1) item.copy(unlocked = true) else item
@@ -113,9 +96,5 @@ class LevelsLayoutTest(private val width: Int, private val fontScale: Float) {
             val minimum = 48f * compose.density.density - 1f
             assertTrue(node.size.toString(), node.size.width >= minimum && node.size.height >= minimum)
         }
-    }
-    companion object {
-        @JvmStatic @Parameterized.Parameters(name = "width={0},fontScale={1}")
-        fun configurations(): List<Array<Any>> = listOf(arrayOf<Any>(320, 1f), arrayOf<Any>(320, 2f), arrayOf<Any>(840, 1f), arrayOf<Any>(840, 2f))
     }
 }

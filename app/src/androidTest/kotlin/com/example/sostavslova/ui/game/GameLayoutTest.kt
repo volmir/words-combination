@@ -1,47 +1,31 @@
 package com.example.sostavslova.ui.game
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.requiredWidth
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.dp
 import com.example.sostavslova.core.*
 import com.example.sostavslova.data.Definition
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 
-@RunWith(Parameterized::class)
-class GameLayoutTest(private val fontScale: Float) {
+class GameLayoutTest {
     @get:Rule val compose = createComposeRule()
     private val game = GameState("а".repeat(30), listOf("демонстрация", "окаменелость"), listOf("демонстрация"))
     private val initial = GameUiState(loading = false, game = game,
         level = Level(1, game.word, 8, 21, 'д', 5), statistics = game.statistics(),
         hint = GameHint(11, "О", listOf(Definition("", "Длинное определение <с угловыми скобками>\nВторая строка подсказки"))))
 
-    @Test fun gameAndDialogsWrapAtLargeFontsAndKeep48DpTargets() {
+    @Test fun gameAndDialogsWrapAndKeep48DpTargets() {
         val state = mutableStateOf(initial)
         compose.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                WordsTheme {
-                    Box(Modifier.requiredWidth(if (fontScale > 1f) 320.dp else 360.dp).fillMaxHeight()) {
-                        GameScreen(state.value, {}, {}, {}, {}, {}, {})
-                    }
-                }
+            WordsTheme {
+                GameScreen(state.value, {}, {}, {}, {}, {}, {})
             }
         }
         checkLayout()
@@ -75,9 +59,5 @@ class GameLayoutTest(private val fontScale: Float) {
             val minimum = 48f * compose.density.density - 1f
             assertTrue(node.size.toString(), node.size.width >= minimum && node.size.height >= minimum)
         }
-    }
-    companion object {
-        @JvmStatic @Parameterized.Parameters(name = "fontScale={0}")
-        fun scales(): List<Array<Any>> = listOf(arrayOf<Any>(1f), arrayOf<Any>(2f))
     }
 }

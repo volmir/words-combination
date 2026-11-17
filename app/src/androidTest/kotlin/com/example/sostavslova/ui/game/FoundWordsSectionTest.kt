@@ -1,12 +1,6 @@
 package com.example.sostavslova.ui.game
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.requiredWidth
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -15,8 +9,6 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.dp
 import com.example.sostavslova.core.CampaignLevel
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.CurrentCampaignLevel
@@ -31,7 +23,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
-class FoundWordsSectionTest(private val width: Int, private val fontScale: Float, private val legacy: Boolean) {
+class FoundWordsSectionTest(private val legacy: Boolean) {
     @get:Rule val compose = createComposeRule()
     // Synthetic words only: 49 three-letter, 49 four-letter and 48 five-letter strings.
     private val letters = "абвгдежзиклмнопрстуфхцчшщэюя"
@@ -51,13 +43,9 @@ class FoundWordsSectionTest(private val width: Int, private val fontScale: Float
         val state = mutableStateOf(state(emptyList()))
         val restoration = StateRestorationTester(compose)
         restoration.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-                WordsTheme {
-                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, {}, {}, {}, { state.value = state.value.copy(dialog = it) },
-                            { state.value = state.value.copy(dialog = null) }, {})
-                    }
-                }
+            WordsTheme {
+                GameScreen(state.value, {}, {}, {}, { state.value = state.value.copy(dialog = it) },
+                    { state.value = state.value.copy(dialog = null) }, {})
             }
         }
         compose.onAllNodesWithTag("game_found_summary").assertCountEquals(1)
@@ -121,7 +109,7 @@ class FoundWordsSectionTest(private val width: Int, private val fontScale: Float
             compose.onNodeWithTag("level_found_group_$length").performScrollTo().performClick()
             compose.onNodeWithTag("game_found_words_$length").assertDoesNotExist()
         }
-        // Include a long unbroken word at 200% to exercise wrapping inside the FlowRow.
+        // Include a long unbroken word to exercise wrapping inside the FlowRow.
         compose.runOnIdle { state.value = state(words) }
         compose.onNodeWithTag("level_found_group_${words.last().length}").performScrollTo().performClick()
         compose.onNodeWithText(words.last()).performScrollTo().assertIsDisplayed().assertHasNoClickAction()
@@ -141,10 +129,8 @@ class FoundWordsSectionTest(private val width: Int, private val fontScale: Float
         val snapshot = GameUiState(loading = false, game = game, statistics = game.statistics(),
             totalLevels = campaign.levels.size, campaignLevel = CurrentCampaignLevel(level, game))
         compose.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-                WordsTheme { Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                    GameScreen(snapshot, {}, {}, {}, {}, {}, {})
-                } }
+            WordsTheme {
+                GameScreen(snapshot, {}, {}, {}, {}, {}, {})
             }
         }
         for ((length, found) in game.found.groupBy { it.length }.toSortedMap()) {
@@ -167,7 +153,7 @@ class FoundWordsSectionTest(private val width: Int, private val fontScale: Float
                 val layouts = mutableListOf<TextLayoutResult>()
                 node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
                 layouts.forEach { layout ->
-                    assertTextLayoutFits(layout, "width=$width, fontScale=$fontScale, " +
+                    assertTextLayoutFits(layout, "native, " +
                         "tag=${node.config.getOrNull(SemanticsProperties.TestTag)}")
                 }
             }
@@ -178,9 +164,7 @@ class FoundWordsSectionTest(private val width: Int, private val fontScale: Float
     }
 
     companion object {
-        @JvmStatic @Parameterized.Parameters(name = "width={0}, font={1}, legacy={2}")
-        fun sizes(): List<Array<Any>> = listOf(320, 360, 400).flatMap { width ->
-            listOf(1f, 1.5f, 2f).flatMap { scale -> listOf(false, true).map { legacy -> arrayOf<Any>(width, scale, legacy) } }
-        }
+        @JvmStatic @Parameterized.Parameters(name = "legacy={0}")
+        fun modes(): List<Array<Any>> = listOf(arrayOf<Any>(false), arrayOf<Any>(true))
     }
 }

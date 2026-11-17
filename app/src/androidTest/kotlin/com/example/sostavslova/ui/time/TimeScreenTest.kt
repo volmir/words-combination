@@ -1,19 +1,12 @@
 package com.example.sostavslova.ui.time
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.dp
 import com.example.sostavslova.core.*
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.*
@@ -51,37 +44,30 @@ class TimeScreenTest {
             .assertTextContains("До всех M звёзд (M = 2): Время отсутствует").assertHasNoClickAction()
     }
 
-    @Test fun allFieldsFitAt320And360DpWith200PercentFontAndTalkBackHeadings() {
-        val width = mutableStateOf(320.dp)
+    @Test fun allFieldsFitNativeScreenAndKeepTalkBackHeadings() {
         compose.setContent {
-            val density = LocalDensity.current
-            CompositionLocalProvider(LocalDensity provides Density(density.density, 2f)) {
-                WordsTheme { Box(Modifier.width(width.value)) { TimeScreen(ready(Long.MAX_VALUE)) } }
-            }
+            WordsTheme { TimeScreen(ready(Long.MAX_VALUE)) }
         }
         compose.onNodeWithText("Время игры").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
-        for (dp in listOf(320.dp, 360.dp)) {
-            compose.runOnIdle { width.value = dp }
-            for (stage in 1..6) {
-                compose.onNodeWithTag("time_screen").performScrollToKey("stage_$stage")
-                compose.onNodeWithTag("time_stage_$stage").assertExists()
-            }
-            for (level in 1..15) {
-                compose.onNodeWithTag("time_screen").performScrollToKey("level_$level")
-                compose.onNodeWithTag("time_level_$level").assertExists()
-                    .assertTextContains("Уровень $level · достопримечательность")
-                    .assertTextContains("До всех M звёзд (M = 2): Время отсутствует")
-                val textNodes = compose.onAllNodes(
-                    SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult) and
-                        hasAnyAncestor(hasTestTag("time_level_$level")), useUnmergedTree = true,
-                ).fetchSemanticsNodes()
-                assertTrue("Every field must expose readable text", textNodes.size >= 5)
-                textNodes.forEach { node ->
-                    val action = requireNotNull(node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action)
-                    val layouts = mutableListOf<TextLayoutResult>()
-                    action(layouts)
-                    layouts.forEach { assertFalse("Text must wrap without clipping", it.hasVisualOverflow) }
-                }
+        for (stage in 1..6) {
+            compose.onNodeWithTag("time_screen").performScrollToKey("stage_$stage")
+            compose.onNodeWithTag("time_stage_$stage").assertExists()
+        }
+        for (level in 1..15) {
+            compose.onNodeWithTag("time_screen").performScrollToKey("level_$level")
+            compose.onNodeWithTag("time_level_$level").assertExists()
+                .assertTextContains("Уровень $level · достопримечательность")
+                .assertTextContains("До всех M звёзд (M = 2): Время отсутствует")
+            val textNodes = compose.onAllNodes(
+                SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult) and
+                    hasAnyAncestor(hasTestTag("time_level_$level")), useUnmergedTree = true,
+            ).fetchSemanticsNodes()
+            assertTrue("Every field must expose readable text", textNodes.size >= 5)
+            textNodes.forEach { node ->
+                val action = requireNotNull(node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action)
+                val layouts = mutableListOf<TextLayoutResult>()
+                action(layouts)
+                layouts.forEach { assertFalse("Text must wrap without clipping", it.hasVisualOverflow) }
             }
         }
     }

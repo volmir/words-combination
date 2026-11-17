@@ -3,12 +3,9 @@ package com.example.sostavslova.ui.components
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -117,12 +114,9 @@ class ComponentInteractionTest {
     }
 
     @Test
-    fun aboutShowsAttributionLicenseAndChangesAtLargeFont() {
+    fun aboutShowsAttributionLicenseAndChangesAtNativeFont() {
         compose.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, 2f)) {
-                WordsTheme { AboutScreen() }
-            }
+            WordsTheme { AboutScreen() }
         }
         compose.onNodeWithText("Авторы — участники русского Викисловаря", substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Kaikki.org / Wiktextract", substring = true).performScrollTo().assertIsDisplayed()

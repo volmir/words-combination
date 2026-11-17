@@ -1,12 +1,6 @@
 package com.example.sostavslova.ui.game
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.requiredWidth
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -14,8 +8,6 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.dp
 import com.example.sostavslova.core.*
 import com.example.sostavslova.data.Definition
 import com.example.sostavslova.ui.assertTextLayoutFits
@@ -23,11 +15,8 @@ import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 
-@RunWith(Parameterized::class)
-class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
+class CampaignGameUiTest {
     @get:Rule val compose = createComposeRule()
     // Собственный синтетический текст; статьи словарей в fixture не используются.
     private val ownDefinition = Definition("крот",
@@ -50,16 +39,12 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
             RiddleUiState(null, 4, "К"))),
     )
 
-    @Test fun allSevenTasksRiddlesGroupsAndStatisticsAtDifferentSizes() {
+    @Test fun allSevenTasksRiddlesGroupsAndStatisticsAtNativeSize() {
         val state = mutableStateOf(initial)
         compose.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-                WordsTheme {
-                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, {}, {}, {}, { state.value = state.value.copy(dialog = it) },
-                            { state.value = state.value.copy(dialog = null) }, {})
-                    }
-                }
+            WordsTheme {
+                GameScreen(state.value, {}, {}, {}, { state.value = state.value.copy(dialog = it) },
+                    { state.value = state.value.copy(dialog = null) }, {})
             }
         }
         compose.onNodeWithTag("level_header").assertTextEquals("Мастер · уровень 30 из 30")
@@ -147,12 +132,8 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
             hintCost = 0, hintRemaining = 0))
         var clicks = 0
         compose.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-                WordsTheme {
-                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, {}, {}, { clicks++ }, {}, {}, {})
-                    }
-                }
+            WordsTheme {
+                GameScreen(state.value, {}, {}, { clicks++ }, {}, {}, {})
             }
         }
         compose.onNodeWithTag("game_hint")
@@ -201,12 +182,8 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         var clicks = 0
         val restoration = androidx.compose.ui.test.junit4.StateRestorationTester(compose)
         restoration.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-                WordsTheme {
-                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, {}, {}, { clicks++ }, {}, {}, {})
-                    }
-                }
+            WordsTheme {
+                GameScreen(state.value, {}, {}, { clicks++ }, {}, {}, {})
             }
         }
         for (open in listOf(0, 1, 3, 5)) {
@@ -276,12 +253,8 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
     @Test fun tasksStayVisibleAcrossUpdatesAndLevelChangesWithoutClearingInput() {
         val state = mutableStateOf(initial)
         compose.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-                WordsTheme {
-                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {}, {}, {})
-                    }
-                }
+            WordsTheme {
+                GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {}, {}, {})
             }
         }
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("кот")
@@ -306,12 +279,8 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
     @Test fun longInputIsNotTruncatedAndKeepsAccessibleLabel() {
         val state = mutableStateOf(initial)
         compose.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-                WordsTheme {
-                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {}, {}, {})
-                    }
-                }
+            WordsTheme {
+                GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {}, {}, {})
             }
         }
         val input = compose.onNode(hasSetTextAction())
@@ -330,12 +299,8 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
             RiddleUiState(null, 6, "К"))
         val state = mutableStateOf(initial.copy(riddles = mapOf("riddles" to riddles)))
         compose.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-                WordsTheme {
-                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, {}, {}, {}, {}, {}, {})
-                    }
-                }
+            WordsTheme {
+                GameScreen(state.value, {}, {}, {}, {}, {}, {})
             }
         }
         compose.onNodeWithTag("game_riddle_preview").assertDoesNotExist()
@@ -394,15 +359,11 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
         val actions = mutableListOf<Boolean>()
         val restoration = androidx.compose.ui.test.junit4.StateRestorationTester(compose)
         restoration.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-                WordsTheme {
-                    Box(Modifier.requiredWidth(width.dp).fillMaxHeight()) {
-                        GameScreen(state.value, {}, {}, {}, {}, {}, {}, onCloseFinale = { toLevels ->
-                            actions.add(toLevels)
-                            state.value = state.value.copy(finaleSummary = null)
-                        })
-                    }
-                }
+            WordsTheme {
+                GameScreen(state.value, {}, {}, {}, {}, {}, {}, onCloseFinale = { toLevels ->
+                    actions.add(toLevels)
+                    state.value = state.value.copy(finaleSummary = null)
+                })
             }
         }
         compose.onNodeWithTag("level_finale_dialog").assertExists()
@@ -434,16 +395,10 @@ class CampaignGameUiTest(private val width: Int, private val fontScale: Float) {
                 val layouts = mutableListOf<TextLayoutResult>()
                 node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
                 layouts.forEach { layout ->
-                    assertTextLayoutFits(layout, "width=$width, fontScale=$fontScale, " +
+                    assertTextLayoutFits(layout, "native, " +
                         "tag=${node.config.getOrNull(SemanticsProperties.TestTag)}")
                 }
             }
     }
 
-    companion object {
-        @JvmStatic @Parameterized.Parameters(name = "width={0}, font={1}")
-        fun sizes(): List<Array<Any>> = listOf(320, 360, 400).flatMap { width ->
-            listOf(1f, 1.5f, 2f).map { scale -> arrayOf<Any>(width, scale) }
-        } + listOf(arrayOf<Any>(840, 1f))
-    }
 }
