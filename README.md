@@ -164,14 +164,14 @@ Debug использует штатную отладочную подпись AG
 bash orchestrator/run.sh --dry-run                      # план без запуска моделей и изменений
 bash orchestrator/run.sh --check full                   # Python-тесты, :core:test, :app:assembleDebug
 bash orchestrator/run.sh                                # выполнение сохранённой в Git очереди
-bash orchestrator/run.sh --backend opencode --models paid  # платный набор моделей OpenCode
+bash orchestrator/run.sh --backend opencode --models free  # бесплатный набор моделей OpenCode
 ```
 
 Рабочая очередь [orchestrator/TASKS.md](orchestrator/TASKS.md) изначально пуста.
 Добавьте согласованные задачи и сохраните изменения коммитом перед запуском.
-По умолчанию используется ветка `auto/tasks`, push включён (`--no-push` отключает
-его на один запуск). Бэкенд (`codex`/`opencode`), модели (бесплатный набор по
-умолчанию и платный `--models paid`) и таймауты — в [config.json](orchestrator/config.json),
+Разработка и выполнение очереди идут в `main`, push включён (`--no-push` отключает
+его на один запуск). Бэкенд (`codex`/`opencode`), модели (из конфига или набора
+`--models free`) и таймауты — в [config.json](orchestrator/config.json),
 формат задач, дополнительные проверки и продолжение после ошибки — в
 [инструкции оркестратора](orchestrator/README.md).
 Некорректно настроенный SDK останавливает полный гейт; в текущем окружении SDK

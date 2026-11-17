@@ -1,7 +1,7 @@
 {
   "tasks_file": "orchestrator/TASKS.md",
   "progress_file": "orchestrator/PROGRESS.md",
-  "branch": "auto/tasks",
+  "branch": "main",
   "remote": "origin",
   "push": true,
   "backend": "opencode",
@@ -47,20 +47,8 @@
       }
     }
   },
-  "semantic": {
-    "codex": {
-      "provider": "codex",
-      "model": "gpt-6.1-sol",
-      "cache": ".local/data01-codex-cache"
-    },
-    "opencode": {
-      "provider": "opencode",
-      "model": "opencode/deepseek-v4.1-flash#max",
-      "cache": ".local/data01-opencode-cache"
-    }
-  },
   "efforts": {
-    "light": "low",
+    "light": "medium",
     "standard": "medium",
     "heavy": "high"
   }

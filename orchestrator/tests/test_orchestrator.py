@@ -259,25 +259,18 @@ class FixtureTests(unittest.TestCase):
             with self.assertRaises(module.Error):
                 module.load_config(config, backend='opencode', models_set='paid')
 
-    def test_semantic_profile_is_validated_and_selected_by_backend(self):
+    def test_removed_semantic_config_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             config = Path(directory) / 'config.json'
             config.write_text(json.dumps({'semantic': {
-                'codex': {'provider': 'codex', 'model': 'gpt-6.1-sol', 'cache': '.local/data01-cache'},
-                'opencode': {'provider': 'opencode', 'model': 'opencode/flash#max',
-                             'cache': '.local/data01-oc-cache'}}}))
-            self.assertEqual(module.load_config(config, backend='codex')['semantic']['model'], 'gpt-6.1-sol')
-            self.assertEqual(module.load_config(config, backend='opencode')['semantic']['cache'],
-                             '.local/data01-oc-cache')
-            for body in ({'semantic': []},
-                         {'semantic': {'other': {'provider': 'codex', 'model': 'm', 'cache': 'c'}}},
-                         {'semantic': {'codex': {'provider': 'other', 'model': 'm', 'cache': 'c'}}},
-                         {'semantic': {'codex': {'provider': 'codex', 'model': '', 'cache': 'c'}}},
-                         {'semantic': {'codex': {'provider': 'codex', 'model': 'm'}}}):
-                with self.subTest(body=body):
-                    config.write_text(json.dumps(body))
-                    with self.assertRaises(module.Error):
-                        module.load_config(config, backend='codex')
+                'codex': {'provider': 'codex', 'model': 'm', 'cache': '.local/cache'}}}))
+            for backend in ('codex', 'opencode'):
+                with self.subTest(backend=backend), self.assertRaises(module.Error):
+                    module.load_config(config, backend=backend)
+            config.write_text('{}')
+            self.assertNotIn('semantic', module.load_config(config))
+            self.assertEqual(module.load_config(config)['branch'], 'main')
+            self.assertEqual(module.load_config(config)['efforts']['light'], 'medium')
 
     def test_load_config_ignores_environment_variables(self):
         with tempfile.TemporaryDirectory() as directory, \
@@ -294,19 +287,18 @@ class FixtureTests(unittest.TestCase):
             self.assertEqual(loaded['branch'], module.DEFAULTS['branch'])
             self.assertEqual(loaded['gate_base'], [])
 
-    def test_load_config_warns_efforts_ignored_for_opencode(self):
+    def test_load_config_does_not_warn_about_efforts_for_opencode(self):
         with tempfile.TemporaryDirectory() as directory:
             config = Path(directory) / 'config.json'
-            config.write_text(json.dumps({'backend': 'opencode', 'efforts': {'light': 'high'}}))
-            stderr = io.StringIO()
-            with contextlib.redirect_stderr(stderr):
-                module.load_config(config)
-            self.assertIn('efforts игнорируются', stderr.getvalue())
-            config.write_text(json.dumps({'backend': 'opencode'}))
-            stderr = io.StringIO()
-            with contextlib.redirect_stderr(stderr):
-                module.load_config(config)
-            self.assertNotIn('efforts', stderr.getvalue())
+            for body in ({'backend': 'opencode', 'efforts': {'light': 'high'}},
+                         {'backend': 'opencode'}):
+                with self.subTest(body=body):
+                    config.write_text(json.dumps(body))
+                    stderr = io.StringIO()
+                    with contextlib.redirect_stderr(stderr):
+                        loaded = module.load_config(config)
+                    self.assertEqual(loaded['backend'], 'opencode')
+                    self.assertEqual(stderr.getvalue(), '')
 
     def test_codex_command_is_autonomous(self):
         config = {'backend': 'codex', 'codex_bin': 'codex', 'sandbox': 'danger-full-access'}
@@ -409,6 +401,26 @@ class QueueHelpers:
     def progress(self):
         return module.read_progress(self.repo / 'orchestrator/PROGRESS.md')
 
+    def test_agent_inherits_explicit_environment_without_lex_profile(self):
+        for flag in ('--list', '--dry-run'):
+            output = self.run_cli(flag)
+            self.assertNotIn('ИИ-оценки LEX', output)
+            self.assertNotIn('efforts игнорируются', output)
+        explicit = {'CATEGORY_PROVIDER': 'explicit-provider', 'CATEGORY_MODEL': 'explicit-model',
+                    'SEMANTIC_CACHE': '/explicit/cache'}
+        output = self.run_cli(**explicit)
+        self.assertNotIn('ИИ-оценки LEX', output)
+        self.assertEqual(self.calls()[0]['env'], explicit)
+        self.assertEqual(self.g('branch', '--show-current'), 'main')
+        self.assertEqual(self.g('for-each-ref', '--format=%(refname:short)', 'refs/heads/'), 'main')
+
+    def test_invalid_branch_is_rejected_before_agent(self):
+        for branch in ('bad..branch', '-bad', 'bad branch'):
+            with self.subTest(branch=branch):
+                self.set_config(branch=branch)
+                self.assertIn('branch:', self.run_cli(ok=False))
+                self.assertFalse(self.calls())
+
 
 class OrchestratorTests(QueueHelpers, unittest.TestCase):
     def setUp(self):
@@ -442,7 +454,8 @@ class OrchestratorTests(QueueHelpers, unittest.TestCase):
         self.commit()
         self.run_cli()
         self.assertEqual([c['id'] for c in self.calls()], ['A-1', 'B'])
-        self.assertEqual(self.g('branch', '--show-current'), 'auto/tasks')
+        self.assertEqual(self.g('branch', '--show-current'), 'main')
+        self.assertEqual(self.g('for-each-ref', '--format=%(refname:short)', 'refs/heads/'), 'main')
         self.assertEqual(self.g('status', '--porcelain'), '')
         self.assertEqual(self.g('log', '-1', '--format=%s'), 'B: Название B')
         self.run_cli()
@@ -493,12 +506,12 @@ class OrchestratorTests(QueueHelpers, unittest.TestCase):
         subprocess.run(['git', 'init', '--bare', '-q', str(remote)], check=True, env=self.env)
         self.g('remote', 'add', 'origin', str(remote))
         self.run_cli('--push')
-        for call, tier, effort in zip(self.calls(), ('light', 'standard', 'heavy'), ('low', 'medium', 'high')):
+        for call, tier, effort in zip(self.calls(), ('light', 'standard', 'heavy'), ('medium', 'medium', 'high')):
             with self.subTest(tier=tier):
                 args = call['args']
                 self.assertEqual(args[args.index('--model') + 1], expected[tier])
                 self.assertIn(f'model_reasoning_effort="{effort}"', args)
-        self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/auto/tasks'))
+        self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/main'))
 
     def test_push_by_default_with_minimal_config(self):
         (self.repo / 'orchestrator/config.json').write_text(json.dumps({'codex_bin': str(self.mock)}))
@@ -507,7 +520,7 @@ class OrchestratorTests(QueueHelpers, unittest.TestCase):
         subprocess.run(['git', 'init', '--bare', '-q', str(remote)], check=True, env=self.env)
         self.g('remote', 'add', 'origin', str(remote))
         self.run_cli()
-        self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/auto/tasks'))
+        self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/main'))
 
     def test_no_push_works_without_remote_and_keeps_commit_local(self):
         self.run_cli('--no-push')
@@ -862,8 +875,9 @@ class OrchestratorTests(QueueHelpers, unittest.TestCase):
         self.run_cli()
 
     def test_existing_branch_is_not_switched_automatically(self):
-        self.g('branch', 'auto/tasks')
+        self.g('switch', '-c', 'feature/work')
         self.assertIn('выберите её вручную', self.run_cli(ok=False))
+        self.assertEqual(self.g('branch', '--show-current'), 'feature/work')
         self.assertFalse(self.calls())
 
     def test_push_to_local_remote(self):
@@ -871,7 +885,7 @@ class OrchestratorTests(QueueHelpers, unittest.TestCase):
         subprocess.run(['git', 'init', '--bare', '-q', str(remote)], check=True, env=self.env)
         self.g('remote', 'add', 'origin', str(remote))
         self.run_cli('--push')
-        self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/auto/tasks'))
+        self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/main'))
 
     def test_push_failure_stops_after_local_commit(self):
         self.save_tasks(task() + '\n' + task('B', 'true'))
@@ -893,7 +907,7 @@ class OrchestratorTests(QueueHelpers, unittest.TestCase):
         self.run_cli('--push')
         self.assertEqual([c['id'] for c in self.calls()], ['A-1', 'B'])
         self.assertEqual(self.g('rev-parse', 'HEAD~1'), committed)
-        self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/auto/tasks'))
+        self.assertEqual(self.g('rev-parse', 'HEAD'), self.g('rev-parse', 'origin/main'))
 
     def test_sigkill_parent_cannot_start_second_agent_while_orphan_holds_lock(self):
         with tempfile.TemporaryFile() as output:
@@ -1125,19 +1139,6 @@ class OpenCodeTests(QueueHelpers, unittest.TestCase):
         self.assertEqual(args[args.index('--model') + 1], 'codex-cheap-l')
         self.assertEqual(self.progress()['A-1']['model'], 'codex-cheap-l')
         self.assertEqual(self.g('status', '--porcelain'), '')
-
-    def test_semantic_profile_is_exported_to_agent(self):
-        self.set_config(backend='codex', codex_bin=str(self.codex_mock()),
-                        semantic={'codex': {'provider': 'codex', 'model': 'gpt-6.1-sol',
-                                            'cache': '.local/lex-cache'}})
-        output = self.run_cli('--dry-run')
-        self.assertIn('ИИ-оценки LEX: codex / gpt-6.1-sol; кэш .local/lex-cache', output)
-        self.assertFalse(self.calls())
-        self.run_cli()
-        env = self.calls()[0]['env']
-        self.assertEqual(env['CATEGORY_PROVIDER'], 'codex')
-        self.assertEqual(env['CATEGORY_MODEL'], 'gpt-6.1-sol')
-        self.assertEqual(Path(env['SEMANTIC_CACHE']), self.repo / '.local/lex-cache')
 
     def test_backend_switch_rebinds_unfinished_task_model(self):
         self.set_config(backend='opencode', opencode_bin=str(self.mock),

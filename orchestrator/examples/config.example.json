@@ -2,7 +2,7 @@
   "backend": "opencode",
   "tasks_file": "orchestrator/TASKS.md",
   "progress_file": "orchestrator/PROGRESS.md",
-  "branch": "auto/tasks",
+  "branch": "main",
   "remote": "origin",
   "push": true,
   "codex_bin": "codex",
@@ -36,7 +36,7 @@
     }
   },
   "efforts": {
-    "light": "low",
+    "light": "medium",
     "standard": "medium",
     "heavy": "high"
   },

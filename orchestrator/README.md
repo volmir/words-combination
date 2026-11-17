@@ -32,7 +32,8 @@ bash orchestrator/run.sh --dry-run
 bash orchestrator/run.sh
 ```
 
-По умолчанию работа идёт в ветке `auto/tasks`, push включён и требует
+Работа ведётся в ветке `main`; перед запуском выберите её через
+`git switch main`. Push включён и требует
 настроенного remote `origin`. Для локальной работы без remote используйте
 `--no-push`. Если Git ещё не настроен, сначала инициализируйте репозиторий,
 задайте `user.name` / `user.email` и создайте начальный коммит проекта.
@@ -70,7 +71,7 @@ bash orchestrator/run.sh
 | Финальный ответ | `--output-last-message` | Поле `part.text` последнего text-event потока `--format json` |
 | Права на файлы | `sandbox` из конфига (`read-only`/`workspace-write`/`danger-full-access`); подтверждения отключены (`approval_policy="never"`) | `permissions` в `opencode.json` целевого проекта; оркестратор не передаёт ни песочницу, ни `--auto` |
 | Модели | секция `models.codex`; наборы `model_sets.codex` | секция `models.opencode`; наборы `model_sets.opencode` |
-| Настройка reasoning | ключи `efforts` | суффикс `#variant` в строке модели; ключ `efforts` игнорируется с предупреждением |
+| Настройка reasoning | ключи `efforts` | суффикс `#variant` в строке модели; ключ `efforts` игнорируется |
 
 Имя/путь CLI переопределяются ключами `codex_bin` / `opencode_bin`.
 Пустая строка модели для tier означает «модель из настроек самого CLI».
@@ -151,120 +152,12 @@ opencode` — `model_sets.opencode`. Неизвестное имя набора 
 печатается предупреждение. Чтобы сменить набор и для неё, завершите задачу
 или удалите контрольную точку.
 
-### Запуск ИИ-обработки (LEX)
+### Параметры инструментов подготовки данных
 
-Задачи SEL-R01…SEL-R04 и DATA-01 не только правят код, но и запрашивают
-ИИ-решения по словам. Исполнитель этих запросов задаётся отдельной секцией
-`semantic` — он привязан к бэкенду агента, а не к модели конкретной задачи:
-
-```json
-"semantic": {
-  "codex":    { "provider": "codex",    "model": "gpt-6.1-sol",                     "cache": ".local/data01-codex-cache" },
-  "opencode": { "provider": "opencode", "model": "opencode/deepseek-v4.1-flash#max",  "cache": ".local/data01-opencode-cache" }
-}
-```
-
-| Вариант | Команда запуска | Агент: light / standard–heavy | ИИ-оценки LEX | Кэш решений |
-|---|---|---|---|---|
-| 1. Codex | `bash orchestrator/run.sh --backend codex` | `gpt-5.6-luna` / `gpt-6.1-sol` | `codex` / `gpt-6.1-sol` | `.local/data01-codex-cache` |
-| 2. OpenCode | `bash orchestrator/run.sh --backend opencode` | `opencode/muse-ember-1.0#medium` / `opencode/deepseek-v4.1-flash#max` | `opencode` / `opencode/deepseek-v4.1-flash#max` | `.local/data01-opencode-cache` |
-| 3. OpenCode, набор `free` | `bash orchestrator/run.sh --backend opencode --models free` | `opencode/glm-5.3-flash-free` / `opencode/glm-5.3-flash-free#max`, `opencode/beam-free#max` | тот же профиль `opencode` | `.local/data01-opencode-cache` |
-
-`--models` меняет только модели агента. Семантический профиль, провайдер,
-модель LEX и каталог кэша остаются прежними: набор `free` не переключает
-ИИ-оценки на бесплатную модель.
-
-Точные команды для локального запуска (без публикации результатов; `push`
-по умолчанию включён через `config.json → push: true`):
-
-```bash
-# 1. Агент Codex, ИИ-оценки через Codex
-bash orchestrator/run.sh --backend codex --no-push
-
-# 2. Агент OpenCode на моделях по умолчанию, ИИ-оценки через OpenCode
-bash orchestrator/run.sh --backend opencode --no-push
-
-# 3. Агент OpenCode на бесплатном наборе, ИИ-оценки через OpenCode
-bash orchestrator/run.sh --backend opencode --models free --no-push
-```
-
-Без `--no-push` те же команды выполнят push после каждой завершённой задачи.
-
-Перед запуском агента оркестратор выставляет ему переменные окружения и
-печатает выбранный профиль в `--dry-run` и в начале очереди:
-
-| Переменная | Значение |
-|---|---|
-| `CATEGORY_PROVIDER` | `semantic.<backend>.provider` |
-| `CATEGORY_MODEL` | `semantic.<backend>.model` |
-| `SEMANTIC_CACHE` | абсолютный путь к `semantic.<backend>.cache` |
-
-Секция `semantic` необязательна: без неё оркестратор не выставляет эти
-переменные, а `--list` и `--dry-run` печатают «не заданы». Очередям без
-ИИ-оценок она не нужна. Задачам SEL/DATA она необходима: их обработчики
-без `CATEGORY_MODEL` (или явного `--model`) завершаются ошибкой.
-
-Задачи не выбирают провайдера сами: агент подставляет эти значения в вызовы
-обработчиков, поэтому кэш решений не смешивается между моделями. При смене
-пути кэша уже накопленные решения по прежнему каталогу не видны: перенесите
-каталог или оставьте старый путь. Проверить выбор без запусков:
-
-```bash
-bash orchestrator/run.sh --backend codex --dry-run
-# ИИ-оценки LEX: codex / gpt-6.1-sol; кэш .local/data01-codex-cache
-bash orchestrator/run.sh --backend opencode --dry-run
-# ИИ-оценки LEX: opencode / opencode/deepseek-v4.1-flash#max; кэш .local/data01-opencode-cache
-bash orchestrator/run.sh --backend opencode --models free --dry-run
-# агент на free-моделях; ИИ-оценки LEX те же, что и без --models
-```
-
-Значения `semantic` можно переопределить только в `config.json`; флаг
-`--models` на них не влияет. Прямой вызов обработчика вне очереди (например,
-продолжение SEL-R01…SEL-R04 или DATA-01 после остановки) — вариант 1 (Codex):
-
-```bash
-CATEGORY_PROVIDER=codex CATEGORY_MODEL=gpt-6.1-sol SEMANTIC_CACHE="$PWD/.local/data01-codex-cache" \
-python3 tools/prepare_v2.py prepare --selective \
-  --dump .local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz \
-  --frequency-list .local/frequency/frequencywords-2018-ru/ru_full.txt \
-  --provider codex --model gpt-6.1-sol --cache .local/data01-codex-cache \
-  --package .local/v2-package \
-  --max-new-decisions 400 --max-batches 20 --time-budget 900 \
-  --total-new-decisions 400 --total-time-budget 2700 \
-  --allow-network
-```
-
-Вариант 2 (OpenCode):
-
-```bash
-CATEGORY_PROVIDER=opencode CATEGORY_MODEL='opencode/deepseek-v4.1-flash#max' \
-SEMANTIC_CACHE="$PWD/.local/data01-opencode-cache" \
-python3 tools/prepare_v2.py prepare --selective \
-  --dump .local/dictionary/raw-wiktextract-data-2026-11-01.jsonl.gz \
-  --frequency-list .local/frequency/frequencywords-2018-ru/ru_full.txt \
-  --provider opencode --model 'opencode/deepseek-v4.1-flash#max' \
-  --cache .local/data01-opencode-cache \
-  --package .local/v2-package \
-  --max-new-decisions 400 --max-batches 20 --time-budget 900 \
-  --total-new-decisions 400 --total-time-budget 2700 \
-  --allow-network
-```
-
-Без сети уберите `--allow-network` и передайте снимок решений
-(`--category-snapshot`, `--suitability-snapshot`), сохранив те же
-`--provider`, `--model` и `--cache`. Границы ресурсов по умолчанию задаёт
-`tools/selective_config.json`; флаги бюджета выше — разовые перекрытия.
-Отдельные стадии LEX вызываются так же:
-
-```bash
-CATEGORY_PROVIDER=codex CATEGORY_MODEL=gpt-6.1-sol \
-python3 tools/classify_word_categories.py --provider codex --model gpt-6.1-sol \
-  --cache .local/data01-codex-cache/categories --allow-network
-CATEGORY_PROVIDER=opencode CATEGORY_MODEL='opencode/deepseek-v4.1-flash#max' \
-python3 tools/assess_word_suitability.py --provider opencode \
-  --model 'opencode/deepseek-v4.1-flash#max' \
-  --cache .local/data01-opencode-cache/suitability --allow-network
-```
+Оркестратор настраивает модели CLI-агентов. Провайдер, модель и кэш
+инструментов подготовки данных задаются явно в командах задачи или
+в окружении запуска по [инструкции конвейера](../docs/DATA_PIPELINE_V2.md).
+Агенты наследуют окружение запуска без подстановок со стороны оркестратора.
 
 ### Подготовить права агента
 
@@ -301,9 +194,7 @@ bash orchestrator/run.sh --dry-run
 
 В колонке MODEL/EFFORT видно модель активного бэкенда для каждого tier
 (например, `opencode/muse-ember-1.0#medium`), а также команды gate
-и число повторов. Строка `ИИ-оценки LEX` показывает провайдера, модель и
-каталог кэша, которые получат задачи SEL-R01…SEL-R04 и DATA-01. Запусков,
-изменений и Git-операций при этом нет.
+и число повторов. Запусков, изменений и Git-операций при этом нет.
 
 ### Продолжить очередь другим бэкендом
 
@@ -312,8 +203,7 @@ Fingerprint задачи не зависит от конфига, поэтому
 продолжается с первой невыполненной. У незавершённой задачи модель
 хранится в контрольной точке вместе с бэкендом: если бэкенд сменился,
 оркестратор пересчитывает модель по tier из конфига нового бэкенда и
-печатает, что именно заменил. ИИ-оценки LEX при этом переключаются на
-профиль `semantic` нового бэкенда со своим каталогом кэша.
+печатает, что именно заменил. Окружение запуска наследуется без изменений.
 
 ## Повседневная работа
 
@@ -477,7 +367,7 @@ gate: bash orchestrator/run.sh --check full && bash orchestrator/run.sh --check 
 | `backend` | `codex` | Бэкенд агента: `codex` или `opencode` |
 | `tasks_file` | `orchestrator/TASKS.md` | Очередь, путь относительно корня |
 | `progress_file` | `orchestrator/PROGRESS.md` | Журнал и состояние завершённых задач |
-| `branch` | `auto/tasks` | Локальная ветка для работы |
+| `branch` | `main` | Ветка разработки и назначения push |
 | `remote` | `origin` | Remote для необязательного push |
 | `push` | `true` | Выполнять push после каждой завершённой задачи |
 | `codex_bin` / `opencode_bin` | `codex` / `opencode` | Имя программы или путь к CLI |
@@ -491,8 +381,7 @@ gate: bash orchestrator/run.sh --check full && bash orchestrator/run.sh --check 
 | `retry_delay` | `30` | Пауза между перезапусками, секунд |
 | `models` | см. ниже | Модели по tier, вложенно: секции `codex` и `opencode` |
 | `model_sets` | `{}` | Именованные наборы моделей `codex`/`opencode` для флага `--models` |
-| `semantic` | `{}` | Профиль ИИ-оценок LEX по бэкенду: `provider`, `model`, `cache` |
-| `efforts` | `low` / `medium` / `high` | Усилие Codex для light / standard / heavy |
+| `efforts` | `medium` / `medium` / `high` | Усилие Codex для light / standard / heavy |
 
 В `models` используйте ключи `light`, `standard`, `heavy` внутри секции
 активного бэкенда; выберите модели, доступные вашему аккаунту. Пустая строка
@@ -530,11 +419,9 @@ bash orchestrator/run.sh
 предыдущей пачки — только список задач и учёт их завершения. Локальные логи
 можно оставить либо удалить отдельно из `orchestrator/.runtime/`.
 
-Обычно новую пачку запускают в текущей ветке задач. Для отдельной ветки
-запишите свободное имя в ключ `branch` конфига (или используйте отдельный
-`--config`) и продолжайте с тем же значением:
-
-Если ветка уже существует, сначала выберите её вручную: `git switch …`.
+Новую пачку запускают в `main` после коммита очереди. Значение `branch`
+в конфиге и текущая ветка должны совпадать. Для переноса модуля в другой
+проект имя рабочей ветки можно задать в `config.json`.
 
 ## Git и журнал
 
@@ -542,9 +429,10 @@ bash orchestrator/run.sh
   именем/email и чистым рабочим деревом. Для возобновления своей
   незавершённой задачи допустимы её сохранённые правки при наличии
   контрольной точки.
-- Скрипт создаёт `auto/tasks` от текущего HEAD. Если такая ветка уже
-  существует, выберите её вручную; автоматического перехода нет. Ветки
-  `main` и `master` для выполнения отклоняются.
+- Задачи, коммиты и push выполняются в `main`; отдельная ветка для очереди
+  не нужна. Если текущая ветка отличается от существующей ветки `branch`
+  в конфиге, скрипт требует выбрать её вручную. При переносе в другой проект
+  отсутствующая настроенная ветка создаётся от текущего HEAD.
 - Для каждой завершённой задачи коммитятся все видимые Git-изменения вместе
   с записью журнала. Отсутствие правок кода допустимо: задача может
   закончиться коммитом только журнала.
@@ -611,7 +499,7 @@ Ctrl+C/SIGTERM во время ожидания прекращают работ�
 в коммит после успешного gate.
 
 При `BLOCKED:` сначала нужно решение владельца. Для проверенного ручного
-исправления остаётся команда **в ветке задач**:
+исправления остаётся команда **в `main`**:
 
 ```bash
 bash orchestrator/run.sh --mark-done FIX-2
