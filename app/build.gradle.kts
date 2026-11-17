@@ -155,11 +155,38 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
     }
 }
 
-tasks.register<Exec>("verifyOwnedHints") {
+val verifyOwnedHintsRootDir = rootProject.projectDir
+val verifyOwnedHintsOffline = gradle.startParameter.isOffline
+tasks.register("verifyOwnedHints") {
     description = "Проверяет воспроизводимость минимальных собственных подсказок и всех загадок T4."
     group = "verification"
-    workingDir(rootProject.projectDir)
-    commandLine("python3", "tools/build_owned_hints.py", "--check")
+    doLast {
+        fun runPython(vararg args: String): Pair<Int, String> {
+            val process = ProcessBuilder(listOf("python3") + args)
+                .directory(verifyOwnedHintsRootDir)
+                .redirectErrorStream(true)
+                .start()
+            val output = process.inputStream.bufferedReader().readText()
+            val exitCode = process.waitFor()
+            return exitCode to output
+        }
+
+        var (exitCode, output) = runPython("tools/build_owned_hints.py", "--check")
+        if (exitCode != 0 && !verifyOwnedHintsOffline &&
+            output.contains("Run: python3 tools/prepare_owned_hints.py --download")
+        ) {
+            logger.lifecycle("Подготовка закреплённого toolchain подсказок: python3 tools/prepare_owned_hints.py --download")
+            val (prepCode, prepOutput) = runPython("tools/prepare_owned_hints.py", "--download")
+            output = prepOutput
+            exitCode = prepCode
+        }
+        if (output.isNotBlank()) {
+            println(output.trimEnd())
+        }
+        if (exitCode != 0) {
+            throw GradleException("verifyOwnedHints завершилась с кодом $exitCode")
+        }
+    }
 }
 
 // Local audit input only: absolute cache paths never enter the APK or legal/.

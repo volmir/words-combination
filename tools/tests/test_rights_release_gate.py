@@ -27,6 +27,11 @@ class RightsReleaseGateTest(unittest.TestCase):
             (self.root / folder).mkdir()
             for name in names:
                 shutil.copyfile(ROOT / folder / name, self.root / folder / name)
+        pinned_sqlite = ROOT / '.local/owned-hints-toolchain/lib/libsqlite3.so.0'
+        if pinned_sqlite.is_file():
+            target = self.root / '.local/owned-hints-toolchain/lib/libsqlite3.so.0'
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(pinned_sqlite, target)
 
     def change_json(self, relative, change):
         path = self.root / relative
