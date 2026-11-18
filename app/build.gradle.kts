@@ -199,12 +199,17 @@ android {
     namespace = "com.example.sostavslova"
     compileSdk = 36
 
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     defaultConfig {
         applicationId = "io.github.volmir.wordscombination"
         minSdk = 24
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
         testInstrumentationRunner = "com.example.sostavslova.WordsTestRunner"
         buildConfigField("String", "CAMPAIGN_SHA256", "\"$campaignSha256\"")
         buildConfigField("String", "WORDS_SHA256", "\"$wordsSha256\"")

@@ -1,0 +1,1 @@
+Technical packaging update: the encrypted dependency metadata block that Android Gradle Plugin adds to release APKs is disabled, so F-Droid can scan and reproduce the build. Gameplay, dictionary and campaign are unchanged.
