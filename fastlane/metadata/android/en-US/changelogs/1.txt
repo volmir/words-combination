@@ -1,0 +1,1 @@
+First public release of the offline Russian word game. Includes 15 levels, challenges, riddles, hints and saved progress.
