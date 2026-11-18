@@ -203,8 +203,8 @@ android {
         applicationId = "io.github.volmir.wordscombination"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
         testInstrumentationRunner = "com.example.sostavslova.WordsTestRunner"
         buildConfigField("String", "CAMPAIGN_SHA256", "\"$campaignSha256\"")
         buildConfigField("String", "WORDS_SHA256", "\"$wordsSha256\"")
@@ -243,6 +243,36 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+    }
+}
+
+// GitHub-артефакты формируются только из уже подписанного release APK.
+// Имя в Gradle outputs оставляем штатным для совместимости с F-Droid.
+val githubReleaseVersion = checkNotNull(android.defaultConfig.versionName) {
+    "Для GitHub Release необходимо установить versionName."
+}
+tasks.register("prepareGithubRelease") {
+    group = "distribution"
+    description = "Готовит подписанный WordsCombination-v<version>.apk и SHA256SUMS.txt для GitHub."
+    dependsOn("assembleRelease")
+    doLast {
+        check(releaseSigningConfigured) {
+            "Для GitHub Release требуется настроенный ключ владельца; неподписанный APK публиковать нельзя."
+        }
+        val signedApk = layout.buildDirectory.file("outputs/apk/release/app-release.apk").get().asFile
+        check(signedApk.isFile) { "Подписанный release APK отсутствует: $signedApk" }
+        val releaseDirectory = layout.buildDirectory.dir("outputs/github-release").get().asFile
+            .apply { mkdirs() }
+        val apkName = "WordsCombination-v$githubReleaseVersion.apk"
+        val outputApk = File(releaseDirectory, apkName)
+        signedApk.copyTo(outputApk, overwrite = true)
+        val signedSha256 = sha256(signedApk)
+        check(signedSha256 == sha256(outputApk)) {
+            "Копирование APK изменило его содержимое."
+        }
+        File(releaseDirectory, "SHA256SUMS.txt").writeText("$signedSha256  $apkName\n")
+        logger.lifecycle("GitHub Release APK: $outputApk")
+        logger.lifecycle("GitHub Release checksum: ${File(releaseDirectory, "SHA256SUMS.txt")}")
     }
 }
 
