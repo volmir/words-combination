@@ -203,8 +203,8 @@ android {
         applicationId = "io.github.volmir.wordscombination"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.0.2"
         testInstrumentationRunner = "com.example.sostavslova.WordsTestRunner"
         buildConfigField("String", "CAMPAIGN_SHA256", "\"$campaignSha256\"")
         buildConfigField("String", "WORDS_SHA256", "\"$wordsSha256\"")
@@ -246,33 +246,48 @@ android {
     }
 }
 
-// GitHub-артефакты формируются только из уже подписанного release APK.
-// Имя в Gradle outputs оставляем штатным для совместимости с F-Droid.
+// Публикуемые файлы даёт только отдельный gate двух чистых Git-клонов.
+// Штатный app-release.apk остаётся в Gradle outputs для обычной сборки.
 val githubReleaseVersion = checkNotNull(android.defaultConfig.versionName) {
     "Для GitHub Release необходимо установить versionName."
 }
 tasks.register("prepareGithubRelease") {
     group = "distribution"
-    description = "Готовит подписанный WordsCombination-v<version>.apk и SHA256SUMS.txt для GitHub."
-    dependsOn("assembleRelease")
+    description = "Требует PASS отдельного reproducible-gate и показывает проверенные файлы GitHub Release."
     doLast {
-        check(releaseSigningConfigured) {
-            "Для GitHub Release требуется настроенный ключ владельца; неподписанный APK публиковать нельзя."
+        val verifiedDirectory = layout.buildDirectory.dir(
+            "outputs/verified-github-release/$githubReleaseVersion"
+        ).get().asFile
+        val evidenceFile = File(verifiedDirectory, "reproducibility-evidence.json")
+        check(evidenceFile.isFile) {
+            "Нет PASS-свидетельства независимой сборки: запустите tools/prepare_verified_release.py."
         }
-        val signedApk = layout.buildDirectory.file("outputs/apk/release/app-release.apk").get().asFile
-        check(signedApk.isFile) { "Подписанный release APK отсутствует: $signedApk" }
-        val releaseDirectory = layout.buildDirectory.dir("outputs/github-release").get().asFile
-            .apply { mkdirs() }
+        val evidence = JsonSlurper().parse(evidenceFile) as Map<*, *>
+        val tagCommit = providers.exec {
+            commandLine("git", "rev-parse", "$githubReleaseVersion^{commit}")
+        }.standardOutput.asText.get().trim()
+        check(evidence["status"] == "LOCAL_SOURCE_TO_SIGNED_APK_VERIFIED" &&
+            evidence["tag"] == githubReleaseVersion &&
+            evidence["version_name"] == githubReleaseVersion &&
+            evidence["commit"] == tagCommit &&
+            (evidence["version_code"] as? Number)?.toInt() == android.defaultConfig.versionCode &&
+            evidence["signer_certificate_sha256"] ==
+                "a10cdd4ff4000673f14db9fe4a814f8bbd63b6e2007f5f38b1fe5cfb7310f353") {
+            "Свидетельство воспроизводимой сборки не соответствует выпуску или сертификату."
+        }
         val apkName = "WordsCombination-v$githubReleaseVersion.apk"
-        val outputApk = File(releaseDirectory, apkName)
-        signedApk.copyTo(outputApk, overwrite = true)
-        val signedSha256 = sha256(signedApk)
-        check(signedSha256 == sha256(outputApk)) {
-            "Копирование APK изменило его содержимое."
+        val verifiedApk = File(verifiedDirectory, apkName)
+        val sums = File(verifiedDirectory, "SHA256SUMS.txt")
+        check(verifiedApk.isFile && sums.isFile) {
+            "Отсутствует проверенный APK или SHA256SUMS.txt."
         }
-        File(releaseDirectory, "SHA256SUMS.txt").writeText("$signedSha256  $apkName\n")
-        logger.lifecycle("GitHub Release APK: $outputApk")
-        logger.lifecycle("GitHub Release checksum: ${File(releaseDirectory, "SHA256SUMS.txt")}")
+        val digest = sha256(verifiedApk)
+        check(evidence["signed_sha256"] == digest &&
+            sums.readText() == "$digest  $apkName\n") {
+            "APK либо контрольная сумма изменены после reproducible-gate."
+        }
+        logger.lifecycle("Verified GitHub Release APK: $verifiedApk")
+        logger.lifecycle("Verified GitHub Release checksum: $sums")
     }
 }
 
