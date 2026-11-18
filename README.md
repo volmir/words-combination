@@ -46,6 +46,9 @@ bash ./gradlew --offline :core:test :app:verifyDictionaryLicenses :app:verifyOwn
 [настройка подписи](docs/RELEASE_SIGNING.md).
 Перед публикацией developer-signed APK обязателен
 [гейт воспроизводимой сборки](docs/FDROID_REPRO_02.md) из двух чистых Git-клонов.
+Кандидат метаданных официального каталога — в
+[FDROID-SUBMISSION-01](docs/FDROID_SUBMISSION_01.md); до проверки buildserver
+F-Droid и допуска по Inclusion Policy это не заявка на публикацию.
 
 Перегенерация словаря требует локального дампа с SHA из manifest и проверенного
 FrequencyWords; для этой задачи словарь и кампания не перегенерировались.
