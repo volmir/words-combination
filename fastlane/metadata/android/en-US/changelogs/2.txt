@@ -1,0 +1,1 @@
+Technical update: versioned GitHub Release APK filenames and automatic SHA-256 checksums. Gameplay and campaign are unchanged.
