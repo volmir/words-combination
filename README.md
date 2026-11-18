@@ -61,5 +61,7 @@ FrequencyWords/OpenSubtitles имеют отдельную атрибуцию. �
 публикации. Остались независимые вопросы прав wordlist/графики/Protobuf,
 F-Droid metadata, воспроизводимости подписанного APK и ручной QA PRE04-17.
 
+[Политика конфиденциальности / Privacy Policy](docs/PRIVACY_POLICY.md) — на русском и английском.
+
 [Состояние](docs/PROJECT_STATUS.md), [результаты миграции](docs/SQLITE_REMOVAL.md),
 [контракт кампании](docs/CAMPAIGN.md), [правила разработки](AGENTS.md).
