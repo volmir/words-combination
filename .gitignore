@@ -25,3 +25,5 @@ app/src/main/assets/Apache-2.0.txt
 app/src/main/assets/LIBRARY_NOTICES.txt
 app/src/main/assets/RUNTIME_LIBRARIES.json
 __pycache__/
+# Устаревший дескриптор AI Studio; не используется Android/Gradle
+/metadata.json
