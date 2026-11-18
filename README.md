@@ -44,6 +44,8 @@ bash ./gradlew --offline :core:test :app:verifyDictionaryLicenses :app:verifyOwn
 [OWN_HINTS_TOOLCHAIN.md](docs/OWN_HINTS_TOOLCHAIN.md).
 Для release действует тот же строгий аудит без waiver и отдельная
 [настройка подписи](docs/RELEASE_SIGNING.md).
+Перед публикацией developer-signed APK обязателен
+[гейт воспроизводимой сборки](docs/FDROID_REPRO_02.md) из двух чистых Git-клонов.
 
 Перегенерация словаря требует локального дампа с SHA из manifest и проверенного
 FrequencyWords; для этой задачи словарь и кампания не перегенерировались.
