@@ -31,7 +31,7 @@
 
 ### 5. Изменения и вопросы
 
-При изменении функций обработки данных политика будет обновлена в репозитории проекта. Вопросы о конфиденциальности можно задать через [GitHub Issues](https://github.com/volmir/words-combination/issues).
+При изменении функций обработки данных политика будет обновлена в репозитории проекта. Вопросы о конфиденциальности можно задать через раздел **Issues** GitHub-репозитория проекта.
 
 ---
 
@@ -66,4 +66,4 @@ The game requires no account and does not request personal information from chil
 
 ### 5. Changes and contact
 
-If the app's data practices change, this policy will be updated in the project repository. For privacy-related questions, use [GitHub Issues](https://github.com/volmir/words-combination/issues).
+If the app's data practices change, this policy will be updated in the project repository. For privacy-related questions, use the **Issues** section of this project's GitHub repository.
