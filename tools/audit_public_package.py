@@ -16,6 +16,7 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -24,6 +25,38 @@ from tools import lexical_json
 from tools.build_owned_hints import verify, inputs, coverage
 from tools.build_library_notices import generate
 from tools.owned_hints import tokens
+
+
+# ART profile containers written by AGP. These are the only build-generated
+# assets allowed in release APKs, never in debug APKs. Format headers and the
+# compressed payload layout come from AndroidX ProfileTranscoder.
+ART_PROFILE_FORMATS = {
+    'assets/dexopt/baseline.prof': {b'pro\x00010\x00': 1},
+    'assets/dexopt/baseline.profm': {b'prm\x00001\x00': 1, b'prm\x00002\x00': 2},
+}
+MAX_ART_PROFILE_SIZE = 1_500_000
+
+
+def check_art_profile(name, raw):
+    """Validate a narrowly allowlisted, compressed Android ART profile."""
+    prefix_size = 8  # four magic bytes followed by four format-version bytes
+    count_size = ART_PROFILE_FORMATS[name].get(raw[:prefix_size])
+    if count_size is None or not (prefix_size + count_size + 8 <= len(raw) <= MAX_ART_PROFILE_SIZE):
+        raise ValueError('Invalid Android ART profile header/size: ' + name)
+    offset = prefix_size + count_size
+    inflated_size = int.from_bytes(raw[offset:offset + 4], 'little')
+    compressed_size = int.from_bytes(raw[offset + 4:offset + 8], 'little')
+    compressed = raw[offset + 8:]
+    if inflated_size > MAX_ART_PROFILE_SIZE or compressed_size != len(compressed):
+        raise ValueError('Invalid Android ART profile payload size: ' + name)
+    try:
+        decoder = zlib.decompressobj()
+        inflated = decoder.decompress(compressed, MAX_ART_PROFILE_SIZE + 1)
+    except zlib.error as exc:
+        raise ValueError('Invalid Android ART profile compressed data: ' + name) from exc
+    if (len(inflated) != inflated_size or not decoder.eof or
+            decoder.unconsumed_tail or decoder.unused_data):
+        raise ValueError('Invalid Android ART profile compressed data: ' + name)
 
 
 def sha(raw):
@@ -41,19 +74,30 @@ def version_markers(raw):
     return result
 
 
-def check_assets(archive, expected):
-    """No additional assets, alternative databases, backups or compressed payloads."""
-    actual = {name for name in archive.namelist() if name.startswith('assets/') and not name.endswith('/')}
+def check_assets(archive, expected, profile='debug'):
+    """Exact runtime assets; allow verified AGP ART profiles in release only."""
+    if profile not in ('debug', 'release'):
+        raise ValueError('Unknown APK build profile: ' + profile)
+    asset_names = [name for name in archive.namelist()
+                   if name.startswith('assets/') and not name.endswith('/')]
+    actual = set(asset_names)
+    if len(actual) != len(asset_names):
+        raise ValueError('Duplicate APK asset entries are not allowed')
     expected = {'assets/' + name: raw for name, raw in expected.items()}
     # AGP transparently uncompresses .gz assets on some versions.
     compressed = 'assets/word_sources.jsonl.gz'
-    if compressed not in actual:
+    if compressed in expected and compressed not in actual:
         expected['assets/word_sources.jsonl'] = gzip.decompress(expected.pop(compressed))
-    if actual != set(expected):
-        raise ValueError('Unexpected/missing APK assets: ' + repr(sorted(actual ^ set(expected))))
+    allowed_art = set(ART_PROFILE_FORMATS) if profile == 'release' else set()
+    unexpected = actual - set(expected) - allowed_art
+    missing = set(expected) - actual
+    if unexpected or missing:
+        raise ValueError('Unexpected/missing APK assets: ' + repr(sorted(unexpected | missing)))
     for name, raw in expected.items():
         if archive.read(name) != raw:
             raise ValueError('APK/source mismatch: ' + name)
+    for name in sorted((actual - set(expected)) & allowed_art):
+        check_art_profile(name, archive.read(name))
 
 
 def screen_legacy(root, apk, source_files, database, expected_sha, resource_strings):
@@ -150,7 +194,7 @@ def audit(root, apk, profile, runtime_inputs):
             if (re.search(r'\.(?:db|sqlite[^/]*|deb)$|libsqlite', entry.filename, re.I) or
                     archive.read(entry).startswith(b'SQLite format 3\x00')):
                 raise ValueError('Forbidden binary storage payload: ' + entry.filename)
-        check_assets(archive, expected)
+        check_assets(archive, expected, profile)
         actual_markers = {n: archive.read(n).decode().strip() for n in archive.namelist() if n.endswith('.version')}
         for name, value in actual_markers.items():
             if markers.get(name) != value:

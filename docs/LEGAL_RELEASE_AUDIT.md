@@ -503,3 +503,26 @@ Wikimedia допускает атрибуцию текстовых матери�
 **UNKNOWN — 5 уникальных областей:** L03 и U01–U04; из них одна — открытая проблема §8. Прежний UNKNOWN графики L01 закрыт указанными свидетельствами. Общее неизвестное наличие любых третьих прав не подменяется гарантией отсутствия таких прав.
 
 **Общий статус F-Droid: BLOCKED по отдельным вопросам выпуска; L01 устранён.** Кампания, словари, загадки, DataStore и подпись не изменены. Изменения LEGAL-GRAPHICS-02: восемь векторов, один разрешённый неиспользуемый JPG, notices/About, адресные tests/gate и документы — полный список в отдельном отчёте. Git-история/ветка не менялись; commit/push/publish не выполнялись.
+
+
+## 13. Дополнение RELEASE-AUDIT-01 — 2026-11-18
+
+**L06: исправлен в коде проверки APK, но итоговый прогон на реальном подписанном release APK ещё требуется.** Исходная запись L06 в §8 и результаты ранее проверенных бинарных артефактов сохранены как исторические факты.
+
+- `tools/audit_public_package.py`: для `--profile release` разрешены **только** штатные `assets/dexopt/baseline.prof` (формат Android ART V010_P) и `assets/dexopt/baseline.profm` (форматы METADATA_V001_N и METADATA_V002). Для них проверяются заголовки, размеры контейнера и распакованных данных, корректность zlib и отсутствие добавочных байтов; это проверка структуры, а не независимое доказательство происхождения.
+- Все прочие APK assets по-прежнему обязаны точно совпадать с разрешёнными входными файлами и содержимым; неожиданные пути, подмена данных и повторяющиеся ZIP-записи отвергаются. Debug-профиль не получает release-исключения.
+- `tools/tests/test_public_package_audit.py`: добавлены синтетические адресные тесты на допустимые ART profiles, повреждения, неизвестные пути и повторяющиеся записи. `python3 -m unittest tools.tests.test_public_package_audit -q`: **10/10 PASS**. `python3 -m unittest discover tools/tests -q`: **498/498 PASS**.
+- Android Gradle-сборка в среде этой правки **не проверена**: Gradle 9.3.1 отсутствует в локальном кэше, загрузка из `services.gradle.org` заблокирована сетью. Реальная release APK и проверка через buildserver F-Droid здесь не выполнялись.
+
+Проверка на машине владельца с уже собранным release APK:
+
+```bash
+python3 tools/audit_public_package.py \\
+  --apk app/build/outputs/apk/release/app-release.apk \\
+  --profile release \\
+  --output /tmp/words-release-artifact-audit.json
+```
+
+Источники контракта: [Android Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles) и [AndroidX ProfileTranscoder](https://android.googlesource.com/platform/frameworks/support/+/d1aba6064d4c1aedfd10ec75fd8d181fcb37c947/profileinstaller/profileinstaller/src/main/java/androidx/profileinstaller/ProfileTranscoder.java).
+
+**Статус F-Droid остаётся BLOCKED:** этот фикс L06 не подтверждает developer-signed reproducibility, не заменяет F-Droid buildserver, не закрывает остальные условия публикации. Подписанные релизы 1.0.0/1.0.1, исходные словари, лицензионные notices, ключи и сертификат не изменяются.
