@@ -69,10 +69,36 @@ CC0-1.0 относится только к 39 значениям hint утвер
 Сторонние программные компоненты перечислены в LIBRARY_NOTICES.txt;
 их лицензии и уведомления сохранены без изменений.
 
-Графика: происхождение растровой иконки приложения и всех её mipmap-копий
-не подтверждено. Векторные UI-иконки требуют проверки исходников и лицензий;
-наличие похожей иконки в Material само по себе не доказывает происхождение.
-Публикационный аудит остаётся открытым: docs/OWN_HINTS_LICENSE_RELEASE_AUDIT.md.
+Графика интерфейса: Google Material Icons и Google Material Symbols.
+Copyright Google LLC. Лицензия Apache-2.0.
+Закреплённый источник: https://github.com/google/material-design-icons/tree/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7
+Material Icons Filled 24 px: ic_arrow_back (navigation/arrow_back),
+ic_close (navigation/close), ic_help (action/help), ic_lock (action/lock),
+ic_star_filled (toggle/star), ic_star_outline (toggle/star_border),
+ic_statistics (editor/bar_chart). ic_menu соответствует navigation/menu;
+его ранее проверенная геометрия сохранена без изменения локального XML.
+ic_crown: Material Symbols Outlined crown_24px, а не классические Material Icons:
+symbols/web/crown/materialsymbolsoutlined/crown_24px.svg в той же ревизии.
+Конвертация: SVG path в Android VectorDrawable; rect в эквивалентные пути;
+удалены невидимые fill=none bounds; цвета сохранены для tint интерфейса.
+Для crown viewBox 0 -960 960 960 преобразован в viewport 24x24:
+масштаб 0.025 и смещение Y=24. Геометрия не перерисовывалась.
+Полный текст лицензии: Apache-2.0.txt. Дополнительного NOTICE в корне
+закреплённой upstream-редакции нет. Точные URL и SHA каждого файла:
+docs/audits/XML_ICON_PROVENANCE.json в исходном репозитории.
+
+Растровая иконка приложения: 11 PNG — ic_launcher_monogram_art.png
+и десять mipmap-вариантов ic_launcher.png / ic_launcher_round.png.
+По заявлению владельца созданы им с Google AI Studio без загрузки
+сторонних изображений. Владелец явно разрешил CC0-1.0 2026-11-18
+в пределах принадлежащих ему прав, включая производные этих изображений.
+Это не заявление об исключительных авторских правах и не гарантия
+Google или владельца об отсутствии любых прав третьих лиц.
+https://creativecommons.org/publicdomain/zero/1.0/
+Решение с точными SHA: docs/RASTER_GRAPHICS_OWNER_APPROVAL.json;
+инвентарь: docs/audits/RASTER_GRAPHICS_PROVENANCE.json.
+Старый неиспользуемый words_app_icon_1793804687264.jpg удалён;
+его происхождение и прежние хэши сохранены в историческом аудите.
 
 Открытые библиотеки AndroidX, Jetpack Compose, Kotlin и kotlinx:
 Apache-2.0 (фактический состав поставляемых зависимостей и полные тексты см. в LIBRARY_NOTICES.txt).

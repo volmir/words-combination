@@ -114,7 +114,7 @@ tasks.matching { it.name in setOf("preReleaseBuild", "assembleRelease", "bundleR
 val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
     description = "Проверяет происхождение и хэши словаря, уровней, кампании и JSON-загадок."
     group = "verification"
-    dependsOn("verifyOwnedHints", "verifyRuntimeNotices")
+    dependsOn("verifyOwnedHints", "verifyRuntimeNotices", "verifyGraphics")
     inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("word_sources.jsonl.gz"), dictionaryData.file("levels.json"))
     inputs.files(dictionaryData.file("campaign.json"))
     inputs.files(dictionaryData.file("owned_riddles.json"))
@@ -179,6 +179,13 @@ tasks.register("exportRuntimeLicenseInputs") {
         output.parentFile.mkdirs()
         output.writeText(JsonOutput.prettyPrint(JsonOutput.toJson(profiles)) + "\n")
     }
+}
+
+tasks.register<Exec>("verifyGraphics") {
+    group = "verification"
+    description = "Проверяет происхождение и хэши девяти векторов и утверждённых растров без сети."
+    workingDir(rootProject.projectDir)
+    commandLine("python3", "tools/verify_graphics.py")
 }
 
 tasks.register<Exec>("verifyRuntimeNotices") {

@@ -1,0 +1,56 @@
+{
+  "schema": "raster-graphics-owner-approval-v1",
+  "task": "LEGAL-GRAPHICS-02",
+  "approved_on": "2026-11-18",
+  "decision": "approved",
+  "license": "CC0-1.0",
+  "source": "explicit owner response in this task conversation",
+  "owner_statement": "Разрешаю распространять эти изображения и их производные под CC0-1.0 в пределах принадлежащих мне прав; они созданы мной с помощью Google AI Studio без загрузки сторонних изображений. Это не заявление об исключительных правах и не гарантия отсутствия прав третьих лиц.",
+  "owner_response": "Подтверждаю CC0-1.0 в указанной формулировке",
+  "images": [
+    {
+      "path": "app/src/main/res/drawable/ic_launcher_monogram_art.png",
+      "sha256": "7e6a50eea320bb4ba73593ef20289092c7f1fea4a88b3630f991466eede7160e"
+    },
+    {
+      "path": "app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "sha256": "f7d1006553a1010a4ddbb63455f33f708c6399f0ccffe7e843b7be06e845ff90"
+    },
+    {
+      "path": "app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+      "sha256": "5fe1ecf1b95a22b51c394f2ab66794ede0802785ad26f51cd0b3e5a93297ff0b"
+    },
+    {
+      "path": "app/src/main/res/mipmap-mdpi/ic_launcher.png",
+      "sha256": "dcc39ed8010c03d02e70f021317b357025dc9e0f89cd1adb9cb8deb93a0d8630"
+    },
+    {
+      "path": "app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+      "sha256": "7b73416c1c381c45e15b93782606aa475cf7ddf1c96df293e7aa66b72829a886"
+    },
+    {
+      "path": "app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+      "sha256": "91f2d0ff04c7eb6a03c434e6f32324f67e94e3615cafc74ac0f872393cd4d610"
+    },
+    {
+      "path": "app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+      "sha256": "5e25e1189506d72a176b2f15663b427f46b68747929b4964714c163b3eae068c"
+    },
+    {
+      "path": "app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+      "sha256": "390eb0b1719ee5ca97cbe22bb803b5399d1dfd35ee04e41c69a40bc84050e0c2"
+    },
+    {
+      "path": "app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+      "sha256": "1ee3ca6da61e11604aa8f6d9d781c70f731115cbf3b385e38962bbb07936228b"
+    },
+    {
+      "path": "app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+      "sha256": "cf6e88861f98e41737853b7ba9cab52a625bfd6b8dc2d138172548279a7a2f43"
+    },
+    {
+      "path": "app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+      "sha256": "73e5ffc79316bec24b269c1f3b0977933caf118545f3ca71d04586c858e2aa72"
+    }
+  ]
+}

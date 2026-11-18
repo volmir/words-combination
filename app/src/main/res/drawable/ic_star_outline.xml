@@ -1,3 +1,9 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="M12,2l3.09,6.26L22,9.27l-5,4.87L18.18,21 12,17.77 5.82,21 7,14.14 2,9.27l6.91,-1.01zM12,6.52l-1.76,3.57 -3.94,0.57 2.85,2.78 -0.67,3.92L12,15.51l3.52,1.85 -0.67,-3.92 2.85,-2.78 -3.94,-0.57z" />
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright Google LLC. Apache-2.0; full license: legal/Apache-2.0.txt.
+     Source: https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/toggle/star_border/materialicons/24px.svg
+     Technical conversion to Android VectorDrawable; geometry unchanged. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:fillType="nonZero" android:pathData="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z" />
 </vector>

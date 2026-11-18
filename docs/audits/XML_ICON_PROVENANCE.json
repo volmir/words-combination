@@ -1,0 +1,1422 @@
+{
+  "schema": "graphics-provenance-v2",
+  "task": "LEGAL-GRAPHICS-02",
+  "app_commit": "1b0becffeec470ef22c9d39b13bf2f4911a3fb79",
+  "upstream_license": {
+    "spdx": "Apache-2.0",
+    "url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/LICENSE",
+    "local_path": "legal/Apache-2.0.txt",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "copyright": "Google LLC",
+    "additional_notice": "No NOTICE file in pinned upstream root"
+  },
+  "vectors": [
+    {
+      "path": "app/src/main/res/drawable/ic_arrow_back.xml",
+      "resource": "drawable/ic_arrow_back",
+      "previous_sha256": "e77bd486a881eb13d89cd932580695995188c933f5a6b340f2ac13f333f29914",
+      "sha256": "70088371bd8aa39db1dad8e0f0b96da65d4705545a5531afba3594efdfa8fa86",
+      "status": "PASS",
+      "license": "Apache-2.0",
+      "copyright": "Google LLC",
+      "source": {
+        "project": "Google Material Icons",
+        "revision": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+        "path": "src/navigation/arrow_back/materialicons/24px.svg",
+        "url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/arrow_back/materialicons/24px.svg",
+        "sha256": "e1590e051f577d02ec994e7cc6005a2bc96407a3d1ba2d7ce6825fb80402684c",
+        "git_blob_sha": "26300ebf08bc32ff3fdf3e6bc5719d487a95a7cd",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\"><path d=\"M0 0h24v24H0z\" fill=\"none\"/><path d=\"M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z\"/></svg>"
+      },
+      "conversion": {
+        "kind": "svg-path-to-vector",
+        "paths": [
+          "M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"
+        ],
+        "group_transform": null,
+        "fill_color": "#FF000000",
+        "fill_type": "nonZero",
+        "viewport": [
+          24,
+          24
+        ],
+        "size_dp": [
+          24,
+          24
+        ]
+      },
+      "profiles": [
+        "debug",
+        "release"
+      ]
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_close.xml",
+      "resource": "drawable/ic_close",
+      "previous_sha256": "befb8e9999248a4753ac23a545a902bd78ea795e96639fe8eebd5ccc3b07a42e",
+      "sha256": "90f3e2c5d563434f323cda718288ca04af4c34ab95693bececb3d23e35a51f96",
+      "status": "PASS",
+      "license": "Apache-2.0",
+      "copyright": "Google LLC",
+      "source": {
+        "project": "Google Material Icons",
+        "revision": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+        "path": "src/navigation/close/materialicons/24px.svg",
+        "url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/close/materialicons/24px.svg",
+        "sha256": "b54342456d5a7f2da53795147f8af36ec76fbf5b57d792fe75f07538e6c6783e",
+        "git_blob_sha": "e96a4e7c16f8bcd660e590a33f37e1b2f042d726",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\"><path d=\"M0 0h24v24H0z\" fill=\"none\"/><path d=\"M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z\"/></svg>"
+      },
+      "conversion": {
+        "kind": "svg-path-to-vector",
+        "paths": [
+          "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+        ],
+        "group_transform": null,
+        "fill_color": "#FF333333",
+        "fill_type": "nonZero",
+        "viewport": [
+          24,
+          24
+        ],
+        "size_dp": [
+          24,
+          24
+        ]
+      },
+      "profiles": [
+        "debug"
+      ]
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_crown.xml",
+      "resource": "drawable/ic_crown",
+      "previous_sha256": "c843d97bef3b8dcf1794a63011a2ab504b8005856a8778d8a3b98cc5ea80cb92",
+      "sha256": "1d8ba2149425537b5c5a7de0b40e33cfaf20b2b9209fbddee1fa6e368e1d39eb",
+      "status": "PASS",
+      "license": "Apache-2.0",
+      "copyright": "Google LLC",
+      "source": {
+        "project": "Google Material Symbols",
+        "revision": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+        "path": "symbols/web/crown/materialsymbolsoutlined/crown_24px.svg",
+        "url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/symbols/web/crown/materialsymbolsoutlined/crown_24px.svg",
+        "sha256": "0f73eb7347f1e4d94f5cae617c5dd72c46b1fd97f2548c08fdd305cb7b30d992",
+        "git_blob_sha": "9fa6747195d2f83b6f4635061a1e7fa4830d39dc",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24\" viewBox=\"0 -960 960 960\" width=\"24\"><path d=\"M200-160v-80h560v80H200Zm0-140-51-321q-2 0-4.5.5t-4.5.5q-25 0-42.5-17.5T80-680q0-25 17.5-42.5T140-740q25 0 42.5 17.5T200-680q0 7-1.5 13t-3.5 11l125 56 125-171q-11-8-18-21t-7-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820q0 15-7 28t-18 21l125 171 125-56q-2-5-3.5-11t-1.5-13q0-25 17.5-42.5T820-740q25 0 42.5 17.5T880-680q0 25-17.5 42.5T820-620q-2 0-4.5-.5t-4.5-.5l-51 321H200Zm68-80h424l26-167-105 46-133-183-133 183-105-46 26 167Zm212 0Z\"/></svg>"
+      },
+      "conversion": {
+        "kind": "svg-path-to-vector",
+        "paths": [
+          "M200-160v-80h560v80H200Zm0-140-51-321q-2 0-4.5.5t-4.5.5q-25 0-42.5-17.5T80-680q0-25 17.5-42.5T140-740q25 0 42.5 17.5T200-680q0 7-1.5 13t-3.5 11l125 56 125-171q-11-8-18-21t-7-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820q0 15-7 28t-18 21l125 171 125-56q-2-5-3.5-11t-1.5-13q0-25 17.5-42.5T820-740q25 0 42.5 17.5T880-680q0 25-17.5 42.5T820-620q-2 0-4.5-.5t-4.5-.5l-51 321H200Zm68-80h424l26-167-105 46-133-183-133 183-105-46 26 167Zm212 0Z"
+        ],
+        "group_transform": {
+          "scaleX": "0.025",
+          "scaleY": "0.025",
+          "translateY": "24"
+        },
+        "fill_color": "#FF000000",
+        "fill_type": "nonZero",
+        "viewport": [
+          24,
+          24
+        ],
+        "size_dp": [
+          24,
+          24
+        ]
+      },
+      "profiles": [
+        "debug",
+        "release"
+      ]
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_help.xml",
+      "resource": "drawable/ic_help",
+      "previous_sha256": "daee62f4123245acd5090df976b2ae3d3a9149dc22a67012733dafdf35da5b59",
+      "sha256": "c8c435eeeb9f1f5eee5c4d9d33d8dd0a729da3856fd7dc390d04f7c85a5b5bf2",
+      "status": "PASS",
+      "license": "Apache-2.0",
+      "copyright": "Google LLC",
+      "source": {
+        "project": "Google Material Icons",
+        "revision": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+        "path": "src/action/help/materialicons/24px.svg",
+        "url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/action/help/materialicons/24px.svg",
+        "sha256": "130d5d3eaa72de2905720c0aeedac65f688eb224188b04134f2ae998dd85d0e6",
+        "git_blob_sha": "ac7a46002d09ed141994e3b5cef8598ed2a1390f",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\"><path d=\"M0 0h24v24H0z\" fill=\"none\"/><path d=\"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z\"/></svg>"
+      },
+      "conversion": {
+        "kind": "svg-path-to-vector",
+        "paths": [
+          "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"
+        ],
+        "group_transform": null,
+        "fill_color": "#FF333333",
+        "fill_type": "nonZero",
+        "viewport": [
+          24,
+          24
+        ],
+        "size_dp": [
+          24,
+          24
+        ]
+      },
+      "profiles": [
+        "debug"
+      ]
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_lock.xml",
+      "resource": "drawable/ic_lock",
+      "previous_sha256": "21112ba985f447fa34bbde3d05f828eaa5e689dbba38116b0d2970a4930b8b9b",
+      "sha256": "824b92ace1ce1428fcd797d88d335fd2b2c337f468fc0e6ba524efd51d401f26",
+      "status": "PASS",
+      "license": "Apache-2.0",
+      "copyright": "Google LLC",
+      "source": {
+        "project": "Google Material Icons",
+        "revision": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+        "path": "src/action/lock/materialicons/24px.svg",
+        "url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/action/lock/materialicons/24px.svg",
+        "sha256": "33b9bc04d9e69c5f4eb8ea5d49b240c4fdc1da973c7571235cbca1fa6f80394d",
+        "git_blob_sha": "8fd44189dacb054f917dc063737989fa01d85e96",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\"><path d=\"M0 0h24v24H0z\" fill=\"none\"/><path d=\"M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z\"/></svg>"
+      },
+      "conversion": {
+        "kind": "svg-path-to-vector",
+        "paths": [
+          "M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"
+        ],
+        "group_transform": null,
+        "fill_color": "#FF333333",
+        "fill_type": "nonZero",
+        "viewport": [
+          24,
+          24
+        ],
+        "size_dp": [
+          24,
+          24
+        ]
+      },
+      "profiles": [
+        "debug",
+        "release"
+      ]
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_menu.xml",
+      "resource": "drawable/ic_menu",
+      "previous_sha256": "020f03900ae32fdffc8433c3552297c98e384f113770835e4fb835b2f1847497",
+      "sha256": "020f03900ae32fdffc8433c3552297c98e384f113770835e4fb835b2f1847497",
+      "status": "PASS",
+      "license": "Apache-2.0",
+      "copyright": "Google LLC",
+      "source": {
+        "project": "Google Material Icons",
+        "revision": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+        "path": "src/navigation/menu/materialicons/24px.svg",
+        "url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/menu/materialicons/24px.svg",
+        "sha256": "5222c9f8a54b1023571595636174fa96d136a3c245d80168702888151193762f",
+        "git_blob_sha": "d619475037b002d47b1fbf30d9a21340649d37bf",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\"><path d=\"M0 0h24v24H0z\" fill=\"none\"/><path d=\"M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z\"/></svg>"
+      },
+      "conversion": {
+        "kind": "retained-equivalent-menu",
+        "paths": [
+          "M3,6h18v2H3zM3,11h18v2H3zM3,16h18v2H3z"
+        ],
+        "group_transform": null,
+        "fill_color": "#FFFFFFFF",
+        "fill_type": "nonZero",
+        "viewport": [
+          24,
+          24
+        ],
+        "size_dp": [
+          24,
+          24
+        ]
+      },
+      "profiles": [
+        "debug",
+        "release"
+      ]
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_star_filled.xml",
+      "resource": "drawable/ic_star_filled",
+      "previous_sha256": "e6b15505f6d9ea9fb2a6b340b10b9dbd3ae1a8eae3a2a37561e8167f95dbae0a",
+      "sha256": "6bed431ee09369be2b5682428371819192a02eceaeef63e0bf8478428a521f72",
+      "status": "PASS",
+      "license": "Apache-2.0",
+      "copyright": "Google LLC",
+      "source": {
+        "project": "Google Material Icons",
+        "revision": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+        "path": "src/toggle/star/materialicons/24px.svg",
+        "url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/toggle/star/materialicons/24px.svg",
+        "sha256": "b476baf36b66c81802396e090b842d7a84269f1f8aff197af6862ec890441c75",
+        "git_blob_sha": "a2d6ba1bda79f627b08ae13e39155ef9e11c10f4",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\"><path d=\"M0 0h24v24H0z\" fill=\"none\"/><path d=\"M0 0h24v24H0z\" fill=\"none\"/><path d=\"M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z\"/></svg>"
+      },
+      "conversion": {
+        "kind": "svg-path-to-vector",
+        "paths": [
+          "M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+        ],
+        "group_transform": null,
+        "fill_color": "#FFFFFFFF",
+        "fill_type": "nonZero",
+        "viewport": [
+          24,
+          24
+        ],
+        "size_dp": [
+          24,
+          24
+        ]
+      },
+      "profiles": [
+        "debug",
+        "release"
+      ]
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_star_outline.xml",
+      "resource": "drawable/ic_star_outline",
+      "previous_sha256": "a1312028e049d2ae79b8305073b5d4728dfcdea78a8cb11509ca8150dbbdf8c8",
+      "sha256": "89048b6ec365b867fa3660c63500138a0ad64498cf64f621859123b1dc618da8",
+      "status": "PASS",
+      "license": "Apache-2.0",
+      "copyright": "Google LLC",
+      "source": {
+        "project": "Google Material Icons",
+        "revision": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+        "path": "src/toggle/star_border/materialicons/24px.svg",
+        "url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/toggle/star_border/materialicons/24px.svg",
+        "sha256": "e963c6216056acb1579d6a0f6121791ed9254dc25a3cd621ff5bf5bfab0d315c",
+        "git_blob_sha": "eae074f2fa7e6b9fb31c60ed7580b3caa96473fd",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\"><path d=\"M0 0h24v24H0z\" fill=\"none\"/><path d=\"M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z\"/></svg>"
+      },
+      "conversion": {
+        "kind": "svg-path-to-vector",
+        "paths": [
+          "M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"
+        ],
+        "group_transform": null,
+        "fill_color": "#FFFFFFFF",
+        "fill_type": "nonZero",
+        "viewport": [
+          24,
+          24
+        ],
+        "size_dp": [
+          24,
+          24
+        ]
+      },
+      "profiles": [
+        "debug",
+        "release"
+      ]
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_statistics.xml",
+      "resource": "drawable/ic_statistics",
+      "previous_sha256": "288eac3d7151e3df6e696f20bf210cca934656e339b0b5d9c927cb71e9e45b80",
+      "sha256": "6dddfc06ce526b38cd86eef472041688623ebac62fab9d05d548e332eb614e3b",
+      "status": "PASS",
+      "license": "Apache-2.0",
+      "copyright": "Google LLC",
+      "source": {
+        "project": "Google Material Icons",
+        "revision": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+        "path": "src/editor/bar_chart/materialicons/24px.svg",
+        "url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/editor/bar_chart/materialicons/24px.svg",
+        "sha256": "5abe3390a29d11d9a3e2e212224d5196272a9072ae8bb76c963bf18fee4d5fe1",
+        "git_blob_sha": "a5feeb9ae293d830c9c3ed73b81bcf541876a542",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" enable-background=\"new 0 0 24 24\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\"><g><rect fill=\"none\" height=\"24\" width=\"24\"/></g><g><g><rect height=\"11\" width=\"4\" x=\"4\" y=\"9\"/><rect height=\"7\" width=\"4\" x=\"16\" y=\"13\"/><rect height=\"16\" width=\"4\" x=\"10\" y=\"4\"/></g></g></svg>"
+      },
+      "conversion": {
+        "kind": "rect-to-path",
+        "paths": [
+          "M4 9H8V20H4Z",
+          "M16 13H20V20H16Z",
+          "M10 4H14V20H10Z"
+        ],
+        "group_transform": null,
+        "fill_color": "#FF333333",
+        "fill_type": "nonZero",
+        "viewport": [
+          24,
+          24
+        ],
+        "size_dp": [
+          24,
+          24
+        ]
+      },
+      "profiles": [
+        "debug"
+      ]
+    }
+  ],
+  "historical_audits": [
+    {
+      "status": "HISTORICAL_NOT_CURRENT_RUNTIME",
+      "report": "docs/GRAPHICS_PROVENANCE_AUDIT.md — historical section",
+      "snapshot_sha256": "01baade734c47b2217ce1303bcc0fbc3ede6f8d7667f25b2cab9f220434f7d28",
+      "evidence": {
+        "schema": "xml-icon-geometry-comparison-v1",
+        "app_commit": "1b0becffeec470ef22c9d39b13bf2f4911a3fb79",
+        "owner_statement": {
+          "manually_uploaded_third_party_graphics": false,
+          "automatically_added_by": "AI Studio",
+          "source": "owner messages in this audit conversation",
+          "does_not_establish_upstream_license": true
+        },
+        "method": {
+          "line_geometry": "Decimal exact M/L/H/V/Z to absolute coordinates; ring start/order/direction normalized; zero-tolerance",
+          "rendering": "SVG fill=none excluded; no pixel-raster equivalence claim",
+          "non_polygon_paths": "not classed as an exact polygon match; differences documented individually",
+          "scope": "44 Google Material Icons SVG files (40 family/style combinations + 4 related candidates), 5 Feather, 4 Pictogrammers, 1 Lucide"
+        },
+        "local_icons": [
+          {
+            "path": "app/src/main/res/drawable/ic_arrow_back.xml",
+            "file_sha256": "e77bd486a881eb13d89cd932580695995188c933f5a6b340f2ac13f333f29914",
+            "path_data_sha256": [
+              "8bce60547611504d6560322ea481b9a4288a15cf82b508b2f1b2a23660769dc0"
+            ],
+            "introduced_commit": "d6090aaa415ffd8e3cb372520d23abea5d0bf530",
+            "polygon_vertices": [
+              [
+                [
+                  "20",
+                  "11"
+                ],
+                [
+                  "7.83",
+                  "11"
+                ],
+                [
+                  "13.42",
+                  "5.41"
+                ],
+                [
+                  "12",
+                  "4"
+                ],
+                [
+                  "4",
+                  "12"
+                ],
+                [
+                  "12",
+                  "20"
+                ],
+                [
+                  "13.42",
+                  "18.59"
+                ],
+                [
+                  "7.83",
+                  "13"
+                ],
+                [
+                  "20",
+                  "13"
+                ]
+              ]
+            ],
+            "exact_polygon_matches": [],
+            "status": "UNKNOWN",
+            "addition_tool": "AI Studio (owner-attested)",
+            "upstream_source": "UNKNOWN",
+            "applied_license_spdx": "UNKNOWN",
+            "comparison_detail": "docs/GRAPHICS_PROVENANCE_AUDIT.md — row ic_arrow_back.xml"
+          },
+          {
+            "path": "app/src/main/res/drawable/ic_close.xml",
+            "file_sha256": "befb8e9999248a4753ac23a545a902bd78ea795e96639fe8eebd5ccc3b07a42e",
+            "path_data_sha256": [
+              "ca71391b9c3b0ee4249da608d948b0efd7b8982797ad817d843241f501fd0bf3"
+            ],
+            "introduced_commit": "5e2aa6a595a1c64721b01e1a363cbbe5bb2f40ee",
+            "polygon_vertices": [
+              [
+                [
+                  "18.3",
+                  "5.71"
+                ],
+                [
+                  "12",
+                  "12"
+                ],
+                [
+                  "5.7",
+                  "5.71"
+                ],
+                [
+                  "4.29",
+                  "7.12"
+                ],
+                [
+                  "10.59",
+                  "13.42"
+                ],
+                [
+                  "4.29",
+                  "19.71"
+                ],
+                [
+                  "5.7",
+                  "21.12"
+                ],
+                [
+                  "12",
+                  "14.83"
+                ],
+                [
+                  "18.3",
+                  "21.12"
+                ],
+                [
+                  "19.71",
+                  "19.71"
+                ],
+                [
+                  "13.41",
+                  "13.42"
+                ],
+                [
+                  "19.71",
+                  "7.12"
+                ]
+              ]
+            ],
+            "exact_polygon_matches": [],
+            "status": "UNKNOWN",
+            "addition_tool": "AI Studio (owner-attested)",
+            "upstream_source": "UNKNOWN",
+            "applied_license_spdx": "UNKNOWN",
+            "comparison_detail": "docs/GRAPHICS_PROVENANCE_AUDIT.md — row ic_close.xml"
+          },
+          {
+            "path": "app/src/main/res/drawable/ic_crown.xml",
+            "file_sha256": "c843d97bef3b8dcf1794a63011a2ab504b8005856a8778d8a3b98cc5ea80cb92",
+            "path_data_sha256": [
+              "dcd98d7af9960c64ab51eaabdec6da249f05d88c073e73ed6320c5f9e0298a94"
+            ],
+            "introduced_commit": "8491c7bc0627a2f80f313c9470356b63180a20aa",
+            "polygon_vertices": [
+              [
+                [
+                  "3",
+                  "6"
+                ],
+                [
+                  "7",
+                  "10"
+                ],
+                [
+                  "12",
+                  "3"
+                ],
+                [
+                  "17",
+                  "10"
+                ],
+                [
+                  "21",
+                  "6"
+                ],
+                [
+                  "19",
+                  "18"
+                ],
+                [
+                  "5",
+                  "18"
+                ]
+              ],
+              [
+                [
+                  "5",
+                  "20"
+                ],
+                [
+                  "19",
+                  "20"
+                ],
+                [
+                  "19",
+                  "22"
+                ],
+                [
+                  "5",
+                  "22"
+                ]
+              ]
+            ],
+            "exact_polygon_matches": [],
+            "status": "UNKNOWN",
+            "addition_tool": "AI Studio (owner-attested)",
+            "upstream_source": "UNKNOWN",
+            "applied_license_spdx": "UNKNOWN",
+            "comparison_detail": "docs/GRAPHICS_PROVENANCE_AUDIT.md — row ic_crown.xml"
+          },
+          {
+            "path": "app/src/main/res/drawable/ic_help.xml",
+            "file_sha256": "daee62f4123245acd5090df976b2ae3d3a9149dc22a67012733dafdf35da5b59",
+            "path_data_sha256": [
+              "b27a270bcfdb355e22e9c78ec446c2c1cd263cc66d3bc68768c83b453f4a06a6"
+            ],
+            "introduced_commit": "5e2aa6a595a1c64721b01e1a363cbbe5bb2f40ee",
+            "polygon_vertices": null,
+            "exact_polygon_matches": [],
+            "status": "UNKNOWN",
+            "addition_tool": "AI Studio (owner-attested)",
+            "upstream_source": "UNKNOWN",
+            "applied_license_spdx": "UNKNOWN",
+            "comparison_detail": "docs/GRAPHICS_PROVENANCE_AUDIT.md — row ic_help.xml"
+          },
+          {
+            "path": "app/src/main/res/drawable/ic_lock.xml",
+            "file_sha256": "21112ba985f447fa34bbde3d05f828eaa5e689dbba38116b0d2970a4930b8b9b",
+            "path_data_sha256": [
+              "342779bd9526360ca378d0d09607a86f8656458126c678c7ff732b5e08500754"
+            ],
+            "introduced_commit": "5e2aa6a595a1c64721b01e1a363cbbe5bb2f40ee",
+            "polygon_vertices": null,
+            "exact_polygon_matches": [],
+            "status": "UNKNOWN",
+            "addition_tool": "AI Studio (owner-attested)",
+            "upstream_source": "UNKNOWN",
+            "applied_license_spdx": "UNKNOWN",
+            "comparison_detail": "docs/GRAPHICS_PROVENANCE_AUDIT.md — row ic_lock.xml"
+          },
+          {
+            "path": "app/src/main/res/drawable/ic_menu.xml",
+            "file_sha256": "020f03900ae32fdffc8433c3552297c98e384f113770835e4fb835b2f1847497",
+            "path_data_sha256": [
+              "90a73e4a8ab6e0f0c63e3e50e19ec98405bdd44df9faa2ace095991d0d1901dc"
+            ],
+            "introduced_commit": "5e2aa6a595a1c64721b01e1a363cbbe5bb2f40ee",
+            "polygon_vertices": [
+              [
+                [
+                  "3",
+                  "6"
+                ],
+                [
+                  "21",
+                  "6"
+                ],
+                [
+                  "21",
+                  "8"
+                ],
+                [
+                  "3",
+                  "8"
+                ]
+              ],
+              [
+                [
+                  "3",
+                  "11"
+                ],
+                [
+                  "21",
+                  "11"
+                ],
+                [
+                  "21",
+                  "13"
+                ],
+                [
+                  "3",
+                  "13"
+                ]
+              ],
+              [
+                [
+                  "3",
+                  "16"
+                ],
+                [
+                  "21",
+                  "16"
+                ],
+                [
+                  "21",
+                  "18"
+                ],
+                [
+                  "3",
+                  "18"
+                ]
+              ]
+            ],
+            "exact_polygon_matches": [
+              {
+                "repository": "google/material-design-icons",
+                "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+                "path": "src/navigation/menu/materialicons/24px.svg"
+              },
+              {
+                "repository": "google/material-design-icons",
+                "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+                "path": "src/navigation/menu/materialiconssharp/24px.svg"
+              },
+              {
+                "repository": "google/material-design-icons",
+                "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+                "path": "src/navigation/menu/materialiconsoutlined/24px.svg"
+              },
+              {
+                "repository": "google/material-design-icons",
+                "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+                "path": "src/navigation/menu/materialiconstwotone/24px.svg"
+              }
+            ],
+            "status": "PASS",
+            "addition_tool": "AI Studio (owner-attested)",
+            "upstream_source": "Google Material Icons",
+            "applied_license_spdx": "Apache-2.0",
+            "comparison_detail": "docs/GRAPHICS_PROVENANCE_AUDIT.md — row ic_menu.xml"
+          },
+          {
+            "path": "app/src/main/res/drawable/ic_star_filled.xml",
+            "file_sha256": "e6b15505f6d9ea9fb2a6b340b10b9dbd3ae1a8eae3a2a37561e8167f95dbae0a",
+            "path_data_sha256": [
+              "f2e797e5c8d9aada48f8793797443cb4819df9d9da2c7316cbe7bce88a88cc35"
+            ],
+            "introduced_commit": "5e2aa6a595a1c64721b01e1a363cbbe5bb2f40ee",
+            "polygon_vertices": [
+              [
+                [
+                  "12",
+                  "2"
+                ],
+                [
+                  "15.09",
+                  "8.26"
+                ],
+                [
+                  "22",
+                  "9.27"
+                ],
+                [
+                  "17",
+                  "14.14"
+                ],
+                [
+                  "18.18",
+                  "21"
+                ],
+                [
+                  "12",
+                  "17.77"
+                ],
+                [
+                  "5.82",
+                  "21"
+                ],
+                [
+                  "7",
+                  "14.14"
+                ],
+                [
+                  "2",
+                  "9.27"
+                ],
+                [
+                  "8.91",
+                  "8.26"
+                ]
+              ]
+            ],
+            "exact_polygon_matches": [],
+            "status": "UNKNOWN",
+            "addition_tool": "AI Studio (owner-attested)",
+            "upstream_source": "UNKNOWN",
+            "applied_license_spdx": "UNKNOWN",
+            "comparison_detail": "docs/GRAPHICS_PROVENANCE_AUDIT.md — row ic_star_filled.xml"
+          },
+          {
+            "path": "app/src/main/res/drawable/ic_star_outline.xml",
+            "file_sha256": "a1312028e049d2ae79b8305073b5d4728dfcdea78a8cb11509ca8150dbbdf8c8",
+            "path_data_sha256": [
+              "78efbeaf11eb9017901f341153367471071dbebe275ab3617ff86a44625557ff"
+            ],
+            "introduced_commit": "5e2aa6a595a1c64721b01e1a363cbbe5bb2f40ee",
+            "polygon_vertices": [
+              [
+                [
+                  "12",
+                  "2"
+                ],
+                [
+                  "15.09",
+                  "8.26"
+                ],
+                [
+                  "22",
+                  "9.27"
+                ],
+                [
+                  "17",
+                  "14.14"
+                ],
+                [
+                  "18.18",
+                  "21"
+                ],
+                [
+                  "12",
+                  "17.77"
+                ],
+                [
+                  "5.82",
+                  "21"
+                ],
+                [
+                  "7",
+                  "14.14"
+                ],
+                [
+                  "2",
+                  "9.27"
+                ],
+                [
+                  "8.91",
+                  "8.26"
+                ]
+              ],
+              [
+                [
+                  "12",
+                  "6.52"
+                ],
+                [
+                  "10.24",
+                  "10.09"
+                ],
+                [
+                  "6.30",
+                  "10.66"
+                ],
+                [
+                  "9.15",
+                  "13.44"
+                ],
+                [
+                  "8.48",
+                  "17.36"
+                ],
+                [
+                  "12",
+                  "15.51"
+                ],
+                [
+                  "15.52",
+                  "17.36"
+                ],
+                [
+                  "14.85",
+                  "13.44"
+                ],
+                [
+                  "17.70",
+                  "10.66"
+                ],
+                [
+                  "13.76",
+                  "10.09"
+                ]
+              ]
+            ],
+            "exact_polygon_matches": [],
+            "status": "UNKNOWN",
+            "addition_tool": "AI Studio (owner-attested)",
+            "upstream_source": "UNKNOWN",
+            "applied_license_spdx": "UNKNOWN",
+            "comparison_detail": "docs/GRAPHICS_PROVENANCE_AUDIT.md — row ic_star_outline.xml"
+          },
+          {
+            "path": "app/src/main/res/drawable/ic_statistics.xml",
+            "file_sha256": "288eac3d7151e3df6e696f20bf210cca934656e339b0b5d9c927cb71e9e45b80",
+            "path_data_sha256": [
+              "b5007e5110de45572ea56f5d945a9aaa3966519564bf78670742a9fe34f9cce7"
+            ],
+            "introduced_commit": "5e2aa6a595a1c64721b01e1a363cbbe5bb2f40ee",
+            "polygon_vertices": [
+              [
+                [
+                  "4",
+                  "19"
+                ],
+                [
+                  "8",
+                  "19"
+                ],
+                [
+                  "8",
+                  "10"
+                ],
+                [
+                  "4",
+                  "10"
+                ]
+              ],
+              [
+                [
+                  "10",
+                  "19"
+                ],
+                [
+                  "14",
+                  "19"
+                ],
+                [
+                  "14",
+                  "4"
+                ],
+                [
+                  "10",
+                  "4"
+                ]
+              ],
+              [
+                [
+                  "16",
+                  "19"
+                ],
+                [
+                  "20",
+                  "19"
+                ],
+                [
+                  "20",
+                  "13"
+                ],
+                [
+                  "16",
+                  "13"
+                ]
+              ]
+            ],
+            "exact_polygon_matches": [],
+            "status": "UNKNOWN",
+            "addition_tool": "AI Studio (owner-attested)",
+            "upstream_source": "UNKNOWN",
+            "applied_license_spdx": "UNKNOWN",
+            "comparison_detail": "docs/GRAPHICS_PROVENANCE_AUDIT.md — row ic_statistics.xml"
+          }
+        ],
+        "references": [
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/arrow_back/materialicons/24px.svg",
+            "sha": "26300ebf08bc32ff3fdf3e6bc5719d487a95a7cd",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/arrow_back/materialicons/24px.svg",
+            "file_sha256": "e1590e051f577d02ec994e7cc6005a2bc96407a3d1ba2d7ce6825fb80402684c"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/arrow_back/materialiconssharp/24px.svg",
+            "sha": "06cddd00be3792c7eeb8f7bbe8ffeda2c0b5c849",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/arrow_back/materialiconssharp/24px.svg",
+            "file_sha256": "5eab5a4557e97143f2166479366672a76bbc31d805be62efa75c7d1a10e13cf2"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/arrow_back/materialiconsoutlined/24px.svg",
+            "sha": "06cddd00be3792c7eeb8f7bbe8ffeda2c0b5c849",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/arrow_back/materialiconsoutlined/24px.svg",
+            "file_sha256": "5eab5a4557e97143f2166479366672a76bbc31d805be62efa75c7d1a10e13cf2"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/arrow_back/materialiconsround/24px.svg",
+            "sha": "a57617d3dd976c2627ea2c436065c4d914d9e456",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/arrow_back/materialiconsround/24px.svg",
+            "file_sha256": "7a1e043518c090ca955c282d46416d69e2988c38bcc780a714174dfc4f258a51"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/arrow_back/materialiconstwotone/24px.svg",
+            "sha": "06cddd00be3792c7eeb8f7bbe8ffeda2c0b5c849",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/arrow_back/materialiconstwotone/24px.svg",
+            "file_sha256": "5eab5a4557e97143f2166479366672a76bbc31d805be62efa75c7d1a10e13cf2"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/menu/materialicons/24px.svg",
+            "sha": "d619475037b002d47b1fbf30d9a21340649d37bf",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/menu/materialicons/24px.svg",
+            "file_sha256": "5222c9f8a54b1023571595636174fa96d136a3c245d80168702888151193762f"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/menu/materialiconssharp/24px.svg",
+            "sha": "8525078d56c2ca12899bb28616e0b54ee521ccfa",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/menu/materialiconssharp/24px.svg",
+            "file_sha256": "7cca3b2163d44960f8621326dcdc8da5379ca7665ae50e692f3bbd2b07d03c89"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/menu/materialiconsoutlined/24px.svg",
+            "sha": "8525078d56c2ca12899bb28616e0b54ee521ccfa",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/menu/materialiconsoutlined/24px.svg",
+            "file_sha256": "7cca3b2163d44960f8621326dcdc8da5379ca7665ae50e692f3bbd2b07d03c89"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/menu/materialiconsround/24px.svg",
+            "sha": "04594d85061c0b2ceda369dd70be550632e16ac7",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/menu/materialiconsround/24px.svg",
+            "file_sha256": "3fd8c09c361e3a9a219ba77d43a81bc0b878ce2dd7fcf2319d16a279c2312d8d"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/menu/materialiconstwotone/24px.svg",
+            "sha": "8525078d56c2ca12899bb28616e0b54ee521ccfa",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/menu/materialiconstwotone/24px.svg",
+            "file_sha256": "7cca3b2163d44960f8621326dcdc8da5379ca7665ae50e692f3bbd2b07d03c89"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/close/materialicons/24px.svg",
+            "sha": "e96a4e7c16f8bcd660e590a33f37e1b2f042d726",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/close/materialicons/24px.svg",
+            "file_sha256": "b54342456d5a7f2da53795147f8af36ec76fbf5b57d792fe75f07538e6c6783e"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/close/materialiconssharp/24px.svg",
+            "sha": "081494612aba804f95b5ab3583d3ee88100149a1",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/close/materialiconssharp/24px.svg",
+            "file_sha256": "817eeece6e725ef03c5be0b0ade63c53506d6f8678684dd41eb0c0deaae3ac7b"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/close/materialiconsoutlined/24px.svg",
+            "sha": "081494612aba804f95b5ab3583d3ee88100149a1",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/close/materialiconsoutlined/24px.svg",
+            "file_sha256": "817eeece6e725ef03c5be0b0ade63c53506d6f8678684dd41eb0c0deaae3ac7b"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/close/materialiconsround/24px.svg",
+            "sha": "9564726c54c3b628ccf9d46f0a25bc942e49a221",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/close/materialiconsround/24px.svg",
+            "file_sha256": "6fb01baa102914c6905e73f1adcd78a4409a0d8ea7873d6c23a573707231a837"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/navigation/close/materialiconstwotone/24px.svg",
+            "sha": "081494612aba804f95b5ab3583d3ee88100149a1",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/navigation/close/materialiconstwotone/24px.svg",
+            "file_sha256": "817eeece6e725ef03c5be0b0ade63c53506d6f8678684dd41eb0c0deaae3ac7b"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/action/help/materialicons/24px.svg",
+            "sha": "ac7a46002d09ed141994e3b5cef8598ed2a1390f",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/action/help/materialicons/24px.svg",
+            "file_sha256": "130d5d3eaa72de2905720c0aeedac65f688eb224188b04134f2ae998dd85d0e6"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/action/help/materialiconssharp/24px.svg",
+            "sha": "a6f5efef611f344bc7cf03dcd93312eb5fe5da4d",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/action/help/materialiconssharp/24px.svg",
+            "file_sha256": "813ae88a389d2fac210efc3cea1bbebf41ff3ae3ab28cadd1ac67d5efc929266"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/action/help/materialiconsoutlined/24px.svg",
+            "sha": "a6f5efef611f344bc7cf03dcd93312eb5fe5da4d",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/action/help/materialiconsoutlined/24px.svg",
+            "file_sha256": "813ae88a389d2fac210efc3cea1bbebf41ff3ae3ab28cadd1ac67d5efc929266"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/action/help/materialiconsround/24px.svg",
+            "sha": "b6189b70b5cf2649ceeed07036e2f65a832e3b18",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/action/help/materialiconsround/24px.svg",
+            "file_sha256": "eef9203b3c19d2b583c5552fe3ff7e1deaa4bc7cce8bebf2db9b62472c992a79"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/action/help/materialiconstwotone/24px.svg",
+            "sha": "ce4fc71e5e1650c91a4fdf5d35be9c5124eaa87d",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/action/help/materialiconstwotone/24px.svg",
+            "file_sha256": "a1c69f854eff99c3ad4ce508ff8b14cbac1f34d48c5bd407d1daff362cb8c19b"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/action/lock/materialicons/24px.svg",
+            "sha": "8fd44189dacb054f917dc063737989fa01d85e96",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/action/lock/materialicons/24px.svg",
+            "file_sha256": "33b9bc04d9e69c5f4eb8ea5d49b240c4fdc1da973c7571235cbca1fa6f80394d"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/action/lock/materialiconssharp/24px.svg",
+            "sha": "9440607fd943bf49032d3db77325edaee32d2a54",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/action/lock/materialiconssharp/24px.svg",
+            "file_sha256": "a0b3dfaa931c7bf96b016fcd7956e5040a7534160f6efc50ff42d0025ca78594"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/action/lock/materialiconsoutlined/24px.svg",
+            "sha": "fb2a3413809ac88d49e80437d8096f04905b025e",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/action/lock/materialiconsoutlined/24px.svg",
+            "file_sha256": "befa5bc9f2b296dece0f0c716226cdbfbfbd9ff2d25a61d6077dfe9581452124"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/action/lock/materialiconsround/24px.svg",
+            "sha": "41e5edf5edf040485a6f0836c203b2070bdbb0d4",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/action/lock/materialiconsround/24px.svg",
+            "file_sha256": "e378397f983cb00f594c242639fded5d2ffed7df39ec4d2453cb7468d80c3c14"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/action/lock/materialiconstwotone/24px.svg",
+            "sha": "037298e39877072f84855b591df907430aa7be09",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/action/lock/materialiconstwotone/24px.svg",
+            "file_sha256": "a1ce5d9a789f17380dbd18f596cf5a9617e5a4cf2f426cc7f64c1884fc2485cf"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/toggle/star/materialicons/24px.svg",
+            "sha": "a2d6ba1bda79f627b08ae13e39155ef9e11c10f4",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/toggle/star/materialicons/24px.svg",
+            "file_sha256": "b476baf36b66c81802396e090b842d7a84269f1f8aff197af6862ec890441c75"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/toggle/star/materialiconssharp/24px.svg",
+            "sha": "fbbd1f094a5d90b430bec19547c3a4b09a04de43",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/toggle/star/materialiconssharp/24px.svg",
+            "file_sha256": "c1f02dd5206431eca9ada706f7e857f7d10b0d20f90abf84bb3ad6dc2da1e91d"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/toggle/star/materialiconsoutlined/24px.svg",
+            "sha": "fbbd1f094a5d90b430bec19547c3a4b09a04de43",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/toggle/star/materialiconsoutlined/24px.svg",
+            "file_sha256": "c1f02dd5206431eca9ada706f7e857f7d10b0d20f90abf84bb3ad6dc2da1e91d"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/toggle/star/materialiconsround/24px.svg",
+            "sha": "22be80958383fdc432cceaf48fc7d670337786f7",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/toggle/star/materialiconsround/24px.svg",
+            "file_sha256": "4a884ff8eaebe7bafd7a911447e6a1057028cc355183d5fdde6d56e57bee7b8a"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/toggle/star/materialiconstwotone/24px.svg",
+            "sha": "01de888cac86db8a6b68fe87b04fe5cde6269f54",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/toggle/star/materialiconstwotone/24px.svg",
+            "file_sha256": "b5b08713035009babed96743ffdbf429acc4408d8f7f8eff2f55d4c38b1c4512"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/toggle/star_border/materialicons/24px.svg",
+            "sha": "eae074f2fa7e6b9fb31c60ed7580b3caa96473fd",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/toggle/star_border/materialicons/24px.svg",
+            "file_sha256": "e963c6216056acb1579d6a0f6121791ed9254dc25a3cd621ff5bf5bfab0d315c"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/toggle/star_border/materialiconssharp/24px.svg",
+            "sha": "ddf1868ae0d196bb1c4aaaf16a20ce32d596819c",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/toggle/star_border/materialiconssharp/24px.svg",
+            "file_sha256": "09df6ad9485ea3d9934e89d2de29ec91a614c5913ab9eb1133cb29d6315ee401"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/toggle/star_border/materialiconsoutlined/24px.svg",
+            "sha": "ddf1868ae0d196bb1c4aaaf16a20ce32d596819c",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/toggle/star_border/materialiconsoutlined/24px.svg",
+            "file_sha256": "09df6ad9485ea3d9934e89d2de29ec91a614c5913ab9eb1133cb29d6315ee401"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/toggle/star_border/materialiconsround/24px.svg",
+            "sha": "799f3658fa8c8cee50997701043597713a05da38",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/toggle/star_border/materialiconsround/24px.svg",
+            "file_sha256": "582fabe2152e50fa819c23351797ab40e07c823b10267216e50d9aee0aae24a7"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/toggle/star_border/materialiconstwotone/24px.svg",
+            "sha": "ddf1868ae0d196bb1c4aaaf16a20ce32d596819c",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/toggle/star_border/materialiconstwotone/24px.svg",
+            "file_sha256": "09df6ad9485ea3d9934e89d2de29ec91a614c5913ab9eb1133cb29d6315ee401"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/editor/bar_chart/materialicons/24px.svg",
+            "sha": "a5feeb9ae293d830c9c3ed73b81bcf541876a542",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/editor/bar_chart/materialicons/24px.svg",
+            "file_sha256": "5abe3390a29d11d9a3e2e212224d5196272a9072ae8bb76c963bf18fee4d5fe1"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/editor/bar_chart/materialiconssharp/24px.svg",
+            "sha": "a5feeb9ae293d830c9c3ed73b81bcf541876a542",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/editor/bar_chart/materialiconssharp/24px.svg",
+            "file_sha256": "5abe3390a29d11d9a3e2e212224d5196272a9072ae8bb76c963bf18fee4d5fe1"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/editor/bar_chart/materialiconsoutlined/24px.svg",
+            "sha": "a5feeb9ae293d830c9c3ed73b81bcf541876a542",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/editor/bar_chart/materialiconsoutlined/24px.svg",
+            "file_sha256": "5abe3390a29d11d9a3e2e212224d5196272a9072ae8bb76c963bf18fee4d5fe1"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/editor/bar_chart/materialiconsround/24px.svg",
+            "sha": "40fb59323787509b8c5640b7f011bc64f24040eb",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/editor/bar_chart/materialiconsround/24px.svg",
+            "file_sha256": "c2ca146ccc5c15ed2bd51bbbeece8661750a0265fdd4e73b1e366e9eb418bae6"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/editor/bar_chart/materialiconstwotone/24px.svg",
+            "sha": "a5feeb9ae293d830c9c3ed73b81bcf541876a542",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/editor/bar_chart/materialiconstwotone/24px.svg",
+            "file_sha256": "5abe3390a29d11d9a3e2e212224d5196272a9072ae8bb76c963bf18fee4d5fe1"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/action/assessment/materialicons/24px.svg",
+            "sha": "68dc07849325053b959d0c620d5b70accbe1ff12",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/action/assessment/materialicons/24px.svg",
+            "file_sha256": "818e0c78c0b1468f1c26f15f9b800c9aca8ddc6c7e9e13ad4145735e479b15bf"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/editor/insert_chart/materialicons/24px.svg",
+            "sha": "68dc07849325053b959d0c620d5b70accbe1ff12",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/editor/insert_chart/materialicons/24px.svg",
+            "file_sha256": "818e0c78c0b1468f1c26f15f9b800c9aca8ddc6c7e9e13ad4145735e479b15bf"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/editor/insert_chart_outlined/materialicons/24px.svg",
+            "sha": "f32c44fc67bc50fbded3604da7e6dc0dfa097c75",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/editor/insert_chart_outlined/materialicons/24px.svg",
+            "file_sha256": "d7dcec25d9bb4a26bd916baf4fba14b392f3eb7a1dc582a54b82aeb9ba8b7c05"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "src/social/emoji_events/materialicons/24px.svg",
+            "sha": "8ff9769678a8a0051b560bda33337fa610799085",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/social/emoji_events/materialicons/24px.svg",
+            "file_sha256": "2490158f340bf27790404ed60f49bffc2dd549ddab01d6bf21c43dbb76d81a5b"
+          },
+          {
+            "repository": "feathericons/feather",
+            "ref": "v4.29.2",
+            "path": "icons/star.svg",
+            "sha": "a64c645ecf005daf3ecdd40851de0829e865a0f4",
+            "display_url": "https://github.com/feathericons/feather/blob/v4.29.2/icons/star.svg",
+            "file_sha256": "270f826c022a34610f8ce0d608503ecadfe8b6e5a873ee06006a9838e3a512e5"
+          },
+          {
+            "repository": "feathericons/feather",
+            "ref": "v4.29.2",
+            "path": "icons/bar-chart-2.svg",
+            "sha": "0ba7ab28171ceea6357cb0725297cfad7f56f4e4",
+            "display_url": "https://github.com/feathericons/feather/blob/v4.29.2/icons/bar-chart-2.svg",
+            "file_sha256": "2cb18ce3a2eadcf27affa79565467e5174674b9e523caf264eed2bcbf2e36429"
+          },
+          {
+            "repository": "feathericons/feather",
+            "ref": "v4.29.2",
+            "path": "icons/help-circle.svg",
+            "sha": "430806c04426e7b067e6dabf33e5d157b33fdbe4",
+            "display_url": "https://github.com/feathericons/feather/blob/v4.29.2/icons/help-circle.svg",
+            "file_sha256": "0fe14a3e1e00e2941c1d57189fd1514a7ce171b5520f8671148fb89152248703"
+          },
+          {
+            "repository": "feathericons/feather",
+            "ref": "v4.29.2",
+            "path": "icons/lock.svg",
+            "sha": "ffe8665af93947458409d8df0c51875cb89e6d76",
+            "display_url": "https://github.com/feathericons/feather/blob/v4.29.2/icons/lock.svg",
+            "file_sha256": "ab5282d46ac4f40654e5bc56cfca5df0a92eaa48f0671a719cc9aa7f241a5e38"
+          },
+          {
+            "repository": "feathericons/feather",
+            "ref": "v4.29.2",
+            "path": "icons/x.svg",
+            "sha": "d9213159926b1696e7b1e98ceb8f940ee58a0060",
+            "display_url": "https://github.com/feathericons/feather/blob/v4.29.2/icons/x.svg",
+            "file_sha256": "9d855cf8aab176e80a0448bee43c56338d28c59ec91637ce034cced006e282a2"
+          },
+          {
+            "repository": "Templarian/MaterialDesign",
+            "ref": "2424e748e0cc63ab7b9c095a099b9fe239b737c0",
+            "path": "svg/crown.svg",
+            "sha": "d6dc34078c6b56b38f3c00d3a9387b66b90ab80a",
+            "display_url": "https://github.com/Templarian/MaterialDesign/blob/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/crown.svg",
+            "file_sha256": "54b5c7a80fe80b22efa80d3a4d9096b3ed4860ac73232ab8b402bfed4cce7719"
+          },
+          {
+            "repository": "Templarian/MaterialDesign",
+            "ref": "2424e748e0cc63ab7b9c095a099b9fe239b737c0",
+            "path": "svg/lock.svg",
+            "sha": "c57e1093ffc4ea07418343570407315f5925c196",
+            "display_url": "https://github.com/Templarian/MaterialDesign/blob/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/lock.svg",
+            "file_sha256": "a129183f1505149f480e9097f9e916eccbde36cd3c025fb6f9ad09644a1d6548"
+          },
+          {
+            "repository": "Templarian/MaterialDesign",
+            "ref": "2424e748e0cc63ab7b9c095a099b9fe239b737c0",
+            "path": "svg/help-circle.svg",
+            "sha": "7aa4180b053f3324f127baf52e0a6dbaf7dfd99e",
+            "display_url": "https://github.com/Templarian/MaterialDesign/blob/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/help-circle.svg",
+            "file_sha256": "19138898ecbd83c33571dad908b55277b822ea9371a2d47d7e643f5e139b2f3b"
+          },
+          {
+            "repository": "Templarian/MaterialDesign",
+            "ref": "2424e748e0cc63ab7b9c095a099b9fe239b737c0",
+            "path": "svg/arrow-left.svg",
+            "sha": "4c380fb17cd1d40fd386e1177052f37d25390f27",
+            "display_url": "https://github.com/Templarian/MaterialDesign/blob/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/arrow-left.svg",
+            "file_sha256": "5799133c32979c5da4f13a2cf301d5ac17a093dfc25b2f5c2ee5cd3c9cb52e4e"
+          },
+          {
+            "repository": "lucide-icons/lucide",
+            "ref": "149eba0aea48178a5ab1efe2c701de1da94f4be8",
+            "path": "icons/crown.svg",
+            "sha": "2e857c309594cda87bd152fb480c0cb9da348016",
+            "display_url": "https://github.com/lucide-icons/lucide/blob/main/icons/crown.svg",
+            "file_sha256": "544c1b6181749ae4b4c98861a5a6ed1242940239cda97cc13c74e84a03fd68c0"
+          }
+        ],
+        "historical_references": [
+          {
+            "repository": "google/material-design-icons",
+            "ref": "3.0.0",
+            "path": "navigation/svg/production/ic_arrow_back_24px.svg",
+            "sha": "00d44bf5489d2fb9e768ced353d53cc1a1900801",
+            "display_url": "https://github.com/google/material-design-icons/blob/3.0.0/navigation/svg/production/ic_arrow_back_24px.svg",
+            "file_sha256": "ad23ffb6d1c3708a262427c1e2241806d32d41246c248c79197ced6a5f091388"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "3.0.0",
+            "path": "navigation/svg/production/ic_menu_24px.svg",
+            "sha": "ae7c36cbfe01a0f74a21ba747bb5bf71b4c4b545",
+            "display_url": "https://github.com/google/material-design-icons/blob/3.0.0/navigation/svg/production/ic_menu_24px.svg",
+            "file_sha256": "caa8cc99e1be32ab478ebbe12f4515de429a57573bd718a80ffad6d37307368b"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "3.0.1",
+            "path": "navigation/svg/production/ic_arrow_back_24px.svg",
+            "sha": "00d44bf5489d2fb9e768ced353d53cc1a1900801",
+            "display_url": "https://github.com/google/material-design-icons/blob/3.0.1/navigation/svg/production/ic_arrow_back_24px.svg",
+            "file_sha256": "ad23ffb6d1c3708a262427c1e2241806d32d41246c248c79197ced6a5f091388"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "3.0.1",
+            "path": "navigation/svg/production/ic_menu_24px.svg",
+            "sha": "ae7c36cbfe01a0f74a21ba747bb5bf71b4c4b545",
+            "display_url": "https://github.com/google/material-design-icons/blob/3.0.1/navigation/svg/production/ic_menu_24px.svg",
+            "file_sha256": "caa8cc99e1be32ab478ebbe12f4515de429a57573bd718a80ffad6d37307368b"
+          }
+        ],
+        "license_evidence": [
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "LICENSE",
+            "sha": "7a4a3ea2424c09fbe48d455aed1eaa94d9124835",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/LICENSE",
+            "file_sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd"
+          },
+          {
+            "repository": "google/material-design-icons",
+            "ref": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+            "path": "README.md",
+            "sha": "724f231e9d7ace1b480fc28f16e256bb1ab12520",
+            "display_url": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/README.md",
+            "file_sha256": "e1ab9d093fa612bd83a1043717ac150d636354c444792893dba2119f22a212c3"
+          },
+          {
+            "repository": "feathericons/feather",
+            "ref": "v4.29.2",
+            "path": "LICENSE",
+            "sha": "1f4f4336baff1185dc78ae9e78cac46628dcc869",
+            "display_url": "https://github.com/feathericons/feather/blob/v4.29.2/LICENSE",
+            "file_sha256": "308028e93fcf84972523cdf6e616f73168546b4953895f516d01287f16fe7bee"
+          }
+        ],
+        "negative_result_limit": "No exact identity in the inspected candidate families. This is not proof that no matching licensed source exists elsewhere; curves checked separately in prose."
+      }
+    }
+  ]
+}

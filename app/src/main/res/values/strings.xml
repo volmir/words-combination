@@ -34,6 +34,8 @@
     <string name="about_definitions_license">Словарные данные и лексические материалы распространяются на применимой основе по Creative Commons «С указанием авторства — С сохранением условий» 4.0 Международная (CC BY-SA 4.0). 11 собственных загадок T4 включены в отдельный JSON и распространяются по CC0-1.0. Толкования Викисловаря не поставляются.\nhttps://creativecommons.org/licenses/by-sa/4.0/</string>
     <string name="about_definitions_changes">Обработка: отбор слов, нормализация ё→е, выделение категорий и форм слов. Словарные толкования и литературные примеры исключены. Буквенные подсказки открывают позиции шаблона ответа.</string>
     <string name="about_definitions_history">Для каждого слова сохранён адрес исходной статьи. История статьи содержит сведения об авторах. Полный список адресов включён в приложение вместе со словарём.</string>
+    <string name="about_graphics_heading">Графика</string>
+    <string name="about_graphics_sources">Векторные значки — Google Material Icons и Material Symbols, Apache-2.0 (Copyright Google LLC). Растровая иконка создана владельцем с Google AI Studio и передана под CC0-1.0 в пределах принадлежащих ему прав. Полные условия и сведения об изменениях включены в THIRD_PARTY_NOTICES.txt и Apache-2.0.txt в составе приложения.</string>
     <string name="about_code_heading">Программный код</string>
     <string name="about_code_sources">Программный код проекта «Составь слова» распространяется по лицензии MIT. Полный текст лицензии — в файле LICENSE в исходном репозитории и в составе APK.</string>
     <string name="game_found_summary">Найденные слова · %1$d из %2$d</string>

@@ -1,0 +1,2267 @@
+{
+  "schema": "legal-graphics-packages-v1",
+  "task": "LEGAL-GRAPHICS-02",
+  "working_tree_note": "Artifacts built from modified working tree above recorded HEAD, not a clean release tag",
+  "baseline": {
+    "head": "1b0becffeec470ef22c9d39b13bf2f4911a3fb79",
+    "branch": "main",
+    "git_status": "?? docs/GRAPHICS_PROVENANCE_AUDIT.md\n?? docs/LEGAL_RELEASE_AUDIT.md\n?? docs/audits/XML_ICON_PROVENANCE.json\n",
+    "files": [
+      {
+        "path": "app/src/debug/AndroidManifest.xml",
+        "bytes": 256,
+        "sha256": "95203fb12c0675ad66f5f02bbf66bdebbc350d7c395d2aaa1a1b12641d35d94a"
+      },
+      {
+        "path": "app/src/main/AndroidManifest.xml",
+        "bytes": 831,
+        "sha256": "65c19a39e074309685b7c4174aec052526c44a3891ffe1d3a393e23e5c556e2b"
+      },
+      {
+        "path": "app/src/main/res/drawable/ic_arrow_back.xml",
+        "bytes": 292,
+        "sha256": "e77bd486a881eb13d89cd932580695995188c933f5a6b340f2ac13f333f29914"
+      },
+      {
+        "path": "app/src/main/res/drawable/ic_close.xml",
+        "bytes": 363,
+        "sha256": "befb8e9999248a4753ac23a545a902bd78ea795e96639fe8eebd5ccc3b07a42e"
+      },
+      {
+        "path": "app/src/main/res/drawable/ic_crown.xml",
+        "bytes": 311,
+        "sha256": "c843d97bef3b8dcf1794a63011a2ab504b8005856a8778d8a3b98cc5ea80cb92"
+      },
+      {
+        "path": "app/src/main/res/drawable/ic_help.xml",
+        "bytes": 479,
+        "sha256": "daee62f4123245acd5090df976b2ae3d3a9149dc22a67012733dafdf35da5b59"
+      },
+      {
+        "path": "app/src/main/res/drawable/ic_launcher_background.xml",
+        "bytes": 153,
+        "sha256": "990dc77d5c0aaab452bf40a35d6846fcbdacb82f239ef19bc7a4f73f31ca919c"
+      },
+      {
+        "path": "app/src/main/res/drawable/ic_launcher_foreground.xml",
+        "bytes": 292,
+        "sha256": "f8f5f88447930d8072f5000b76e35f8761128e7337e99bb3493cb40e0fc35372"
+      },
+      {
+        "path": "app/src/main/res/drawable/ic_launcher_monogram_art.png",
+        "bytes": 28656,
+        "sha256": "7e6a50eea320bb4ba73593ef20289092c7f1fea4a88b3630f991466eede7160e"
+      },
+      {
+        "path": "app/src/main/res/drawable/ic_lock.xml",
+        "bytes": 399,
+        "sha256": "21112ba985f447fa34bbde3d05f828eaa5e689dbba38116b0d2970a4930b8b9b"
+      },
+      {
+        "path": "app/src/main/res/drawable/ic_menu.xml",
+        "bytes": 293,
+        "sha256": "020f03900ae32fdffc8433c3552297c98e384f113770835e4fb835b2f1847497"
+      },
+      {
+        "path": "app/src/main/res/drawable/ic_star_filled.xml",
+        "bytes": 323,
+        "sha256": "e6b15505f6d9ea9fb2a6b340b10b9dbd3ae1a8eae3a2a37561e8167f95dbae0a"
+      },
+      {
+        "path": "app/src/main/res/drawable/ic_star_outline.xml",
+        "bytes": 456,
+        "sha256": "a1312028e049d2ae79b8305073b5d4728dfcdea78a8cb11509ca8150dbbdf8c8"
+      },
+      {
+        "path": "app/src/main/res/drawable/ic_statistics.xml",
+        "bytes": 283,
+        "sha256": "288eac3d7151e3df6e696f20bf210cca934656e339b0b5d9c927cb71e9e45b80"
+      },
+      {
+        "path": "app/src/main/res/drawable/words_app_icon_1793804687264.jpg",
+        "bytes": 437466,
+        "sha256": "4713d12eb988b96ed6624496e00c70ad7ba31576642687f86fa3ba40dd34f0c5"
+      },
+      {
+        "path": "app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+        "bytes": 273,
+        "sha256": "1c832bf194d8eecd439a92bcced0df144c9f566b934b3d7865e983d8ee8dbdeb"
+      },
+      {
+        "path": "app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+        "bytes": 273,
+        "sha256": "1c832bf194d8eecd439a92bcced0df144c9f566b934b3d7865e983d8ee8dbdeb"
+      },
+      {
+        "path": "app/src/main/res/mipmap-hdpi/ic_launcher.png",
+        "bytes": 2412,
+        "sha256": "f7d1006553a1010a4ddbb63455f33f708c6399f0ccffe7e843b7be06e845ff90"
+      },
+      {
+        "path": "app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+        "bytes": 3143,
+        "sha256": "5fe1ecf1b95a22b51c394f2ab66794ede0802785ad26f51cd0b3e5a93297ff0b"
+      },
+      {
+        "path": "app/src/main/res/mipmap-mdpi/ic_launcher.png",
+        "bytes": 1582,
+        "sha256": "dcc39ed8010c03d02e70f021317b357025dc9e0f89cd1adb9cb8deb93a0d8630"
+      },
+      {
+        "path": "app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+        "bytes": 2102,
+        "sha256": "7b73416c1c381c45e15b93782606aa475cf7ddf1c96df293e7aa66b72829a886"
+      },
+      {
+        "path": "app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+        "bytes": 3279,
+        "sha256": "91f2d0ff04c7eb6a03c434e6f32324f67e94e3615cafc74ac0f872393cd4d610"
+      },
+      {
+        "path": "app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+        "bytes": 4359,
+        "sha256": "5e25e1189506d72a176b2f15663b427f46b68747929b4964714c163b3eae068c"
+      },
+      {
+        "path": "app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+        "bytes": 5144,
+        "sha256": "390eb0b1719ee5ca97cbe22bb803b5399d1dfd35ee04e41c69a40bc84050e0c2"
+      },
+      {
+        "path": "app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+        "bytes": 7009,
+        "sha256": "1ee3ca6da61e11604aa8f6d9d781c70f731115cbf3b385e38962bbb07936228b"
+      },
+      {
+        "path": "app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+        "bytes": 7036,
+        "sha256": "cf6e88861f98e41737853b7ba9cab52a625bfd6b8dc2d138172548279a7a2f43"
+      },
+      {
+        "path": "app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+        "bytes": 9659,
+        "sha256": "73e5ffc79316bec24b269c1f3b0977933caf118545f3ca71d04586c858e2aa72"
+      },
+      {
+        "path": "app/src/main/res/values/strings.xml",
+        "bytes": 25650,
+        "sha256": "d588e5c9820fc1f1921b4ed3b534df5a95f95acc9814a2de0bb5417dd7f60f02"
+      },
+      {
+        "path": "app/src/main/res/values/themes.xml",
+        "bytes": 533,
+        "sha256": "1844e79945870ca31de64a0c72c0f979051714a763a8d1d3b3ca99ad4365d9d0"
+      },
+      {
+        "path": "data/campaign.json",
+        "bytes": 9651,
+        "sha256": "1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e"
+      },
+      {
+        "path": "data/owned_riddles.json",
+        "bytes": 1666,
+        "sha256": "05e3c05099fe38648834a6b9f70f458cf51238edc7bacdc85d8af3932ad11f63"
+      }
+    ],
+    "existing_untracked": {
+      "docs/LEGAL_RELEASE_AUDIT.md": "8eb5a1d3360c2ba99296bcf9d09ca40bc27abd58c95f232c090ea77c3c2c65ea",
+      "docs/GRAPHICS_PROVENANCE_AUDIT.md": "9ff306ef74f1c3c870fa3501bc23b9cdccd1827a0498d0256a6c8b01671e1ff0",
+      "docs/audits/XML_ICON_PROVENANCE.json": "01baade734c47b2217ce1303bcc0fbc3ede6f8d7667f25b2cab9f220434f7d28"
+    }
+  },
+  "before_packages": [
+    {
+      "path": "app/build/outputs/apk/debug/app-debug.apk",
+      "sha256": "23bf025d2ca57c3c9b2208062e3880683689b3e8ae6bf1d32dd02ae58fafe12d",
+      "jpg_bytes": [
+        "res/drawable/words_app_icon_1793804687264.jpg"
+      ],
+      "jpg_names": [
+        "res/drawable/words_app_icon_1793804687264.jpg"
+      ],
+      "jpg_name_in_resources_pb": []
+    },
+    {
+      "path": "app/build/outputs/apk/release/app-release-unsigned.apk",
+      "sha256": "3cba72efe4cb5bdcd7827bbe5073548cd75c62ff90e2114d1dbb0c5a08f0563c",
+      "jpg_bytes": [],
+      "jpg_names": [],
+      "jpg_name_in_resources_pb": []
+    },
+    {
+      "path": "app/build/outputs/bundle/release/app-release.aab",
+      "sha256": "3af650df4b5f9bcd65bd1278e67589943954fea4b003543561b117e6360ecd0f",
+      "jpg_bytes": [],
+      "jpg_names": [],
+      "jpg_name_in_resources_pb": [
+        "base/resources.pb"
+      ]
+    }
+  ],
+  "packages": [
+    {
+      "apk": "app/build/outputs/apk/debug/app-debug.apk",
+      "sha256": "1941cb6b29827c09dc91dbc02ffa8ef441eb5118cb81479b360bba543cbe1f7d",
+      "profile": "debug",
+      "raster_files": [
+        {
+          "path": "res/drawable-hdpi-v4/ic_call_answer.png",
+          "bytes": 472,
+          "sha256": "5c80d88a7b82ef5833255bf70ff1c26c3efb2a92ae90cac222f3200f59e0b1ea",
+          "resource": "drawable/ic_call_answer",
+          "pixels": [
+            36,
+            36
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/ic_call_answer.png",
+              "source_sha256": "f78814a52708c31d8ec156d33d39a80e5cb7a760b6b59aced1e50be2271bb1d2",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/ic_call_answer_low.png",
+              "source_sha256": "f78814a52708c31d8ec156d33d39a80e5cb7a760b6b59aced1e50be2271bb1d2",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-hdpi-v4/ic_call_answer_low.png",
+          "bytes": 472,
+          "sha256": "5c80d88a7b82ef5833255bf70ff1c26c3efb2a92ae90cac222f3200f59e0b1ea",
+          "resource": "drawable/ic_call_answer_low",
+          "pixels": [
+            36,
+            36
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/ic_call_answer.png",
+              "source_sha256": "f78814a52708c31d8ec156d33d39a80e5cb7a760b6b59aced1e50be2271bb1d2",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/ic_call_answer_low.png",
+              "source_sha256": "f78814a52708c31d8ec156d33d39a80e5cb7a760b6b59aced1e50be2271bb1d2",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-hdpi-v4/ic_call_answer_video.png",
+          "bytes": 254,
+          "sha256": "6adcfc9dd1e1b82b985d223fc8a01c8e8f0dd3b9051d38062674b2380af79a50",
+          "resource": "drawable/ic_call_answer_video",
+          "pixels": [
+            36,
+            36
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "42d6dee3dcf57e6f228cd26cbd55c242f579583296c1dbad16b298823f847d43",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "42d6dee3dcf57e6f228cd26cbd55c242f579583296c1dbad16b298823f847d43",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-hdpi-v4/ic_call_answer_video_low.png",
+          "bytes": 254,
+          "sha256": "6adcfc9dd1e1b82b985d223fc8a01c8e8f0dd3b9051d38062674b2380af79a50",
+          "resource": "drawable/ic_call_answer_video_low",
+          "pixels": [
+            36,
+            36
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "42d6dee3dcf57e6f228cd26cbd55c242f579583296c1dbad16b298823f847d43",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "42d6dee3dcf57e6f228cd26cbd55c242f579583296c1dbad16b298823f847d43",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-hdpi-v4/ic_call_decline.png",
+          "bytes": 375,
+          "sha256": "12ec9f9ad5fa3d7d897114af6c2297b66f31cb056e43daffbe80d23f6f66396d",
+          "resource": "drawable/ic_call_decline",
+          "pixels": [
+            36,
+            36
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/ic_call_decline.png",
+              "source_sha256": "5833057afdbc793a552fe336bcf567d481f21df81edacabfe969d665a3670326",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/ic_call_decline_low.png",
+              "source_sha256": "5833057afdbc793a552fe336bcf567d481f21df81edacabfe969d665a3670326",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-hdpi-v4/ic_call_decline_low.png",
+          "bytes": 375,
+          "sha256": "12ec9f9ad5fa3d7d897114af6c2297b66f31cb056e43daffbe80d23f6f66396d",
+          "resource": "drawable/ic_call_decline_low",
+          "pixels": [
+            36,
+            36
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/ic_call_decline.png",
+              "source_sha256": "5833057afdbc793a552fe336bcf567d481f21df81edacabfe969d665a3670326",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/ic_call_decline_low.png",
+              "source_sha256": "5833057afdbc793a552fe336bcf567d481f21df81edacabfe969d665a3670326",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-hdpi-v4/notification_bg_low_normal.9.png",
+          "bytes": 212,
+          "sha256": "21f0b55280be10b187ceff8edef4a5a7047683e6e9fcf47de410aa3839f41094",
+          "resource": "drawable/notification_bg_low_normal",
+          "pixels": [
+            12,
+            12
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/notification_bg_low_normal.9.png",
+              "source_sha256": "411e9d6397b6309ce4406125738d28df4f1177e68d968cb91457d1b0e2f626e2",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-hdpi-v4/notification_bg_low_pressed.9.png",
+          "bytes": 225,
+          "sha256": "42aee0b03883e94df5e543348a397d1302c1b8221895871a83b81899f5a9647b",
+          "resource": "drawable/notification_bg_low_pressed",
+          "pixels": [
+            12,
+            12
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/notification_bg_low_pressed.9.png",
+              "source_sha256": "1115b8c2c1fc0a2146bf6090ec8985273f5006a3e71a7eeeee9643ef1830f0bc",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-hdpi-v4/notification_bg_normal.9.png",
+          "bytes": 212,
+          "sha256": "0c6328c7b2420570a7ec38b3beb3bac9a29d895ac1ab7239315aba7266418593",
+          "resource": "drawable/notification_bg_normal",
+          "pixels": [
+            12,
+            12
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/notification_bg_normal.9.png",
+              "source_sha256": "d32ccdc822c8184e52ed2ee1808f6cff5592c7a4496cc32d60e927aa0d61bd77",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-hdpi-v4/notification_bg_normal_pressed.9.png",
+          "bytes": 225,
+          "sha256": "18b328d8017e677d5aad3dbd66bae356b5cac978c6f0670938ea648e51d0eb66",
+          "resource": "drawable/notification_bg_normal_pressed",
+          "pixels": [
+            12,
+            12
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/notification_bg_normal_pressed.9.png",
+              "source_sha256": "945f154bafd79223c8d62f86ad993c2fb8fe7c5f19b0f265f73e0746e28c007d",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-hdpi-v4/notification_oversize_large_icon_bg.png",
+          "bytes": 909,
+          "sha256": "aa00088d0d9fd97bd92ed9ffd29b54bb69a48a984aa73448ce553fb9d812be41",
+          "resource": "drawable/notification_oversize_large_icon_bg",
+          "pixels": [
+            860,
+            860
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/notification_oversize_large_icon_bg.png",
+              "source_sha256": "d199d02d14b3bfb44b6d1e1bb60841182bd0f48fdfbe6cd4b0a9933d29bdc86f",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-hdpi-v4/notify_panel_notification_icon_bg.png",
+          "bytes": 107,
+          "sha256": "8430ec003e003f3f2ba2f78d48fd150e25407667e530e82e87a7d4841c0fd676",
+          "resource": "drawable/notify_panel_notification_icon_bg",
+          "pixels": [
+            14,
+            14
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/notify_panel_notification_icon_bg.png",
+              "source_sha256": "8430ec003e003f3f2ba2f78d48fd150e25407667e530e82e87a7d4841c0fd676",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/notify_panel_notification_icon_bg.png",
+              "source_sha256": "8430ec003e003f3f2ba2f78d48fd150e25407667e530e82e87a7d4841c0fd676",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-hdpi-v4/notify_panel_notification_icon_bg.png",
+              "source_sha256": "8430ec003e003f3f2ba2f78d48fd150e25407667e530e82e87a7d4841c0fd676",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-ldpi-v4/ic_call_answer.png",
+          "bytes": 270,
+          "sha256": "6d34a8bb29be26e343781603588506f33bd1b93732a1c1bc9fd84678aa36b178",
+          "resource": "drawable/ic_call_answer",
+          "pixels": [
+            18,
+            18
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-ldpi-v4/ic_call_answer.png",
+              "source_sha256": "e2f5686e0d78b0376ded0e2198e80c9b68c787176d22850029e16d91ffb9c103",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-ldpi-v4/ic_call_answer_low.png",
+              "source_sha256": "e2f5686e0d78b0376ded0e2198e80c9b68c787176d22850029e16d91ffb9c103",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-ldpi-v4/ic_call_answer_low.png",
+          "bytes": 270,
+          "sha256": "6d34a8bb29be26e343781603588506f33bd1b93732a1c1bc9fd84678aa36b178",
+          "resource": "drawable/ic_call_answer_low",
+          "pixels": [
+            18,
+            18
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-ldpi-v4/ic_call_answer.png",
+              "source_sha256": "e2f5686e0d78b0376ded0e2198e80c9b68c787176d22850029e16d91ffb9c103",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-ldpi-v4/ic_call_answer_low.png",
+              "source_sha256": "e2f5686e0d78b0376ded0e2198e80c9b68c787176d22850029e16d91ffb9c103",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-ldpi-v4/ic_call_answer_video.png",
+          "bytes": 199,
+          "sha256": "66356f564f051a568e25071f60da312c418309f9129773aceb2246773458681c",
+          "resource": "drawable/ic_call_answer_video",
+          "pixels": [
+            18,
+            18
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-ldpi-v4/ic_call_answer_video.png",
+              "source_sha256": "049f251a4c19d8f3b4bc368014ea88e80196b8d9c270931af774ddcc6539ca36",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-ldpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "049f251a4c19d8f3b4bc368014ea88e80196b8d9c270931af774ddcc6539ca36",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-ldpi-v4/ic_call_answer_video_low.png",
+          "bytes": 199,
+          "sha256": "66356f564f051a568e25071f60da312c418309f9129773aceb2246773458681c",
+          "resource": "drawable/ic_call_answer_video_low",
+          "pixels": [
+            18,
+            18
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-ldpi-v4/ic_call_answer_video.png",
+              "source_sha256": "049f251a4c19d8f3b4bc368014ea88e80196b8d9c270931af774ddcc6539ca36",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-ldpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "049f251a4c19d8f3b4bc368014ea88e80196b8d9c270931af774ddcc6539ca36",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-ldpi-v4/ic_call_decline.png",
+          "bytes": 201,
+          "sha256": "a18cdaaf3742b1a3d4f484fa15d00fa34afb21495884301aafa3213338661ed6",
+          "resource": "drawable/ic_call_decline",
+          "pixels": [
+            18,
+            18
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-ldpi-v4/ic_call_decline.png",
+              "source_sha256": "5ed3d9a706194e175f2d38a72139e04908835cddb0d4a22f565e623d7aca9d6b",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-ldpi-v4/ic_call_decline_low.png",
+              "source_sha256": "5ed3d9a706194e175f2d38a72139e04908835cddb0d4a22f565e623d7aca9d6b",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-ldpi-v4/ic_call_decline_low.png",
+          "bytes": 201,
+          "sha256": "a18cdaaf3742b1a3d4f484fa15d00fa34afb21495884301aafa3213338661ed6",
+          "resource": "drawable/ic_call_decline_low",
+          "pixels": [
+            18,
+            18
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-ldpi-v4/ic_call_decline.png",
+              "source_sha256": "5ed3d9a706194e175f2d38a72139e04908835cddb0d4a22f565e623d7aca9d6b",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-ldpi-v4/ic_call_decline_low.png",
+              "source_sha256": "5ed3d9a706194e175f2d38a72139e04908835cddb0d4a22f565e623d7aca9d6b",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-mdpi-v4/ic_call_answer.png",
+          "bytes": 317,
+          "sha256": "f2ff62f473d8a5e00a8b6c81c15be9a0536471c3d5a81e37d04bc3356ea81ca0",
+          "resource": "drawable/ic_call_answer",
+          "pixels": [
+            24,
+            24
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer.png",
+              "source_sha256": "7d7ee7e4e683cfb8d74699bb82f2d1ce1d27890302df14d8c5ec881936d9946a",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_low.png",
+              "source_sha256": "7d7ee7e4e683cfb8d74699bb82f2d1ce1d27890302df14d8c5ec881936d9946a",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-mdpi-v4/ic_call_answer_low.png",
+          "bytes": 317,
+          "sha256": "f2ff62f473d8a5e00a8b6c81c15be9a0536471c3d5a81e37d04bc3356ea81ca0",
+          "resource": "drawable/ic_call_answer_low",
+          "pixels": [
+            24,
+            24
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer.png",
+              "source_sha256": "7d7ee7e4e683cfb8d74699bb82f2d1ce1d27890302df14d8c5ec881936d9946a",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_low.png",
+              "source_sha256": "7d7ee7e4e683cfb8d74699bb82f2d1ce1d27890302df14d8c5ec881936d9946a",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-mdpi-v4/ic_call_answer_video.png",
+          "bytes": 206,
+          "sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+          "resource": "drawable/ic_call_answer_video",
+          "pixels": [
+            24,
+            24
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-mdpi-v4/ic_call_answer_video_low.png",
+          "bytes": 206,
+          "sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+          "resource": "drawable/ic_call_answer_video_low",
+          "pixels": [
+            24,
+            24
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "6306048ba5f7eca43e7bdadeefa9412180508486fd543e02de93d2a013e223f0",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-mdpi-v4/ic_call_decline.png",
+          "bytes": 264,
+          "sha256": "7e87b3e0229126dc3c2bdaddcd8f330f3bb5f7613a05024c3cd6445dd161f788",
+          "resource": "drawable/ic_call_decline",
+          "pixels": [
+            24,
+            24
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_decline.png",
+              "source_sha256": "7e1e4d2b2babc7a96bd1f5dbb07f64bea81cd3b6543fb466cdecee9d73763193",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_decline_low.png",
+              "source_sha256": "7e1e4d2b2babc7a96bd1f5dbb07f64bea81cd3b6543fb466cdecee9d73763193",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-mdpi-v4/ic_call_decline_low.png",
+          "bytes": 264,
+          "sha256": "7e87b3e0229126dc3c2bdaddcd8f330f3bb5f7613a05024c3cd6445dd161f788",
+          "resource": "drawable/ic_call_decline_low",
+          "pixels": [
+            24,
+            24
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_decline.png",
+              "source_sha256": "7e1e4d2b2babc7a96bd1f5dbb07f64bea81cd3b6543fb466cdecee9d73763193",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/ic_call_decline_low.png",
+              "source_sha256": "7e1e4d2b2babc7a96bd1f5dbb07f64bea81cd3b6543fb466cdecee9d73763193",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-mdpi-v4/notification_bg_low_normal.9.png",
+          "bytes": 215,
+          "sha256": "2f7fbda0ba6e53e9a47e2fc0e24e32c447c613a5808c2d6285dc651e83a07ad7",
+          "resource": "drawable/notification_bg_low_normal",
+          "pixels": [
+            8,
+            8
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/notification_bg_low_normal.9.png",
+              "source_sha256": "5289724662b65219a99e55c5f3a07890106375b2f5a0a046bdde9fb3f820fe19",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-mdpi-v4/notification_bg_low_pressed.9.png",
+          "bytes": 223,
+          "sha256": "e17761ed280edd93d7141bd504b70f9e9e15a8652288d9e6333bf4ce964ef844",
+          "resource": "drawable/notification_bg_low_pressed",
+          "pixels": [
+            8,
+            8
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/notification_bg_low_pressed.9.png",
+              "source_sha256": "ef694f46431e10636673c0758d90d33d291814fd41a0d8f960f85f69a69052fb",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-mdpi-v4/notification_bg_normal.9.png",
+          "bytes": 215,
+          "sha256": "a8676a1793ac8310ffb12986232df66df092d29c242aeedc2b73556c010d38dc",
+          "resource": "drawable/notification_bg_normal",
+          "pixels": [
+            8,
+            8
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/notification_bg_normal.9.png",
+              "source_sha256": "c9bde6f6a6dde6ee8020bb78435d8b101519b9d98d22b901c65b916afa896be2",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-mdpi-v4/notification_bg_normal_pressed.9.png",
+          "bytes": 223,
+          "sha256": "99c14d6855b8be296d58017d3751b8dc849c47b6d1d80ab614ff9075080e461b",
+          "resource": "drawable/notification_bg_normal_pressed",
+          "pixels": [
+            8,
+            8
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/notification_bg_normal_pressed.9.png",
+              "source_sha256": "07e584044ea7f191f4ddbc147da6db4fb7bbe50b444eee23317bcfd0aacf0995",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-mdpi-v4/notify_panel_notification_icon_bg.png",
+          "bytes": 98,
+          "sha256": "0d773e62c756422313262846c787e58f67e0ee87e45e1ae9942002e816c4cb9e",
+          "resource": "drawable/notify_panel_notification_icon_bg",
+          "pixels": [
+            15,
+            15
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/notify_panel_notification_icon_bg.png",
+              "source_sha256": "0d773e62c756422313262846c787e58f67e0ee87e45e1ae9942002e816c4cb9e",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/notify_panel_notification_icon_bg.png",
+              "source_sha256": "0d773e62c756422313262846c787e58f67e0ee87e45e1ae9942002e816c4cb9e",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-mdpi-v4/notify_panel_notification_icon_bg.png",
+              "source_sha256": "0d773e62c756422313262846c787e58f67e0ee87e45e1ae9942002e816c4cb9e",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xhdpi-v4/ic_call_answer.png",
+          "bytes": 623,
+          "sha256": "e64c2e57627e24ec1ed37e67344c2bf31d1d6bdd2d8d715840c1edf0bd1425b6",
+          "resource": "drawable/ic_call_answer",
+          "pixels": [
+            48,
+            48
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/ic_call_answer.png",
+              "source_sha256": "083dd2bcea1b76015c3bf61e0fb4f93790cd8473af5da4d77e158d07f0306334",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/ic_call_answer_low.png",
+              "source_sha256": "083dd2bcea1b76015c3bf61e0fb4f93790cd8473af5da4d77e158d07f0306334",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xhdpi-v4/ic_call_answer_low.png",
+          "bytes": 623,
+          "sha256": "e64c2e57627e24ec1ed37e67344c2bf31d1d6bdd2d8d715840c1edf0bd1425b6",
+          "resource": "drawable/ic_call_answer_low",
+          "pixels": [
+            48,
+            48
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/ic_call_answer.png",
+              "source_sha256": "083dd2bcea1b76015c3bf61e0fb4f93790cd8473af5da4d77e158d07f0306334",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/ic_call_answer_low.png",
+              "source_sha256": "083dd2bcea1b76015c3bf61e0fb4f93790cd8473af5da4d77e158d07f0306334",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xhdpi-v4/ic_call_answer_video.png",
+          "bytes": 290,
+          "sha256": "5d02a81102644428ca639aec3df626eeb4a839a9ddc76fc2b158b04461d7f00f",
+          "resource": "drawable/ic_call_answer_video",
+          "pixels": [
+            48,
+            48
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "1a666fb271555d0aaf1553164d799cee3456e0ac838775822bea1a06d2db28b3",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "1a666fb271555d0aaf1553164d799cee3456e0ac838775822bea1a06d2db28b3",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xhdpi-v4/ic_call_answer_video_low.png",
+          "bytes": 290,
+          "sha256": "5d02a81102644428ca639aec3df626eeb4a839a9ddc76fc2b158b04461d7f00f",
+          "resource": "drawable/ic_call_answer_video_low",
+          "pixels": [
+            48,
+            48
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "1a666fb271555d0aaf1553164d799cee3456e0ac838775822bea1a06d2db28b3",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "1a666fb271555d0aaf1553164d799cee3456e0ac838775822bea1a06d2db28b3",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xhdpi-v4/ic_call_decline.png",
+          "bytes": 452,
+          "sha256": "9a9a30c305022a2f8e075d2ed7d33f5c7711bba8d0d0385511fdb62f89f208e3",
+          "resource": "drawable/ic_call_decline",
+          "pixels": [
+            48,
+            48
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/ic_call_decline.png",
+              "source_sha256": "ba891451a658a617045e32b0a8f7a039db1fac0ca11feb6137587a1c6887c1f3",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/ic_call_decline_low.png",
+              "source_sha256": "ba891451a658a617045e32b0a8f7a039db1fac0ca11feb6137587a1c6887c1f3",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xhdpi-v4/ic_call_decline_low.png",
+          "bytes": 452,
+          "sha256": "9a9a30c305022a2f8e075d2ed7d33f5c7711bba8d0d0385511fdb62f89f208e3",
+          "resource": "drawable/ic_call_decline_low",
+          "pixels": [
+            48,
+            48
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/ic_call_decline.png",
+              "source_sha256": "ba891451a658a617045e32b0a8f7a039db1fac0ca11feb6137587a1c6887c1f3",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/ic_call_decline_low.png",
+              "source_sha256": "ba891451a658a617045e32b0a8f7a039db1fac0ca11feb6137587a1c6887c1f3",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xhdpi-v4/notification_bg_low_normal.9.png",
+          "bytes": 221,
+          "sha256": "3e09afa21c45372c035598c017c8fb405a6d678e6cb84dc857581cb3b40e482d",
+          "resource": "drawable/notification_bg_low_normal",
+          "pixels": [
+            16,
+            16
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/notification_bg_low_normal.9.png",
+              "source_sha256": "e90cdc6d0335ba0cc74e2d49f4553eb83f85bfe1c3d5629fa7c25a54f27c73a6",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xhdpi-v4/notification_bg_low_pressed.9.png",
+          "bytes": 252,
+          "sha256": "20343222f9f79dd565c3a2248494d452e70820ac1c437173c38badd45f962afd",
+          "resource": "drawable/notification_bg_low_pressed",
+          "pixels": [
+            16,
+            16
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/notification_bg_low_pressed.9.png",
+              "source_sha256": "b6eda6610fbc02b04e18c24317b17e66468980a236962df017855b6b71fdbf33",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xhdpi-v4/notification_bg_normal.9.png",
+          "bytes": 221,
+          "sha256": "559bf783d765c02338e97952bdc9c6689c7ff99090b8c9813369118da8b080f0",
+          "resource": "drawable/notification_bg_normal",
+          "pixels": [
+            16,
+            16
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/notification_bg_normal.9.png",
+              "source_sha256": "e4b12f752d3ab198937fb61284477a3a97724ccd0ecb2a5b56c14555acf530e5",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xhdpi-v4/notification_bg_normal_pressed.9.png",
+          "bytes": 247,
+          "sha256": "d27af435101ca4cbec0c840bd30687918cd39eb83aab1487420855623a45998b",
+          "resource": "drawable/notification_bg_normal_pressed",
+          "pixels": [
+            16,
+            16
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/notification_bg_normal_pressed.9.png",
+              "source_sha256": "1210208ebd68c08932a1b66f5a1314b2bbb5fbb2e7dd1a5cc756eec7f0bc4204",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xhdpi-v4/notify_panel_notification_icon_bg.png",
+          "bytes": 138,
+          "sha256": "b44eeda34d7a529c2fe55719eb098fa29707caa91d18de06a7a775d6e6bcf973",
+          "resource": "drawable/notify_panel_notification_icon_bg",
+          "pixels": [
+            30,
+            30
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/notify_panel_notification_icon_bg.png",
+              "source_sha256": "b44eeda34d7a529c2fe55719eb098fa29707caa91d18de06a7a775d6e6bcf973",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/notify_panel_notification_icon_bg.png",
+              "source_sha256": "b44eeda34d7a529c2fe55719eb098fa29707caa91d18de06a7a775d6e6bcf973",
+              "verification": "exact_source_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xhdpi-v4/notify_panel_notification_icon_bg.png",
+              "source_sha256": "b44eeda34d7a529c2fe55719eb098fa29707caa91d18de06a7a775d6e6bcf973",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xxhdpi-v4/ic_call_answer.png",
+          "bytes": 884,
+          "sha256": "86763a30af2a934c7c13b123b36443d1d17918b71c6149bc6ee80115b872593d",
+          "resource": "drawable/ic_call_answer",
+          "pixels": [
+            72,
+            72
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxhdpi-v4/ic_call_answer.png",
+              "source_sha256": "dca0602388d739fd757afbd2143c51e830d8816d255ad6ad5f8e637b0cace562",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxhdpi-v4/ic_call_answer_low.png",
+              "source_sha256": "dca0602388d739fd757afbd2143c51e830d8816d255ad6ad5f8e637b0cace562",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xxhdpi-v4/ic_call_answer_low.png",
+          "bytes": 884,
+          "sha256": "86763a30af2a934c7c13b123b36443d1d17918b71c6149bc6ee80115b872593d",
+          "resource": "drawable/ic_call_answer_low",
+          "pixels": [
+            72,
+            72
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxhdpi-v4/ic_call_answer.png",
+              "source_sha256": "dca0602388d739fd757afbd2143c51e830d8816d255ad6ad5f8e637b0cace562",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxhdpi-v4/ic_call_answer_low.png",
+              "source_sha256": "dca0602388d739fd757afbd2143c51e830d8816d255ad6ad5f8e637b0cace562",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xxhdpi-v4/ic_call_answer_video.png",
+          "bytes": 384,
+          "sha256": "ca48f604262f2b4ef8b100c73130efe2ad33ef8c2a2c1b3516f24f51b7b04665",
+          "resource": "drawable/ic_call_answer_video",
+          "pixels": [
+            72,
+            72
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxhdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "7a34e03308654fd6d5ad9262593d22f1d5556b90d4994f83f1aeb3be3a9073e7",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxhdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "7a34e03308654fd6d5ad9262593d22f1d5556b90d4994f83f1aeb3be3a9073e7",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xxhdpi-v4/ic_call_answer_video_low.png",
+          "bytes": 384,
+          "sha256": "ca48f604262f2b4ef8b100c73130efe2ad33ef8c2a2c1b3516f24f51b7b04665",
+          "resource": "drawable/ic_call_answer_video_low",
+          "pixels": [
+            72,
+            72
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxhdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "7a34e03308654fd6d5ad9262593d22f1d5556b90d4994f83f1aeb3be3a9073e7",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxhdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "7a34e03308654fd6d5ad9262593d22f1d5556b90d4994f83f1aeb3be3a9073e7",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xxhdpi-v4/ic_call_decline.png",
+          "bytes": 628,
+          "sha256": "87adad32e0ec19c4e920420bf3a06c9f94f6128ed0d866a1891628aeab2cef06",
+          "resource": "drawable/ic_call_decline",
+          "pixels": [
+            72,
+            72
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxhdpi-v4/ic_call_decline.png",
+              "source_sha256": "03c345187dfac8ecfeb54c6342b60a9e51119a6ffa96b72a3bff3fb80c0957b0",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxhdpi-v4/ic_call_decline_low.png",
+              "source_sha256": "03c345187dfac8ecfeb54c6342b60a9e51119a6ffa96b72a3bff3fb80c0957b0",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xxhdpi-v4/ic_call_decline_low.png",
+          "bytes": 628,
+          "sha256": "87adad32e0ec19c4e920420bf3a06c9f94f6128ed0d866a1891628aeab2cef06",
+          "resource": "drawable/ic_call_decline_low",
+          "pixels": [
+            72,
+            72
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxhdpi-v4/ic_call_decline.png",
+              "source_sha256": "03c345187dfac8ecfeb54c6342b60a9e51119a6ffa96b72a3bff3fb80c0957b0",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxhdpi-v4/ic_call_decline_low.png",
+              "source_sha256": "03c345187dfac8ecfeb54c6342b60a9e51119a6ffa96b72a3bff3fb80c0957b0",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xxxhdpi-v4/ic_call_answer.png",
+          "bytes": 1171,
+          "sha256": "ec698a3217bce74d8bc4a44bb008f2dbd3d1aebff1af1e9641805143dbf9fa87",
+          "resource": "drawable/ic_call_answer",
+          "pixels": [
+            96,
+            96
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxxhdpi-v4/ic_call_answer.png",
+              "source_sha256": "6122d415b0d97bc10d94b2274a9107bc90264c1ad9b881e0e2a0a4eb75697f1c",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxxhdpi-v4/ic_call_answer_low.png",
+              "source_sha256": "6122d415b0d97bc10d94b2274a9107bc90264c1ad9b881e0e2a0a4eb75697f1c",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xxxhdpi-v4/ic_call_answer_low.png",
+          "bytes": 1171,
+          "sha256": "ec698a3217bce74d8bc4a44bb008f2dbd3d1aebff1af1e9641805143dbf9fa87",
+          "resource": "drawable/ic_call_answer_low",
+          "pixels": [
+            96,
+            96
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxxhdpi-v4/ic_call_answer.png",
+              "source_sha256": "6122d415b0d97bc10d94b2274a9107bc90264c1ad9b881e0e2a0a4eb75697f1c",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxxhdpi-v4/ic_call_answer_low.png",
+              "source_sha256": "6122d415b0d97bc10d94b2274a9107bc90264c1ad9b881e0e2a0a4eb75697f1c",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xxxhdpi-v4/ic_call_answer_video.png",
+          "bytes": 465,
+          "sha256": "4c717ce1ffb551c765981add65d1956132d8f522337de2866b045f0a60485426",
+          "resource": "drawable/ic_call_answer_video",
+          "pixels": [
+            96,
+            96
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxxhdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "cb2befc0dc44eebc0587341bb20b356575bfd493fa00df1bace9ecaed25e2656",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxxhdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "cb2befc0dc44eebc0587341bb20b356575bfd493fa00df1bace9ecaed25e2656",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xxxhdpi-v4/ic_call_answer_video_low.png",
+          "bytes": 465,
+          "sha256": "4c717ce1ffb551c765981add65d1956132d8f522337de2866b045f0a60485426",
+          "resource": "drawable/ic_call_answer_video_low",
+          "pixels": [
+            96,
+            96
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxxhdpi-v4/ic_call_answer_video.png",
+              "source_sha256": "cb2befc0dc44eebc0587341bb20b356575bfd493fa00df1bace9ecaed25e2656",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxxhdpi-v4/ic_call_answer_video_low.png",
+              "source_sha256": "cb2befc0dc44eebc0587341bb20b356575bfd493fa00df1bace9ecaed25e2656",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xxxhdpi-v4/ic_call_decline.png",
+          "bytes": 823,
+          "sha256": "ab73b729bb95878120a3bdc8dc915f3aaa1d7070fc644a0de64d40941ad507ed",
+          "resource": "drawable/ic_call_decline",
+          "pixels": [
+            96,
+            96
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxxhdpi-v4/ic_call_decline.png",
+              "source_sha256": "2dd6fcbe386591f6d365dee33a77341eb538dacf4b910dfdd9ce16d0a8bbdb0a",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxxhdpi-v4/ic_call_decline_low.png",
+              "source_sha256": "2dd6fcbe386591f6d365dee33a77341eb538dacf4b910dfdd9ce16d0a8bbdb0a",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable-xxxhdpi-v4/ic_call_decline_low.png",
+          "bytes": 823,
+          "sha256": "ab73b729bb95878120a3bdc8dc915f3aaa1d7070fc644a0de64d40941ad507ed",
+          "resource": "drawable/ic_call_decline_low",
+          "pixels": [
+            96,
+            96
+          ],
+          "origin": "resolved AndroidX AAR resource; AAPT2 lossless processing",
+          "license": "Apache-2.0",
+          "source_candidates": [
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxxhdpi-v4/ic_call_decline.png",
+              "source_sha256": "2dd6fcbe386591f6d365dee33a77341eb538dacf4b910dfdd9ce16d0a8bbdb0a",
+              "verification": "recompiled_aapt2_png_bytes"
+            },
+            {
+              "artifact": "androidx.core:core:1.13.1",
+              "source": "res/drawable-xxxhdpi-v4/ic_call_decline_low.png",
+              "source_sha256": "2dd6fcbe386591f6d365dee33a77341eb538dacf4b910dfdd9ce16d0a8bbdb0a",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/drawable/ic_launcher_monogram_art.png",
+          "bytes": 28656,
+          "sha256": "7e6a50eea320bb4ba73593ef20289092c7f1fea4a88b3630f991466eede7160e",
+          "resource": "drawable/ic_launcher_monogram_art",
+          "pixels": [
+            512,
+            512
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/drawable/ic_launcher_monogram_art.png",
+              "source_sha256": "7e6a50eea320bb4ba73593ef20289092c7f1fea4a88b3630f991466eede7160e",
+              "verification": "exact_source_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-hdpi-v4/ic_launcher.png",
+          "bytes": 2412,
+          "sha256": "f7d1006553a1010a4ddbb63455f33f708c6399f0ccffe7e843b7be06e845ff90",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            72,
+            72
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-hdpi/ic_launcher.png",
+              "source_sha256": "f7d1006553a1010a4ddbb63455f33f708c6399f0ccffe7e843b7be06e845ff90",
+              "verification": "exact_source_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-hdpi-v4/ic_launcher_round.png",
+          "bytes": 3143,
+          "sha256": "5fe1ecf1b95a22b51c394f2ab66794ede0802785ad26f51cd0b3e5a93297ff0b",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            72,
+            72
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+              "source_sha256": "5fe1ecf1b95a22b51c394f2ab66794ede0802785ad26f51cd0b3e5a93297ff0b",
+              "verification": "exact_source_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-mdpi-v4/ic_launcher.png",
+          "bytes": 1582,
+          "sha256": "dcc39ed8010c03d02e70f021317b357025dc9e0f89cd1adb9cb8deb93a0d8630",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            48,
+            48
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-mdpi/ic_launcher.png",
+              "source_sha256": "dcc39ed8010c03d02e70f021317b357025dc9e0f89cd1adb9cb8deb93a0d8630",
+              "verification": "exact_source_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-mdpi-v4/ic_launcher_round.png",
+          "bytes": 2102,
+          "sha256": "7b73416c1c381c45e15b93782606aa475cf7ddf1c96df293e7aa66b72829a886",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            48,
+            48
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+              "source_sha256": "7b73416c1c381c45e15b93782606aa475cf7ddf1c96df293e7aa66b72829a886",
+              "verification": "exact_source_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-xhdpi-v4/ic_launcher.png",
+          "bytes": 3279,
+          "sha256": "91f2d0ff04c7eb6a03c434e6f32324f67e94e3615cafc74ac0f872393cd4d610",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            96,
+            96
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+              "source_sha256": "91f2d0ff04c7eb6a03c434e6f32324f67e94e3615cafc74ac0f872393cd4d610",
+              "verification": "exact_source_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-xhdpi-v4/ic_launcher_round.png",
+          "bytes": 4359,
+          "sha256": "5e25e1189506d72a176b2f15663b427f46b68747929b4964714c163b3eae068c",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            96,
+            96
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+              "source_sha256": "5e25e1189506d72a176b2f15663b427f46b68747929b4964714c163b3eae068c",
+              "verification": "exact_source_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-xxhdpi-v4/ic_launcher.png",
+          "bytes": 5144,
+          "sha256": "390eb0b1719ee5ca97cbe22bb803b5399d1dfd35ee04e41c69a40bc84050e0c2",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            144,
+            144
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+              "source_sha256": "390eb0b1719ee5ca97cbe22bb803b5399d1dfd35ee04e41c69a40bc84050e0c2",
+              "verification": "exact_source_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-xxhdpi-v4/ic_launcher_round.png",
+          "bytes": 7009,
+          "sha256": "1ee3ca6da61e11604aa8f6d9d781c70f731115cbf3b385e38962bbb07936228b",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            144,
+            144
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+              "source_sha256": "1ee3ca6da61e11604aa8f6d9d781c70f731115cbf3b385e38962bbb07936228b",
+              "verification": "exact_source_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-xxxhdpi-v4/ic_launcher.png",
+          "bytes": 7036,
+          "sha256": "cf6e88861f98e41737853b7ba9cab52a625bfd6b8dc2d138172548279a7a2f43",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            192,
+            192
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+              "source_sha256": "cf6e88861f98e41737853b7ba9cab52a625bfd6b8dc2d138172548279a7a2f43",
+              "verification": "exact_source_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-xxxhdpi-v4/ic_launcher_round.png",
+          "bytes": 9659,
+          "sha256": "73e5ffc79316bec24b269c1f3b0977933caf118545f3ca71d04586c858e2aa72",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            192,
+            192
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+              "source_sha256": "73e5ffc79316bec24b269c1f3b0977933caf118545f3ca71d04586c858e2aa72",
+              "verification": "exact_source_bytes"
+            }
+          ]
+        }
+      ],
+      "vectors": "PASS",
+      "notices": "PASS",
+      "excluded_jpg": "ABSENT",
+      "raster_provenance": "PASS",
+      "kind": "debug",
+      "bytes": 12663069,
+      "notice_sha256": {
+        "THIRD_PARTY_NOTICES.txt": "ae492841a23901be7427df9ec67773f7d33a6079e71afd514ac1485061e1430b",
+        "Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "LIBRARY_NOTICES.txt": "d64e179c27a52f07a723fb39de6f50751e5de73059c71d00ecc5ba45ce26392b",
+        "RUNTIME_LIBRARIES.json": "838aa07313de23ff0a17e4d627fbbe820684f5d64aad8b18e3dfe248394b5d16"
+      },
+      "raster_count": 63
+    },
+    {
+      "apk": "app/build/outputs/apk/release/app-release-unsigned.apk",
+      "sha256": "8a26c179436676ab768aba74f1cbca39620ecad211ea1675b64689e8aad49e5b",
+      "profile": "release",
+      "raster_files": [
+        {
+          "path": "res/8c.png",
+          "bytes": 2868,
+          "sha256": "15667d5770270d4a9cd2ad64788c128d471d13c5ff49c446c49ffffc190179ee",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            72,
+            72
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+              "source_sha256": "5fe1ecf1b95a22b51c394f2ab66794ede0802785ad26f51cd0b3e5a93297ff0b",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/9w.png",
+          "bytes": 1246,
+          "sha256": "f281d68ad83feada6931492cdf7c27194ad22568f146538160c2e425d07026fc",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            48,
+            48
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-mdpi/ic_launcher.png",
+              "source_sha256": "dcc39ed8010c03d02e70f021317b357025dc9e0f89cd1adb9cb8deb93a0d8630",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/FS.png",
+          "bytes": 2675,
+          "sha256": "efadcaacaf7145749a569287321d9e775920bc4f9749a371033c7c137bee8e35",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            96,
+            96
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+              "source_sha256": "91f2d0ff04c7eb6a03c434e6f32324f67e94e3615cafc74ac0f872393cd4d610",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/Gc.png",
+          "bytes": 8878,
+          "sha256": "e8ed6a960c5238cd507f4e947b56d14f5217e1742cb0b2497b6419229ebed8b0",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            192,
+            192
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+              "source_sha256": "73e5ffc79316bec24b269c1f3b0977933caf118545f3ca71d04586c858e2aa72",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/RJ.png",
+          "bytes": 4271,
+          "sha256": "2d3b57ac80382915db867d0fc5c90eb301a20b7375b78ceca001046dc9d41510",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            144,
+            144
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+              "source_sha256": "390eb0b1719ee5ca97cbe22bb803b5399d1dfd35ee04e41c69a40bc84050e0c2",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/Wd.png",
+          "bytes": 24796,
+          "sha256": "6ca9edc6e0b43285b4ab9f20a83fa8f3ba6626ac737264a26d27199f44d80f0f",
+          "resource": "drawable/ic_launcher_monogram_art",
+          "pixels": [
+            512,
+            512
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/drawable/ic_launcher_monogram_art.png",
+              "source_sha256": "7e6a50eea320bb4ba73593ef20289092c7f1fea4a88b3630f991466eede7160e",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/fO.png",
+          "bytes": 6416,
+          "sha256": "6702d425fa1f2f08eb93d72e639b5d4ef3a6645f5e6acbff8ea5abc7599defa5",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            144,
+            144
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+              "source_sha256": "1ee3ca6da61e11604aa8f6d9d781c70f731115cbf3b385e38962bbb07936228b",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/o-.png",
+          "bytes": 5911,
+          "sha256": "755af38dd50b681880c1b5e38417e6917247983dd26051c7ef10c36cc1346221",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            192,
+            192
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+              "source_sha256": "cf6e88861f98e41737853b7ba9cab52a625bfd6b8dc2d138172548279a7a2f43",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/wb.png",
+          "bytes": 3995,
+          "sha256": "70ffd5637795d394e4b3bd89f628a43cc1c90ec37c1976cceb75e618f10f40a7",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            96,
+            96
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+              "source_sha256": "5e25e1189506d72a176b2f15663b427f46b68747929b4964714c163b3eae068c",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/yn.png",
+          "bytes": 1937,
+          "sha256": "b7187488da3ce823302db6dd201ccec1116d716da2b9890d0232a4c3d86d23c1",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            72,
+            72
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-hdpi/ic_launcher.png",
+              "source_sha256": "f7d1006553a1010a4ddbb63455f33f708c6399f0ccffe7e843b7be06e845ff90",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/zR.png",
+          "bytes": 1860,
+          "sha256": "3db674da810b4787d21e1dea01c1ce0239d88afaa43d221d27b6825556bb37fa",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            48,
+            48
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+              "source_sha256": "7b73416c1c381c45e15b93782606aa475cf7ddf1c96df293e7aa66b72829a886",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        }
+      ],
+      "vectors": "PASS",
+      "notices": "PASS",
+      "excluded_jpg": "ABSENT",
+      "raster_provenance": "PASS",
+      "kind": "release",
+      "bytes": 2607822,
+      "notice_sha256": {
+        "THIRD_PARTY_NOTICES.txt": "ae492841a23901be7427df9ec67773f7d33a6079e71afd514ac1485061e1430b",
+        "Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "LIBRARY_NOTICES.txt": "d64e179c27a52f07a723fb39de6f50751e5de73059c71d00ecc5ba45ce26392b",
+        "RUNTIME_LIBRARIES.json": "838aa07313de23ff0a17e4d627fbbe820684f5d64aad8b18e3dfe248394b5d16"
+      },
+      "raster_count": 11
+    },
+    {
+      "apk": "app/build/outputs/bundle/release/app-release.aab",
+      "sha256": "0923de61fff3c58417529ec29ce58ed2a79a1ed214b66df3e309a1b3457f6563",
+      "profile": "release",
+      "raster_files": [
+        {
+          "path": "res/drawable/ic_launcher_monogram_art.png",
+          "bytes": 24796,
+          "sha256": "6ca9edc6e0b43285b4ab9f20a83fa8f3ba6626ac737264a26d27199f44d80f0f",
+          "resource": "drawable/ic_launcher_monogram_art",
+          "pixels": [
+            512,
+            512
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/drawable/ic_launcher_monogram_art.png",
+              "source_sha256": "7e6a50eea320bb4ba73593ef20289092c7f1fea4a88b3630f991466eede7160e",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-mdpi-v4/ic_launcher.png",
+          "bytes": 1246,
+          "sha256": "f281d68ad83feada6931492cdf7c27194ad22568f146538160c2e425d07026fc",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            48,
+            48
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-mdpi/ic_launcher.png",
+              "source_sha256": "dcc39ed8010c03d02e70f021317b357025dc9e0f89cd1adb9cb8deb93a0d8630",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-hdpi-v4/ic_launcher.png",
+          "bytes": 1937,
+          "sha256": "b7187488da3ce823302db6dd201ccec1116d716da2b9890d0232a4c3d86d23c1",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            72,
+            72
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-hdpi/ic_launcher.png",
+              "source_sha256": "f7d1006553a1010a4ddbb63455f33f708c6399f0ccffe7e843b7be06e845ff90",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-xhdpi-v4/ic_launcher.png",
+          "bytes": 2675,
+          "sha256": "efadcaacaf7145749a569287321d9e775920bc4f9749a371033c7c137bee8e35",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            96,
+            96
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+              "source_sha256": "91f2d0ff04c7eb6a03c434e6f32324f67e94e3615cafc74ac0f872393cd4d610",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-xxhdpi-v4/ic_launcher.png",
+          "bytes": 4271,
+          "sha256": "2d3b57ac80382915db867d0fc5c90eb301a20b7375b78ceca001046dc9d41510",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            144,
+            144
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+              "source_sha256": "390eb0b1719ee5ca97cbe22bb803b5399d1dfd35ee04e41c69a40bc84050e0c2",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-xxxhdpi-v4/ic_launcher.png",
+          "bytes": 5911,
+          "sha256": "755af38dd50b681880c1b5e38417e6917247983dd26051c7ef10c36cc1346221",
+          "resource": "mipmap/ic_launcher",
+          "pixels": [
+            192,
+            192
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+              "source_sha256": "cf6e88861f98e41737853b7ba9cab52a625bfd6b8dc2d138172548279a7a2f43",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-mdpi-v4/ic_launcher_round.png",
+          "bytes": 1860,
+          "sha256": "3db674da810b4787d21e1dea01c1ce0239d88afaa43d221d27b6825556bb37fa",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            48,
+            48
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+              "source_sha256": "7b73416c1c381c45e15b93782606aa475cf7ddf1c96df293e7aa66b72829a886",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-hdpi-v4/ic_launcher_round.png",
+          "bytes": 2868,
+          "sha256": "15667d5770270d4a9cd2ad64788c128d471d13c5ff49c446c49ffffc190179ee",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            72,
+            72
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+              "source_sha256": "5fe1ecf1b95a22b51c394f2ab66794ede0802785ad26f51cd0b3e5a93297ff0b",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-xhdpi-v4/ic_launcher_round.png",
+          "bytes": 3995,
+          "sha256": "70ffd5637795d394e4b3bd89f628a43cc1c90ec37c1976cceb75e618f10f40a7",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            96,
+            96
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+              "source_sha256": "5e25e1189506d72a176b2f15663b427f46b68747929b4964714c163b3eae068c",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-xxhdpi-v4/ic_launcher_round.png",
+          "bytes": 6416,
+          "sha256": "6702d425fa1f2f08eb93d72e639b5d4ef3a6645f5e6acbff8ea5abc7599defa5",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            144,
+            144
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+              "source_sha256": "1ee3ca6da61e11604aa8f6d9d781c70f731115cbf3b385e38962bbb07936228b",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        },
+        {
+          "path": "res/mipmap-xxxhdpi-v4/ic_launcher_round.png",
+          "bytes": 8878,
+          "sha256": "e8ed6a960c5238cd507f4e947b56d14f5217e1742cb0b2497b6419229ebed8b0",
+          "resource": "mipmap/ic_launcher_round",
+          "pixels": [
+            192,
+            192
+          ],
+          "origin": "project launcher PNG",
+          "license": "CC0-1.0",
+          "source_candidates": [
+            {
+              "artifact": "project",
+              "source": "app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+              "source_sha256": "73e5ffc79316bec24b269c1f3b0977933caf118545f3ca71d04586c858e2aa72",
+              "verification": "recompiled_aapt2_png_bytes"
+            }
+          ]
+        }
+      ],
+      "vectors": "PASS",
+      "notices": "PASS",
+      "excluded_jpg": "ABSENT",
+      "raster_provenance": "PASS",
+      "kind": "aab",
+      "inspection_conversion": {
+        "method": "base/resources.pb and manifest -> temporary proto APK -> aapt2 convert --output-format binary; no signing or installation",
+        "binary_inspection_sha256": "68d45f47dd0f9df2bd40cf1a97ca03efbf22ad01fb44127e0bb6d2776cac5da2"
+      },
+      "bytes": 4384508,
+      "notice_sha256": {
+        "THIRD_PARTY_NOTICES.txt": "ae492841a23901be7427df9ec67773f7d33a6079e71afd514ac1485061e1430b",
+        "Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "LIBRARY_NOTICES.txt": "d64e179c27a52f07a723fb39de6f50751e5de73059c71d00ecc5ba45ce26392b",
+        "RUNTIME_LIBRARIES.json": "838aa07313de23ff0a17e4d627fbbe820684f5d64aad8b18e3dfe248394b5d16"
+      },
+      "raster_count": 11
+    }
+  ]
+}

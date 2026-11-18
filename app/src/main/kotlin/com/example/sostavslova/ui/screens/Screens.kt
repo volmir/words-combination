@@ -214,6 +214,15 @@ fun AboutScreen() {
                 modifier = Modifier.testTag("about_code_license"),
             )
 
+            Text(
+                stringResource(R.string.about_graphics_heading),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                stringResource(R.string.about_graphics_sources),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag("about_graphics_license"),
+            )
 
         }
     }

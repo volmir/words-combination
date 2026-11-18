@@ -1,0 +1,569 @@
+{
+  "schema": "raster-graphics-provenance-v1",
+  "task": "LEGAL-GRAPHICS-02",
+  "images": [
+    {
+      "path": "app/src/main/res/drawable/ic_launcher_monogram_art.png",
+      "sha256": "7e6a50eea320bb4ba73593ef20289092c7f1fea4a88b3630f991466eede7160e",
+      "bytes": 28656,
+      "pixels": [
+        512,
+        512
+      ],
+      "purpose": "adaptive launcher foreground art",
+      "resource": "drawable/ic_launcher_monogram_art",
+      "density": "default",
+      "inclusion": {
+        "debug": "VERIFIED_PRESENT",
+        "release": "VERIFIED_PRESENT",
+        "aab": "VERIFIED_PRESENT"
+      },
+      "source": "создано владельцем с Google AI Studio, без загруженных сторонних изображений — по заявлению владельца",
+      "license": "CC0-1.0",
+      "license_scope": "в пределах принадлежащих владельцу прав",
+      "approval": "docs/RASTER_GRAPHICS_OWNER_APPROVAL.json",
+      "references": [
+        "app/src/main/res/drawable/ic_launcher_foreground.xml"
+      ],
+      "artifacts": {
+        "debug": [
+          {
+            "path": "res/drawable/ic_launcher_monogram_art.png",
+            "sha256": "7e6a50eea320bb4ba73593ef20289092c7f1fea4a88b3630f991466eede7160e",
+            "bytes": 28656
+          }
+        ],
+        "release": [
+          {
+            "path": "res/Wd.png",
+            "sha256": "6ca9edc6e0b43285b4ab9f20a83fa8f3ba6626ac737264a26d27199f44d80f0f",
+            "bytes": 24796
+          }
+        ],
+        "aab": [
+          {
+            "path": "res/drawable/ic_launcher_monogram_art.png",
+            "sha256": "6ca9edc6e0b43285b4ab9f20a83fa8f3ba6626ac737264a26d27199f44d80f0f",
+            "bytes": 24796
+          }
+        ]
+      }
+    },
+    {
+      "path": "app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "sha256": "f7d1006553a1010a4ddbb63455f33f708c6399f0ccffe7e843b7be06e845ff90",
+      "bytes": 2412,
+      "pixels": [
+        72,
+        72
+      ],
+      "purpose": "legacy launcher density variant",
+      "resource": "mipmap/ic_launcher",
+      "density": "hdpi",
+      "inclusion": {
+        "debug": "VERIFIED_PRESENT",
+        "release": "VERIFIED_PRESENT",
+        "aab": "VERIFIED_PRESENT"
+      },
+      "source": "создано владельцем с Google AI Studio, без загруженных сторонних изображений — по заявлению владельца",
+      "license": "CC0-1.0",
+      "license_scope": "в пределах принадлежащих владельцу прав",
+      "approval": "docs/RASTER_GRAPHICS_OWNER_APPROVAL.json",
+      "references": [
+        "app/src/main/AndroidManifest.xml android:icon/android:roundIcon; density fallback below adaptive v26"
+      ],
+      "artifacts": {
+        "debug": [
+          {
+            "path": "res/mipmap-hdpi-v4/ic_launcher.png",
+            "sha256": "f7d1006553a1010a4ddbb63455f33f708c6399f0ccffe7e843b7be06e845ff90",
+            "bytes": 2412
+          }
+        ],
+        "release": [
+          {
+            "path": "res/yn.png",
+            "sha256": "b7187488da3ce823302db6dd201ccec1116d716da2b9890d0232a4c3d86d23c1",
+            "bytes": 1937
+          }
+        ],
+        "aab": [
+          {
+            "path": "res/mipmap-hdpi-v4/ic_launcher.png",
+            "sha256": "b7187488da3ce823302db6dd201ccec1116d716da2b9890d0232a4c3d86d23c1",
+            "bytes": 1937
+          }
+        ]
+      }
+    },
+    {
+      "path": "app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+      "sha256": "5fe1ecf1b95a22b51c394f2ab66794ede0802785ad26f51cd0b3e5a93297ff0b",
+      "bytes": 3143,
+      "pixels": [
+        72,
+        72
+      ],
+      "purpose": "legacy launcher density variant",
+      "resource": "mipmap/ic_launcher_round",
+      "density": "hdpi",
+      "inclusion": {
+        "debug": "VERIFIED_PRESENT",
+        "release": "VERIFIED_PRESENT",
+        "aab": "VERIFIED_PRESENT"
+      },
+      "source": "создано владельцем с Google AI Studio, без загруженных сторонних изображений — по заявлению владельца",
+      "license": "CC0-1.0",
+      "license_scope": "в пределах принадлежащих владельцу прав",
+      "approval": "docs/RASTER_GRAPHICS_OWNER_APPROVAL.json",
+      "references": [
+        "app/src/main/AndroidManifest.xml android:icon/android:roundIcon; density fallback below adaptive v26"
+      ],
+      "artifacts": {
+        "debug": [
+          {
+            "path": "res/mipmap-hdpi-v4/ic_launcher_round.png",
+            "sha256": "5fe1ecf1b95a22b51c394f2ab66794ede0802785ad26f51cd0b3e5a93297ff0b",
+            "bytes": 3143
+          }
+        ],
+        "release": [
+          {
+            "path": "res/8c.png",
+            "sha256": "15667d5770270d4a9cd2ad64788c128d471d13c5ff49c446c49ffffc190179ee",
+            "bytes": 2868
+          }
+        ],
+        "aab": [
+          {
+            "path": "res/mipmap-hdpi-v4/ic_launcher_round.png",
+            "sha256": "15667d5770270d4a9cd2ad64788c128d471d13c5ff49c446c49ffffc190179ee",
+            "bytes": 2868
+          }
+        ]
+      }
+    },
+    {
+      "path": "app/src/main/res/mipmap-mdpi/ic_launcher.png",
+      "sha256": "dcc39ed8010c03d02e70f021317b357025dc9e0f89cd1adb9cb8deb93a0d8630",
+      "bytes": 1582,
+      "pixels": [
+        48,
+        48
+      ],
+      "purpose": "legacy launcher density variant",
+      "resource": "mipmap/ic_launcher",
+      "density": "mdpi",
+      "inclusion": {
+        "debug": "VERIFIED_PRESENT",
+        "release": "VERIFIED_PRESENT",
+        "aab": "VERIFIED_PRESENT"
+      },
+      "source": "создано владельцем с Google AI Studio, без загруженных сторонних изображений — по заявлению владельца",
+      "license": "CC0-1.0",
+      "license_scope": "в пределах принадлежащих владельцу прав",
+      "approval": "docs/RASTER_GRAPHICS_OWNER_APPROVAL.json",
+      "references": [
+        "app/src/main/AndroidManifest.xml android:icon/android:roundIcon; density fallback below adaptive v26"
+      ],
+      "artifacts": {
+        "debug": [
+          {
+            "path": "res/mipmap-mdpi-v4/ic_launcher.png",
+            "sha256": "dcc39ed8010c03d02e70f021317b357025dc9e0f89cd1adb9cb8deb93a0d8630",
+            "bytes": 1582
+          }
+        ],
+        "release": [
+          {
+            "path": "res/9w.png",
+            "sha256": "f281d68ad83feada6931492cdf7c27194ad22568f146538160c2e425d07026fc",
+            "bytes": 1246
+          }
+        ],
+        "aab": [
+          {
+            "path": "res/mipmap-mdpi-v4/ic_launcher.png",
+            "sha256": "f281d68ad83feada6931492cdf7c27194ad22568f146538160c2e425d07026fc",
+            "bytes": 1246
+          }
+        ]
+      }
+    },
+    {
+      "path": "app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+      "sha256": "7b73416c1c381c45e15b93782606aa475cf7ddf1c96df293e7aa66b72829a886",
+      "bytes": 2102,
+      "pixels": [
+        48,
+        48
+      ],
+      "purpose": "legacy launcher density variant",
+      "resource": "mipmap/ic_launcher_round",
+      "density": "mdpi",
+      "inclusion": {
+        "debug": "VERIFIED_PRESENT",
+        "release": "VERIFIED_PRESENT",
+        "aab": "VERIFIED_PRESENT"
+      },
+      "source": "создано владельцем с Google AI Studio, без загруженных сторонних изображений — по заявлению владельца",
+      "license": "CC0-1.0",
+      "license_scope": "в пределах принадлежащих владельцу прав",
+      "approval": "docs/RASTER_GRAPHICS_OWNER_APPROVAL.json",
+      "references": [
+        "app/src/main/AndroidManifest.xml android:icon/android:roundIcon; density fallback below adaptive v26"
+      ],
+      "artifacts": {
+        "debug": [
+          {
+            "path": "res/mipmap-mdpi-v4/ic_launcher_round.png",
+            "sha256": "7b73416c1c381c45e15b93782606aa475cf7ddf1c96df293e7aa66b72829a886",
+            "bytes": 2102
+          }
+        ],
+        "release": [
+          {
+            "path": "res/zR.png",
+            "sha256": "3db674da810b4787d21e1dea01c1ce0239d88afaa43d221d27b6825556bb37fa",
+            "bytes": 1860
+          }
+        ],
+        "aab": [
+          {
+            "path": "res/mipmap-mdpi-v4/ic_launcher_round.png",
+            "sha256": "3db674da810b4787d21e1dea01c1ce0239d88afaa43d221d27b6825556bb37fa",
+            "bytes": 1860
+          }
+        ]
+      }
+    },
+    {
+      "path": "app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+      "sha256": "91f2d0ff04c7eb6a03c434e6f32324f67e94e3615cafc74ac0f872393cd4d610",
+      "bytes": 3279,
+      "pixels": [
+        96,
+        96
+      ],
+      "purpose": "legacy launcher density variant",
+      "resource": "mipmap/ic_launcher",
+      "density": "xhdpi",
+      "inclusion": {
+        "debug": "VERIFIED_PRESENT",
+        "release": "VERIFIED_PRESENT",
+        "aab": "VERIFIED_PRESENT"
+      },
+      "source": "создано владельцем с Google AI Studio, без загруженных сторонних изображений — по заявлению владельца",
+      "license": "CC0-1.0",
+      "license_scope": "в пределах принадлежащих владельцу прав",
+      "approval": "docs/RASTER_GRAPHICS_OWNER_APPROVAL.json",
+      "references": [
+        "app/src/main/AndroidManifest.xml android:icon/android:roundIcon; density fallback below adaptive v26"
+      ],
+      "artifacts": {
+        "debug": [
+          {
+            "path": "res/mipmap-xhdpi-v4/ic_launcher.png",
+            "sha256": "91f2d0ff04c7eb6a03c434e6f32324f67e94e3615cafc74ac0f872393cd4d610",
+            "bytes": 3279
+          }
+        ],
+        "release": [
+          {
+            "path": "res/FS.png",
+            "sha256": "efadcaacaf7145749a569287321d9e775920bc4f9749a371033c7c137bee8e35",
+            "bytes": 2675
+          }
+        ],
+        "aab": [
+          {
+            "path": "res/mipmap-xhdpi-v4/ic_launcher.png",
+            "sha256": "efadcaacaf7145749a569287321d9e775920bc4f9749a371033c7c137bee8e35",
+            "bytes": 2675
+          }
+        ]
+      }
+    },
+    {
+      "path": "app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+      "sha256": "5e25e1189506d72a176b2f15663b427f46b68747929b4964714c163b3eae068c",
+      "bytes": 4359,
+      "pixels": [
+        96,
+        96
+      ],
+      "purpose": "legacy launcher density variant",
+      "resource": "mipmap/ic_launcher_round",
+      "density": "xhdpi",
+      "inclusion": {
+        "debug": "VERIFIED_PRESENT",
+        "release": "VERIFIED_PRESENT",
+        "aab": "VERIFIED_PRESENT"
+      },
+      "source": "создано владельцем с Google AI Studio, без загруженных сторонних изображений — по заявлению владельца",
+      "license": "CC0-1.0",
+      "license_scope": "в пределах принадлежащих владельцу прав",
+      "approval": "docs/RASTER_GRAPHICS_OWNER_APPROVAL.json",
+      "references": [
+        "app/src/main/AndroidManifest.xml android:icon/android:roundIcon; density fallback below adaptive v26"
+      ],
+      "artifacts": {
+        "debug": [
+          {
+            "path": "res/mipmap-xhdpi-v4/ic_launcher_round.png",
+            "sha256": "5e25e1189506d72a176b2f15663b427f46b68747929b4964714c163b3eae068c",
+            "bytes": 4359
+          }
+        ],
+        "release": [
+          {
+            "path": "res/wb.png",
+            "sha256": "70ffd5637795d394e4b3bd89f628a43cc1c90ec37c1976cceb75e618f10f40a7",
+            "bytes": 3995
+          }
+        ],
+        "aab": [
+          {
+            "path": "res/mipmap-xhdpi-v4/ic_launcher_round.png",
+            "sha256": "70ffd5637795d394e4b3bd89f628a43cc1c90ec37c1976cceb75e618f10f40a7",
+            "bytes": 3995
+          }
+        ]
+      }
+    },
+    {
+      "path": "app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+      "sha256": "390eb0b1719ee5ca97cbe22bb803b5399d1dfd35ee04e41c69a40bc84050e0c2",
+      "bytes": 5144,
+      "pixels": [
+        144,
+        144
+      ],
+      "purpose": "legacy launcher density variant",
+      "resource": "mipmap/ic_launcher",
+      "density": "xxhdpi",
+      "inclusion": {
+        "debug": "VERIFIED_PRESENT",
+        "release": "VERIFIED_PRESENT",
+        "aab": "VERIFIED_PRESENT"
+      },
+      "source": "создано владельцем с Google AI Studio, без загруженных сторонних изображений — по заявлению владельца",
+      "license": "CC0-1.0",
+      "license_scope": "в пределах принадлежащих владельцу прав",
+      "approval": "docs/RASTER_GRAPHICS_OWNER_APPROVAL.json",
+      "references": [
+        "app/src/main/AndroidManifest.xml android:icon/android:roundIcon; density fallback below adaptive v26"
+      ],
+      "artifacts": {
+        "debug": [
+          {
+            "path": "res/mipmap-xxhdpi-v4/ic_launcher.png",
+            "sha256": "390eb0b1719ee5ca97cbe22bb803b5399d1dfd35ee04e41c69a40bc84050e0c2",
+            "bytes": 5144
+          }
+        ],
+        "release": [
+          {
+            "path": "res/RJ.png",
+            "sha256": "2d3b57ac80382915db867d0fc5c90eb301a20b7375b78ceca001046dc9d41510",
+            "bytes": 4271
+          }
+        ],
+        "aab": [
+          {
+            "path": "res/mipmap-xxhdpi-v4/ic_launcher.png",
+            "sha256": "2d3b57ac80382915db867d0fc5c90eb301a20b7375b78ceca001046dc9d41510",
+            "bytes": 4271
+          }
+        ]
+      }
+    },
+    {
+      "path": "app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+      "sha256": "1ee3ca6da61e11604aa8f6d9d781c70f731115cbf3b385e38962bbb07936228b",
+      "bytes": 7009,
+      "pixels": [
+        144,
+        144
+      ],
+      "purpose": "legacy launcher density variant",
+      "resource": "mipmap/ic_launcher_round",
+      "density": "xxhdpi",
+      "inclusion": {
+        "debug": "VERIFIED_PRESENT",
+        "release": "VERIFIED_PRESENT",
+        "aab": "VERIFIED_PRESENT"
+      },
+      "source": "создано владельцем с Google AI Studio, без загруженных сторонних изображений — по заявлению владельца",
+      "license": "CC0-1.0",
+      "license_scope": "в пределах принадлежащих владельцу прав",
+      "approval": "docs/RASTER_GRAPHICS_OWNER_APPROVAL.json",
+      "references": [
+        "app/src/main/AndroidManifest.xml android:icon/android:roundIcon; density fallback below adaptive v26"
+      ],
+      "artifacts": {
+        "debug": [
+          {
+            "path": "res/mipmap-xxhdpi-v4/ic_launcher_round.png",
+            "sha256": "1ee3ca6da61e11604aa8f6d9d781c70f731115cbf3b385e38962bbb07936228b",
+            "bytes": 7009
+          }
+        ],
+        "release": [
+          {
+            "path": "res/fO.png",
+            "sha256": "6702d425fa1f2f08eb93d72e639b5d4ef3a6645f5e6acbff8ea5abc7599defa5",
+            "bytes": 6416
+          }
+        ],
+        "aab": [
+          {
+            "path": "res/mipmap-xxhdpi-v4/ic_launcher_round.png",
+            "sha256": "6702d425fa1f2f08eb93d72e639b5d4ef3a6645f5e6acbff8ea5abc7599defa5",
+            "bytes": 6416
+          }
+        ]
+      }
+    },
+    {
+      "path": "app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+      "sha256": "cf6e88861f98e41737853b7ba9cab52a625bfd6b8dc2d138172548279a7a2f43",
+      "bytes": 7036,
+      "pixels": [
+        192,
+        192
+      ],
+      "purpose": "legacy launcher density variant",
+      "resource": "mipmap/ic_launcher",
+      "density": "xxxhdpi",
+      "inclusion": {
+        "debug": "VERIFIED_PRESENT",
+        "release": "VERIFIED_PRESENT",
+        "aab": "VERIFIED_PRESENT"
+      },
+      "source": "создано владельцем с Google AI Studio, без загруженных сторонних изображений — по заявлению владельца",
+      "license": "CC0-1.0",
+      "license_scope": "в пределах принадлежащих владельцу прав",
+      "approval": "docs/RASTER_GRAPHICS_OWNER_APPROVAL.json",
+      "references": [
+        "app/src/main/AndroidManifest.xml android:icon/android:roundIcon; density fallback below adaptive v26"
+      ],
+      "artifacts": {
+        "debug": [
+          {
+            "path": "res/mipmap-xxxhdpi-v4/ic_launcher.png",
+            "sha256": "cf6e88861f98e41737853b7ba9cab52a625bfd6b8dc2d138172548279a7a2f43",
+            "bytes": 7036
+          }
+        ],
+        "release": [
+          {
+            "path": "res/o-.png",
+            "sha256": "755af38dd50b681880c1b5e38417e6917247983dd26051c7ef10c36cc1346221",
+            "bytes": 5911
+          }
+        ],
+        "aab": [
+          {
+            "path": "res/mipmap-xxxhdpi-v4/ic_launcher.png",
+            "sha256": "755af38dd50b681880c1b5e38417e6917247983dd26051c7ef10c36cc1346221",
+            "bytes": 5911
+          }
+        ]
+      }
+    },
+    {
+      "path": "app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+      "sha256": "73e5ffc79316bec24b269c1f3b0977933caf118545f3ca71d04586c858e2aa72",
+      "bytes": 9659,
+      "pixels": [
+        192,
+        192
+      ],
+      "purpose": "legacy launcher density variant",
+      "resource": "mipmap/ic_launcher_round",
+      "density": "xxxhdpi",
+      "inclusion": {
+        "debug": "VERIFIED_PRESENT",
+        "release": "VERIFIED_PRESENT",
+        "aab": "VERIFIED_PRESENT"
+      },
+      "source": "создано владельцем с Google AI Studio, без загруженных сторонних изображений — по заявлению владельца",
+      "license": "CC0-1.0",
+      "license_scope": "в пределах принадлежащих владельцу прав",
+      "approval": "docs/RASTER_GRAPHICS_OWNER_APPROVAL.json",
+      "references": [
+        "app/src/main/AndroidManifest.xml android:icon/android:roundIcon; density fallback below adaptive v26"
+      ],
+      "artifacts": {
+        "debug": [
+          {
+            "path": "res/mipmap-xxxhdpi-v4/ic_launcher_round.png",
+            "sha256": "73e5ffc79316bec24b269c1f3b0977933caf118545f3ca71d04586c858e2aa72",
+            "bytes": 9659
+          }
+        ],
+        "release": [
+          {
+            "path": "res/Gc.png",
+            "sha256": "e8ed6a960c5238cd507f4e947b56d14f5217e1742cb0b2497b6419229ebed8b0",
+            "bytes": 8878
+          }
+        ],
+        "aab": [
+          {
+            "path": "res/mipmap-xxxhdpi-v4/ic_launcher_round.png",
+            "sha256": "e8ed6a960c5238cd507f4e947b56d14f5217e1742cb0b2497b6419229ebed8b0",
+            "bytes": 8878
+          }
+        ]
+      }
+    }
+  ],
+  "owner_approval_sha256": "2cf97e99bfa4b1dffa152b3fb15750f250ca23038fc91a482fae44c702e97615",
+  "terms_review": {
+    "checked_on": "2026-11-18",
+    "additional_terms_url": "https://ai.google.dev/gemini-api/terms",
+    "effective": "2026-03-23",
+    "api_terms_url": "https://developers.google.com/terms",
+    "finding": "Google does not claim ownership of generated content; no exclusivity or third-party non-infringement warranty; free licensing only within owner-held rights; offline app does not call the service"
+  },
+  "excluded": [
+    {
+      "path": "app/src/main/res/drawable/words_app_icon_1793804687264.jpg",
+      "bytes": 437466,
+      "sha256": "4713d12eb988b96ed6624496e00c70ad7ba31576642687f86fa3ba40dd34f0c5",
+      "status": "REMOVED_UNUSED_WITH_OWNER_AUTHORIZATION",
+      "reason": "No active code/XML/Gradle/generator/test reference; merge included unused resource; release shrinker marks not reachable; historical evidence retained",
+      "before_packages": [
+        {
+          "path": "app/build/outputs/apk/debug/app-debug.apk",
+          "sha256": "23bf025d2ca57c3c9b2208062e3880683689b3e8ae6bf1d32dd02ae58fafe12d",
+          "jpg_bytes": [
+            "res/drawable/words_app_icon_1793804687264.jpg"
+          ],
+          "jpg_names": [
+            "res/drawable/words_app_icon_1793804687264.jpg"
+          ],
+          "jpg_name_in_resources_pb": []
+        },
+        {
+          "path": "app/build/outputs/apk/release/app-release-unsigned.apk",
+          "sha256": "3cba72efe4cb5bdcd7827bbe5073548cd75c62ff90e2114d1dbb0c5a08f0563c",
+          "jpg_bytes": [],
+          "jpg_names": [],
+          "jpg_name_in_resources_pb": []
+        },
+        {
+          "path": "app/build/outputs/bundle/release/app-release.aab",
+          "sha256": "3af650df4b5f9bcd65bd1278e67589943954fea4b003543561b117e6360ecd0f",
+          "jpg_bytes": [],
+          "jpg_names": [],
+          "jpg_name_in_resources_pb": [
+            "base/resources.pb"
+          ]
+        }
+      ]
+    }
+  ]
+}
