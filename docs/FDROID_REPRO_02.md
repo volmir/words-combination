@@ -1,9 +1,14 @@
 # FDROID-REPRO-02: обязательный выпускной гейт
 
-**Состояние: IMPLEMENTED / AWAITING OWNER VALIDATION.** Скрипт и офлайн-тесты
-подготовлены; для будущего тега `1.0.2` реальная проверка с ключом владельца
-ещё не выполнялась. Публикация, tag push и отправка в F-Droid не разрешены
-этим документом.
+**Состояние на 18.11.2026: OWNER LOCAL PASS / GITHUB RELEASE 1.0.2 PUBLISHED /
+F-DROID NOT VERIFIED.** Владелец выполнил гейт: результат
+`LOCAL_SOURCE_TO_SIGNED_APK_VERIFIED`, APK SHA-256
+`4dc963dde4275c3179a24bffed03522cbec52cd3df2584d80bc9cf48aa6cc7ae`,
+затем `:app:prepareGithubRelease` и `sha256sum -c SHA256SUMS.txt` — PASS.
+GitHub Release `1.0.2` опубликован владельцем. Это доказательство локального
+процесса, но не независимой проверки сервером F-Droid. Исторические команды
+ниже сохраняются для справки; повторно создавать или переназначать тег нельзя.
+Следующий этап: [FDROID-SUBMISSION-01](FDROID_SUBMISSION_01.md).
 
 ## Что подтверждено ранее
 
