@@ -46,7 +46,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.example.sostavslova.core.RussianPlural
+import com.example.sostavslova.core.CampaignRules
+import com.example.sostavslova.core.LevelThresholdKind
 import com.example.sostavslova.R
 import com.example.sostavslova.di.appContainer
 import com.example.sostavslova.ui.components.AlertBanner
@@ -101,9 +102,16 @@ fun LevelsScreen(
         }
     }
     state.lockedRequirement?.let { (previous, required) ->
+        val maxStars = state.levels.firstOrNull { it.index == previous }?.maxStars ?: required
+        val requirementText = when (CampaignRules.thresholdKind(required, maxStars, isFinal = false)) {
+            LevelThresholdKind.ALL_FOR_NEXT, LevelThresholdKind.ALL_FOR_FINAL ->
+                stringResource(R.string.level_unlock_requirement_all, previous)
+            LevelThresholdKind.PARTIAL_FOR_NEXT, LevelThresholdKind.PARTIAL_FOR_FINAL ->
+                stringResource(R.string.level_unlock_requirement, previous, required, maxStars)
+        }
         AlertDialog(onDismissRequest = onDismissLocked,
             title = { Text(stringResource(R.string.level_locked)) },
-            text = { Text(stringResource(R.string.level_unlock_requirement, previous, required, starForm(required))) },
+            text = { Text(requirementText) },
             confirmButton = { TextButton(onDismissLocked) { Text(stringResource(R.string.close_dialog)) } })
     }
     val mapReady = !state.loading && !state.loadError && state.levels.isNotEmpty()
@@ -181,10 +189,6 @@ fun LevelsScreen(
         }
     }
 }
-
-@Composable
-private fun starForm(count: Int): String = RussianPlural.form(count,
-    stringResource(R.string.star_one), stringResource(R.string.star_few), stringResource(R.string.star_many))
 
 @Composable
 private fun stageName(number: Int): String = stringResource(when (number) {

@@ -56,7 +56,7 @@ class CampaignGameUiTest {
             }
         }
         compose.onNodeWithTag("level_header").assertTextEquals("Эксперт · уровень 30 из 30")
-        compose.onNodeWithTag("level_difficulty").assertTextContains("Для финала", substring = true)
+        compose.onNodeWithTag("level_difficulty").assertTextEquals("Чтобы завершить игру, нужно заданий: 4 из 7")
         compose.onNodeWithTag("game_tasks_summary").performScrollTo()
             .assertTextEquals("Задания · ${evaluated.state.completedTaskIds.size} из ${tasks.size}")
         compose.onNodeWithTag("game_tasks_toggle").assertDoesNotExist()

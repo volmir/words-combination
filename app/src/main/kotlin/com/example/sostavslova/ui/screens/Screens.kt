@@ -28,14 +28,28 @@ import androidx.compose.ui.unit.dp
 import com.example.sostavslova.BuildConfig
 import com.example.sostavslova.R
 import com.example.sostavslova.di.appContainer
+import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.data.LoadState
 import com.example.sostavslova.ui.components.Well
 import com.example.sostavslova.ui.theme.WordsCardShape
 import com.example.sostavslova.ui.theme.WordsColors
+import kotlinx.coroutines.CancellationException
 
 @Composable
-fun RulesScreen() {
+fun RulesScreen(loadOptionalTaskLevel: (suspend () -> Int?)? = null) {
+    val container = appContainer()
+    var optionalTaskLevel by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(loadOptionalTaskLevel, container) {
+        optionalTaskLevel = try {
+            loadOptionalTaskLevel?.invoke()
+                ?: container.levelsRepository.getCampaign()?.let(CampaignRules::firstOptionalTaskLevel)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            null
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -64,20 +78,22 @@ fun RulesScreen() {
                     style = MaterialTheme.typography.titleMedium.copy(fontStyle = FontStyle.Italic),
                 )
 
+                val optionalLevel = optionalTaskLevel
                 val items = listOf(
-                    R.string.rules_item_1,
-                    R.string.rules_item_2,
-                    R.string.rules_item_3,
-                    R.string.rules_item_4,
-                    R.string.rules_item_5,
-                    R.string.rules_item_6,
-                    R.string.rules_item_7,
+                    stringResource(R.string.rules_item_1),
+                    stringResource(R.string.rules_item_2),
+                    stringResource(R.string.rules_item_3),
+                    if (optionalLevel != null) stringResource(R.string.rules_item_4, optionalLevel)
+                    else stringResource(R.string.rules_item_4_no_campaign),
+                    stringResource(R.string.rules_item_5),
+                    stringResource(R.string.rules_item_6),
+                    stringResource(R.string.rules_item_7),
                 )
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("rules_items")) {
-                    for ((index, item) in items.withIndex()) {
+                    for ((index, itemText) in items.withIndex()) {
                         Text(
-                            stringResource(item),
+                            itemText,
                             modifier = Modifier.testTag("rules_item_${index + 1}"),
                             style = MaterialTheme.typography.bodyLarge,
                         )

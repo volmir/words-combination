@@ -64,9 +64,11 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.sostavslova.R
 import com.example.sostavslova.di.appContainer
 import com.example.sostavslova.time.observePlayTimeLifecycle
+import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.HintLadder
 import com.example.sostavslova.core.HintRules
+import com.example.sostavslova.core.LevelThresholdKind
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.ui.components.AlertBanner
 import com.example.sostavslova.ui.components.LetterSlots
@@ -163,11 +165,14 @@ fun GameScreen(
                     val starsDescription = pluralStringResource(R.plurals.level_stars_progress,
                         current.level.maxStars, current.completedTaskIds.size, current.level.maxStars)
                     val required = current.level.requiredStars
-                    val requiredWord = RussianPlural.form(required,
-                        stringResource(R.string.star_one), stringResource(R.string.star_few),
-                        stringResource(R.string.star_many))
-                    Text(stringResource(if (current.level.number == state.totalLevels) R.string.game_level_final_threshold
-                        else R.string.game_level_threshold, required, requiredWord),
+                    val maxStars = current.level.maxStars
+                    val thresholdText = when (CampaignRules.thresholdKind(current.level, state.totalLevels)) {
+                        LevelThresholdKind.ALL_FOR_NEXT -> stringResource(R.string.game_level_threshold_all)
+                        LevelThresholdKind.PARTIAL_FOR_NEXT -> stringResource(R.string.game_level_threshold, required, maxStars)
+                        LevelThresholdKind.ALL_FOR_FINAL -> stringResource(R.string.game_level_final_threshold_all)
+                        LevelThresholdKind.PARTIAL_FOR_FINAL -> stringResource(R.string.game_level_final_threshold, required, maxStars)
+                    }
+                    Text(thresholdText,
                         Modifier.testTag("level_difficulty").semantics { stateDescription = starsDescription },
                         style = MaterialTheme.typography.bodyMedium)
                 }

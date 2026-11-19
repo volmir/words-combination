@@ -40,6 +40,13 @@ data class CampaignSummary(
 
 data class FinalePresentation(val state: CampaignProgress, val showDialog: Boolean)
 
+enum class LevelThresholdKind {
+    ALL_FOR_NEXT,
+    PARTIAL_FOR_NEXT,
+    ALL_FOR_FINAL,
+    PARTIAL_FOR_FINAL,
+}
+
 /**
  * Правила для валидированной непустой кампании с номерами 1..N и её сохранений.
  * Номера в API начинаются с 1. Словарь нужен только при открытии конкретной игры;
@@ -159,6 +166,21 @@ object CampaignRules {
         shownHintSteps = campaign.levels.sumOf { progress.levels[it.word]?.hints?.shownSteps ?: 0 },
         paidHintUnits = campaign.levels.sumOf { progress.levels[it.word]?.hints?.paidUnits ?: 0 },
     )
+
+    /** Первый уровень, на котором часть заданий можно пропустить (R < M), или null. */
+    fun firstOptionalTaskLevel(campaign: Campaign): Int? =
+        campaign.levels.firstOrNull { it.requiredStars < it.maxStars }?.number
+
+    /** Выбор формулировки порога открытия следующего уровня или финала игры. */
+    fun thresholdKind(requiredStars: Int, maxStars: Int, isFinal: Boolean): LevelThresholdKind = when {
+        isFinal && requiredStars >= maxStars -> LevelThresholdKind.ALL_FOR_FINAL
+        isFinal -> LevelThresholdKind.PARTIAL_FOR_FINAL
+        requiredStars >= maxStars -> LevelThresholdKind.ALL_FOR_NEXT
+        else -> LevelThresholdKind.PARTIAL_FOR_NEXT
+    }
+
+    fun thresholdKind(level: CampaignLevel, totalLevels: Int): LevelThresholdKind =
+        thresholdKind(level.requiredStars, level.maxStars, level.number == totalLevels)
 
     /** Вызывать только по явному пользовательскому сбросу, заменяя всё сохранение кампании. */
     fun reset(): CampaignProgress = CampaignProgress()

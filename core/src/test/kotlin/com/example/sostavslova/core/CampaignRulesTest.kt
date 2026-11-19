@@ -320,4 +320,42 @@ class CampaignRulesTest {
         val reachedAgain = campaign.levels.fold(reset) { state, level -> earn(campaign, state, level.number, level.requiredStars) }
         assertTrue(CampaignRules.consumeFinaleDialog(reachedAgain).showDialog)
     }
+
+    @Test fun firstOptionalTaskLevelFindsFirstLevelWithPartialThresholdOrReturnsNull() {
+        val strictOnly = Campaign(listOf(Stage(1, 1, 2)), listOf(level(1, 2, 2), level(2, 3, 3)))
+        assertNull(CampaignRules.firstOptionalTaskLevel(strictOnly))
+
+        val mixed = Campaign(
+            listOf(Stage(1, 1, 4)),
+            listOf(level(1, 1, 1), level(2, 2, 2), level(3, 4, 3), level(4, 5, 4)),
+        )
+        assertEquals(3, CampaignRules.firstOptionalTaskLevel(mixed))
+
+        val dataset = checkNotNull(TestData.campaign)
+        assertEquals(9, CampaignRules.firstOptionalTaskLevel(dataset))
+    }
+
+    @Test fun thresholdKindDistinguishesAllTasksPartialTasksAndFinalLevel() {
+        assertEquals(LevelThresholdKind.ALL_FOR_NEXT, CampaignRules.thresholdKind(level(1, 3, 3), 15))
+        assertEquals(LevelThresholdKind.PARTIAL_FOR_NEXT, CampaignRules.thresholdKind(level(9, 4, 3), 15))
+        assertEquals(LevelThresholdKind.ALL_FOR_FINAL, CampaignRules.thresholdKind(level(15, 5, 5), 15))
+        assertEquals(LevelThresholdKind.PARTIAL_FOR_FINAL, CampaignRules.thresholdKind(level(15, 5, 4), 15))
+
+        assertEquals(LevelThresholdKind.ALL_FOR_NEXT, CampaignRules.thresholdKind(requiredStars = 2, maxStars = 2, isFinal = false))
+        assertEquals(LevelThresholdKind.PARTIAL_FOR_NEXT, CampaignRules.thresholdKind(requiredStars = 3, maxStars = 4, isFinal = false))
+        assertEquals(LevelThresholdKind.ALL_FOR_FINAL, CampaignRules.thresholdKind(requiredStars = 4, maxStars = 4, isFinal = true))
+        assertEquals(LevelThresholdKind.PARTIAL_FOR_FINAL, CampaignRules.thresholdKind(requiredStars = 4, maxStars = 5, isFinal = true))
+
+        val dataset = checkNotNull(TestData.campaign)
+        val total = dataset.levels.size
+        for (level in dataset.levels) {
+            val expected = when {
+                level.number == total && level.requiredStars == level.maxStars -> LevelThresholdKind.ALL_FOR_FINAL
+                level.number == total -> LevelThresholdKind.PARTIAL_FOR_FINAL
+                level.requiredStars == level.maxStars -> LevelThresholdKind.ALL_FOR_NEXT
+                else -> LevelThresholdKind.PARTIAL_FOR_NEXT
+            }
+            assertEquals(expected, CampaignRules.thresholdKind(level, total), "Level ${level.number}")
+        }
+    }
 }
