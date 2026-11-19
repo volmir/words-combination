@@ -90,7 +90,7 @@ class CampaignGameUiTest {
         compose.onNodeWithText("Статистика слов").performScrollTo().performClick()
         compose.onNodeWithTag("level_stats").assertExists()
         compose.onNodeWithText("Осталось").assertExists()
-        compose.onNodeWithText("Взято шагов подсказок: 0 · потрачено единиц: 0").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Использовано подсказок: 0").performScrollTo().assertIsDisplayed()
         assertTextFits()
     }
 
@@ -372,7 +372,7 @@ class CampaignGameUiTest {
         compose.onNodeWithText("Игра пройдена").assertIsDisplayed()
         compose.onNodeWithText("Звёзды: 99 из 100").assertExists()
         compose.onNodeWithText("Найдено: 321 слово").assertExists()
-        compose.onNodeWithText("Использовано шагов подсказок: 12").assertExists()
+        compose.onNodeWithText("Использовано подсказок: 12").assertExists()
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithTag("level_finale_dialog").assertExists()
         compose.onNodeWithText("Продолжить собирать звёзды").performScrollTo().assertIsDisplayed()

@@ -290,7 +290,7 @@ fun GameScreen(
                 Column(Modifier.testTag("level_stats")) {
                     StatsTable(state.statistics, showRemaining = true)
                     state.campaignLevel?.hints?.let { hints ->
-                        Text(stringResource(R.string.game_stats_hints, hints.shownSteps, hints.paidUnits), style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.game_stats_hints, hints.shownSteps), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
                 CloseDialogButton(onDismissDialog)

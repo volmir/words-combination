@@ -31,7 +31,7 @@
     <string name="about_definitions_heading">Словарь и загадки</string>
     <string name="about_definitions_authors">Словарь, исходные сведения о категориях и формах слов взяты из русского Викисловаря. Авторы — участники русского Викисловаря.\nhttps://ru.wiktionary.org/</string>
     <string name="about_definitions_extraction">Машиночитаемая выгрузка: Kaikki.org / Wiktextract.\nhttps://kaikki.org/ruwiktionary/rawdata.html</string>
-    <string name="about_definitions_license">Словарные данные и лексические материалы распространяются на применимой основе по Creative Commons «С указанием авторства — С сохранением условий» 4.0 Международная (CC BY-SA 4.0). 11 собственных загадок T4 включены в отдельный JSON и распространяются по CC0-1.0. Толкования Викисловаря не поставляются.\nhttps://creativecommons.org/licenses/by-sa/4.0/</string>
+    <string name="about_definitions_license">Словарные данные и лексические материалы распространяются на применимой основе по Creative Commons «С указанием авторства — С сохранением условий» 4.0 Международная (CC BY-SA 4.0). 11 собственных загадок включены в отдельный JSON и распространяются по CC0-1.0. Толкования Викисловаря не поставляются.\nhttps://creativecommons.org/licenses/by-sa/4.0/</string>
     <string name="about_definitions_changes">Обработка: отбор слов, нормализация ё→е, выделение категорий и форм слов. Словарные толкования и литературные примеры исключены. Буквенные подсказки открывают позиции шаблона ответа.</string>
     <string name="about_definitions_history">Для каждого слова сохранён адрес исходной статьи. История статьи содержит сведения об авторах. Полный список адресов включён в приложение вместе со словарём.</string>
     <string name="about_graphics_heading">Графика</string>
@@ -76,12 +76,12 @@
     <string name="rules_title">Правила игры</string>
     <string name="rules_intro">Составляйте слова из букв исходного слова. Букву можно использовать не чаще, чем она встречается в исходнике; само исходное слово не засчитывается. Буква «ё» приравнивается к «е».</string>
     <string name="rules_description_heading">Как играть</string>
-    <string name="rules_item_1">1. Подходят слова из игрового словаря длиной от 3 букв. В заданиях T1 и T2 учитываются только слова от 4 букв, у остальных заданий могут быть свои условия.</string>
+    <string name="rules_item_1">1. Подходят слова из игрового словаря длиной от 3 букв. В заданиях на число слов и на слова с заданной первой буквой учитываются только слова от 4 букв; у других заданий могут быть свои условия длины.</string>
     <string name="rules_item_2">2. Одно слово засчитывается один раз внутри уровня. На другом уровне его можно найти снова.</string>
     <string name="rules_item_3">3. Продуктивные уменьшительные вроде «котик» отсеяны, но закрепившиеся слова вроде «ручка» и «ножка» допустимы.</string>
-    <string name="rules_item_4">4. За каждое выполненное задание даётся звезда. Следующий уровень открывают любые R звёзд из M заданий; выполнять все задания не обязательно.</string>
+    <string name="rules_item_4">4. За каждое выполненное задание даётся звезда. Чтобы открыть следующий уровень, достаточно части звёзд (нужное число указано на экране уровня); выполнять все задания необязательно.</string>
     <string name="rules_item_5">5. Пройденные уровни остаются доступными: можно вернуться и добрать оставшиеся звёзды.</string>
-    <string name="rules_item_6">6. Кампания short15 — это 15 уровней и шесть этапов с заданиями T1–T7. Достижение «Мастер» даётся за все звёзды кампании.</string>
+    <string name="rules_item_6">6. В игре 15 уровней, объединённых в шесть этапов. Достижение «Мастер» даётся за все звёзды игры.</string>
     <string name="rules_footer">Подсказки помогают найти трудные слова и не отнимают звёзд.</string>
     <string name="rules_colors_title">Цвета уровней</string>
     <string name="rules_color_locked">Розовый — уровень пока закрыт.</string>
@@ -90,7 +90,7 @@
     <string name="rules_color_all_stars">Золотистый — собраны все звёзды уровня.</string>
 
     <!-- Об игре -->
-    <string name="about_description">«Составь слова» — офлайн-игра: составляйте слова из букв исходного слова и выполняйте задания короткой кампании short15. В ней 15 уровней и шесть этапов; задания T1–T7 открываются постепенно, а звёзды за задания открывают следующие уровни и достижение «Мастер».</string>
+    <string name="about_description">«Составь слова» — офлайн-игра: составляйте слова из букв исходного слова и выполняйте задания. В ней 15 уровней и шесть этапов; новые задания открываются постепенно, а звёзды за задания открывают следующие уровни и достижение «Мастер».</string>
     <string name="about_words_count">Всего в базе игры: %1$d %2$s</string>
     <string name="about_words_loading">Загрузка количества слов…</string>
     <string name="about_version">Версия приложения: %1$s</string>
@@ -132,7 +132,7 @@
     <string name="game_task_t1">Наберите %1$d %2$s длиной от 4 букв</string>
     <string name="game_task_t2">Найдите %1$d %2$s на букву «%3$s» длиной от 4 букв</string>
     <string name="game_task_t3">Найдите слово длиной от %1$d %2$s</string>
-    <string name="game_task_t4">Разгадайте все загадки обычным вводом</string>
+    <string name="game_task_t4">Угадайте слова по описаниям</string>
     <string name="game_task_t5">Найдите слово с окончанием «%1$s» длиной от %2$d %3$s</string>
     <string name="game_task_t6">Найдите %1$d %2$s по теме «%3$s»</string>
     <string name="game_task_t7">Найдите %1$d %2$s с буквой «%3$s» в любой позиции</string>
@@ -144,14 +144,14 @@
     <string name="game_group_collapsed">Свёрнута</string>
     <string name="game_group_open">Раскрыть</string>
     <string name="game_group_close">Свернуть</string>
-    <string name="game_stats_hints">Взято шагов подсказок: %1$d · потрачено единиц: %2$d</string>
+    <string name="game_stats_hints">Использовано подсказок: %1$d</string>
     <string name="game_stats_remaining">Осталось</string>
-    <string name="correct_three_letter_answer">Слово записано в найденные. Для заданий «набери N» и «на букву» нужны слова от 4 букв.</string>
+    <string name="correct_three_letter_answer">Слово засчитано. В заданиях на число слов и на первую букву учитываются слова от 4 букв.</string>
     <string name="game_next_opened">Открыт следующий уровень!</string>
     <string name="game_finale_title">Игра пройдена</string>
     <string name="game_finale_stars">Звёзды: %1$d из %2$d</string>
     <string name="game_finale_words">Найдено: %1$d %2$s</string>
-    <string name="game_finale_hints">Использовано шагов подсказок: %1$d</string>
+    <string name="game_finale_hints">Использовано подсказок: %1$d</string>
     <string name="game_finale_continue">Продолжить собирать звёзды</string>
     <string name="game_finale_levels">К уровням</string>
     <string name="game_explanations">Новые задания этапа</string>
@@ -160,7 +160,7 @@
     <string name="game_explain_t3">Подойдёт любое слово не короче указанной длины.</string>
     <string name="game_explain_t4">Читайте загадки и вводите ответы в обычное поле. Для звезды разгадайте все загадки задания.</string>
     <string name="game_explain_t5">Найдите слово с заданным окончанием и не короче указанной длины.</string>
-    <string name="game_explain_t6">Находите слова указанной темы. Тема работает и без базы определений.</string>
+    <string name="game_explain_t6">Находите слова указанной темы.</string>
     <string name="game_explain_t7">Найдите слова с указанной буквой в любой позиции. Один ответ может продвинуть несколько заданий.</string>
     <string name="game_category_unknown">Общая тема</string>
     <string name="game_category_animals">Животные</string>
