@@ -25,7 +25,7 @@ class TimeScreenTest {
             in 1..3 -> 1; in 4..6 -> 2; in 7..9 -> 3; in 10..11 -> 4; in 12..13 -> 5; else -> 6
         }, 1, listOf(CampaignTask.T1("r", 1), CampaignTask.T1("m", 2)))
     }, contentSha256 = "a".repeat(64))
-    private val stageNames = listOf("Разминка", "Первая буква", "Длинные слова", "Загадки", "Окончания", "Мастер")
+    private val stageNames = listOf("Разминка", "Первая буква", "Длинные слова", "Загадки", "Окончания", "Эксперт")
 
     private fun ready(ms: Long? = null, stars: Int = 0, timeToRMs: Long? = ms): TimeUiState =
         TimeUiState(loading = false, campaign = campaign,
@@ -70,7 +70,7 @@ class TimeScreenTest {
         compose.onNodeWithTag("time_screen").performScrollToKey("stage_1")
         compose.onNodeWithTag("time_stage_1").assertTextEquals("Разминка: 5 с")
         compose.onNodeWithTag("time_screen").performScrollToKey("stage_6")
-        compose.onNodeWithTag("time_stage_6").assertTextEquals("Мастер: 0 с")
+        compose.onNodeWithTag("time_stage_6").assertTextEquals("Эксперт: 0 с")
     }
 
     @Test fun thresholdLabelsHideInternalNotationAndAggregateStatistics() {

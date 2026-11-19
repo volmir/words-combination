@@ -38,7 +38,7 @@ fun WordsDrawer(
             )
             DrawerItem(Destination.Levels, currentRoute, onNavigate)
             DrawerItem(Destination.Time, currentRoute, onNavigate)
-            DrawerSection(R.string.nav_about)
+            DrawerSection(R.string.nav_help)
             DrawerItem(Destination.Rules, currentRoute, onNavigate)
             DrawerItem(Destination.About, currentRoute, onNavigate)
             HorizontalDivider(Modifier.padding(vertical = 8.dp), color = WordsColors.wellBorder)

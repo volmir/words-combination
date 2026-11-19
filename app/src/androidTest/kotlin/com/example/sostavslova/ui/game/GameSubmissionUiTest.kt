@@ -62,7 +62,7 @@ class GameSubmissionUiTest {
                     GameScreen(state, model::onInputChanged, model::onSubmit, {}, {}, {}, {})
                 }
             }
-            val expected = "Слово „бык“ есть в словаре, но его нельзя составить из букв этого уровня. Не хватает буквы „Б“: есть 0, нужно 1"
+            val expected = "Слово «бык» есть в словаре, но его нельзя составить из букв этого уровня. Не хватает буквы «Б»: есть 0, нужно 1"
             repeat(2) {
                 compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("бык")
                 compose.onNode(hasSetTextAction()).performImeAction()
@@ -128,9 +128,9 @@ class GameSubmissionUiTest {
         val missing = game.submit("колокол", index)
         assertEquals(MissingLetter('к', 1, 2), missing.missingLetter)
         show(missing, "колокол")
-        checkText("Слово „колокол“ есть в словаре, но его нельзя составить из букв этого уровня. Не хватает буквы „К“: есть 1, нужно 2")
+        checkText("Слово «колокол» есть в словаре, но его нельзя составить из букв этого уровня. Не хватает буквы «К»: есть 1, нужно 2")
         show(missing.copy(probabilistic = true), "колокол")
-        checkText("Слово „колокол“ нельзя составить из букв этого уровня. Не хватает буквы „К“: есть 1, нужно 2")
+        checkText("Слово «колокол» нельзя составить из букв этого уровня. Не хватает буквы «К»: есть 1, нужно 2")
         compose.onNodeWithText("есть в словаре", substring = true).assertDoesNotExist()
         show(missing.copy(missingLetter = null), "колокол")
         checkText(context.getString(R.string.answer_letters_missing_error))

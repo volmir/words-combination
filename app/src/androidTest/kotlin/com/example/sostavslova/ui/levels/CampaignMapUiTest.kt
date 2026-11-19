@@ -128,7 +128,7 @@ class CampaignMapUiTest {
             assertEquals("слово2", selected) // The click reaches the VM even though navigation is locked.
             state.value = state.value.copy(lockedRequirement = 1 to 2)
         }
-        compose.onNodeWithText("Для открытия наберите на уровне 1 2 звезды.").assertIsDisplayed()
+        compose.onNodeWithText("Чтобы открыть этот уровень, получите 2 звезды на уровне 1.").assertIsDisplayed()
         compose.onNodeWithText("Закрыть").performClick()
         compose.runOnIdle { state.value = state.value.copy(
             levels = listOf(level(1, 2), level(2, recommended = true)), recommendedLevel = 2,
@@ -190,9 +190,9 @@ class CampaignMapUiTest {
         assertEquals(1, presented)
         compose.onNodeWithTag("levels_welcome").assertIsDisplayed()
         compose.onNodeWithTag("levels_welcome_text").assertTextEquals(
-            "Добро пожаловать в „Составь слова“! Составляйте слова из букв исходного слова, " +
+            "Добро пожаловать в «Составь слова»! Составляйте слова из букв исходного слова, " +
                 "выполняйте задания, получайте звёзды и открывайте новые уровни. " +
-                "Выберите первый доступный уровень — прогресс сохраняется автоматически",
+                "Выберите первый доступный уровень — прогресс сохраняется автоматически.",
         )
         compose.runOnIdle { state.value = state.value.copy(recommendedLevel = 2) }
         compose.waitForIdle()

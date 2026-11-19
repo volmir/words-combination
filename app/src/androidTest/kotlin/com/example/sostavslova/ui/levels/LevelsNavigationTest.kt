@@ -30,7 +30,7 @@ class LevelsNavigationTest {
         compose.onNodeWithTag("level_card_2").assertIsEnabled()
             .assert(hasContentDescription("Уровень недоступен"))
         compose.onNodeWithTag("level_card_2").performClick()
-        compose.onNodeWithText("Для открытия наберите на уровне 1 1 звезду.").assertExists()
+        compose.onNodeWithText("Чтобы открыть этот уровень, получите 1 звезду на уровне 1.").assertExists()
         compose.onNodeWithTag("game_screen").assertDoesNotExist()
         compose.onNodeWithText("Закрыть").performClick()
         val campaign = requireNotNull(container.levelsRepository.getCampaign())

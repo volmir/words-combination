@@ -6,12 +6,13 @@
     <string name="nav_levels">Прохождение</string>
     <string name="nav_rules">Правила</string>
     <string name="nav_about">Об игре</string>
+    <string name="nav_help">Справка</string>
     <string name="retry">Повторить</string>
     <string name="levels_title">Прохождение уровней игры</string>
     <string name="level_button">%1$d. %2$s</string>
     <string name="level_locked">Уровень недоступен</string>
     <string name="levels_load_error">Не удалось загрузить уровни. Попробуйте ещё раз.</string>
-    <string name="welcome_message">Добро пожаловать в „Составь слова“! Составляйте слова из букв исходного слова, выполняйте задания, получайте звёзды и открывайте новые уровни. Выберите первый доступный уровень — прогресс сохраняется автоматически</string>
+    <string name="welcome_message">Добро пожаловать в «Составь слова»! Составляйте слова из букв исходного слова, выполняйте задания, получайте звёзды и открывайте новые уровни. Выберите первый доступный уровень — прогресс сохраняется автоматически.</string>
     <string name="welcome_confirm">Понятно</string>
     <string name="level_start_error">Не удалось начать уровень. Попробуйте ещё раз.</string>
     <string name="your_answer">Ваш ответ:</string>
@@ -21,7 +22,7 @@
     <string name="no_combinations">Комбинации слов не найдены!</string>
     <string name="word_too_short">Введите слово длиной не менее 3-х символов</string>
     <string name="tasks">Задания</string>
-    <string name="stats_letters">Кол-во букв в слове</string>
+    <string name="stats_letters">Букв в слове</string>
     <string name="stats_found_total">Отгадано / Всего</string>
     <string name="stats_percent" formatted="false">Процент, %</string>
     <string name="stats_total">Всего</string>
@@ -42,8 +43,8 @@
     <string name="answer_already_found">Вы уже разгадали слово %1$s</string>
     <string name="answer_unknown">Слово «%1$s» не распознано словарём</string>
     <string name="answer_not_counted">Слово «%1$s» есть в словаре, но не входит в игровой набор</string>
-    <string name="answer_letters_missing">Слово „%1$s“ есть в словаре, но его нельзя составить из букв этого уровня. Не хватает буквы „%2$s“: есть %3$d, нужно %4$d</string>
-    <string name="answer_letters_missing_probable">Слово „%1$s“ нельзя составить из букв этого уровня. Не хватает буквы „%2$s“: есть %3$d, нужно %4$d</string>
+    <string name="answer_letters_missing">Слово «%1$s» есть в словаре, но его нельзя составить из букв этого уровня. Не хватает буквы «%2$s»: есть %3$d, нужно %4$d</string>
+    <string name="answer_letters_missing_probable">Слово «%1$s» нельзя составить из букв этого уровня. Не хватает буквы «%2$s»: есть %3$d, нужно %4$d</string>
     <string name="answer_letters_missing_error">Слово нельзя составить из букв этого уровня. Не удалось определить недостающую букву. Попробуйте другое слово.</string>
     <string name="answer_count_one">буква</string>
     <string name="answer_count_few">буквы</string>
@@ -73,7 +74,7 @@
     <string name="task_complete">Пройдите уровень</string>
     <string name="task_complete_remaining">Пройдите уровень (ещё %1$d %2$s)</string>
     <string name="task_words">Введите %1$d %2$s (%3$d/%1$d)</string>
-    <string name="task_letters">Введите %1$d %2$s на букву \"%3$s\" (%4$d/%1$d)</string>
+    <string name="task_letters">Введите %1$d %2$s на букву «%3$s» (%4$d/%1$d)</string>
     <string name="task_done">Задание выполнено</string>
     <string name="task_pending">Задание ещё не выполнено</string>
     <string name="game_loading">Восстанавливаем игру…</string>
@@ -124,12 +125,12 @@
     <string name="stage_long">Длинные слова</string>
     <string name="stage_riddles">Загадки</string>
     <string name="stage_endings">Окончания</string>
-    <string name="stage_master">Мастер</string>
+    <string name="stage_master">Эксперт</string>
     <string name="levels_finale">Финал кампании достигнут! Можно вернуться за оставшимися звёздами.</string>
     <string name="levels_master">Мастер — все звёзды собраны!</string>
     <string name="level_crown">Корона: финал кампании достигнут</string>
     <string name="level_stars_label">Звёзды</string>
-    <string name="level_unlock_requirement">Для открытия наберите на уровне %1$d %2$d %3$s.</string>
+    <string name="level_unlock_requirement">Чтобы открыть этот уровень, получите %2$d %3$s на уровне %1$d.</string>
     <string name="star_one">звезду</string>
     <string name="star_few">звезды</string>
     <string name="star_many">звёзд</string>

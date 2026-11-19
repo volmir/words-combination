@@ -75,7 +75,7 @@ class LevelsLayoutTest {
         compose.onNodeWithTag("level_card_2").assertIsEnabled()
             .assert(hasContentDescription("Уровень недоступен").not())
         compose.onNodeWithTag("levels_grid").performScrollToKey("stage_6")
-        compose.onNodeWithTag("levels_stage_6").assertTextEquals("Мастер · уровни 14–15")
+        compose.onNodeWithTag("levels_stage_6").assertTextEquals("Эксперт · уровни 14–15")
         compose.onNodeWithTag("levels_grid").performScrollToKey(items.last().word)
         compose.onNodeWithTag("level_card_15").assertExists()
         compose.onAllNodesWithTag("level_card_16").assertCountEquals(0)

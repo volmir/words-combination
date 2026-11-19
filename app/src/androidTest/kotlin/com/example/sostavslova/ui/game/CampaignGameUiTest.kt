@@ -43,7 +43,7 @@ class CampaignGameUiTest {
                     { state.value = state.value.copy(dialog = null) }, {})
             }
         }
-        compose.onNodeWithTag("level_header").assertTextEquals("Мастер · уровень 30 из 30")
+        compose.onNodeWithTag("level_header").assertTextEquals("Эксперт · уровень 30 из 30")
         compose.onNodeWithTag("level_difficulty").assertTextContains("Для финала", substring = true)
         compose.onNodeWithTag("game_tasks_summary").performScrollTo()
             .assertTextEquals("Задания · ${evaluated.state.completedTaskIds.size} из ${tasks.size}")

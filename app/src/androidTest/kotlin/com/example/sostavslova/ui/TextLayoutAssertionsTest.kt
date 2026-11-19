@@ -21,7 +21,7 @@ class TextLayoutAssertionsTest {
     @get:Rule val compose = createComposeRule()
 
     private fun layout(
-        text: String = "Мастер · уровень 30\nиз 30",
+        text: String = "Эксперт · уровень 30\nиз 30",
         maxLines: Int = Int.MAX_VALUE,
         overflow: TextOverflow = TextOverflow.Clip,
     ): TextLayoutResult {
