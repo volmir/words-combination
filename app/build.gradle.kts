@@ -208,8 +208,8 @@ android {
         applicationId = "io.github.volmir.wordscombination"
         minSdk = 24
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 5
+        versionName = "1.0.4"
         testInstrumentationRunner = "com.example.sostavslova.WordsTestRunner"
         buildConfigField("String", "CAMPAIGN_SHA256", "\"$campaignSha256\"")
         buildConfigField("String", "WORDS_SHA256", "\"$wordsSha256\"")

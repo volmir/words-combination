@@ -1,0 +1,1 @@
+UI improvements: larger source-word letter tiles with even wrapping, a less prominent hint button, updated level and statistics colors, grouped found words, letter-by-letter hints with task selection and clearer cost, plus other fixes and refinements.
