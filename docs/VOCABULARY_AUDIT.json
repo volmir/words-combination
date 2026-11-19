@@ -1,0 +1,4902 @@
+{
+  "affected_tasks": [
+    {
+      "count": 72,
+      "hits": [
+        "винч",
+        "инет",
+        "минет",
+        "опен",
+        "пенис",
+        "свип"
+      ],
+      "hits_by_category": {
+        "abbreviations": [
+          "винч",
+          "инет",
+          "опен",
+          "свип"
+        ],
+        "sexual_coarse": [
+          "минет",
+          "пенис"
+        ]
+      },
+      "level": 1,
+      "margin": 63,
+      "margin_after_removal": 57,
+      "needed": 9,
+      "task_id": "l01-t1",
+      "type": "T1",
+      "would_break": false
+    },
+    {
+      "count": 120,
+      "hits": [
+        "вагина",
+        "инет"
+      ],
+      "hits_by_category": {
+        "abbreviations": [
+          "инет"
+        ],
+        "sexual_coarse": [
+          "вагина"
+        ]
+      },
+      "level": 2,
+      "margin": 110,
+      "margin_after_removal": 108,
+      "needed": 10,
+      "task_id": "l02-t1",
+      "type": "T1",
+      "would_break": false
+    },
+    {
+      "count": 249,
+      "hits": [
+        "анус"
+      ],
+      "hits_by_category": {
+        "sexual_coarse": [
+          "анус"
+        ]
+      },
+      "level": 7,
+      "margin": 234,
+      "margin_after_removal": 233,
+      "needed": 15,
+      "task_id": "l07-t1",
+      "type": "T1",
+      "would_break": false
+    },
+    {
+      "count": 266,
+      "hits": [
+        "опен",
+        "перед"
+      ],
+      "hits_by_category": {
+        "abbreviations": [
+          "опен"
+        ],
+        "function_words": [
+          "перед"
+        ]
+      },
+      "level": 8,
+      "margin": 250,
+      "margin_after_removal": 248,
+      "needed": 16,
+      "task_id": "l08-t1",
+      "type": "T1",
+      "would_break": false
+    },
+    {
+      "count": 85,
+      "hits": [
+        "перед"
+      ],
+      "hits_by_category": {
+        "function_words": [
+          "перед"
+        ]
+      },
+      "level": 8,
+      "margin": 80,
+      "margin_after_removal": 79,
+      "needed": 5,
+      "task_id": "l08-t2",
+      "type": "T2",
+      "would_break": false
+    },
+    {
+      "count": 366,
+      "hits": [
+        "инет",
+        "опен",
+        "эротика"
+      ],
+      "hits_by_category": {
+        "abbreviations": [
+          "инет",
+          "опен"
+        ],
+        "sexual_coarse": [
+          "эротика"
+        ]
+      },
+      "level": 10,
+      "margin": 348,
+      "margin_after_removal": 345,
+      "needed": 18,
+      "task_id": "l10-t1",
+      "type": "T1",
+      "would_break": false
+    },
+    {
+      "count": 32,
+      "hits": [
+        "эротика"
+      ],
+      "hits_by_category": {
+        "sexual_coarse": [
+          "эротика"
+        ]
+      },
+      "level": 10,
+      "margin": 31,
+      "margin_after_removal": 30,
+      "needed": 1,
+      "task_id": "l10-t3",
+      "type": "T3",
+      "would_break": false
+    },
+    {
+      "count": 451,
+      "hits": [
+        "педераст",
+        "перед"
+      ],
+      "hits_by_category": {
+        "function_words": [
+          "перед"
+        ],
+        "sexual_coarse": [
+          "педераст"
+        ]
+      },
+      "level": 11,
+      "margin": 432,
+      "margin_after_removal": 430,
+      "needed": 19,
+      "task_id": "l11-t1",
+      "type": "T1",
+      "would_break": false
+    },
+    {
+      "count": 105,
+      "hits": [
+        "педераст",
+        "перед"
+      ],
+      "hits_by_category": {
+        "function_words": [
+          "перед"
+        ],
+        "sexual_coarse": [
+          "педераст"
+        ]
+      },
+      "level": 11,
+      "margin": 99,
+      "margin_after_removal": 97,
+      "needed": 6,
+      "task_id": "l11-t2",
+      "type": "T2",
+      "would_break": false
+    },
+    {
+      "count": 65,
+      "hits": [
+        "педераст"
+      ],
+      "hits_by_category": {
+        "sexual_coarse": [
+          "педераст"
+        ]
+      },
+      "level": 11,
+      "margin": 64,
+      "margin_after_removal": 63,
+      "needed": 1,
+      "task_id": "l11-t3",
+      "type": "T3",
+      "would_break": false
+    },
+    {
+      "count": 442,
+      "hits": [
+        "клитор"
+      ],
+      "hits_by_category": {
+        "sexual_coarse": [
+          "клитор"
+        ]
+      },
+      "level": 12,
+      "margin": 422,
+      "margin_after_removal": 421,
+      "needed": 20,
+      "task_id": "l12-t1",
+      "type": "T1",
+      "would_break": false
+    },
+    {
+      "count": 435,
+      "hits": [
+        "скотина"
+      ],
+      "hits_by_category": {
+        "sexual_coarse": [
+          "скотина"
+        ]
+      },
+      "level": 14,
+      "margin": 413,
+      "margin_after_removal": 412,
+      "needed": 22,
+      "task_id": "l14-t1",
+      "type": "T1",
+      "would_break": false
+    },
+    {
+      "count": 520,
+      "hits": [
+        "анус",
+        "инет",
+        "минет",
+        "скотина"
+      ],
+      "hits_by_category": {
+        "abbreviations": [
+          "инет"
+        ],
+        "sexual_coarse": [
+          "анус",
+          "минет",
+          "скотина"
+        ]
+      },
+      "level": 15,
+      "margin": 496,
+      "margin_after_removal": 492,
+      "needed": 24,
+      "task_id": "l15-t1",
+      "type": "T1",
+      "would_break": false
+    },
+    {
+      "count": 120,
+      "hits": [
+        "скотина"
+      ],
+      "hits_by_category": {
+        "sexual_coarse": [
+          "скотина"
+        ]
+      },
+      "level": 15,
+      "margin": 113,
+      "margin_after_removal": 112,
+      "needed": 7,
+      "task_id": "l15-t2",
+      "type": "T2",
+      "would_break": false
+    },
+    {
+      "count": 143,
+      "hits": [
+        "анус",
+        "тут"
+      ],
+      "hits_by_category": {
+        "function_words": [
+          "тут"
+        ],
+        "sexual_coarse": [
+          "анус"
+        ]
+      },
+      "level": 15,
+      "margin": 135,
+      "margin_after_removal": 133,
+      "needed": 8,
+      "task_id": "l15-t7",
+      "type": "T7",
+      "would_break": false
+    }
+  ],
+  "campaign": {
+    "countMinLength": 4,
+    "levels": 15,
+    "tasks": 49,
+    "version": 2
+  },
+  "candidates": [
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1,
+        4,
+        8,
+        10,
+        13,
+        14,
+        15
+      ],
+      "category": "function_words",
+      "category_title": "Местоимения и служебные слова",
+      "note": "местоимение",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "они"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1,
+        4,
+        9
+      ],
+      "category": "function_words",
+      "category_title": "Местоимения и служебные слова",
+      "note": "местоимение",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "оно"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1,
+        4,
+        8,
+        10,
+        13,
+        15
+      ],
+      "category": "function_words",
+      "category_title": "Местоимения и служебные слова",
+      "note": "диалектная/устаревшая форма местоимения",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "оне"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        8,
+        11
+      ],
+      "category": "function_words",
+      "category_title": "Местоимения и служебные слова",
+      "note": "предлог; также существительное-омоним",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "под"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        2,
+        5,
+        9
+      ],
+      "category": "function_words",
+      "category_title": "Местоимения и служебные слова",
+      "note": "междометие/частица",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "ага"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        4,
+        8,
+        9,
+        10,
+        13,
+        14,
+        15
+      ],
+      "category": "function_words",
+      "category_title": "Местоимения и служебные слова",
+      "note": "местоимение",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "она"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "function_words",
+      "category_title": "Местоимения и служебные слова",
+      "note": "возвратное местоимение",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "себя"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        3
+      ],
+      "category": "function_words",
+      "category_title": "Местоимения и служебные слова",
+      "note": "притяжательное местоимение",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "моя"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        4,
+        5,
+        12,
+        14
+      ],
+      "category": "function_words",
+      "category_title": "Местоимения и служебные слова",
+      "note": "союз",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "ибо"
+    },
+    {
+      "affected_task_ids": [
+        "l08-t1",
+        "l08-t2",
+        "l11-t1",
+        "l11-t2"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        8,
+        11
+      ],
+      "category": "function_words",
+      "category_title": "Местоимения и служебные слова",
+      "note": "предлог; также существительное-омоним",
+      "task_roles": {
+        "T1": [
+          8,
+          11
+        ],
+        "T2": [
+          8,
+          11
+        ],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "перед"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        3,
+        5,
+        12,
+        15
+      ],
+      "category": "function_words",
+      "category_title": "Местоимения и служебные слова",
+      "note": "частица; также существительное-омоним",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "мол"
+    },
+    {
+      "affected_task_ids": [
+        "l15-t7"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        15
+      ],
+      "category": "function_words",
+      "category_title": "Местоимения и служебные слова",
+      "note": "наречие; также существительное-омоним",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": [
+          15
+        ]
+      },
+      "word": "тут"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1,
+        8
+      ],
+      "category": "abbreviations",
+      "category_title": "Аббревиатуры и транслитерации",
+      "note": "транслитерация VIP",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "вип"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1,
+        2
+      ],
+      "category": "abbreviations",
+      "category_title": "Аббревиатуры и транслитерации",
+      "note": "сокращение/транслитерация",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "тви"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1,
+        5,
+        12,
+        15
+      ],
+      "category": "abbreviations",
+      "category_title": "Аббревиатуры и транслитерации",
+      "note": "сокращение/транслитерация",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "мио"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1
+      ],
+      "category": "abbreviations",
+      "category_title": "Аббревиатуры и транслитерации",
+      "note": "транслитерация",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "чон"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1
+      ],
+      "category": "abbreviations",
+      "category_title": "Аббревиатуры и транслитерации",
+      "note": "транслитерация/сокращение",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "чоп"
+    },
+    {
+      "affected_task_ids": [
+        "l01-t1",
+        "l08-t1",
+        "l10-t1"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1,
+        8,
+        10
+      ],
+      "category": "abbreviations",
+      "category_title": "Аббревиатуры и транслитерации",
+      "note": "транслитерация open",
+      "task_roles": {
+        "T1": [
+          1,
+          8,
+          10
+        ],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "опен"
+    },
+    {
+      "affected_task_ids": [
+        "l01-t1",
+        "l02-t1",
+        "l10-t1",
+        "l15-t1"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1,
+        2,
+        10,
+        15
+      ],
+      "category": "abbreviations",
+      "category_title": "Аббревиатуры и транслитерации",
+      "note": "разговорное сокращение от «интернет»",
+      "task_roles": {
+        "T1": [
+          1,
+          2,
+          10,
+          15
+        ],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "инет"
+    },
+    {
+      "affected_task_ids": [
+        "l01-t1"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1
+      ],
+      "category": "abbreviations",
+      "category_title": "Аббревиатуры и транслитерации",
+      "note": "транслитерация sweep",
+      "task_roles": {
+        "T1": [
+          1
+        ],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "свип"
+    },
+    {
+      "affected_task_ids": [
+        "l01-t1"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1
+      ],
+      "category": "abbreviations",
+      "category_title": "Аббревиатуры и транслитерации",
+      "note": "транслитерация winch",
+      "task_roles": {
+        "T1": [
+          1
+        ],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "винч"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "сексуальная лексика",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "секс"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "порнографическая лексика",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "порно"
+    },
+    {
+      "affected_task_ids": [
+        "l01-t1",
+        "l15-t1"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1,
+        15
+      ],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "сексуальная лексика",
+      "task_roles": {
+        "T1": [
+          1,
+          15
+        ],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "минет"
+    },
+    {
+      "affected_task_ids": [
+        "l01-t1"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        1
+      ],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "анатомическая/сексуальная лексика",
+      "task_roles": {
+        "T1": [
+          1
+        ],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "пенис"
+    },
+    {
+      "affected_task_ids": [
+        "l02-t1"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        2
+      ],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [
+          2
+        ],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "вагина"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "влагалище"
+    },
+    {
+      "affected_task_ids": [
+        "l12-t1"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        12
+      ],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [
+          12
+        ],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "клитор"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "эрекция"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "мастурбация"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "онанизм"
+    },
+    {
+      "affected_task_ids": [
+        "l07-t1",
+        "l15-t1",
+        "l15-t7"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        7,
+        15
+      ],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [
+          7,
+          15
+        ],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": [
+          15
+        ]
+      },
+      "word": "анус"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "лобок"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "педофил"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "изнасилование"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "проститутка"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "проститут"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "проституция"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "бордель"
+    },
+    {
+      "affected_task_ids": [
+        "l10-t1",
+        "l10-t3"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        10
+      ],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [
+          10
+        ],
+        "T2": [],
+        "T3": [
+          10
+        ],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "эротика"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "порнография"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "порнуха"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "интим"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "грубая лексика",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "жопа"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "грубая лексика",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "задница"
+    },
+    {
+      "affected_task_ids": [
+        "l11-t1",
+        "l11-t2",
+        "l11-t3"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        11
+      ],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "грубая лексика",
+      "task_roles": {
+        "T1": [
+          11
+        ],
+        "T2": [
+          11
+        ],
+        "T3": [
+          11
+        ],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "педераст"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "грубая лексика",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "гомик"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "грубая лексика",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "хуйло"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "грубая лексика",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "хуи"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "грубая лексика",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "засранец"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "грубая лексика",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "сволочь"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "грубая лексика",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "тварь"
+    },
+    {
+      "affected_task_ids": [
+        "l14-t1",
+        "l15-t1",
+        "l15-t2"
+      ],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [
+        14,
+        15
+      ],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "грубая лексика",
+      "task_roles": {
+        "T1": [
+          14,
+          15
+        ],
+        "T2": [
+          15
+        ],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "скотина"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "sexual_coarse",
+      "category_title": "Сексуальная и грубая лексика",
+      "note": "грубая лексика",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "гадина"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительное от «цветок»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "цветик"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительно-ласкательное от «лапа»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "лапонька"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительное/экспрессивное от «мальчик»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "мальчишка"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "экспрессивное уменьшительное от «девочка»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "девчонка"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительное от «печенье»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "печенька"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительное от «звезда»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "звездочка"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительное от «улица»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "улочка"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительное от «пупок»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "пупочка"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительно-ласкательное от «лапа»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "лапочка"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительное от «четвёрка»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "четверочка"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительное от «тапок»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "тапочка"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительно-ласкательное от «дядя»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "дяденька"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительно-ласкательное от «батя»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "батенька"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительно-ласкательное от «тятя»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "тятенька"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительное от «Миша»/«медведь»; игрушка лексикализована",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "мишка"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительное от «малый»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "малышка"
+    },
+    {
+      "affected_task_ids": [],
+      "assigned": {
+        "T3_target": [],
+        "T4_target": [],
+        "T6_list": []
+      },
+      "buildable_levels": [],
+      "category": "productive_diminutives",
+      "category_title": "Продуктивные уменьшительные",
+      "note": "уменьшительное от «лёд»",
+      "task_roles": {
+        "T1": [],
+        "T2": [],
+        "T3": [],
+        "T4": [],
+        "T5": [],
+        "T6": [],
+        "T7": []
+      },
+      "word": "ледышка"
+    }
+  ],
+  "categories": [
+    {
+      "absent_reference": [
+        {
+          "note": "",
+          "present": false,
+          "word": "что"
+        },
+        {
+          "note": "",
+          "present": false,
+          "word": "кто"
+        },
+        {
+          "note": "",
+          "present": false,
+          "word": "как"
+        }
+      ],
+      "absent_words": [],
+      "affected_task_count": 5,
+      "configured_words": [
+        "они",
+        "оно",
+        "оне",
+        "под",
+        "ага",
+        "она",
+        "себя",
+        "моя",
+        "ибо",
+        "перед",
+        "мол",
+        "тут"
+      ],
+      "description": "Поверхностные формы местоимений, предлогов, частиц и междометий. В словаре есть «они», «оно», «оне», «под», «ага», но «что», «кто» и «как» отсутствуют, поэтому фильтр по части речи непоследователен.",
+      "examples": [
+        "они",
+        "оно",
+        "оне",
+        "под",
+        "ага"
+      ],
+      "id": "function_words",
+      "lexicalized_exceptions": [],
+      "present_words": [
+        "они",
+        "оно",
+        "оне",
+        "под",
+        "ага",
+        "она",
+        "себя",
+        "моя",
+        "ибо",
+        "перед",
+        "мол",
+        "тут"
+      ],
+      "role_counts": {
+        "T3_target": 0,
+        "T4_target": 0,
+        "T5": 0,
+        "T6_list": 0,
+        "letter_tasks": 3
+      },
+      "title": "Местоимения и служебные слова",
+      "words": [
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1,
+            4,
+            8,
+            10,
+            13,
+            14,
+            15
+          ],
+          "note": "местоимение",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "они"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1,
+            4,
+            9
+          ],
+          "note": "местоимение",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "оно"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1,
+            4,
+            8,
+            10,
+            13,
+            15
+          ],
+          "note": "диалектная/устаревшая форма местоимения",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "оне"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            8,
+            11
+          ],
+          "note": "предлог; также существительное-омоним",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "под"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            2,
+            5,
+            9
+          ],
+          "note": "междометие/частица",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "ага"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            4,
+            8,
+            9,
+            10,
+            13,
+            14,
+            15
+          ],
+          "note": "местоимение",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "она"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "возвратное местоимение",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "себя"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            3
+          ],
+          "note": "притяжательное местоимение",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "моя"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            4,
+            5,
+            12,
+            14
+          ],
+          "note": "союз",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "ибо"
+        },
+        {
+          "affected_task_ids": [
+            "l08-t1",
+            "l08-t2",
+            "l11-t1",
+            "l11-t2"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            8,
+            11
+          ],
+          "note": "предлог; также существительное-омоним",
+          "task_roles": {
+            "T1": [
+              8,
+              11
+            ],
+            "T2": [
+              8,
+              11
+            ],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "перед"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            3,
+            5,
+            12,
+            15
+          ],
+          "note": "частица; также существительное-омоним",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "мол"
+        },
+        {
+          "affected_task_ids": [
+            "l15-t7"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            15
+          ],
+          "note": "наречие; также существительное-омоним",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": [
+              15
+            ]
+          },
+          "word": "тут"
+        }
+      ]
+    },
+    {
+      "absent_reference": [],
+      "absent_words": [],
+      "affected_task_count": 5,
+      "configured_words": [
+        "вип",
+        "тви",
+        "мио",
+        "чон",
+        "чоп",
+        "опен",
+        "инет",
+        "свип",
+        "винч"
+      ],
+      "description": "Короткие сокращения и транслитерации, не являющиеся обычными русскими существительными. Список задан в конфиге, чтобы отчёт не зависел от догадок по буквам.",
+      "examples": [
+        "вип",
+        "тви",
+        "мио",
+        "чон",
+        "чоп"
+      ],
+      "id": "abbreviations",
+      "lexicalized_exceptions": [],
+      "present_words": [
+        "вип",
+        "тви",
+        "мио",
+        "чон",
+        "чоп",
+        "опен",
+        "инет",
+        "свип",
+        "винч"
+      ],
+      "role_counts": {
+        "T3_target": 0,
+        "T4_target": 0,
+        "T5": 0,
+        "T6_list": 0,
+        "letter_tasks": 4
+      },
+      "title": "Аббревиатуры и транслитерации",
+      "words": [
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1,
+            8
+          ],
+          "note": "транслитерация VIP",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "вип"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1,
+            2
+          ],
+          "note": "сокращение/транслитерация",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "тви"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1,
+            5,
+            12,
+            15
+          ],
+          "note": "сокращение/транслитерация",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "мио"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1
+          ],
+          "note": "транслитерация",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "чон"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1
+          ],
+          "note": "транслитерация/сокращение",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "чоп"
+        },
+        {
+          "affected_task_ids": [
+            "l01-t1",
+            "l08-t1",
+            "l10-t1"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1,
+            8,
+            10
+          ],
+          "note": "транслитерация open",
+          "task_roles": {
+            "T1": [
+              1,
+              8,
+              10
+            ],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "опен"
+        },
+        {
+          "affected_task_ids": [
+            "l01-t1",
+            "l02-t1",
+            "l10-t1",
+            "l15-t1"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1,
+            2,
+            10,
+            15
+          ],
+          "note": "разговорное сокращение от «интернет»",
+          "task_roles": {
+            "T1": [
+              1,
+              2,
+              10,
+              15
+            ],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "инет"
+        },
+        {
+          "affected_task_ids": [
+            "l01-t1"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1
+          ],
+          "note": "транслитерация sweep",
+          "task_roles": {
+            "T1": [
+              1
+            ],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "свип"
+        },
+        {
+          "affected_task_ids": [
+            "l01-t1"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1
+          ],
+          "note": "транслитерация winch",
+          "task_roles": {
+            "T1": [
+              1
+            ],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "винч"
+        }
+      ]
+    },
+    {
+      "absent_reference": [],
+      "absent_words": [],
+      "affected_task_count": 13,
+      "configured_words": [
+        "секс",
+        "порно",
+        "минет",
+        "пенис",
+        "вагина",
+        "влагалище",
+        "клитор",
+        "эрекция",
+        "мастурбация",
+        "онанизм",
+        "анус",
+        "лобок",
+        "педофил",
+        "изнасилование",
+        "проститутка",
+        "проститут",
+        "проституция",
+        "бордель",
+        "эротика",
+        "порнография",
+        "порнуха",
+        "интим",
+        "жопа",
+        "задница",
+        "педераст",
+        "гомик",
+        "хуйло",
+        "хуи",
+        "засранец",
+        "сволочь",
+        "тварь",
+        "скотина",
+        "гадина"
+      ],
+      "description": "Явная сексуальная/порнографическая лексика и выбранные грубые слова. Приложение не имеет возрастного ограничения, поэтому такие слова стоит рассмотреть отдельно; список курируемый и не претендует на полноту.",
+      "examples": [
+        "секс",
+        "порно",
+        "минет",
+        "пенис",
+        "вагина"
+      ],
+      "id": "sexual_coarse",
+      "lexicalized_exceptions": [],
+      "present_words": [
+        "секс",
+        "порно",
+        "минет",
+        "пенис",
+        "вагина",
+        "влагалище",
+        "клитор",
+        "эрекция",
+        "мастурбация",
+        "онанизм",
+        "анус",
+        "лобок",
+        "педофил",
+        "изнасилование",
+        "проститутка",
+        "проститут",
+        "проституция",
+        "бордель",
+        "эротика",
+        "порнография",
+        "порнуха",
+        "интим",
+        "жопа",
+        "задница",
+        "педераст",
+        "гомик",
+        "хуйло",
+        "хуи",
+        "засранец",
+        "сволочь",
+        "тварь",
+        "скотина",
+        "гадина"
+      ],
+      "role_counts": {
+        "T3_target": 0,
+        "T4_target": 0,
+        "T5": 0,
+        "T6_list": 0,
+        "letter_tasks": 13
+      },
+      "title": "Сексуальная и грубая лексика",
+      "words": [
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "сексуальная лексика",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "секс"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "порнографическая лексика",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "порно"
+        },
+        {
+          "affected_task_ids": [
+            "l01-t1",
+            "l15-t1"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1,
+            15
+          ],
+          "note": "сексуальная лексика",
+          "task_roles": {
+            "T1": [
+              1,
+              15
+            ],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "минет"
+        },
+        {
+          "affected_task_ids": [
+            "l01-t1"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            1
+          ],
+          "note": "анатомическая/сексуальная лексика",
+          "task_roles": {
+            "T1": [
+              1
+            ],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "пенис"
+        },
+        {
+          "affected_task_ids": [
+            "l02-t1"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            2
+          ],
+          "note": "",
+          "task_roles": {
+            "T1": [
+              2
+            ],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "вагина"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "влагалище"
+        },
+        {
+          "affected_task_ids": [
+            "l12-t1"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            12
+          ],
+          "note": "",
+          "task_roles": {
+            "T1": [
+              12
+            ],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "клитор"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "эрекция"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "мастурбация"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "онанизм"
+        },
+        {
+          "affected_task_ids": [
+            "l07-t1",
+            "l15-t1",
+            "l15-t7"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            7,
+            15
+          ],
+          "note": "",
+          "task_roles": {
+            "T1": [
+              7,
+              15
+            ],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": [
+              15
+            ]
+          },
+          "word": "анус"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "лобок"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "педофил"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "изнасилование"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "проститутка"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "проститут"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "проституция"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "бордель"
+        },
+        {
+          "affected_task_ids": [
+            "l10-t1",
+            "l10-t3"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            10
+          ],
+          "note": "",
+          "task_roles": {
+            "T1": [
+              10
+            ],
+            "T2": [],
+            "T3": [
+              10
+            ],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "эротика"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "порнография"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "порнуха"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "интим"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "грубая лексика",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "жопа"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "грубая лексика",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "задница"
+        },
+        {
+          "affected_task_ids": [
+            "l11-t1",
+            "l11-t2",
+            "l11-t3"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            11
+          ],
+          "note": "грубая лексика",
+          "task_roles": {
+            "T1": [
+              11
+            ],
+            "T2": [
+              11
+            ],
+            "T3": [
+              11
+            ],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "педераст"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "грубая лексика",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "гомик"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "грубая лексика",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "хуйло"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "грубая лексика",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "хуи"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "грубая лексика",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "засранец"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "грубая лексика",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "сволочь"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "грубая лексика",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "тварь"
+        },
+        {
+          "affected_task_ids": [
+            "l14-t1",
+            "l15-t1",
+            "l15-t2"
+          ],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [
+            14,
+            15
+          ],
+          "note": "грубая лексика",
+          "task_roles": {
+            "T1": [
+              14,
+              15
+            ],
+            "T2": [
+              15
+            ],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "скотина"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "грубая лексика",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "гадина"
+        }
+      ]
+    },
+    {
+      "absent_reference": [
+        {
+          "note": "Отсутствует в текущем words.txt: исключён LEX11-01. Поэтому пример из постановки уже не воспроизводится; T3 уровня 11 нацелен на «постель».",
+          "present": false,
+          "word": "адресок"
+        }
+      ],
+      "absent_words": [],
+      "affected_task_count": 0,
+      "configured_words": [
+        "цветик",
+        "лапонька",
+        "мальчишка",
+        "девчонка",
+        "печенька",
+        "звездочка",
+        "улочка",
+        "пупочка",
+        "лапочка",
+        "четверочка",
+        "тапочка",
+        "дяденька",
+        "батенька",
+        "тятенька",
+        "мишка",
+        "малышка",
+        "ледышка"
+      ],
+      "description": "Слова с продуктивной уменьшительной моделью, оставшиеся после очистки. Правило кампании требует отсеивать продуктивные уменьшительные; «ручка», «ножка» и «рыбка» исключены из кандидатов как подтверждённые владельцем лексикализации.",
+      "examples": [
+        "цветик",
+        "лапонька",
+        "мальчишка",
+        "девчонка",
+        "печенька"
+      ],
+      "id": "productive_diminutives",
+      "lexicalized_exceptions": [
+        "ручка",
+        "ножка",
+        "рыбка"
+      ],
+      "present_words": [
+        "цветик",
+        "лапонька",
+        "мальчишка",
+        "девчонка",
+        "печенька",
+        "звездочка",
+        "улочка",
+        "пупочка",
+        "лапочка",
+        "четверочка",
+        "тапочка",
+        "дяденька",
+        "батенька",
+        "тятенька",
+        "мишка",
+        "малышка",
+        "ледышка"
+      ],
+      "role_counts": {
+        "T3_target": 0,
+        "T4_target": 0,
+        "T5": 0,
+        "T6_list": 0,
+        "letter_tasks": 0
+      },
+      "title": "Продуктивные уменьшительные",
+      "words": [
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительное от «цветок»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "цветик"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительно-ласкательное от «лапа»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "лапонька"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительное/экспрессивное от «мальчик»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "мальчишка"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "экспрессивное уменьшительное от «девочка»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "девчонка"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительное от «печенье»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "печенька"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительное от «звезда»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "звездочка"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительное от «улица»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "улочка"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительное от «пупок»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "пупочка"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительно-ласкательное от «лапа»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "лапочка"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительное от «четвёрка»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "четверочка"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительное от «тапок»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "тапочка"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительно-ласкательное от «дядя»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "дяденька"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительно-ласкательное от «батя»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "батенька"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительно-ласкательное от «тятя»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "тятенька"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительное от «Миша»/«медведь»; игрушка лексикализована",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "мишка"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительное от «малый»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "малышка"
+        },
+        {
+          "affected_task_ids": [],
+          "assigned": {
+            "T3_target": [],
+            "T4_target": [],
+            "T6_list": []
+          },
+          "buildable_levels": [],
+          "note": "уменьшительное от «лёд»",
+          "task_roles": {
+            "T1": [],
+            "T2": [],
+            "T3": [],
+            "T4": [],
+            "T5": [],
+            "T6": [],
+            "T7": []
+          },
+          "word": "ледышка"
+        }
+      ]
+    }
+  ],
+  "exact_target_levels": [
+    {
+      "level": 9,
+      "tasks": [
+        {
+          "count": 1,
+          "id": "l09-t4",
+          "needed": 1,
+          "type": "T4"
+        }
+      ]
+    },
+    {
+      "level": 10,
+      "tasks": [
+        {
+          "count": 1,
+          "id": "l10-t4",
+          "needed": 1,
+          "type": "T4"
+        }
+      ]
+    },
+    {
+      "level": 11,
+      "tasks": [
+        {
+          "count": 2,
+          "id": "l11-t4",
+          "needed": 2,
+          "type": "T4"
+        }
+      ]
+    },
+    {
+      "level": 12,
+      "tasks": [
+        {
+          "count": 2,
+          "id": "l12-t4",
+          "needed": 2,
+          "type": "T4"
+        }
+      ]
+    },
+    {
+      "level": 13,
+      "tasks": [
+        {
+          "count": 2,
+          "id": "l13-t4",
+          "needed": 2,
+          "type": "T4"
+        }
+      ]
+    },
+    {
+      "level": 14,
+      "tasks": [
+        {
+          "count": 3,
+          "id": "l14-t4",
+          "needed": 3,
+          "type": "T4"
+        }
+      ]
+    }
+  ],
+  "inputs": {
+    "campaign": {
+      "path": "data/campaign.json",
+      "sha256": "c7c936e87437daf5fe5ece90cea388a3733643503eed74b770dd9d14d51e73d7"
+    },
+    "config": {
+      "path": "tools/vocabulary_audit_config.json",
+      "sha256": "35c3a2fb556dc93922eac78c97ffea7256b8d29ad1ec6baa715af4db5ec965ac"
+    },
+    "words": {
+      "path": "data/words.txt",
+      "sha256": "0ca0904a47577bd8502dd465239e4d5885f22b4899fce2448f72745b42fb36aa"
+    }
+  },
+  "known_narrow_tasks": [
+    {
+      "expected": 8,
+      "level": 12,
+      "matches": true,
+      "note": "Контрольная точка задания: T3 >= 8 букв.",
+      "observed": 8,
+      "task_id": "l12-t3",
+      "type": "T3"
+    },
+    {
+      "expected": 9,
+      "level": 13,
+      "matches": true,
+      "note": "Контрольная точка задания: окончание «ние».",
+      "observed": 9,
+      "task_id": "l13-t5",
+      "type": "T5"
+    },
+    {
+      "expected": 8,
+      "level": 14,
+      "matches": true,
+      "note": "Контрольная точка задания: окончание «ик».",
+      "observed": 8,
+      "task_id": "l14-t5",
+      "type": "T5"
+    },
+    {
+      "expected": 10,
+      "level": 11,
+      "matches": false,
+      "note": "Ожидание из постановки; в текущем words.txt «адресок» уже отсутствует после LEX11-01.",
+      "observed": 9,
+      "task_id": "l11-t5",
+      "type": "T5"
+    }
+  ],
+  "levels": [
+    {
+      "answers_count": 112,
+      "number": 1,
+      "required_stars": 1,
+      "stage": 1,
+      "tasks": [
+        {
+          "count": 72,
+          "exact_target": false,
+          "id": "l01-t1",
+          "margin": 63,
+          "needed": 9,
+          "parameter": "n=9",
+          "threshold_share": 0.125,
+          "type": "T1"
+        }
+      ],
+      "word": "чемпионство"
+    },
+    {
+      "answers_count": 146,
+      "number": 2,
+      "required_stars": 1,
+      "stage": 1,
+      "tasks": [
+        {
+          "count": 120,
+          "exact_target": false,
+          "id": "l02-t1",
+          "margin": 110,
+          "needed": 10,
+          "parameter": "n=10",
+          "threshold_share": 0.083333,
+          "type": "T1"
+        }
+      ],
+      "word": "вегетарианец"
+    },
+    {
+      "answers_count": 151,
+      "number": 3,
+      "required_stars": 1,
+      "stage": 1,
+      "tasks": [
+        {
+          "count": 99,
+          "exact_target": false,
+          "id": "l03-t1",
+          "margin": 88,
+          "needed": 11,
+          "parameter": "n=11",
+          "threshold_share": 0.111111,
+          "type": "T1"
+        }
+      ],
+      "word": "аккумулятор"
+    },
+    {
+      "answers_count": 199,
+      "number": 4,
+      "required_stars": 2,
+      "stage": 2,
+      "tasks": [
+        {
+          "count": 149,
+          "exact_target": false,
+          "id": "l04-t1",
+          "margin": 137,
+          "needed": 12,
+          "parameter": "n=12",
+          "threshold_share": 0.080537,
+          "type": "T1"
+        },
+        {
+          "count": 41,
+          "exact_target": false,
+          "id": "l04-t2",
+          "margin": 38,
+          "needed": 3,
+          "parameter": "n=3, letter=с",
+          "threshold_share": 0.073171,
+          "type": "T2"
+        }
+      ],
+      "word": "благословение"
+    },
+    {
+      "answers_count": 277,
+      "number": 5,
+      "required_stars": 2,
+      "stage": 2,
+      "tasks": [
+        {
+          "count": 204,
+          "exact_target": false,
+          "id": "l05-t1",
+          "margin": 191,
+          "needed": 13,
+          "parameter": "n=13",
+          "threshold_share": 0.063725,
+          "type": "T1"
+        },
+        {
+          "count": 17,
+          "exact_target": false,
+          "id": "l05-t2",
+          "margin": 14,
+          "needed": 3,
+          "parameter": "n=3, letter=а",
+          "threshold_share": 0.176471,
+          "type": "T2"
+        }
+      ],
+      "word": "благоразумие"
+    },
+    {
+      "answers_count": 254,
+      "number": 6,
+      "required_stars": 3,
+      "stage": 3,
+      "tasks": [
+        {
+          "count": 186,
+          "exact_target": false,
+          "id": "l06-t1",
+          "margin": 172,
+          "needed": 14,
+          "parameter": "n=14",
+          "threshold_share": 0.075269,
+          "type": "T1"
+        },
+        {
+          "count": 30,
+          "exact_target": false,
+          "id": "l06-t2",
+          "margin": 26,
+          "needed": 4,
+          "parameter": "n=4, letter=б",
+          "threshold_share": 0.133333,
+          "type": "T2"
+        },
+        {
+          "count": 31,
+          "exact_target": false,
+          "id": "l06-t3",
+          "margin": 30,
+          "needed": 1,
+          "parameter": "minLength=6, hintTarget=абсурд",
+          "threshold_share": 0.032258,
+          "type": "T3"
+        }
+      ],
+      "word": "безрассудство"
+    },
+    {
+      "answers_count": 325,
+      "number": 7,
+      "required_stars": 3,
+      "stage": 3,
+      "tasks": [
+        {
+          "count": 249,
+          "exact_target": false,
+          "id": "l07-t1",
+          "margin": 234,
+          "needed": 15,
+          "parameter": "n=15",
+          "threshold_share": 0.060241,
+          "type": "T1"
+        },
+        {
+          "count": 57,
+          "exact_target": false,
+          "id": "l07-t2",
+          "margin": 53,
+          "needed": 4,
+          "parameter": "n=4, letter=с",
+          "threshold_share": 0.070175,
+          "type": "T2"
+        },
+        {
+          "count": 68,
+          "exact_target": false,
+          "id": "l07-t3",
+          "margin": 67,
+          "needed": 1,
+          "parameter": "minLength=6, hintTarget=астрал",
+          "threshold_share": 0.014706,
+          "type": "T3"
+        }
+      ],
+      "word": "журналистика"
+    },
+    {
+      "answers_count": 335,
+      "number": 8,
+      "required_stars": 3,
+      "stage": 3,
+      "tasks": [
+        {
+          "count": 266,
+          "exact_target": false,
+          "id": "l08-t1",
+          "margin": 250,
+          "needed": 16,
+          "parameter": "n=16",
+          "threshold_share": 0.06015,
+          "type": "T1"
+        },
+        {
+          "count": 85,
+          "exact_target": false,
+          "id": "l08-t2",
+          "margin": 80,
+          "needed": 5,
+          "parameter": "n=5, letter=п",
+          "threshold_share": 0.058824,
+          "type": "T2"
+        },
+        {
+          "count": 85,
+          "exact_target": false,
+          "id": "l08-t3",
+          "margin": 84,
+          "needed": 1,
+          "parameter": "minLength=6, hintTarget=верзила",
+          "threshold_share": 0.011765,
+          "type": "T3"
+        }
+      ],
+      "word": "поздравление"
+    },
+    {
+      "answers_count": 367,
+      "number": 9,
+      "required_stars": 3,
+      "stage": 4,
+      "tasks": [
+        {
+          "count": 296,
+          "exact_target": false,
+          "id": "l09-t1",
+          "margin": 279,
+          "needed": 17,
+          "parameter": "n=17",
+          "threshold_share": 0.057432,
+          "type": "T1"
+        },
+        {
+          "count": 52,
+          "exact_target": false,
+          "id": "l09-t2",
+          "margin": 47,
+          "needed": 5,
+          "parameter": "n=5, letter=б",
+          "threshold_share": 0.096154,
+          "type": "T2"
+        },
+        {
+          "count": 29,
+          "exact_target": false,
+          "id": "l09-t3",
+          "margin": 28,
+          "needed": 1,
+          "parameter": "minLength=7, hintTarget=астролог",
+          "threshold_share": 0.034483,
+          "type": "T3"
+        },
+        {
+          "count": 1,
+          "exact_target": true,
+          "id": "l09-t4",
+          "margin": 0,
+          "needed": 1,
+          "parameter": "targets=работа",
+          "threshold_share": 1.0,
+          "type": "T4"
+        }
+      ],
+      "word": "благодарность"
+    },
+    {
+      "answers_count": 445,
+      "number": 10,
+      "required_stars": 3,
+      "stage": 4,
+      "tasks": [
+        {
+          "count": 366,
+          "exact_target": false,
+          "id": "l10-t1",
+          "margin": 348,
+          "needed": 18,
+          "parameter": "n=18",
+          "threshold_share": 0.04918,
+          "type": "T1"
+        },
+        {
+          "count": 93,
+          "exact_target": false,
+          "id": "l10-t2",
+          "margin": 88,
+          "needed": 5,
+          "parameter": "n=5, letter=к",
+          "threshold_share": 0.053763,
+          "type": "T2"
+        },
+        {
+          "count": 32,
+          "exact_target": false,
+          "id": "l10-t3",
+          "margin": 31,
+          "needed": 1,
+          "parameter": "minLength=7, hintTarget=акционер",
+          "threshold_share": 0.03125,
+          "type": "T3"
+        },
+        {
+          "count": 1,
+          "exact_target": true,
+          "id": "l10-t4",
+          "margin": 0,
+          "needed": 1,
+          "parameter": "targets=утро",
+          "threshold_share": 1.0,
+          "type": "T4"
+        }
+      ],
+      "word": "пуэрториканец"
+    },
+    {
+      "answers_count": 526,
+      "number": 11,
+      "required_stars": 4,
+      "stage": 5,
+      "tasks": [
+        {
+          "count": 451,
+          "exact_target": false,
+          "id": "l11-t1",
+          "margin": 432,
+          "needed": 19,
+          "parameter": "n=19",
+          "threshold_share": 0.042129,
+          "type": "T1"
+        },
+        {
+          "count": 105,
+          "exact_target": false,
+          "id": "l11-t2",
+          "margin": 99,
+          "needed": 6,
+          "parameter": "n=6, letter=п",
+          "threshold_share": 0.057143,
+          "type": "T2"
+        },
+        {
+          "count": 65,
+          "exact_target": false,
+          "id": "l11-t3",
+          "margin": 64,
+          "needed": 1,
+          "parameter": "minLength=7, hintTarget=постель",
+          "threshold_share": 0.015385,
+          "type": "T3"
+        },
+        {
+          "count": 2,
+          "exact_target": true,
+          "id": "l11-t4",
+          "margin": 0,
+          "needed": 2,
+          "parameter": "targets=отель, десерт",
+          "threshold_share": 1.0,
+          "type": "T4"
+        },
+        {
+          "count": 9,
+          "exact_target": false,
+          "id": "l11-t5",
+          "margin": 8,
+          "needed": 1,
+          "parameter": "ending=ок, minLength=5",
+          "threshold_share": 0.111111,
+          "type": "T5"
+        }
+      ],
+      "word": "подстрекатель"
+    },
+    {
+      "answers_count": 544,
+      "number": 12,
+      "required_stars": 4,
+      "stage": 5,
+      "tasks": [
+        {
+          "count": 442,
+          "exact_target": false,
+          "id": "l12-t1",
+          "margin": 422,
+          "needed": 20,
+          "parameter": "n=20",
+          "threshold_share": 0.045249,
+          "type": "T1"
+        },
+        {
+          "count": 40,
+          "exact_target": false,
+          "id": "l12-t2",
+          "margin": 34,
+          "needed": 6,
+          "parameter": "n=6, letter=б",
+          "threshold_share": 0.15,
+          "type": "T2"
+        },
+        {
+          "count": 8,
+          "exact_target": false,
+          "id": "l12-t3",
+          "margin": 7,
+          "needed": 1,
+          "parameter": "minLength=8, hintTarget=километр",
+          "threshold_share": 0.125,
+          "type": "T3"
+        },
+        {
+          "count": 2,
+          "exact_target": true,
+          "id": "l12-t4",
+          "margin": 0,
+          "needed": 2,
+          "parameter": "targets=проблема, билет",
+          "threshold_share": 1.0,
+          "type": "T4"
+        },
+        {
+          "count": 56,
+          "exact_target": false,
+          "id": "l12-t5",
+          "margin": 55,
+          "needed": 1,
+          "parameter": "ending=ка, minLength=5",
+          "threshold_share": 0.017857,
+          "type": "T5"
+        }
+      ],
+      "word": "проблематика"
+    },
+    {
+      "answers_count": 558,
+      "number": 13,
+      "required_stars": 4,
+      "stage": 5,
+      "tasks": [
+        {
+          "count": 461,
+          "exact_target": false,
+          "id": "l13-t1",
+          "margin": 440,
+          "needed": 21,
+          "parameter": "n=21",
+          "threshold_share": 0.045553,
+          "type": "T1"
+        },
+        {
+          "count": 95,
+          "exact_target": false,
+          "id": "l13-t2",
+          "margin": 89,
+          "needed": 6,
+          "parameter": "n=6, letter=с",
+          "threshold_share": 0.063158,
+          "type": "T2"
+        },
+        {
+          "count": 20,
+          "exact_target": false,
+          "id": "l13-t3",
+          "margin": 19,
+          "needed": 1,
+          "parameter": "minLength=8, hintTarget=вероника",
+          "threshold_share": 0.05,
+          "type": "T3"
+        },
+        {
+          "count": 2,
+          "exact_target": true,
+          "id": "l13-t4",
+          "margin": 0,
+          "needed": 2,
+          "parameter": "targets=ковер, весна",
+          "threshold_share": 1.0,
+          "type": "T4"
+        },
+        {
+          "count": 9,
+          "exact_target": false,
+          "id": "l13-t5",
+          "margin": 8,
+          "needed": 1,
+          "parameter": "ending=ние, minLength=6",
+          "threshold_share": 0.111111,
+          "type": "T5"
+        }
+      ],
+      "word": "складирование"
+    },
+    {
+      "answers_count": 527,
+      "number": 14,
+      "required_stars": 4,
+      "stage": 6,
+      "tasks": [
+        {
+          "count": 435,
+          "exact_target": false,
+          "id": "l14-t1",
+          "margin": 413,
+          "needed": 22,
+          "parameter": "n=22",
+          "threshold_share": 0.050575,
+          "type": "T1"
+        },
+        {
+          "count": 71,
+          "exact_target": false,
+          "id": "l14-t2",
+          "margin": 64,
+          "needed": 7,
+          "parameter": "n=7, letter=б",
+          "threshold_share": 0.098592,
+          "type": "T2"
+        },
+        {
+          "count": 3,
+          "exact_target": true,
+          "id": "l14-t4",
+          "margin": 0,
+          "needed": 3,
+          "parameter": "targets=стадион, банк, артист",
+          "threshold_share": 1.0,
+          "type": "T4"
+        },
+        {
+          "count": 8,
+          "exact_target": false,
+          "id": "l14-t5",
+          "margin": 7,
+          "needed": 1,
+          "parameter": "ending=ик, minLength=7",
+          "threshold_share": 0.125,
+          "type": "T5"
+        },
+        {
+          "count": 20,
+          "exact_target": false,
+          "id": "l14-t6",
+          "margin": 16,
+          "needed": 4,
+          "parameter": "category=professions, n=4, words=20",
+          "threshold_share": 0.2,
+          "type": "T6"
+        }
+      ],
+      "word": "контрабандист"
+    },
+    {
+      "answers_count": 632,
+      "number": 15,
+      "required_stars": 4,
+      "stage": 6,
+      "tasks": [
+        {
+          "count": 520,
+          "exact_target": false,
+          "id": "l15-t1",
+          "margin": 496,
+          "needed": 24,
+          "parameter": "n=24",
+          "threshold_share": 0.046154,
+          "type": "T1"
+        },
+        {
+          "count": 120,
+          "exact_target": false,
+          "id": "l15-t2",
+          "margin": 113,
+          "needed": 7,
+          "parameter": "n=7, letter=с",
+          "threshold_share": 0.058333,
+          "type": "T2"
+        },
+        {
+          "count": 24,
+          "exact_target": false,
+          "id": "l15-t3",
+          "margin": 23,
+          "needed": 1,
+          "parameter": "minLength=8, hintTarget=антитело",
+          "threshold_share": 0.041667,
+          "type": "T3"
+        },
+        {
+          "count": 18,
+          "exact_target": false,
+          "id": "l15-t5",
+          "margin": 17,
+          "needed": 1,
+          "parameter": "ending=ист, minLength=7",
+          "threshold_share": 0.055556,
+          "type": "T5"
+        },
+        {
+          "count": 143,
+          "exact_target": false,
+          "id": "l15-t7",
+          "margin": 135,
+          "needed": 8,
+          "parameter": "n=8, letter=у",
+          "threshold_share": 0.055944,
+          "type": "T7"
+        }
+      ],
+      "word": "документалист"
+    }
+  ],
+  "narrow_levels": [
+    {
+      "level": 11,
+      "min_margin": 8,
+      "tasks": [
+        {
+          "count": 9,
+          "exact_target": false,
+          "id": "l11-t5",
+          "margin": 8,
+          "needed": 1,
+          "parameter": "ending=ок, minLength=5",
+          "threshold_share": 0.111111,
+          "type": "T5"
+        }
+      ],
+      "word": "подстрекатель"
+    },
+    {
+      "level": 12,
+      "min_margin": 7,
+      "tasks": [
+        {
+          "count": 8,
+          "exact_target": false,
+          "id": "l12-t3",
+          "margin": 7,
+          "needed": 1,
+          "parameter": "minLength=8, hintTarget=километр",
+          "threshold_share": 0.125,
+          "type": "T3"
+        }
+      ],
+      "word": "проблематика"
+    },
+    {
+      "level": 13,
+      "min_margin": 8,
+      "tasks": [
+        {
+          "count": 9,
+          "exact_target": false,
+          "id": "l13-t5",
+          "margin": 8,
+          "needed": 1,
+          "parameter": "ending=ние, minLength=6",
+          "threshold_share": 0.111111,
+          "type": "T5"
+        }
+      ],
+      "word": "складирование"
+    },
+    {
+      "level": 14,
+      "min_margin": 7,
+      "tasks": [
+        {
+          "count": 8,
+          "exact_target": false,
+          "id": "l14-t5",
+          "margin": 7,
+          "needed": 1,
+          "parameter": "ending=ик, minLength=7",
+          "threshold_share": 0.125,
+          "type": "T5"
+        }
+      ],
+      "word": "контрабандист"
+    }
+  ],
+  "schema": "vocabulary-audit-v1",
+  "summary": {
+    "affected_tasks": 15,
+    "candidate_words": 71,
+    "categories": [
+      {
+        "absent": 0,
+        "affected_tasks": 5,
+        "configured": 12,
+        "examples": [
+          "они",
+          "оно",
+          "оне",
+          "под",
+          "ага"
+        ],
+        "id": "function_words",
+        "present": 12,
+        "role_counts": {
+          "T3_target": 0,
+          "T4_target": 0,
+          "T5": 0,
+          "T6_list": 0,
+          "letter_tasks": 3
+        },
+        "title": "Местоимения и служебные слова"
+      },
+      {
+        "absent": 0,
+        "affected_tasks": 5,
+        "configured": 9,
+        "examples": [
+          "вип",
+          "тви",
+          "мио",
+          "чон",
+          "чоп"
+        ],
+        "id": "abbreviations",
+        "present": 9,
+        "role_counts": {
+          "T3_target": 0,
+          "T4_target": 0,
+          "T5": 0,
+          "T6_list": 0,
+          "letter_tasks": 4
+        },
+        "title": "Аббревиатуры и транслитерации"
+      },
+      {
+        "absent": 0,
+        "affected_tasks": 13,
+        "configured": 33,
+        "examples": [
+          "секс",
+          "порно",
+          "минет",
+          "пенис",
+          "вагина"
+        ],
+        "id": "sexual_coarse",
+        "present": 33,
+        "role_counts": {
+          "T3_target": 0,
+          "T4_target": 0,
+          "T5": 0,
+          "T6_list": 0,
+          "letter_tasks": 13
+        },
+        "title": "Сексуальная и грубая лексика"
+      },
+      {
+        "absent": 0,
+        "affected_tasks": 0,
+        "configured": 17,
+        "examples": [
+          "цветик",
+          "лапонька",
+          "мальчишка",
+          "девчонка",
+          "печенька"
+        ],
+        "id": "productive_diminutives",
+        "present": 17,
+        "role_counts": {
+          "T3_target": 0,
+          "T4_target": 0,
+          "T5": 0,
+          "T6_list": 0,
+          "letter_tasks": 0
+        },
+        "title": "Продуктивные уменьшительные"
+      }
+    ],
+    "dictionary_words": 20119,
+    "levels": 15,
+    "narrow_levels": [
+      11,
+      12,
+      13,
+      14
+    ],
+    "tasks": 49
+  },
+  "title": "Аудит словаря"
+}
