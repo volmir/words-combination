@@ -15,15 +15,11 @@ data class HintResult(val state: CurrentCampaignLevel, val step: HintStep?, val 
 object HintRules {
     private val forbiddenTargets = setOf("прелюбодейка", "брудершафт", "праймериз")
 
-    fun budget(current: CurrentCampaignLevel): HintBudget {
-        val initial = when (current.level.stage) {
-            1, 2 -> 5
-            3, 4 -> 4
-            5, 6 -> 3
-            else -> error("Unknown campaign stage: ${current.level.stage}")
-        }
-        return HintBudget(initial, normalizedFound(current).size / 4, current.hints.paidUnits)
-    }
+    fun budget(current: CurrentCampaignLevel): HintBudget = HintBudget(
+        initial = HintEconomy.initialBudget(current.level.stage),
+        earned = normalizedFound(current).size / HintEconomy.earnEvery,
+        spent = current.hints.paidUnits,
+    )
 
     /** Чистое восстановление старого формата без изменения бюджета, ответов и звёзд. */
     fun restore(current: CurrentCampaignLevel, words: Map<String, HintWordData> = emptyMap()): CurrentCampaignLevel {
@@ -76,16 +72,20 @@ object HintRules {
         val target = hints.ladder.target ?: return HintResult(state, null, HintStatus.NO_TARGET)
         val step = hints.ladder.steps.getOrNull(hints.ladder.nextStepIndex)
             ?: return HintResult(state, null, HintStatus.LADDER_COMPLETE)
-        val free = target.taskType == TaskType.T4 && hints.ladder.nextStepIndex == 0 && step.stage != HintStage.ANSWER
-        if (!free && budget(state).remaining == 0) return HintResult(state, null, HintStatus.BUDGET_EXHAUSTED)
+        val free = HintEconomy.t4FirstStepFree &&
+            target.taskType == TaskType.T4 &&
+            hints.ladder.nextStepIndex == 0 &&
+            step.stage != HintStage.ANSWER
+        val cost = if (free) 0 else HintEconomy.stepCost
+        if (budget(state).remaining < cost) return HintResult(state, null, HintStatus.BUDGET_EXHAUSTED)
         val next = hints.copy(
             ladder = hints.ladder.copy(
                 nextStepIndex = hints.ladder.nextStepIndex + 1,
                 revealedPositions = hints.ladder.revealedPositions + step.revealedPositions,
-                paidSteps = hints.ladder.paidSteps + if (free) 0 else 1,
+                paidSteps = hints.ladder.paidSteps + cost,
             ),
             shownSteps = hints.shownSteps + 1,
-            paidUnits = hints.paidUnits + if (free) 0 else 1,
+            paidUnits = hints.paidUnits + cost,
         )
         return HintResult(current.copy(hints = next), step, HintStatus.SHOWN)
     }
@@ -95,7 +95,7 @@ object HintRules {
         val preview = next(current, countMinLength = countMinLength, random = Random(0))
         return when (preview.status) {
             HintStatus.SHOWN -> preview.state.hints.paidUnits - current.hints.paidUnits
-            HintStatus.BUDGET_EXHAUSTED -> 1
+            HintStatus.BUDGET_EXHAUSTED -> HintEconomy.stepCost
             HintStatus.NO_TARGET, HintStatus.LADDER_COMPLETE -> null
         }
     }

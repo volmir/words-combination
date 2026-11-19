@@ -436,4 +436,35 @@ class HintRulesTest {
         assertEquals(found.hints.paidUnits, changed.hints.paidUnits)
         assertEquals(found.hints.shownSteps, changed.hints.shownSteps)
     }
+
+    @Test fun hintEconomyMatchesStageBudgetsAllowsUnknownStageAndEarnsByFoundCount() {
+        assertEquals(4, HintEconomy.earnEvery)
+        assertEquals(1, HintEconomy.stepCost)
+        assertTrue(HintEconomy.t4FirstStepFree)
+        val expectedStages = listOf(5, 5, 4, 4, 3, 3)
+        for (stage in 1..6) {
+            assertEquals(expectedStages[stage - 1], HintEconomy.initialBudget(stage))
+        }
+        for (unknownStage in listOf(7, 8, 0, -1)) {
+            assertEquals(3, HintEconomy.initialBudget(unknownStage))
+        }
+
+        val elevenWords = listOf("кот", "рот", "ток", "торт", "рост", "нота", "елка", "станция", "сон", "нос", "тон")
+        val stageSeven = start(CampaignTask.T3("long", 7, "станция"), stage = 7, answers = elevenWords)
+        val initialBudget = HintRules.budget(stageSeven)
+        assertEquals(3, initialBudget.initial)
+        assertEquals(0, initialBudget.earned)
+        assertEquals(3, initialBudget.remaining)
+
+        fun budgetWithFound(count: Int): HintBudget {
+            val state = elevenWords.take(count).fold(stageSeven) { acc, word -> accept(acc, word) }
+            assertEquals(count, state.game.found.size)
+            return HintRules.budget(state)
+        }
+
+        assertEquals(0, budgetWithFound(3).earned)
+        assertEquals(1, budgetWithFound(4).earned)
+        assertEquals(2, budgetWithFound(11).earned)
+        assertEquals(5, budgetWithFound(11).remaining)
+    }
 }
