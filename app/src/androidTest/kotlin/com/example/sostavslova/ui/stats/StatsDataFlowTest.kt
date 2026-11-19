@@ -1,4 +1,4 @@
-package com.example.sostavslova.ui.time
+package com.example.sostavslova.ui.stats
 
 import androidx.datastore.core.okio.OkioStorage
 import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
@@ -16,7 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-class TimeDataFlowTest {
+class StatsDataFlowTest {
     @get:Rule val temporaryFolder = TemporaryFolder()
 
     @Test fun subscribedLocalSnapshotsUpdateWithoutRefreshOrReadSideWrites() = runTest {
@@ -27,22 +27,26 @@ class TimeDataFlowTest {
         val repository = PlayTimeRepository(store)
         val campaign = Campaign(listOf(Stage(1, 1, 1)), listOf(CampaignLevel(1, "картотека", 1, 1,
             listOf(CampaignTask.T1("r", 1), CampaignTask.T1("m", 2)))), contentSha256 = "a".repeat(64))
+        val basis = CampaignStatisticsAssembler.prepare(campaign, WordIndex(listOf("торт")))
+        val names = mapOf(1 to "Разминка")
         try {
             val firstSnapshot = CompletableDeferred<Unit>()
             val observed = async {
                 repository.observe(campaign).map { records ->
-                    timeUiState(campaign, repository.statistics(campaign, records), records, CampaignProgress())
-                }.onEach { if (it.summary?.screenActiveMs == BigInteger.ZERO) firstSnapshot.complete(Unit) }
-                    .filter { it.summary?.screenActiveMs != BigInteger.ZERO }.first()
+                    statsUiState(campaign, basis, repository.statistics(campaign, records), records,
+                        CampaignProgress(), names)
+                }.onEach { if (it.statistics?.totalTimeMs == BigInteger.ZERO) firstSnapshot.complete(Unit) }
+                    .filter { it.statistics?.totalTimeMs != BigInteger.ZERO }.first()
             }
             firstSnapshot.await()
             assertTrue(store.data.first().asMap().isEmpty())
             repository.initialize(campaign, 1, 0)
             repository.appendSegment(campaign, 1, 1, 97_385_000, 1)
             val updated = observed.await()
-            assertEquals(BigInteger.valueOf(97_385_000), updated.summary?.screenActiveMs)
-            assertEquals(97_385_000L, updated.summary?.levels?.first()?.timeToRMs)
-            assertNull(updated.summary?.levels?.first()?.timeToFullMs)
+            assertEquals(BigInteger.valueOf(97_385_000), updated.statistics?.totalTimeMs)
+            assertEquals(97_385_000L, updated.statistics?.levels?.first()?.toRMs)
+            assertNull(updated.statistics?.levels?.first()?.toFullMs)
+            assertEquals(LevelTimeStatus.Measured, updated.statistics?.levels?.first()?.timeStatus)
             val saved = store.data.first()
             repeat(3) { repository.observeStatistics(campaign).first() }
             assertEquals(saved, store.data.first())

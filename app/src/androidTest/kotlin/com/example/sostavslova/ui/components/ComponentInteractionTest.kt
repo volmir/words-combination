@@ -35,8 +35,8 @@ class ComponentInteractionTest {
         compose.runOnIdle { assertEquals(Destination.Rules, selected) }
         compose.onNode(hasText("Об игре") and hasClickAction()).performScrollTo().performClick()
         compose.runOnIdle { assertEquals(Destination.About, selected) }
-        compose.onNodeWithText("Время игры").performScrollTo().performClick()
-        compose.runOnIdle { assertEquals(Destination.Time, selected) }
+        compose.onNodeWithText("Статистика").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(Destination.Stats, selected) }
         compose.onNodeWithText("Значение слова").assertDoesNotExist()
         compose.onNodeWithText("Поиск слов").assertDoesNotExist()
         compose.onNodeWithText("Словарь").assertDoesNotExist()
@@ -71,7 +71,8 @@ class ComponentInteractionTest {
     fun statisticsShowsTotalsAndPercentFromCore() {
         compose.setContent { WordsTheme { StatsTable(Statistics(listOf(LengthStat(3, 2, 10), LengthStat(4, 1, 12), LengthStat(5, 0, 6)))) } }
         compose.onNodeWithText("3 / 28").assertIsDisplayed()
-        compose.onNodeWithText("11").assertIsDisplayed()
+        // FIX-10: 3/28 округляется вниз до 10, а не вверх до 11.
+        compose.onNodeWithText("10").assertIsDisplayed()
         compose.onNodeWithText("Процент, %").assertIsDisplayed()
     }
 

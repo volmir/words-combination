@@ -111,7 +111,7 @@ class CampaignGameUiTest {
         compose.runOnIdle { state.value = state.value.copy(nextLevelNumber = 31) }
         compose.onNodeWithTag("game_next_level").performScrollTo().assertHasNoClickAction()
         compose.onNodeWithText("Следующий уровень открыт!").assertExists()
-        compose.onNodeWithText("Вы можете перейти дальше или остаться здесь, чтобы отгадывать слова и собирать оставшиеся звёзды.")
+        compose.onNodeWithText("Вы можете перейти дальше или остаться здесь, чтобы находить слова и собирать оставшиеся звёзды.")
             .assertExists()
         val button = compose.onNodeWithTag("game_next_level_button").performScrollTo()
         button.assertTextEquals("Перейти на уровень 31 →")

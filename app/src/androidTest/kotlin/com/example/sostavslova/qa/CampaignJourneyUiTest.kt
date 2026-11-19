@@ -287,7 +287,7 @@ class CampaignJourneyUiTest {
         assertTrue(CampaignRules.summary(campaign, master).isMaster)
         enter("крот")
         compose.waitUntil(10_000) {
-            compose.onAllNodesWithText("Вы уже разгадали слово крот").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithText("Вы уже нашли слово крот").fetchSemanticsNodes().isNotEmpty()
         }
         assertEquals(master, saved())
         compose.onNodeWithTag("level_finale_dialog").assertDoesNotExist()

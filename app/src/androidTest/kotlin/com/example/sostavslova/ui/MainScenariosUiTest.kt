@@ -108,7 +108,7 @@ class MainScenariosUiTest {
         assertTrue(saved.levels.getValue(source).completedTaskIds.isEmpty())
 
         answerWord(answer.uppercase())
-        awaitText("Вы уже разгадали слово $answer")
+        awaitText("Вы уже нашли слово $answer")
         awaitText("Найденные слова · 1 из", substring = true)
         compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsEnabled()
         assertEquals(saved, container.progressRepository.observeCampaignProgress().first())
@@ -120,7 +120,7 @@ class MainScenariosUiTest {
 
     /**
      * Сценарий 2: Неизвестное слово → «Слово … не распознано словарём»;
-     * повтор верного → «Вы уже разгадали слово …».
+     * повтор верного → «Вы уже нашли слово …».
      */
     @Test
     fun scenario2_incorrectWordNotFoundAndRepeatedWordAlreadyFound() = runTest {
@@ -135,7 +135,7 @@ class MainScenariosUiTest {
         awaitText("Слово «$unknown» не распознано словарём")
 
         answerWord(valid)
-        awaitText("Вы уже разгадали слово $valid")
+        awaitText("Вы уже нашли слово $valid")
         awaitText("Найденные слова · 1 из", substring = true)
         compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsEnabled()
         assertEquals(listOf(valid), foundAnswers(source))

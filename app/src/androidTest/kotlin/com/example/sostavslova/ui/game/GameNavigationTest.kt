@@ -99,7 +99,7 @@ class GameNavigationTest {
         compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsFocused()
         assertEquals(listOf(valid), foundAnswers(source))
         awaitText("Найденные слова · 1 из")
-        answer(valid.uppercase()); awaitText("Вы уже разгадали слово $valid")
+        answer(valid.uppercase()); awaitText("Вы уже нашли слово $valid")
         // Зачёт и повтор уже найденного очищают поле, отказы — нет.
         compose.onNode(hasSetTextAction()).assertTextEquals("")
         answer("пaр"); awaitText("Допустимы только русские буквы, без пробелов и знаков")

@@ -37,7 +37,7 @@ fun WordsDrawer(
                 style = MaterialTheme.typography.titleMedium,
             )
             DrawerItem(Destination.Levels, currentRoute, onNavigate)
-            DrawerItem(Destination.Time, currentRoute, onNavigate)
+            DrawerItem(Destination.Stats, currentRoute, onNavigate)
             DrawerSection(R.string.nav_help)
             DrawerItem(Destination.Rules, currentRoute, onNavigate)
             DrawerItem(Destination.About, currentRoute, onNavigate)

@@ -6,7 +6,8 @@ import com.example.sostavslova.R
 enum class Destination(val route: String, @param:StringRes val label: Int) {
     Game("level/{index}", R.string.nav_levels),
     Levels("levels", R.string.nav_levels),
-    Time("time", R.string.nav_time),
+    /** route "time" сохранён, чтобы обновление не ломало восстановленную навигацию. */
+    Stats("time", R.string.nav_stats),
     Rules("rules", R.string.nav_rules),
     About("about", R.string.nav_about);
 
