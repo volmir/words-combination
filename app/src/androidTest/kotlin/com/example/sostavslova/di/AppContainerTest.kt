@@ -62,7 +62,6 @@ class AppContainerTest {
         assertEquals(15, campaign.levels.size)
         assertEquals(49, campaign.maxStars)
         assertEquals(BuildConfig.CAMPAIGN_SHA256, campaign.contentSha256)
-        assertEquals(30, container.levelsRepository.getLevels().size)
         container.wordRepository.ensureLoaded()
         assertTrue((container.wordRepository.state.value as LoadState.Ready).wordCount > 0)
     }

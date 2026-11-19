@@ -1,14 +1,11 @@
 package com.example.sostavslova.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -18,25 +15,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.example.sostavslova.R
-import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.ui.theme.WordsColors
-
-@Composable
-fun StarsRow(
-    progress: LevelProgress,
-    modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
-    label: String? = null,
-    requiredStars: Int? = null,
-) {
-    StarsRow(listOf(progress.completed, progress.wordsTask, progress.lettersTask), modifier, onClick, label, requiredStars)
-}
 
 @Composable
 fun StarsRow(
@@ -46,7 +30,7 @@ fun StarsRow(
     label: String? = null,
     requiredStars: Int? = null,
 ) {
-    StarsRow(List(maxStars) { it < stars }, modifier, null, label, requiredStars)
+    StarsRow(List(maxStars) { it < stars }, modifier, label, requiredStars)
 }
 
 /** Прогресс звёзд для доступности; порог открытия добавляется, когда он известен. */
@@ -61,19 +45,14 @@ fun starsStateDescription(stars: Int, maxStars: Int, requiredStars: Int? = null)
 private fun StarsRow(
     positions: List<Boolean>,
     modifier: Modifier,
-    onClick: (() -> Unit)? = null,
     label: String? = null,
     requiredStars: Int? = null,
 ) {
-    // Кликабельный ряд открывает задания, поэтому по умолчанию называется «Задания».
-    // На карте кампании тот же ряд только показывает прогресс и называется «Звёзды».
-    val title = label ?: stringResource(R.string.tasks)
+    // Ряд звёзд на карте только показывает прогресс и по умолчанию называется «Звёзды».
+    val title = label ?: stringResource(R.string.level_stars_label)
     val description = starsStateDescription(positions.count { it }, positions.size, requiredStars)
-    val interactive = if (onClick != null) {
-        Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).clickable(role = Role.Button, onClick = onClick).padding(8.dp)
-    } else Modifier
     Row(
-        modifier.then(interactive).semantics(mergeDescendants = true) {
+        modifier.semantics(mergeDescendants = true) {
             contentDescription = title
             stateDescription = description
         },

@@ -54,7 +54,7 @@ class OwnedRiddlesUiTest {
                 override fun getApplicationContext(): Context = this
                 override fun getFilesDir(): File = directory
             }
-            val campaign = requireNotNull(LevelsRepository({ error("No legacy") }, readCampaign = {
+            val campaign = requireNotNull(LevelsRepository(readCampaign = {
                 context.assets.open("campaign.json").bufferedReader().use { it.readText() }
             }).getCampaign())
             val entries = JSONObject()

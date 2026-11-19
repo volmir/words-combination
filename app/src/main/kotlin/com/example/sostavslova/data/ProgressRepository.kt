@@ -61,8 +61,6 @@ import kotlinx.serialization.json.jsonPrimitive
 @Serializable
 private data class CurrentGame(val word: String, val found: List<String> = emptyList(), val version: Int = 1)
 
-data class LevelSessionSnapshot(val found: List<String>, val progress: LevelProgress)
-
 /** Переходы из той же транзакции, что и ответ; восстановление UI их не повторяет. */
 data class CampaignAnswerUpdate(
     val submission: TaskSubmission,
@@ -182,9 +180,9 @@ class ProgressRepository(
                                     reconciliation.resetLevels.joinToString(
                                         prefix = "campaign-reconciled:", separator = ","
                                     ) { it.word }
-                                existingCore.resetReason?.startsWith("campaign-reconciled:") == true ->
-                                    existingCore.resetReason
-                                else -> null
+                                // Повторная миграция не должна стирать причину уже показанного
+                                // пользователю сброса: иначе результат перестаёт быть идемпотентным.
+                                else -> existingCore.resetReason
                             },
                         )
                         if (reconciled != existingCore) {
@@ -419,7 +417,7 @@ class ProgressRepository(
         val version: Int = 1,
     )
 
-    /** Переходная v1: старые ключи читаются один раз, свободная игра не переносится. */
+    /** Переходная v1: оставлена для проверки старых сохранений и тестов, runtime v2 её не вызывает. */
     suspend fun migrateLegacyLevels(levels: List<Level>) = committedWrite {
         dataStore.edit { preferences ->
             if (preferences[legacyLevelsKey] != null) return@edit
@@ -453,18 +451,10 @@ class ProgressRepository(
             json.decodeFromString<LegacyLevels>(raw).also { require(it.version == 1) { "Unsupported v1 session version" } }
         } ?: LegacyLevels()
 
+    /** Прогресс v1: оставлен для проверки старых сохранений и тестов, runtime v2 его не читает. */
     fun observeLevelProgress(): Flow<Map<String, LevelProgress>> = dataStore.data
         .map { readLegacyLevels(it).progress.mapValues { entry -> entry.value.toCore() } }
         .distinctUntilChanged().flowOn(computationDispatcher)
-
-    /** Ответы и звёзды одного уровня из одной подтверждённой транзакции v1. */
-    fun observeLevelSession(word: String): Flow<LevelSessionSnapshot> = dataStore.data
-        .map { preferences ->
-            val saved = readLegacyLevels(preferences)
-            val source = Alphabet.normalize(word)
-            LevelSessionSnapshot(saved.answers[source].orEmpty(),
-                saved.progress[source]?.toCore() ?: LevelProgress())
-        }.distinctUntilChanged().flowOn(computationDispatcher)
 
     suspend fun clearAll() = committedWrite {
         dataStore.edit { preferences ->
@@ -481,7 +471,7 @@ class ProgressRepository(
         Unit
     }
 
-    /** Звёзды и ответы v1 сохраняются одной транзакцией, которую выход с экрана не отменяет. */
+    /** Звёзды и ответы v1 одной транзакцией: оставлено для проверки старых сохранений и тестов. */
     suspend fun saveLevelResult(level: Level, found: List<String>) = committedWrite {
         dataStore.edit { preferences ->
             val saved = readLegacyLevels(preferences)
@@ -496,6 +486,7 @@ class ProgressRepository(
         Unit
     }
 
+    /** Ответы v1: оставлены для проверки старых сохранений и тестов, runtime v2 их не читает. */
     suspend fun levelAnswers(word: String): List<String> = withContext(computationDispatcher) {
         readLegacyLevels(dataStore.data.first()).answers[Alphabet.normalize(word)].orEmpty()
     }

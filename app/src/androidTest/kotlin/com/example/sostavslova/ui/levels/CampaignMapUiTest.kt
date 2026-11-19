@@ -23,7 +23,7 @@ class CampaignMapUiTest {
     @get:Rule val compose = createComposeRule()
 
     private fun level(number: Int, stars: Int = 0, recommended: Boolean = false) = LevelUiState(
-        number, "слово$number", LevelProgress(), unlocked = true, campaignStars = stars,
+        number, "слово$number", stars, unlocked = true,
         maxStars = 5, requiredStars = 2, stage = 1, recommended = recommended)
 
     @Test fun compactCardsUseSubtleAvailabilityColorsAndUpdateWhenUnlocked() {
@@ -85,11 +85,11 @@ class CampaignMapUiTest {
         assertEquals(open.fetchSemanticsNode().size.height, locked.fetchSemanticsNode().size.height)
         assertBackground(WordsColors.levelAvailableBackground, background(locked))
         compose.runOnIdle { state.value = state.value.copy(levels = state.value.levels.map {
-            if (it.index == 2) it.copy(campaignStars = 2) else it
+            if (it.index == 2) it.copy(stars = 2) else it
         }) }
         assertBackground(WordsColors.levelPassedBackground, background(locked))
         compose.runOnIdle { state.value = state.value.copy(levels = state.value.levels.map {
-            if (it.index == 2) it.copy(campaignStars = 5) else it
+            if (it.index == 2) it.copy(stars = 5) else it
         }) }
         assertBackground(WordsColors.levelAllStarsBackground, background(locked))
         locked.assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
@@ -101,9 +101,9 @@ class CampaignMapUiTest {
         for (index in 0..4) compose.onNodeWithTag("stars_position_$index", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("stars_position_5", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("stars_threshold", useUnmergedTree = true).assertDoesNotExist()
-        compose.onNodeWithContentDescription("Задания").assert(
+        compose.onNodeWithContentDescription("Звёзды").assert(
             SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Получено 3 из 5 звёзд"))
-        compose.onAllNodesWithContentDescription("Задания").assertCountEquals(1)
+        compose.onAllNodesWithContentDescription("Звёзды").assertCountEquals(1)
     }
 
     @Test fun requiredStarsAreMarkedByDividerAndAnnounced() {
@@ -116,7 +116,7 @@ class CampaignMapUiTest {
             .fetchSemanticsNode().boundsInRoot
         assertTrue(divider.left >= required.right)
         assertTrue(divider.right <= next.left)
-        compose.onNodeWithContentDescription("Задания").assert(
+        compose.onNodeWithContentDescription("Звёзды").assert(
             SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
                 "Получено 3 из 5 звёзд · порог открытия: 3"))
     }
@@ -181,7 +181,7 @@ class CampaignMapUiTest {
         compose.runOnIdle {
             assertEquals("слово1", selected)
             state.value = state.value.copy(summary = CampaignSummary(10, 10, 2, 2, 0),
-                levels = state.value.levels.map { it.copy(campaignStars = 5) })
+                levels = state.value.levels.map { it.copy(stars = 5) })
         }
         compose.onNodeWithTag("levels_grid").performScrollToKey("levels.header")
         compose.onNodeWithTag("levels_finale_banner").assertTextEquals("Мастер — все звёзды собраны!")

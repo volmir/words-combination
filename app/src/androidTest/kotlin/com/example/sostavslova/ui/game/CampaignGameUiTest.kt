@@ -39,8 +39,7 @@ class CampaignGameUiTest {
         val state = mutableStateOf(initial)
         compose.setContent {
             WordsTheme {
-                GameScreen(state.value, {}, {}, {}, { state.value = state.value.copy(dialog = it) },
-                    { state.value = state.value.copy(dialog = null) }, {})
+                GameScreen(state.value, {}, {}, {}, {})
             }
         }
         compose.onNodeWithTag("level_header").assertTextEquals("Эксперт · уровень 30 из 30")
@@ -85,7 +84,6 @@ class CampaignGameUiTest {
         compose.onNodeWithText("кот").performScrollTo().assertIsDisplayed().assertHasNoClickAction()
         compose.onNodeWithText("кот").performTouchInput { click() }
         compose.onNodeWithText("Значение слова").assertDoesNotExist()
-        compose.runOnIdle { assertNull(state.value.dialog) }
         compose.onNodeWithTag("level_found_group_3").performScrollTo().performClick()
         compose.onNodeWithText("кот").assertDoesNotExist()
         compose.onNodeWithTag("level_found_group_4").performScrollTo()
@@ -104,7 +102,7 @@ class CampaignGameUiTest {
         var transitions = 0
         var hints = 0
         compose.setContent {
-            WordsTheme { GameScreen(state.value, {}, {}, { hints++ }, {}, {}, {},
+            WordsTheme { GameScreen(state.value, {}, {}, { hints++ }, {},
                 onNextLevel = { transitions++ }) }
         }
         compose.onNodeWithTag("game_next_level_button").assertDoesNotExist()
@@ -145,7 +143,7 @@ class CampaignGameUiTest {
                 taskProgress = evaluated.progress, totalLevels = campaign.levels.size)
         }
         val state = mutableStateOf(ui(campaign.levels.first()))
-        compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, {}, {}, {}, {}) } }
+        compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, {}, {}) } }
         for (level in campaign.levels) {
             compose.runOnIdle { state.value = ui(level) }
             compose.onNodeWithTag("game_tasks_summary").assertTextEquals("Задания · 0 из ${level.tasks.size}")
@@ -168,7 +166,7 @@ class CampaignGameUiTest {
                 target = HintTarget("крот"), steps = steps, letterLadderVersion = 1))),
             hintCost = 0, hintRemaining = 0))
         var clicks = 0
-        compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, { clicks++ }, {}, {}, {}) } }
+        compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, { clicks++ }, {}) } }
         compose.onNodeWithTag("game_hint")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
         compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка ещё не открыта")
@@ -214,7 +212,7 @@ class CampaignGameUiTest {
             campaignLevel = evaluated.state.copy(hints = HintState(ladder = HintLadder(
                 target = HintTarget("билет"), steps = steps, nextStepIndex = 1, letterLadderVersion = 1))),
             hintCost = 1, hintRemaining = 2))
-        compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, {}, {}, {}, {}) } }
+        compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, {}, {}) } }
         compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 3 из 5")
         compose.onNodeWithTag("game_hint_length").assertTextEquals("Слово из 5 букв")
         compose.onNodeWithTag("game_hint_pattern")
@@ -241,7 +239,7 @@ class CampaignGameUiTest {
         val restoration = androidx.compose.ui.test.junit4.StateRestorationTester(compose)
         restoration.setContent {
             WordsTheme {
-                GameScreen(state.value, {}, {}, { clicks++ }, {}, {}, {})
+                GameScreen(state.value, {}, {}, { clicks++ }, {})
             }
         }
         for (open in listOf(0, 1, 3, 4)) {
@@ -340,7 +338,7 @@ class CampaignGameUiTest {
         val state = mutableStateOf(initial)
         compose.setContent {
             WordsTheme {
-                GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {}, {}, {})
+                GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {})
             }
         }
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("кот")
@@ -366,7 +364,7 @@ class CampaignGameUiTest {
         val state = mutableStateOf(initial)
         compose.setContent {
             WordsTheme {
-                GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {}, {}, {})
+                GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {})
             }
         }
         val input = compose.onNode(hasSetTextAction())
@@ -386,7 +384,7 @@ class CampaignGameUiTest {
         val state = mutableStateOf(initial.copy(riddles = mapOf("riddles" to riddles)))
         compose.setContent {
             WordsTheme {
-                GameScreen(state.value, {}, {}, {}, {}, {}, {})
+                GameScreen(state.value, {}, {}, {}, {})
             }
         }
         compose.onNodeWithTag("game_riddle_preview").assertDoesNotExist()
@@ -436,7 +434,7 @@ class CampaignGameUiTest {
         val restoration = androidx.compose.ui.test.junit4.StateRestorationTester(compose)
         restoration.setContent {
             WordsTheme {
-                GameScreen(state.value, {}, {}, {}, {}, {}, {}, onCloseFinale = { toLevels ->
+                GameScreen(state.value, {}, {}, {}, {}, onCloseFinale = { toLevels ->
                     actions.add(toLevels)
                     state.value = state.value.copy(finaleSummary = null)
                 })

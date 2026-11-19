@@ -59,10 +59,10 @@ class WelcomeDialogUiTest {
     private val welcomeKey = stringPreferencesKey("welcomeStateV1")
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private val dictionary = WordRepository({ "карта\nкрот\nкот\nторт\nрот\nрека" })
-    private val campaign = LevelsRepository({ error("v1 must not load") }, readCampaign = { miniCampaignJson })
-    private val broken = LevelsRepository({ error("v1 must not load") },
+    private val campaign = LevelsRepository(readCampaign = { miniCampaignJson })
+    private val broken = LevelsRepository(
         readCampaign = { throw IllegalStateException("broken campaign") })
-    private val empty = LevelsRepository({ "[]" }, readCampaign = { null })
+    private val empty = LevelsRepository(readCampaign = { null })
 
     @Before fun setUp() {
         directory = File(context.cacheDir, "welcome-test-${UUID.randomUUID()}").apply { mkdirs() }
@@ -179,7 +179,7 @@ class WelcomeDialogUiTest {
         val emptyModel = createModel(ProgressRepository(store, installEvidence = { InstallEvidence.FRESH_INSTALL },
             hadLocalStateAtStartup = false), empty)
         compose.runOnIdle { active.value = emptyModel }
-        emptyModel.ready { !it.loading && !it.loadError && it.levels.isEmpty() }
+        emptyModel.ready { !it.loading && it.loadError }
         compose.waitForIdle()
         compose.onNodeWithTag("levels_welcome").assertDoesNotExist()
         assertNull(store.data.first()[welcomeKey])

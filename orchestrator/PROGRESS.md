@@ -44,3 +44,6 @@
 
 - [ARCH-01] ✓ 2026-11-19T13:28:06+00:00 — Идентичность сохранений не должна зависеть от содержимого campaign.json — Выполнено вручную; проверка запущена оркестратором.
 <!-- orchestrator:v1 {"id": "ARCH-01", "fingerprint": "dfcbcc4a254c66c1181a249f03be05511513c2b43e706a60b743d2d85b398b99", "date": "2026-11-19T13:28:06+00:00", "gate": "passed", "manual": true, "summary": "Выполнено вручную; проверка запущена оркестратором.", "model": "opencode/deepseek-v4.1-flash#max", "effort": "high"} -->
+
+- [CLEAN-15] ✓ 2026-11-19T14:21:39+00:00 — Удалить UI-ветки v1 — ## ИТОГ
+<!-- orchestrator:v1 {"id": "CLEAN-15", "fingerprint": "81bcfaf808541cae4c54a21837039fb7f681dbe5b7c96a1c6839ae0ae49c1958", "date": "2026-11-19T14:21:39+00:00", "gate": "passed", "manual": false, "summary": "## ИТОГ", "model": "opencode/deepseek-v4.1-flash-free#max", "effort": "medium"} -->

@@ -14,18 +14,14 @@ import com.example.sostavslova.core.CampaignLevel
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.CurrentCampaignLevel
 import com.example.sostavslova.core.GameState
-import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.ui.assertTextLayoutFits
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 
-@RunWith(Parameterized::class)
-class FoundWordsSectionTest(private val legacy: Boolean) {
+class FoundWordsSectionTest {
     @get:Rule val compose = createComposeRule()
     // Synthetic words only: 49 three-letter, 49 four-letter and 48 five-letter strings.
     private val letters = "абвгдежзиклмнопрстуфхцчшщэюя"
@@ -37,16 +33,14 @@ class FoundWordsSectionTest(private val legacy: Boolean) {
         val game = GameState("а".repeat(30), words, found)
         val campaign = CampaignLevel(1, game.word, 1, 1, listOf(CampaignTask.T1("count", 150)))
         return GameUiState(loading = false, game = game, statistics = game.statistics(),
-            totalLevels = 15, campaignLevel = if (legacy) null else CurrentCampaignLevel(campaign, game),
-            level = if (legacy) Level(1, game.word, 8, 150, 'а', 5) else null)
+            totalLevels = 15, campaignLevel = CurrentCampaignLevel(campaign, game))
     }
 
     @Test fun emptyStateShowsEveryLengthAndKeepsEmptyGroupsCollapsed() {
         val state = mutableStateOf(state(emptyList()))
         compose.setContent {
             WordsTheme {
-                GameScreen(state.value, {}, {}, {}, { state.value = state.value.copy(dialog = it) },
-                    { state.value = state.value.copy(dialog = null) }, {})
+                GameScreen(state.value, {}, {}, {}, {})
             }
         }
         compose.onAllNodesWithTag("game_found_summary").assertCountEquals(1)
@@ -71,8 +65,7 @@ class FoundWordsSectionTest(private val legacy: Boolean) {
         val restoration = StateRestorationTester(compose)
         restoration.setContent {
             WordsTheme {
-                GameScreen(state.value, {}, {}, {}, { state.value = state.value.copy(dialog = it) },
-                    { state.value = state.value.copy(dialog = null) }, {})
+                GameScreen(state.value, {}, {}, {}, {})
             }
         }
         compose.runOnIdle { state.value = state(words.take(146)) }
@@ -153,7 +146,7 @@ class FoundWordsSectionTest(private val legacy: Boolean) {
             totalLevels = campaign.levels.size, campaignLevel = CurrentCampaignLevel(level, game))
         compose.setContent {
             WordsTheme {
-                GameScreen(snapshot, {}, {}, {}, {}, {}, {})
+                GameScreen(snapshot, {}, {}, {}, {})
             }
         }
         for (row in snapshot.statistics.rows) {
@@ -204,10 +197,5 @@ class FoundWordsSectionTest(private val legacy: Boolean) {
             val minimum = 48f * compose.density.density - 1f
             assertTrue(node.size.toString(), node.size.width >= minimum && node.size.height >= minimum)
         }
-    }
-
-    companion object {
-        @JvmStatic @Parameterized.Parameters(name = "legacy={0}")
-        fun modes(): List<Array<Any>> = listOf(arrayOf<Any>(false), arrayOf<Any>(true))
     }
 }

@@ -27,7 +27,7 @@ class CampaignJsonUpgradeTest {
     @Test fun installedCampaignV2KeepsIdentityFrontierStarsWordsAndPurchasedLadderAcrossNewStore() = runTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         fun asset(name: String) = context.assets.open(name).bufferedReader().use { it.readText() }
-        val levels = LevelsRepository({ error("No legacy") }, readCampaign = { asset("campaign.json") })
+        val levels = LevelsRepository(readCampaign = { asset("campaign.json") })
         val campaign = requireNotNull(levels.getCampaign())
         val words = WordRepository({ asset("words.txt") }).requireIndex()
         assertEquals(BuildConfig.CAMPAIGN_SHA256, campaign.contentSha256)

@@ -32,7 +32,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import com.example.sostavslova.core.LengthStat
-import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.core.Statistics
 import com.example.sostavslova.nav.Destination
 import com.example.sostavslova.ui.assertTextLayoutFits
@@ -114,7 +113,7 @@ private enum class ComponentExample {
                             LetterTiles("портал")
                             LetterTiles("электроэнцефалографический")
                         }
-                        STARS -> StarsRow(LevelProgress(completed = true, wordsTask = true), onClick = {})
+                        STARS -> StarsRow(stars = 2, maxStars = 3)
                         FOUND_WORDS -> FoundWords(listOf("пар", "порт", "тропа"))
                         ALERTS -> {
                             AlertBanner(AlertType.Success, "Правильно!")

@@ -7,11 +7,8 @@ import com.example.sostavslova.R
 import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.CampaignSummary
 import com.example.sostavslova.core.Stage
-import com.example.sostavslova.core.CampaignProgress
 import com.example.sostavslova.core.WelcomeState
 import com.example.sostavslova.data.LevelRouteRules
-import com.example.sostavslova.core.Level
-import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.data.LevelsRepository
 import com.example.sostavslova.data.ProgressRepository
 import com.example.sostavslova.data.WordRepository
@@ -23,16 +20,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class LevelUiState(
-    val index: Int, val word: String, val progress: LevelProgress, val unlocked: Boolean,
-    val campaignStars: Int? = null, val maxStars: Int = 3,
-    val requiredStars: Int = 1, val stage: Int = 0, val recommended: Boolean = false,
-    val crowned: Boolean = false,
-) {
-    val stars: Int get() = campaignStars ?: progress.stars
-
-    constructor(level: Level, progress: LevelProgress, unlocked: Boolean) :
-        this(level.index, level.word, progress, unlocked)
-}
+    val index: Int, val word: String, val stars: Int, val unlocked: Boolean,
+    val maxStars: Int = 3, val requiredStars: Int = 1, val stage: Int = 0,
+    val recommended: Boolean = false, val crowned: Boolean = false,
+)
 
 data class LevelsUiState(
     val loading: Boolean = true,
@@ -69,34 +60,22 @@ class LevelsViewModel(
         mutableState.update { it.copy(loading = true, loadError = false) }
         loadJob = viewModelScope.launch {
             try {
-                val campaign = levels.getCampaign()
-                if (campaign != null) {
-                    progress.migrateCampaign(campaign, words.requireIndex())
-                    progress.observeCampaignProgress().collect { saved ->
-                        val recommended = CampaignRules.continueLevel(campaign, saved).number
-                        val items = campaign.levels.map { level ->
-                            LevelUiState(level.number, level.word, LevelProgress(),
-                                LevelRouteRules.isUnlocked(level.number, campaign, saved, emptyList(), emptyMap()),
-                                CampaignRules.stars(level, saved), level.maxStars, level.requiredStars, level.stage,
-                                recommended == level.number, saved.finaleReached && level.number == campaign.levels.last().number)
-                        }
-                        val showWelcome = if (items.isNotEmpty()) resolveWelcomeAfterReady() else false
-                        mutableState.update { it.copy(loading = false, levels = items, stages = campaign.stages,
-                            summary = CampaignRules.summary(campaign, saved), recommendedLevel = recommended,
-                            finaleReached = saved.finaleReached, showWelcome = it.showWelcome || showWelcome) }
+                // Кампания обязательна: при отсутствии или повреждении показываем ошибку загрузки,
+                // а не старый режим отдельных уровней.
+                val campaign = requireNotNull(levels.getCampaign()) { "Campaign asset is required" }
+                progress.migrateCampaign(campaign, words.requireIndex())
+                progress.observeCampaignProgress().collect { saved ->
+                    val recommended = CampaignRules.continueLevel(campaign, saved).number
+                    val items = campaign.levels.map { level ->
+                        LevelUiState(level.number, level.word, CampaignRules.stars(level, saved),
+                            LevelRouteRules.isUnlocked(level.number, campaign, saved), level.maxStars,
+                            level.requiredStars, level.stage, recommended == level.number,
+                            saved.finaleReached && level.number == campaign.levels.last().number)
                     }
-                } else {
-                    val all = levels.getLevels()
-                    progress.migrateLegacyLevels(all)
-                    progress.observeLevelProgress().collect { saved ->
-                        val items = all.map { level ->
-                            LevelUiState(level, saved[level.word] ?: LevelProgress(),
-                                LevelRouteRules.isUnlocked(level.index, null, CampaignProgress(), all, saved))
-                        }
-                        val showWelcome = if (items.isNotEmpty()) resolveWelcomeAfterReady() else false
-                        mutableState.update { it.copy(loading = false, levels = items,
-                            showWelcome = it.showWelcome || showWelcome) }
-                    }
+                    val showWelcome = if (items.isNotEmpty()) resolveWelcomeAfterReady() else false
+                    mutableState.update { it.copy(loading = false, levels = items, stages = campaign.stages,
+                        summary = CampaignRules.summary(campaign, saved), recommendedLevel = recommended,
+                        finaleReached = saved.finaleReached, showWelcome = it.showWelcome || showWelcome) }
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { mutableState.update { it.copy(loading = false, loadError = true) } }
@@ -144,10 +123,10 @@ class LevelsViewModel(
         val item = state.levels.firstOrNull { it.word == word } ?: return
         // Переход не создаёт игру и ничего не сохраняет. Маршрут перепроверяет доступ.
         if (item.unlocked) mutableState.update { it.copy(openLevel = item.index, message = 0, lockedRequirement = null) }
-        else if (item.campaignStars != null) {
+        else {
             val previous = state.levels.firstOrNull { it.index == item.index - 1 } ?: return
             mutableState.update { it.copy(lockedRequirement = previous.index to previous.requiredStars) }
-        } else mutableState.update { it.copy(message = R.string.level_closed) }
+        }
     }
 
     fun dismissLockedRequirement() { mutableState.update { it.copy(lockedRequirement = null) } }

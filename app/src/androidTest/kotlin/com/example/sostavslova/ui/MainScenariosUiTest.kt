@@ -54,8 +54,7 @@ class MainScenariosUiTest {
         compose.onNodeWithText(InstrumentationRegistry.getInstrumentation().targetContext
             .getString(R.string.check_answer)).assertIsEnabled()
     }
-    private suspend fun source() = container.levelsRepository.getCampaign()?.levels?.first()?.word
-        ?: container.levelsRepository.getLevels().first().word
+    private suspend fun source() = requireNotNull(container.levelsRepository.getCampaign()).levels.first().word
 
     // Обычное «Правильно!» проверяем на слове от четырёх букв.
     // У трёхбуквенного ответа кампании своё сообщение и отдельный сценарий ниже.
@@ -65,10 +64,7 @@ class MainScenariosUiTest {
     private fun unknownAnswer() = "щщщ"
 
     private suspend fun foundAnswers(source: String): List<String> =
-        container.levelsRepository.getCampaign()?.let { campaign ->
-            container.progressRepository.observeCampaignProgress().first()
-                .levels[source]?.found.orEmpty()
-        } ?: container.progressRepository.levelAnswers(source)
+        container.progressRepository.observeCampaignProgress().first().levels[source]?.found.orEmpty()
 
     private fun answerWord(word: String) {
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement(word)
@@ -158,9 +154,8 @@ class MainScenariosUiTest {
         assertTrue("Должны быть неотгаданные слова", unrevealedWords.isNotEmpty())
 
         compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
-        val hintTag = if (container.levelsRepository.getCampaign() != null) "game_hint_pattern" else "game_hint"
         compose.waitUntil(10_000) {
-            compose.onAllNodesWithTag(hintTag).fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithTag("game_hint_pattern").fetchSemanticsNodes().isNotEmpty()
         }
         val hintNode = compose.onNodeWithTag("game_hint").performScrollTo()
         hintNode.assertIsDisplayed()

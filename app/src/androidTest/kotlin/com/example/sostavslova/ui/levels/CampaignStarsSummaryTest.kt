@@ -9,7 +9,6 @@ import com.example.sostavslova.R
 import com.example.sostavslova.core.CampaignLevelProgress
 import com.example.sostavslova.core.CampaignProgress
 import com.example.sostavslova.core.CampaignRules
-import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.data.CampaignJson
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.assertEquals
@@ -47,9 +46,8 @@ class CampaignStarsSummaryTest {
             summary = summary,
             stages = campaign.stages,
             levels = campaign.levels.map { level ->
-                LevelUiState(level.number, level.word, LevelProgress(), unlocked = true,
-                    campaignStars = level.maxStars, maxStars = level.maxStars,
-                    requiredStars = level.requiredStars, stage = level.stage)
+                LevelUiState(level.number, level.word, level.maxStars, unlocked = true,
+                    maxStars = level.maxStars, requiredStars = level.requiredStars, stage = level.stage)
             },
             finaleReached = true,
         )

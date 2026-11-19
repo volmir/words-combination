@@ -11,7 +11,6 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.R
-import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.core.Stage
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.json.JSONObject
@@ -28,8 +27,8 @@ class LevelsLayoutTest {
         val levelsJson = campaign.getJSONArray("levels")
         val items = List(levelsJson.length()) { i ->
             val row = levelsJson.getJSONObject(i)
-            LevelUiState(row.getInt("number"), row.getString("word"), LevelProgress(),
-                unlocked = i == 0, campaignStars = 0, maxStars = row.getJSONArray("tasks").length(),
+            LevelUiState(row.getInt("number"), row.getString("word"), 0,
+                unlocked = i == 0, maxStars = row.getJSONArray("tasks").length(),
                 requiredStars = row.getInt("requiredStars"), stage = row.getInt("stage"))
         }
         val stagesJson = campaign.getJSONArray("stages")
@@ -65,7 +64,7 @@ class LevelsLayoutTest {
         compose.onNodeWithTag("level_card_1").performClick()
         compose.runOnIdle { assertEquals("чемпионство", selected) }
         compose.runOnIdle { state.value = state.value.copy(levels = items.mapIndexed { i, item ->
-            if (i == 0) item.copy(campaignStars = item.maxStars)
+            if (i == 0) item.copy(stars = item.maxStars)
             else if (i == 1) item.copy(unlocked = true) else item
         }) }
         val maxStars = items.first().maxStars

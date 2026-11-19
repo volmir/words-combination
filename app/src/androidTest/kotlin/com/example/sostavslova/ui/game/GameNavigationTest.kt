@@ -32,17 +32,13 @@ class GameNavigationTest {
         compose.waitUntil(10_000) { compose.onNodeWithTag("level_card_1").isEnabled() }
         compose.dismissWelcomeIfShown()
     }
-    private suspend fun source() = container.levelsRepository.getCampaign()?.levels?.first()?.word
-        ?: container.levelsRepository.getLevels().first().word
+    private suspend fun source() = requireNotNull(container.levelsRepository.getCampaign()).levels.first().word
     private fun validAnswer(source: String) = if (source == "чемпионство") "нос" else "пар"
     // Заведомо отсутствующее в словаре слово: реальное «пар» даёт отказ по буквам,
     // а не проверяемую здесь ветку «слово не распознано».
     private fun unknownAnswer() = "щщщ"
     private suspend fun foundAnswers(source: String): List<String> =
-        container.levelsRepository.getCampaign()?.let { campaign ->
-            container.progressRepository.observeCampaignProgress().first()
-                .levels[source]?.found.orEmpty()
-        } ?: container.progressRepository.levelAnswers(source)
+        container.progressRepository.observeCampaignProgress().first().levels[source]?.found.orEmpty()
     private fun SemanticsNodeInteraction.isEnabled() = runCatching { assertIsEnabled() }.isSuccess
     private fun awaitText(text: String) {
         compose.waitUntil(10_000) { compose.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty() }
@@ -65,13 +61,11 @@ class GameNavigationTest {
         if (InstrumentationRegistry.getArguments().getString("g12Trace") == "true") {
             diagnostics.capture("before-feedback")
         }
-        val message = if (answer.length == 3 && container.levelsRepository.getCampaign() != null)
-            R.string.correct_three_letter_answer else R.string.correct_answer
+        val message = if (answer.length == 3) R.string.correct_three_letter_answer else R.string.correct_answer
         awaitText(InstrumentationRegistry.getInstrumentation().targetContext.getString(message))
     }
     private suspend fun awaitOpenedHint() {
-        val tag = if (container.levelsRepository.getCampaign() != null) "game_hint_pattern" else "game_hint"
-        compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_hint_pattern").fetchSemanticsNodes().isNotEmpty() }
     }
     private fun back() = compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
 

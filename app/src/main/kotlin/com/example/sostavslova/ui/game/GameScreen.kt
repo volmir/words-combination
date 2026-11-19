@@ -56,14 +56,12 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.sostavslova.R
 import com.example.sostavslova.di.appContainer
 import com.example.sostavslova.time.observePlayTimeLifecycle
-import com.example.sostavslova.core.LevelRules
 import com.example.sostavslova.core.HintLadder
 import com.example.sostavslova.core.HintRules
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.ui.components.AlertBanner
 import com.example.sostavslova.ui.components.LetterSlots
 import com.example.sostavslova.ui.components.LetterTiles
-import com.example.sostavslova.ui.components.StarsRow
 import com.example.sostavslova.ui.components.Well
 import com.example.sostavslova.ui.components.WordInputRow
 import com.example.sostavslova.ui.components.FoundWords
@@ -79,7 +77,7 @@ fun GameRoute(playTimeOwner: String, onOpenLevel: (Int) -> Unit, onReturnLevels:
     val factory = remember(container, playTimeOwner) {
         viewModelFactory { initializer {
             GameViewModel(createSavedStateHandle(), container.wordRepository, container.levelsRepository,
-                container.progressRepository, container.riddlesRepository, container.random,
+                container.progressRepository, container.riddlesRepository,
                 playTimeTracker = container.playTimeTracker, playTimeOwner = playTimeOwner)
         } }
     }
@@ -114,7 +112,7 @@ fun GameRoute(playTimeOwner: String, onOpenLevel: (Int) -> Unit, onReturnLevels:
     LaunchedEffect(state.returnLevels) { if (state.returnLevels) onReturnLevels(state.levelsMessage) }
     LaunchedEffect(state.nextLevelNavigation) { state.nextLevelNavigation?.let(onOpenLevel) }
     GameScreen(state, model::onInputChanged, model::onSubmit, model::onHint,
-        model::onDialog, model::onDismissDialog, model::onRetry, notice, model::onDismissExplanations,
+        model::onRetry, notice, model::onDismissExplanations,
         model::onCloseFinale, model::onNextLevel)
 }
 
@@ -124,8 +122,6 @@ fun GameScreen(
     onInputChanged: (String) -> Unit,
     onSubmit: () -> Unit,
     onHint: () -> Unit,
-    onDialog: (GameDialog) -> Unit,
-    onDismissDialog: () -> Unit,
     onRetry: () -> Unit,
     notice: GameMessage? = null,
     onDismissExplanations: () -> Unit = {},
@@ -151,7 +147,9 @@ fun GameScreen(
                     Text(stringResource(R.string.game_level_header, gameStageName(current.level.stage),
                         current.level.number, state.totalLevels), Modifier.testTag("level_header"),
                         style = MaterialTheme.typography.titleLarge)
-                    LetterTiles(game.word)
+                }
+                LetterTiles(game.word)
+                if (current != null) {
                     val starsDescription = pluralStringResource(R.plurals.level_stars_progress,
                         current.level.maxStars, current.completedTaskIds.size, current.level.maxStars)
                     val required = current.level.requiredStars
@@ -162,9 +160,6 @@ fun GameScreen(
                         else R.string.game_level_threshold, required, requiredWord),
                         Modifier.testTag("level_difficulty").semantics { stateDescription = starsDescription },
                         style = MaterialTheme.typography.bodyMedium)
-                } else {
-                    LetterTiles(game.word)
-                    if (state.level != null) StarsRow(state.levelProgress, onClick = { onDialog(GameDialog.Tasks) })
                 }
                 Well {
                     WordInputRow(stringResource(R.string.your_answer), state.input, onInputChanged,
@@ -200,22 +195,6 @@ fun GameScreen(
                 if (current != null) {
                     CampaignTasks(state)
                     CampaignHint(state, onHint)
-                } else {
-                    if (state.hintLoading) GameLoading(stringResource(R.string.hint_loading))
-                    state.hint?.let { hint ->
-                        Column(Modifier.testTag("game_hint").semantics { liveRegion = LiveRegionMode.Polite },
-                            verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(stringResource(R.string.hint_title), style = MaterialTheme.typography.titleMedium)
-                            Text(stringResource(R.string.hint_fallback,
-                                hint.length, RussianPlural.form(hint.length,
-                                    stringResource(R.string.hint_letter_genitive_one),
-                                    stringResource(R.string.hint_letter_genitive_many),
-                                    stringResource(R.string.hint_letter_genitive_many)), hint.firstLetter))
-
-                        }
-                    }
-                    GamePrimaryAction(stringResource(R.string.show_hint), state.canPlay && !state.hintLoading,
-                        onHint, "game_hint_button")
                 }
                 Column(Modifier.fillMaxWidth().testTag("game_found_words"),
                     verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -284,21 +263,6 @@ fun GameScreen(
             state.explanations.forEach { Text(stringResource(explanationText(it)), style = MaterialTheme.typography.bodyLarge) }
             CloseDialogButton(onDismissExplanations)
         }
-    }
-    when (state.dialog.takeIf { state.finaleSummary == null }) {
-        GameDialog.Tasks -> if (state.campaignLevel == null) state.level?.let { level ->
-            val found = state.game?.found.orEmpty()
-            WordsDialog(stringResource(R.string.tasks), onDismissDialog) {
-                val remaining = LevelRules.remainingToComplete(level, found)
-                TaskRow(if (state.levelProgress.completed) stringResource(R.string.task_complete)
-                    else stringResource(R.string.task_complete_remaining, remaining, RussianPlural.words(remaining)), state.levelProgress.completed)
-                TaskRow(stringResource(R.string.task_words, level.words, RussianPlural.words(level.words), found.size), state.levelProgress.wordsTask)
-                TaskRow(stringResource(R.string.task_letters, level.letterCount, RussianPlural.words(level.letterCount),
-                    level.letter.toString(), LevelRules.lettersCount(level, found)), state.levelProgress.lettersTask)
-                CloseDialogButton(onDismissDialog)
-            }
-        }
-        null -> Unit
     }
 }
 

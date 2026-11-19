@@ -1,7 +1,9 @@
 package com.example.sostavslova.core
 
 /**
- * Уровень («Прохождение»). Три задания = три звезды:
+ * Уровень старого режима v1 («Прохождение»). Runtime v2 его не создаёт:
+ * модель сохранена только для чтения и проверки старых сохранений и миграции.
+ * Три задания = три звезды:
  *  1. пройти уровень: отгадать не менее [answers] слов;
  *  2. отгадать не менее [words] слов;
  *  3. отгадать не менее [letterCount] слов на букву [letter].
@@ -15,7 +17,7 @@ data class Level(
     val letterCount: Int,
 )
 
-/** Звёзды уровня. Раз полученная звезда не пропадает (как в оригинале). */
+/** Звёзды уровня v1. Раз полученная звезда не пропадает (как в оригинале). */
 data class LevelProgress(
     val completed: Boolean = false,
     val wordsTask: Boolean = false,
@@ -30,6 +32,7 @@ data class LevelProgress(
     )
 }
 
+/** Правила уровня v1. Нужны только для чтения старых сохранений и тестов миграции. */
 object LevelRules {
 
     fun lettersCount(level: Level, found: List<String>): Int =

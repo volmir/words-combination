@@ -22,7 +22,6 @@
     <string name="correct_answer">Правильно!</string>
     <string name="no_combinations">Комбинации слов не найдены!</string>
     <string name="word_too_short">Введите слово длиной не менее 3-х символов</string>
-    <string name="tasks">Задания</string>
     <string name="stats_letters">Букв в слове</string>
     <string name="stats_found_total">Найдено / Всего</string>
     <string name="stats_percent" formatted="false">Процент, %</string>
@@ -68,15 +67,8 @@
         <item quantity="other">Получено звёзд: %1$d\nОткрыт следующий уровень!</item>
     </plurals>
     <string name="hint_all_found">Все слова уже найдены</string>
-    <string name="hint_title">Подсказка:</string>
-    <string name="show_hint">Получить подсказку</string>
-    <string name="hint_fallback">Слово из %1$d %2$s, начинается на «%3$s»</string>
     <string name="hint_letter_genitive_one">буквы</string>
     <string name="hint_letter_genitive_many">букв</string>
-    <string name="task_complete">Пройдите уровень</string>
-    <string name="task_complete_remaining">Пройдите уровень (ещё %1$d %2$s)</string>
-    <string name="task_words">Введите %1$d %2$s (%3$d/%1$d)</string>
-    <string name="task_letters">Введите %1$d %2$s на букву «%3$s» (%4$d/%1$d)</string>
     <string name="task_done">Задание выполнено</string>
     <string name="task_pending">Задание ещё не выполнено</string>
     <string name="game_loading">Восстанавливаем игру…</string>

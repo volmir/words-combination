@@ -41,7 +41,7 @@ class GameSubmissionUiTest {
                 File(directory, "progress.json")
             })
             val words = WordRepository({ context.assets.open("words.txt").bufferedReader().use { it.readText() } })
-            val levels = LevelsRepository({ error("No v1") }, readCampaign = {
+            val levels = LevelsRepository(readCampaign = {
                 """{"version":2,"countMinLength":4,
                     "stages":[{"number":1,"firstLevel":1,"lastLevel":1}],
                     "levels":[{"number":1,"word":"вегетарианец","stage":1,"requiredStars":1,
@@ -59,7 +59,7 @@ class GameSubmissionUiTest {
             compose.setContent {
                 val state by model.uiState.collectAsState()
                 WordsTheme {
-                    GameScreen(state, model::onInputChanged, model::onSubmit, {}, {}, {}, {})
+                    GameScreen(state, model::onInputChanged, model::onSubmit, {}, {})
                 }
             }
             val expected = "Слово «бык» есть в словаре, но его нельзя составить из букв этого уровня. Не хватает буквы «Б»: есть 0, нужно 1"
@@ -89,7 +89,7 @@ class GameSubmissionUiTest {
         val initial = GameUiState(loading = false, game = game, statistics = game.statistics())
         val notice = mutableStateOf<GameMessage?>(null)
         compose.setContent {
-            WordsTheme { GameScreen(initial, {}, {}, {}, {}, {}, {}, notice = notice.value) }
+            WordsTheme { GameScreen(initial, {}, {}, {}, {}, notice = notice.value) }
         }
         val resources = InstrumentationRegistry.getInstrumentation().targetContext.resources
         fun show(message: GameMessage, expected: String) {
@@ -112,7 +112,7 @@ class GameSubmissionUiTest {
         val index = WordIndex(listOf("кот", "колокол", "блок"))
         val initial = GameUiState(loading = false, game = game, statistics = game.statistics())
         val state = mutableStateOf(initial)
-        compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, {}, {}, {}, {}) } }
+        compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, {}, {}) } }
         fun show(submission: Submission, answer: String) {
             compose.runOnIdle { state.value = initial.copy(message = submissionMessage(submission, answer)) }
         }

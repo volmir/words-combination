@@ -35,7 +35,6 @@ class AppContainer(
 
     val wordRepository = words ?: WordRepository(readWords = { readAsset("words.txt") })
     val levelsRepository = LevelsRepository(
-        readLevels = { readAsset("levels.json") },
         readCampaign = readCampaign ?: {
             // Check presence separately: an existing but unreadable/damaged v2 must never become v1.
             if ("campaign.json" in appContext.assets.list("").orEmpty()) readAsset("campaign.json") else null

@@ -33,28 +33,6 @@ import kotlin.math.roundToInt
 
 class GameLayoutTest {
     @get:Rule val compose = createComposeRule()
-    private val game = GameState("а".repeat(30), listOf("демонстрация", "окаменелость"), listOf("демонстрация"))
-    private val initial = GameUiState(loading = false, game = game,
-        level = Level(1, game.word, 8, 21, 'д', 5), statistics = game.statistics(),
-        hint = GameHint(11, "О"))
-
-    @Test fun gameAndDialogsWrapAndKeep48DpTargets() {
-        val state = mutableStateOf(initial)
-        compose.setContent {
-            WordsTheme {
-                GameScreen(state.value, {}, {}, {}, {}, {}, {})
-            }
-        }
-        checkLayout()
-        compose.onNodeWithText("Завершить игру").assertDoesNotExist()
-        for (dialog in GameDialog.entries) {
-            compose.runOnIdle { state.value = initial.copy(dialog = dialog) }
-            checkLayout()
-            when (dialog) {
-                GameDialog.Tasks -> compose.onNodeWithText("Введите 21 слово (1/21)").performScrollTo().assertIsDisplayed()
-            }
-        }
-    }
 
     private data class SlotsCase(val width: Int, val fontScale: Float, val pattern: String)
 
@@ -74,7 +52,7 @@ class GameLayoutTest {
             CompositionLocalProvider(LocalDensity provides Density(base.density, 2f)) {
                 WordsTheme {
                     Box(Modifier.width(320.dp).background(Color.White)) {
-                        GameScreen(snapshot, {}, {}, {}, {}, {}, {})
+                        GameScreen(snapshot, {}, {}, {}, {})
                     }
                 }
             }

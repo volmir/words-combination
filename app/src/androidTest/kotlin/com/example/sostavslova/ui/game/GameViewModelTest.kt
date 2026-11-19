@@ -15,9 +15,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.R
 import com.example.sostavslova.core.AnswerResult
 import com.example.sostavslova.core.CampaignIdentity
-
-import com.example.sostavslova.core.Level
-import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.data.*
 import java.io.File
 import java.io.IOException
@@ -25,7 +22,6 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
-import kotlin.random.Random
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.test.runTest
@@ -42,10 +38,9 @@ class GameViewModelTest {
     private lateinit var store: DataStore<Preferences>
     private lateinit var progress: ProgressRepository
     private val owners = mutableListOf<ViewModelStoreOwner>()
-    private val words = WordRepository({ "лот\nпар\nпортал\nрот\nтор\nторт\nтот" })
-    private val level = Level(1, "торт", 2, 3, 'т', 2)
+    private val words = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
     private var route = "1"
-    private val levels = LevelsRepository({ """[{"index":1,"word":"торт","answers":2,"words":3,"letter":"т","letterCount":2},{"index":2,"word":"портал","answers":2,"words":3,"letter":"п","letterCount":1}]""" })
+    private val levels = LevelsRepository(readCampaign = { miniCampaignJson })
     private val noDefinitions = RiddlesRepository { "Синтетическое существо для проверки подсказок." }
 
     @Before fun setUp() {
@@ -69,7 +64,7 @@ class GameViewModelTest {
         val owner = retainedOwner ?: object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
         if (owner !in owners) owners.add(owner)
         ViewModelProvider(owner, viewModelFactory { initializer {
-            GameViewModel(handle, wordRepository, levelRepository, repository, meanings, Random(42))
+            GameViewModel(handle, wordRepository, levelRepository, repository, meanings)
         } })[GameViewModel::class.java]
     }
 
@@ -80,13 +75,6 @@ class GameViewModelTest {
         withContext(Dispatchers.Main) { onInputChanged(raw); onSubmit() }
         return await { !it.busy }
     }
-    private suspend fun seed(source: String, found: List<String> = emptyList()) {
-        progress.migrateLegacyLevels(levels.getLevels())
-        route = if (source == "торт") "1" else "2"
-        if (route == "2") progress.saveLevelResult(level, listOf("тор", "рот"))
-        progress.saveLevelResult(levels.getLevels().first { it.word == source }, found)
-    }
-    private suspend fun saved() = progress.levelAnswers(if (route == "1") "торт" else "портал")
     private suspend fun GameViewModel.event() = withContext(Dispatchers.Default) {
         withTimeout(10_000) { events.first() }
     }
@@ -98,7 +86,7 @@ class GameViewModelTest {
     }
 
     @Test fun nextLevelUsesCommittedUnlockAllowsMoreStarsAndWaitsForSaveBarrier() = runTest {
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
         assertNull(model.ready().nextLevelNumber)
@@ -148,7 +136,7 @@ class GameViewModelTest {
                 return store.updateData(transform)
             }
         }
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val model = model(repository = ProgressRepository(wrapped), wordRepository = campaignWords,
             levelRepository = campaignLevels)
@@ -178,7 +166,7 @@ class GameViewModelTest {
                 return store.updateData(transform)
             }
         }
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val model = model(repository = ProgressRepository(wrapped), wordRepository = campaignWords,
             levelRepository = campaignLevels)
@@ -196,28 +184,10 @@ class GameViewModelTest {
         assertEquals(saved, progress.observeCampaignProgress().first())
     }
 
-    @Test fun legacyNextLevelUsesExistingAccessRulesAndLastHasNoNextLevel() = runTest {
-        seed("торт")
-        val model = model()
-        assertNull(model.ready().nextLevelNumber)
-        model.answer("рот")
-        assertNull(model.uiState.value.nextLevelNumber)
-        model.answer("тор")
-        assertEquals(2, model.await { it.nextLevelNumber != null }.nextLevelNumber)
-        // Новые ответы сохраняются и после появления предложения перейти.
-        model.answer("тот")
-        assertEquals(3, model.uiState.value.game?.foundCount)
-        withContext(Dispatchers.Main) { model.onNextLevel() }
-        assertEquals(2, model.await { it.nextLevelNavigation != null }.nextLevelNavigation)
-        val last = model(SavedStateHandle(mapOf("index" to "2"))).ready()
-        assertNull(last.nextLevelNumber)
-        assertEquals(listOf("рот", "тор", "тот"), progress.levelAnswers("торт"))
-    }
-
     @Test fun campaignMissingLettersReachMessageAndRepeatedSubmitDoesNotLeaveBusy() = runTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val exactWords = WordRepository({ context.assets.open("words.txt").bufferedReader().use { it.readText() } })
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = {
+        val campaignLevels = LevelsRepository(readCampaign = {
             """{"version":2,"countMinLength":4,
                 "stages":[{"number":1,"firstLevel":1,"lastLevel":1}],
                 "levels":[{"number":1,"word":"вегетарианец","stage":1,"requiredStars":1,
@@ -229,6 +199,7 @@ class GameViewModelTest {
             val state = model.answer("бык")
             assertEquals(R.string.answer_letters_missing, state.message?.text)
             assertEquals("бык", state.message?.word)
+            assertEquals("бык", state.input)
             assertEquals(com.example.sostavslova.core.MissingLetter('б', 0, 1), state.message?.missingLetter)
             assertFalse(state.busy)
             assertTrue(state.canPlay)
@@ -237,27 +208,15 @@ class GameViewModelTest {
         }
         assertEquals(R.string.answer_unknown, model.answer("ыыыыы").message?.text)
         assertEquals(R.string.word_too_short, model.answer("ве").message?.text)
+        assertEquals("ве", model.uiState.value.input)
         assertEquals(R.string.answer_same_as_source, model.answer("вегетарианец").message?.text)
+        assertEquals("вегетарианец", model.uiState.value.input)
         assertEquals(R.string.correct_three_letter_answer, model.answer("тир").message?.text)
+        assertEquals("", model.uiState.value.input)
         assertEquals(R.string.answer_already_found, model.answer("тир").message?.text)
         assertEquals(listOf("тир"), model.uiState.value.game?.found)
         assertEquals(0, model.uiState.value.campaignLevel?.completedTaskIds?.size)
         assertFalse(model.uiState.value.busy)
-    }
-
-    @Test fun correctRepeatIncorrectAndLatinLetterFollowCoreAndPersistOnlyCorrectAnswers() = runTest {
-        seed("портал")
-        val model = model(); model.ready()
-        assertEquals(R.string.correct_answer, model.answer("пар").message?.text)
-        assertEquals(listOf("пар"), saved())
-        assertEquals(R.string.answer_already_found, model.answer("ПАР").message?.text)
-        assertEquals("пар", model.uiState.value.message?.word)
-        assertEquals(R.string.answer_invalid_characters, model.answer("пaр").message?.text)
-        assertEquals(R.string.answer_unknown, model.answer("нос").message?.text)
-        assertEquals(R.string.answer_same_as_source, model.answer("ПОРТАЛ").message?.text)
-        assertEquals(1, model.uiState.value.game?.foundCount)
-        // Последний ответ — отказ, поэтому набранное слово остаётся в поле.
-        assertEquals("ПОРТАЛ", model.uiState.value.input)
     }
 
     @Test fun onlyCorrectAndAlreadyFoundClearInput() {
@@ -278,58 +237,43 @@ class GameViewModelTest {
         }
     }
 
-    @Test fun refusalsKeepTypedWordWhileCorrectAndRepeatedAnswerClearIt() = runTest {
-        seed("торт")
-        val model = model(); val initial = model.ready()
-        // Отказ сохраняет текст: опечатку можно исправить без повторного набора.
-        assertEquals(R.string.answer_invalid_characters, model.answer("пaр").message?.text)
-        assertEquals("пaр", model.uiState.value.input)
-        assertEquals(R.string.answer_unknown, model.answer("нос").message?.text)
-        assertEquals("нос", model.uiState.value.input)
-        assertEquals(R.string.answer_letters_missing, model.answer("пар").message?.text)
-        assertEquals("пар", model.uiState.value.input)
-        assertEquals(R.string.answer_same_as_source, model.answer("торт").message?.text)
-        assertEquals("торт", model.uiState.value.input)
-        assertEquals(initial.game, model.uiState.value.game)
-
-        assertEquals(R.string.correct_answer, model.answer("рот").message?.text)
-        assertEquals("", model.uiState.value.input)
-        assertEquals(R.string.answer_already_found, model.answer("рот").message?.text)
-        assertEquals("", model.uiState.value.input)
-    }
-
     @Test fun emptySubmissionExplainsItselfAndLongInputIsKeptWhole() = runTest {
-        seed("портал")
-        val handle = SavedStateHandle(mapOf("index" to route))
-        val model = model(handle); model.ready()
-        val before = saved()
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.ready()
+        val before = progress.observeCampaignProgress().first().levels
         val state = model.answer("")
         // Пустой ввод не отправляется на проверку и не выглядит сломанной кнопкой.
         assertEquals(R.string.answer_empty, state.message?.text)
         assertEquals("", state.input)
-        assertEquals(before, saved())
+        assertEquals(before, progress.observeCampaignProgress().first().levels)
         val spaces = model.answer("   ")
         assertEquals(R.string.answer_empty, spaces.message?.text)
         assertEquals("   ", spaces.input)
-        assertEquals(before, saved())
+        assertEquals(before, progress.observeCampaignProgress().first().levels)
         withContext(Dispatchers.Main) { model.onInputChanged("аб") }
         assertEquals("аб", model.uiState.value.input)
         val tooShort = model.answer("аб")
         assertEquals(R.string.word_too_short, tooShort.message?.text)
 
+        val handle = SavedStateHandle(mapOf("index" to "1"))
         val long = "а".repeat(31)
         withContext(Dispatchers.Main) { model.onInputChanged(long) }
         assertEquals(long, model.uiState.value.input)
         assertFalse(handle.contains("game.input"))
         val snapshot = withContext(Dispatchers.Main) { handle.keys().associateWith { handle.get<Any?>(it) } }
-        val restored = model(SavedStateHandle(snapshot))
+        val restored = model(SavedStateHandle(snapshot), wordRepository = campaignWords,
+            levelRepository = campaignLevels)
         assertEquals("", restored.ready().input)
     }
 
     @Test fun invalidCharactersAreRejectedBeforeSubmissionAndKeepInput() = runTest {
-        seed("портал")
-        val model = model(); val initial = model.ready()
-        val before = saved()
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        val initial = model.ready()
+        val before = progress.observeCampaignProgress().first().levels
         for (raw in listOf("что-то", "кот пёс", "cat", "кот1", "123--")) {
             val state = model.answer(raw)
             assertEquals(R.string.answer_invalid_characters, state.message?.text)
@@ -337,35 +281,15 @@ class GameViewModelTest {
             assertFalse(state.busy)
             assertTrue(state.canPlay)
             assertEquals(initial.game, state.game)
-            assertEquals(before, saved())
+            assertEquals(before, progress.observeCampaignProgress().first().levels)
         }
         // Пробелы по краям допустимы: корректное слово проверяется как обычно.
-        assertEquals(R.string.correct_answer, model.answer(" пар ").message?.text)
-        assertEquals(listOf("пар"), saved())
-    }
-
-    @Test fun firstStarsEmitEventsAndFinishedIsAnEventOnlyOnce() = runTest {
-        seed("торт")
-        val model = model(); model.ready()
-        model.answer("рот")
-        assertEquals(LevelProgress(), model.uiState.value.levelProgress)
-        model.answer("тор")
-        assertEquals(LevelProgress(completed = true), model.uiState.value.levelProgress)
-        assertStarEvent(model.event(), 1)
-        model.answer("тот")
-        assertEquals(LevelProgress(true, true, true), model.uiState.value.levelProgress)
-        assertStarEvent(model.event(), 2)
-        assertEquals(R.string.all_words_found, model.event().text)
-        assertTrue(checkNotNull(model.uiState.value.game).isFinished)
-        model.answer("ТОТ")
-        withContext(Dispatchers.Main) { model.onGameOpened() }; model.ready()
-        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
-        val recreated = model(); recreated.ready()
-        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { recreated.events.first() } })
+        assertEquals(R.string.correct_answer, model.answer(" карта ").message?.text)
+        assertEquals(listOf("карта"), progress.observeCampaignProgress().first().levels.getValue("картотека").found)
     }
 
     @Test fun campaignAnswerWithoutNewStarsEmitsNoStarNotice() = runTest {
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
         model.ready()
@@ -376,7 +300,7 @@ class GameViewModelTest {
     }
 
     @Test fun campaignAnswerWithOneStarEmitsOnePluralNotice() = runTest {
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
         model.ready()
@@ -388,7 +312,7 @@ class GameViewModelTest {
 
     @Test fun campaignAnswerWithTwoStarsEmitsOnePluralNotice() = runTest {
         val noUnlock = miniCampaignJson.replace("\"requiredStars\": 2", "\"requiredStars\": 5")
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { noUnlock })
+        val campaignLevels = LevelsRepository(readCampaign = { noUnlock })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
         model.ready()
@@ -399,7 +323,7 @@ class GameViewModelTest {
     }
 
     @Test fun campaignAnswerWithStarAndOpenedLevelEmitsOneCombinedNotice() = runTest {
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
         model.ready()
@@ -410,7 +334,7 @@ class GameViewModelTest {
     }
 
     @Test fun campaignAnswerWithStarAndFinalWordKeepsFinalNoticeSeparate() = runTest {
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = {
+        val campaignLevels = LevelsRepository(readCampaign = {
             """{"version":2,"countMinLength":4,
                 "stages":[{"number":1,"firstLevel":1,"lastLevel":1}],
                 "levels":[{"number":1,"word":"кот","stage":1,"requiredStars":1,
@@ -427,35 +351,12 @@ class GameViewModelTest {
         assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
     }
 
-    @Test fun levelRestoresSavedAnswersThroughCoreAndFiltersInvalid() = runTest {
-        progress.saveLevelResult(level, listOf("тор", "тот", "нос"))
-        seed("торт", listOf("рот", "тор"))
-        val model = model(); val state = model.ready()
-        assertEquals(listOf("тор", "тот", "рот"), state.game?.found)
-        assertEquals(level, state.level)
-        assertEquals(3, state.game?.total)
-        assertEquals(3, state.statistics.totalFound)
-        assertEquals(LevelProgress(true, true, true), state.levelProgress)
-        assertEquals(state.game?.found, saved().filterNot { it == "нос" })
-    }
-
-    @Test fun legacyLetterHintNeverReadsRiddlesOrChangesSavedAnswers() = runTest {
-        seed("портал", listOf("пар", "лот"))
-        val model = model(meanings = RiddlesRepository { error("Legacy hint must not read riddles") })
-        model.ready(); val before = saved()
-        withContext(Dispatchers.Main) { model.onHint() }
-        val hint = checkNotNull(model.await { it.hint != null && !it.hintLoading }.hint)
-        assertEquals(3, hint.length)
-        assertTrue(hint.firstLetter in setOf("Р", "Т"))
-        assertEquals(before, saved())
-    }
-
     @Test fun installedMinimalAssetSuppliesEveryMandatoryRiddleToGameUi() = runTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         suspend fun asset(name: String) = withContext(Dispatchers.IO) {
             context.assets.open(name).bufferedReader().use { it.readText() }
         }
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { asset("campaign.json") })
+        val campaignLevels = LevelsRepository(readCampaign = { asset("campaign.json") })
         val campaignWords = WordRepository({ asset("words.txt") })
         val campaign = requireNotNull(campaignLevels.getCampaign())
         val meanings = JsonRiddlesRepository({ context.assets.open("owned_riddles.json").use { it.readBytes() } })
@@ -497,82 +398,8 @@ class GameViewModelTest {
         }
     }
 
-
-
-    @Test fun tasksDialogDoesNotLoadWordDefinitionsOrChangeProgress() = runTest {
-        seed("портал", listOf("пар"))
-        val reads = AtomicInteger()
-        val meanings = RiddlesRepository { reads.incrementAndGet(); error("No riddle task") }
-        val model = model(meanings = meanings); model.ready()
-        val before = model.uiState.value.game
-        val saved = saved()
-        for (dialog in GameDialog.entries) {
-            withContext(Dispatchers.Main) { model.onDialog(dialog) }
-            assertEquals(dialog, model.uiState.value.dialog)
-            assertEquals(before, model.uiState.value.game)
-            withContext(Dispatchers.Main) { model.onDismissDialog() }
-            assertNull(model.uiState.value.dialog)
-        }
-        assertEquals(saved, saved())
-        assertEquals(0, reads.get())
-    }
-
-    @Test fun saveFailureKeepsAnswerRetryableAndDoesNotFinishOrDoubleWrite() = runTest {
-        var fail = false
-        val gate = CompletableDeferred<Unit>()
-        var writes = 0
-        val wrapped = object : DataStore<Preferences> {
-            override val data = store.data
-            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
-                if (fail) { writes++; gate.await(); throw IOException("Synthetic write failure") }
-                return store.updateData(transform)
-            }
-        }
-        seed("портал")
-        val model = model(repository = ProgressRepository(wrapped)); model.ready()
-        fail = true
-        withContext(Dispatchers.Main) { model.onInputChanged("пар"); model.onSubmit(); model.onSubmit() }
-        withContext(Dispatchers.Default) { withTimeout(10_000) { while (writes == 0) delay(10) } }
-        assertTrue(model.uiState.value.busy)
-        gate.complete(Unit)
-        model.await { !it.busy }
-        assertEquals(1, writes)
-        assertEquals("пар", model.uiState.value.input)
-        assertEquals(0, model.uiState.value.game?.foundCount)
-        assertEquals(R.string.game_save_error, model.uiState.value.message?.text)
-        assertFalse(model.uiState.value.returnLevels)
-        fail = false
-        model.answer("пар")
-        assertEquals(listOf("пар"), saved())
-    }
-    @Test fun invalidAndClosedRouteReturnToMapWithoutWritingGame() = runTest {
-        for (index in listOf("bad", "0", "-1", "3", "999999999999")) {
-            val model = model(SavedStateHandle(mapOf("index" to index)))
-            assertEquals(R.string.level_invalid, model.await { it.returnLevels }.levelsMessage)
-        }
-        val closed = model(SavedStateHandle(mapOf("index" to "2")))
-        assertEquals(R.string.level_closed, closed.await { it.returnLevels }.levelsMessage)
-        assertTrue(progress.levelAnswers("портал").isEmpty())
-        assertNull(store.data.first()[com.example.sostavslova.data.jsonstore.stringPreferencesKey("currentGame")])
-    }
-
-    @Test fun routeAndProgressRestoreButOldDraftIsIgnoredAfterViewModelRecreation() = runTest {
-        seed("портал", listOf("пар"))
-        val handle = SavedStateHandle(mapOf("index" to "2"))
-        val model = model(handle); model.ready()
-        withContext(Dispatchers.Main) { model.onInputChanged("ЧеРнОвИк") }
-        val snapshot = withContext(Dispatchers.Main) { handle.keys().associateWith { handle.get<Any?>(it) } }
-        // Снимок старой версии с сохранённым черновиком также не восстанавливает ввод.
-        val restored = model(SavedStateHandle(snapshot + mapOf(
-            "game.input" to "Старый черновик", "game.source" to "портал")))
-        val state = restored.ready()
-        assertEquals("портал", state.game?.word)
-        assertEquals(listOf("пар"), state.game?.found)
-        assertEquals("", state.input)
-    }
-
     @Test fun hintLadderAccumulatesAndRestoresAcrossReturnRotationAndNewStore() = runTest {
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val reads = AtomicInteger()
         val meanings = RiddlesRepository { reads.incrementAndGet(); "Синтетическое существо для проверки подсказок." }
@@ -632,7 +459,7 @@ class GameViewModelTest {
         val json = miniCampaignJson.replace(
             """{"id": "ending", "type": "T5", "ending": "ка", "minLength": 3}""",
             """{"id": "theme_first", "type": "T6", "category": "animals", "n": 1, "words": ["кот"]}""")
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { json })
+        val campaignLevels = LevelsRepository(readCampaign = { json })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
         model.ready()
@@ -646,7 +473,7 @@ class GameViewModelTest {
     }
 
     @Test fun noDatabaseFreeT4UnknownLetterWorksAtZero() = runTest {
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val campaign = requireNotNull(campaignLevels.getCampaign())
         progress.migrateCampaign(campaign, campaignWords.requireIndex())
@@ -670,7 +497,7 @@ class GameViewModelTest {
     }
 
     @Test fun v2RouteRestoresSnapshotAndSavesEachAnswerAndHintThroughSave01() = runTest {
-        val campaignLevels = LevelsRepository({ error("No v1 fallback") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val handle = SavedStateHandle(mapOf("index" to "1"))
         val model = model(handle, wordRepository = campaignWords, levelRepository = campaignLevels)
@@ -715,7 +542,7 @@ class GameViewModelTest {
     }
 
     @Test fun finaleAtFourOfFiveSurvivesRecreationUntilClosedAndNeverRepeatsAtHundred() = runTest {
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { finaleCampaignJson() })
+        val campaignLevels = LevelsRepository(readCampaign = { finaleCampaignJson() })
         val campaign = requireNotNull(campaignLevels.getCampaign())
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт" })
         val seeded = org.json.JSONObject().put("version", 2).put("highestUnlockedLevel", 30)
@@ -769,7 +596,7 @@ class GameViewModelTest {
     }
 
     @Test fun finaleLevelsActionAcknowledgesBeforeNavigationAndDoesNotRepeat() = runTest {
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val campaign = requireNotNull(campaignLevels.getCampaign())
         val index = campaignWords.requireIndex()
@@ -797,18 +624,92 @@ class GameViewModelTest {
 
     @Test fun v2ClosedRouteIsRejectedAndCorruptCampaignNeverFallsBack() = runTest {
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
-        val campaignLevels = LevelsRepository({ error("No v1 fallback") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val closed = model(SavedStateHandle(mapOf("index" to "2")),
             wordRepository = campaignWords, levelRepository = campaignLevels)
         assertEquals(R.string.level_closed, closed.await { it.returnLevels }.levelsMessage)
         val corrupt = model(SavedStateHandle(mapOf("index" to "1")),
-            levelRepository = LevelsRepository({ error("No v1 fallback") }, readCampaign = { "broken" }))
+            levelRepository = LevelsRepository(readCampaign = { "broken" }))
         assertTrue(corrupt.await { it.loadError }.loadError)
         assertNull(corrupt.uiState.value.game)
     }
 
-    @Test fun repeatedOpenDuringLoadAndRetainedOwnerDoNotSearchAgainAndObserveFreshV1() = runTest {
-        seed("торт")
+    @Test fun saveFailureKeepsAnswerRetryableAndDoesNotFinishOrDoubleWrite() = runTest {
+        var fail = false
+        val gate = CompletableDeferred<Unit>()
+        var writes = 0
+        val wrapped = object : DataStore<Preferences> {
+            override val data = store.data
+            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                if (fail) { writes++; gate.await(); throw IOException("Synthetic write failure") }
+                return store.updateData(transform)
+            }
+        }
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val campaign = requireNotNull(campaignLevels.getCampaign())
+        val repository = ProgressRepository(wrapped)
+        repository.migrateCampaign(campaign, campaignWords.requireIndex())
+        val model = model(repository = repository, wordRepository = campaignWords,
+            levelRepository = campaignLevels)
+        model.ready()
+        fail = true
+        withContext(Dispatchers.Main) { model.onInputChanged("карта"); model.onSubmit(); model.onSubmit() }
+        withContext(Dispatchers.Default) { withTimeout(10_000) { while (writes == 0) delay(10) } }
+        assertTrue(model.uiState.value.busy)
+        gate.complete(Unit)
+        model.await { !it.busy }
+        assertEquals(1, writes)
+        assertEquals("карта", model.uiState.value.input)
+        assertEquals(0, model.uiState.value.game?.foundCount)
+        assertEquals(R.string.game_save_error, model.uiState.value.message?.text)
+        assertFalse(model.uiState.value.returnLevels)
+        fail = false
+        model.answer("карта")
+        assertEquals(listOf("карта"), progress.observeCampaignProgress().first().levels.getValue("картотека").found)
+    }
+
+    @Test fun invalidAndClosedRouteReturnToMapWithoutWritingGame() = runTest {
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
+        for (index in listOf("bad", "0", "-1", "3", "999999999999")) {
+            val model = model(SavedStateHandle(mapOf("index" to index)),
+                wordRepository = campaignWords, levelRepository = campaignLevels)
+            assertEquals(R.string.level_invalid, model.await { it.returnLevels }.levelsMessage)
+        }
+        val closed = model(SavedStateHandle(mapOf("index" to "2")),
+            wordRepository = campaignWords, levelRepository = campaignLevels)
+        assertEquals(R.string.level_closed, closed.await { it.returnLevels }.levelsMessage)
+        assertTrue(progress.observeCampaignProgress().first().levels.isEmpty())
+        assertNull(store.data.first()[com.example.sostavslova.data.jsonstore.stringPreferencesKey("currentGame")])
+    }
+
+    @Test fun routeAndProgressRestoreButOldDraftIsIgnoredAfterViewModelRecreation() = runTest {
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val campaign = requireNotNull(campaignLevels.getCampaign())
+        progress.migrateCampaign(campaign, campaignWords.requireIndex())
+        progress.submitCampaignAnswer(campaign, 1, "карта", campaignWords.requireIndex())
+        val handle = SavedStateHandle(mapOf("index" to "1"))
+        val model = model(handle, wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.ready()
+        withContext(Dispatchers.Main) { model.onInputChanged("ЧеРнОвИк") }
+        val snapshot = withContext(Dispatchers.Main) { handle.keys().associateWith { handle.get<Any?>(it) } }
+        // Снимок старой версии с сохранённым черновиком также не восстанавливает ввод.
+        val restored = model(SavedStateHandle(snapshot + mapOf(
+            "game.input" to "Старый черновик", "game.source" to "картотека")),
+            wordRepository = campaignWords, levelRepository = campaignLevels)
+        val state = restored.ready()
+        assertEquals("картотека", state.game?.word)
+        assertEquals(listOf("карта"), state.game?.found)
+        assertEquals("", state.input)
+    }
+
+    @Test fun repeatedOpenDuringLoadAndRetainedOwnerDoNotSearchAgain() = runTest {
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
+        val campaign = requireNotNull(campaignLevels.getCampaign())
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        progress.migrateCampaign(campaign, campaignWords.requireIndex())
         val entered = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()
         val reads = AtomicInteger()
@@ -823,10 +724,10 @@ class GameViewModelTest {
             reads.incrementAndGet()
             entered.complete(Unit)
             release.await()
-            "рот\nтор\nтот\nторт"
+            "карта\nкрот\nкот\nторт\nрот"
         }, computationDispatcher = countingDispatcher)
         val handle = SavedStateHandle(mapOf("index" to "1"))
-        val first = model(handle, wordRepository = countedWords)
+        val first = model(handle, wordRepository = countedWords, levelRepository = campaignLevels)
         val owner = owners.last()
         entered.await()
         withContext(Dispatchers.Main) { repeat(5) { first.onGameOpened() } }
@@ -839,13 +740,14 @@ class GameViewModelTest {
         }
         // Activity уничтожает экран, но сохраняет NavBackStackEntry и ViewModelStore.
         withContext(Dispatchers.Main) { first.onScreenClosed() }
-        val retained = model(handle, wordRepository = countedWords, retainedOwner = owner)
+        val retained = model(handle, wordRepository = countedWords, levelRepository = campaignLevels,
+            retainedOwner = owner)
         assertSame(first, retained)
-        progress.saveLevelResult(level, listOf("рот", "тор"))
-        val updated = first.await { it.game?.foundCount == 2 }
+        progress.submitCampaignAnswer(campaign, 1, "карта", campaignWords.requireIndex())
+        val updated = first.await { it.game?.foundCount == 1 }
         assertSame(initial.game?.allWords, updated.game?.allWords)
-        assertEquals(LevelProgress(completed = true), updated.levelProgress)
-        assertEquals(2, updated.statistics.totalFound)
+        assertEquals(listOf("карта"), updated.game?.found)
+        assertEquals(1, updated.statistics.totalFound)
         assertEquals("", updated.input)
         assertEquals(1, reads.get())
         assertEquals(count, computations.get())
@@ -866,7 +768,7 @@ class GameViewModelTest {
                 return result
             }
         }
-        val campaignLevels = LevelsRepository({ error("No v1 fallback") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val campaign = checkNotNull(campaignLevels.getCampaign())
         val model = model(repository = ProgressRepository(wrapped), wordRepository = campaignWords,
@@ -892,7 +794,10 @@ class GameViewModelTest {
     }
 
     @Test fun delayedLoadFromRemovedRouteCannotChangeNextLevelOrReturn() = runTest {
-        seed("портал")
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
+        val campaign = requireNotNull(campaignLevels.getCampaign())
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        progress.migrateCampaign(campaign, campaignWords.requireIndex())
         val entered = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()
         val readFinished = CompletableDeferred<Unit>()
@@ -901,14 +806,16 @@ class GameViewModelTest {
                 entered.complete(Unit)
                 release.await()
                 readFinished.complete(Unit)
-                "рот\nтор\nтот\nторт"
+                "карта\nкрот\nкот\nторт\nрот"
             }
         })
-        val first = model(SavedStateHandle(mapOf("index" to "1")), wordRepository = delayedWords)
+        val first = model(SavedStateHandle(mapOf("index" to "1")),
+            wordRepository = delayedWords, levelRepository = campaignLevels)
         val firstOwner = owners.last()
         entered.await()
         withContext(Dispatchers.Main) { firstOwner.viewModelStore.clear() }
-        val second = model(SavedStateHandle(mapOf("index" to "2")))
+        val second = model(SavedStateHandle(mapOf("index" to "1")),
+            wordRepository = campaignWords, levelRepository = campaignLevels)
         second.ready()
         withContext(Dispatchers.Main) { second.onInputChanged("пар") }
         val before = second.uiState.value
@@ -916,64 +823,38 @@ class GameViewModelTest {
         readFinished.await()
         withContext(Dispatchers.Main) { first.onGameOpened() }
         assertEquals(before, second.uiState.value)
-        assertEquals("портал", second.uiState.value.game?.word)
-        val returned = model(SavedStateHandle(mapOf("index" to "1")))
-        assertEquals(listOf("тор", "рот").toSet(), returned.ready().game?.found?.toSet())
+        assertEquals("картотека", second.uiState.value.game?.word)
+        val returned = model(SavedStateHandle(mapOf("index" to "1")),
+            wordRepository = campaignWords, levelRepository = campaignLevels)
+        assertTrue(returned.ready().game?.found.orEmpty().isEmpty())
         assertEquals("", returned.uiState.value.input)
     }
 
-    @Test fun answerInFlightWhenNavigatingSavesOnlyItsLevelAndPreservesNewDraft() = runTest {
-        seed("портал")
-        val pauseNext = AtomicBoolean(false)
-        val entered = CompletableDeferred<Unit>()
-        val release = CompletableDeferred<Unit>()
-        val committed = CompletableDeferred<Unit>()
-        val wrapped = object : DataStore<Preferences> {
-            override val data = store.data
-            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
-                val paused = pauseNext.compareAndSet(true, false)
-                if (paused) { entered.complete(Unit); release.await() }
-                return store.updateData(transform).also { if (paused) committed.complete(Unit) }
-            }
-        }
-        val first = model(SavedStateHandle(mapOf("index" to "1")), repository = ProgressRepository(wrapped))
-        val owner = owners.last()
-        first.ready()
-        pauseNext.set(true)
-        withContext(Dispatchers.Main) { first.onInputChanged("тот"); first.onSubmit() }
-        entered.await()
-        withContext(Dispatchers.Main) { owner.viewModelStore.clear() }
-        val second = model(SavedStateHandle(mapOf("index" to "2")))
-        second.ready()
-        withContext(Dispatchers.Main) { second.onInputChanged("тот") }
-        release.complete(Unit)
-        committed.await()
-        val returned = model(SavedStateHandle(mapOf("index" to "1")))
-        assertTrue("тот" in returned.ready().game?.found.orEmpty())
-        assertEquals("тот", second.uiState.value.input)
-        assertEquals("портал", second.uiState.value.game?.word)
-        assertTrue(second.uiState.value.game?.found.orEmpty().isEmpty())
-        assertNull(second.uiState.value.message)
-    }
-
     @Test fun missingOrCorruptMandatoryJsonFailsWithoutFallbackOrProgressReset() = runTest {
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val campaign = requireNotNull(campaignLevels.getCampaign())
         progress.migrateCampaign(campaign, campaignWords.requireIndex())
-        val before = saved()
+        val before = progress.observeCampaignProgress().first()
         for (failure in listOf(IOException("Missing JSON"), IllegalArgumentException("Corrupt JSON"))) {
             val model = model(meanings = RiddlesRepository { throw failure }, wordRepository = campaignWords, levelRepository = campaignLevels)
             val state = model.await { it.loadError }
             assertFalse(state.canPlay)
             assertTrue(state.riddles.isEmpty())
-            assertEquals(before, saved())
+            val after = progress.observeCampaignProgress().first()
+            // Открытие экрана отмечает визит и просмотренные объяснения, но не
+            // сбрасывает и не переписывает сам прогресс кампании.
+            assertEquals(before.levels, after.levels)
+            assertEquals(before.highestUnlockedLevel, after.highestUnlockedLevel)
+            assertEquals(before.finaleReached, after.finaleReached)
+            assertEquals(before.finaleShown, after.finaleShown)
+            assertEquals(before.campaignId, after.campaignId)
         }
     }
 
     @Test fun campaignSafeRiddleTextHasNoMetadataAndProgressSurvivesRecreation() = runTest {
         val meanings = RiddlesRepository { "Условное безопасное описание для синтетического теста" }
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val model = model(meanings = meanings, wordRepository = campaignWords, levelRepository = campaignLevels)
         val riddle = model.ready().riddles.getValue("riddle").single()
@@ -994,7 +875,7 @@ class GameViewModelTest {
                 return store.updateData(transform)
             }
         }
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val model = model(repository = ProgressRepository(counted), wordRepository = campaignWords, levelRepository = campaignLevels)
         model.ready()
@@ -1010,7 +891,7 @@ class GameViewModelTest {
     }
 
     @Test fun newTaskTypesAreExplainedAtTheirFirstActualLevelAndNeverRepeat() = runTest {
-        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { firstAppearanceCampaignJson() })
+        val campaignLevels = LevelsRepository(readCampaign = { firstAppearanceCampaignJson() })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val campaign = requireNotNull(campaignLevels.getCampaign())
         val seeded = org.json.JSONObject().put("version", 2).put("highestUnlockedLevel", 15)
