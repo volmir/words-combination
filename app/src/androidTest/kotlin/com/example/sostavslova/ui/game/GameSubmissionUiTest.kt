@@ -71,7 +71,8 @@ class GameSubmissionUiTest {
                 compose.onNodeWithText(expected).assert(hasAnyAncestor(hasTestTag("game_feedback")))
                 compose.onNode(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
                     and (hasText(expected) or hasAnyDescendant(hasText(expected)))).assertExists()
-                compose.onNode(hasSetTextAction()).assertIsEnabled().assertTextEquals("")
+                // Отказ не стирает набранное слово: его можно исправить без повторного набора.
+                compose.onNode(hasSetTextAction()).assertIsEnabled().assertTextEquals("бык")
                 assertTrue(model.uiState.value.canPlay)
                 assertEquals(before, repository.observeCampaignProgress().first())
             }

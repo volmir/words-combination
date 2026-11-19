@@ -13,6 +13,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.R
+import com.example.sostavslova.core.AnswerResult
 import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.data.*
@@ -247,6 +248,45 @@ class GameViewModelTest {
         assertEquals(R.string.answer_unknown, model.answer("нос").message?.text)
         assertEquals(R.string.answer_same_as_source, model.answer("ПОРТАЛ").message?.text)
         assertEquals(1, model.uiState.value.game?.foundCount)
+        // Последний ответ — отказ, поэтому набранное слово остаётся в поле.
+        assertEquals("ПОРТАЛ", model.uiState.value.input)
+    }
+
+    @Test fun onlyCorrectAndAlreadyFoundClearInput() {
+        val expected = mapOf(
+            AnswerResult.CORRECT to true,
+            AnswerResult.ALREADY_FOUND to true,
+            AnswerResult.NOT_FOUND to false,
+            AnswerResult.NOT_COUNTED to false,
+            AnswerResult.LETTERS_MISSING to false,
+            AnswerResult.TOO_SHORT to false,
+            AnswerResult.SAME_AS_SOURCE to false,
+            AnswerResult.EMPTY to false,
+        )
+        // Новое значение AnswerResult не должно молча стирать ввод.
+        assertEquals(AnswerResult.entries.toSet(), expected.keys)
+        expected.forEach { (result, clears) ->
+            assertEquals("Очистка ввода после $result", clears, submissionClearsInput(result))
+        }
+    }
+
+    @Test fun refusalsKeepTypedWordWhileCorrectAndRepeatedAnswerClearIt() = runTest {
+        seed("торт")
+        val model = model(); val initial = model.ready()
+        // Отказ сохраняет текст: опечатку можно исправить без повторного набора.
+        assertEquals(R.string.word_too_short, model.answer("пaр").message?.text)
+        assertEquals("пaр", model.uiState.value.input)
+        assertEquals(R.string.answer_unknown, model.answer("нос").message?.text)
+        assertEquals("нос", model.uiState.value.input)
+        assertEquals(R.string.answer_letters_missing, model.answer("пар").message?.text)
+        assertEquals("пар", model.uiState.value.input)
+        assertEquals(R.string.answer_same_as_source, model.answer("торт").message?.text)
+        assertEquals("торт", model.uiState.value.input)
+        assertEquals(initial.game, model.uiState.value.game)
+
+        assertEquals(R.string.correct_answer, model.answer("рот").message?.text)
+        assertEquals("", model.uiState.value.input)
+        assertEquals(R.string.answer_already_found, model.answer("рот").message?.text)
         assertEquals("", model.uiState.value.input)
     }
 

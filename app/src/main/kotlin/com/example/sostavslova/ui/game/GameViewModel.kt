@@ -73,6 +73,13 @@ internal fun submissionMessage(submission: Submission, answer: String, threeLett
     }
 }
 
+/** Поле очищают только зачёт и повтор уже найденного; любой отказ сохраняет набранный текст. */
+internal fun submissionClearsInput(result: AnswerResult): Boolean = when (result) {
+    AnswerResult.CORRECT, AnswerResult.ALREADY_FOUND -> true
+    AnswerResult.NOT_FOUND, AnswerResult.LETTERS_MISSING, AnswerResult.NOT_COUNTED,
+    AnswerResult.SAME_AS_SOURCE, AnswerResult.EMPTY, AnswerResult.TOO_SHORT -> false
+}
+
 enum class GameDialog { Statistics, Tasks }
 
 data class GameHint(val length: Int, val firstLetter: String)
@@ -355,7 +362,8 @@ class GameViewModel(
                 val answer = Alphabet.normalize(raw)
                 val message = submissionMessage(submission, answer,
                     threeLetterCampaignAnswer = activeCampaign != null && answer.length == 3)
-                if (uiState.value.input == raw) {
+                // Отказ оставляет набранный текст: опечатку можно исправить без повторного ввода.
+                if (uiState.value.input == raw && submissionClearsInput(submission.result)) {
                     mutableState.update { it.copy(input = "") }
                 }
                 mutableState.update { it.copy(message = message) }

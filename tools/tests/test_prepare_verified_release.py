@@ -104,7 +104,9 @@ class VerifiedReleasePreparationTest(unittest.TestCase):
         self.assertEqual(40, len(release.get_tag_commit(self.repo, '1.0.2')))
         with self.assertRaisesRegex(ValueError, 'semantic-version'):
             release.get_tag_commit(self.repo, '../main')
-        subprocess.run(['git', 'tag', '1.0.3'], cwd=self.repo, check=True)
+        # A lightweight tag must not depend on the global tag.gpgSign setting.
+        subprocess.run(['git', '-c', 'tag.gpgSign=false', 'tag', '1.0.3'],
+                       cwd=self.repo, check=True)
         with self.assertRaisesRegex(ValueError, 'annotated'):
             release.get_tag_commit(self.repo, '1.0.3')
 

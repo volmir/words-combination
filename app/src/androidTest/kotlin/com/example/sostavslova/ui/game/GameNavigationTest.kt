@@ -100,9 +100,13 @@ class GameNavigationTest {
         assertEquals(listOf(valid), foundAnswers(source))
         awaitText("Найденные слова · 1 из")
         answer(valid.uppercase()); awaitText("Вы уже разгадали слово $valid")
+        // Зачёт и повтор уже найденного очищают поле, отказы — нет.
+        compose.onNode(hasSetTextAction()).assertTextEquals("")
         answer("пaр"); awaitText("Введите слово длиной не менее 3-х символов")
+        compose.onNode(hasSetTextAction()).assertTextEquals("пaр")
         val unknown = unknownAnswer()
         answer(unknown); awaitText("Слово «$unknown» не распознано словарём")
+        compose.onNode(hasSetTextAction()).assertTextEquals(unknown)
         compose.onNodeWithText("Статистика слов").performScrollTo().performClick()
         compose.onNodeWithText("Статистика по слову", substring = true).assertIsDisplayed()
         val total = container.wordRepository.startGame(source).total
