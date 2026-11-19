@@ -37,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -54,6 +53,7 @@ import com.example.sostavslova.ui.components.AlertBanner
 import com.example.sostavslova.ui.components.AlertType
 import com.example.sostavslova.ui.components.StarsRow
 import com.example.sostavslova.ui.components.Well
+import com.example.sostavslova.ui.components.starsStateDescription
 import com.example.sostavslova.ui.theme.WordsCardShape
 import com.example.sostavslova.ui.theme.WordsColors
 import java.util.Locale
@@ -198,7 +198,7 @@ private fun stageName(number: Int): String = stringResource(when (number) {
 
 @Composable
 private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Unit) {
-    val stars = pluralStringResource(R.plurals.level_stars_progress, item.maxStars, item.stars, item.maxStars)
+    val stars = starsStateDescription(item.stars, item.maxStars, item.requiredStars)
     val background = when {
         !item.unlocked -> WordsColors.levelLockedBackground
         item.stars == item.maxStars -> WordsColors.levelAllStarsBackground
@@ -210,7 +210,8 @@ private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Uni
         enabled = enabled, shape = WordsCardShape,
         border = BorderStroke(if (item.recommended) 3.dp else 1.dp, WordsColors.defaultButtonBorder),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = background,
-            disabledContainerColor = background, contentColor = WordsColors.text),
+            disabledContainerColor = background, contentColor = WordsColors.text,
+            disabledContentColor = WordsColors.text),
         contentPadding = PaddingValues(12.dp)) {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -221,9 +222,9 @@ private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Uni
             }
             val starsLabel = stringResource(R.string.level_stars_label)
             if (item.campaignStars == null) {
-                StarsRow(item.progress, label = starsLabel)
+                StarsRow(item.progress, label = starsLabel, requiredStars = item.requiredStars)
             } else {
-                StarsRow(item.stars, item.maxStars, label = starsLabel)
+                StarsRow(item.stars, item.maxStars, label = starsLabel, requiredStars = item.requiredStars)
             }
         }
     }

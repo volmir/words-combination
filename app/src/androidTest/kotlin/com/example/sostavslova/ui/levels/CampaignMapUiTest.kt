@@ -55,9 +55,11 @@ class CampaignMapUiTest {
         val unavailable = background(locked)
         val passed = background(compose.onNodeWithTag("level_card_3"))
         val complete = background(compose.onNodeWithTag("level_card_4"))
-        assertTrue("Доступный фон — лёгкий зелёный", available.green > available.red)
-        assertTrue("Закрытый фон — лёгкий розовый", unavailable.red > unavailable.green)
-        assertTrue("Пройденный фон — лёгкий голубой", passed.blue > passed.red)
+        assertTrue("Доступный фон — белый", available.red > 0.95f && available.green > 0.95f && available.blue > 0.95f)
+        assertTrue("Закрытый фон — нейтральный серый", unavailable.red < available.red)
+        assertEquals(unavailable.red, unavailable.green, 0.01f)
+        assertEquals(unavailable.green, unavailable.blue, 0.01f)
+        assertTrue("Пройденный фон — лёгкий зелёный", passed.green > passed.red && passed.green > passed.blue)
         assertTrue("Все звёзды — лёгкий золотистый", complete.red > complete.green && complete.green > complete.blue)
         val backgrounds = listOf(available, unavailable, passed, complete)
         assertEquals(4, backgrounds.map { Triple(it.red, it.green, it.blue) }.toSet().size)
@@ -90,16 +92,33 @@ class CampaignMapUiTest {
             if (it.index == 2) it.copy(campaignStars = 5) else it
         }) }
         assertBackground(WordsColors.levelAllStarsBackground, background(locked))
-        locked.assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Получено 5 из 5 звёзд"))
+        locked.assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
+            "Получено 5 из 5 звёзд · порог открытия: 2"))
     }
 
     @Test fun fivePositionsHaveAccessibleProgress() {
         compose.setContent { WordsTheme { StarsRow(3, 5) } }
         for (index in 0..4) compose.onNodeWithTag("stars_position_$index", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("stars_position_5", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("stars_threshold", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithContentDescription("Задания").assert(
             SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Получено 3 из 5 звёзд"))
         compose.onAllNodesWithContentDescription("Задания").assertCountEquals(1)
+    }
+
+    @Test fun requiredStarsAreMarkedByDividerAndAnnounced() {
+        compose.setContent { WordsTheme { StarsRow(3, 5, requiredStars = 3) } }
+        val divider = compose.onNodeWithTag("stars_threshold", useUnmergedTree = true).assertExists()
+            .fetchSemanticsNode().boundsInRoot
+        val required = compose.onNodeWithTag("stars_position_2", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        val next = compose.onNodeWithTag("stars_position_3", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue(divider.left >= required.right)
+        assertTrue(divider.right <= next.left)
+        compose.onNodeWithContentDescription("Задания").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
+                "Получено 3 из 5 звёзд · порог открытия: 3"))
     }
 
     @Test fun summaryStageContinueLockedExplanationFinaleAndMaster() {
@@ -138,7 +157,8 @@ class CampaignMapUiTest {
         compose.runOnIdle { assertEquals("слово2", selected) }
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово1")
         compose.onNodeWithTag("level_card_1").assert(
-            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Получено 2 из 5 звёзд"))
+            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
+                "Получено 2 из 5 звёзд · порог открытия: 2"))
         compose.onNodeWithTag("level_card_1").performClick()
         compose.runOnIdle { assertEquals("слово1", selected) }
         compose.runOnIdle { state.value = state.value.copy(finaleReached = true,
@@ -148,13 +168,15 @@ class CampaignMapUiTest {
         compose.onNodeWithTag("levels_finale_banner").assertTextContains("Финал", substring = true)
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово2")
         compose.onNodeWithTag("level_card_2")
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Получено 2 из 5 звёзд"))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
+                "Получено 2 из 5 звёзд · порог открытия: 2"))
             .assertTextEquals("2. СЛОВО2")
         compose.onAllNodesWithText("Рекомендуемый уровень", substring = true).assertCountEquals(0)
         compose.onNodeWithContentDescription("Корона: финал кампании достигнут").assertExists()
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово1")
         compose.onNodeWithTag("level_card_1").assert(
-            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Получено 5 из 5 звёзд"))
+            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
+                "Получено 5 из 5 звёзд · порог открытия: 2"))
         compose.onNodeWithTag("level_card_1").performClick()
         compose.runOnIdle {
             assertEquals("слово1", selected)

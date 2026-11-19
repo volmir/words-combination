@@ -94,7 +94,9 @@ fun RulesScreen() {
                     Triple("rules_level_color_all_stars", WordsColors.levelAllStarsBackground, R.string.rules_color_all_stars),
                 )
                 for ((tag, color, label) in colors) {
-                    Surface(Modifier.fillMaxWidth(), color = color, contentColor = WordsColors.text, shape = WordsCardShape) {
+                    // Белый фон доступного уровня сливается с экраном без рамки, как и у карточек на карте.
+                    Surface(Modifier.fillMaxWidth(), color = color, contentColor = WordsColors.text, shape = WordsCardShape,
+                        border = BorderStroke(1.dp, WordsColors.defaultButtonBorder)) {
                         Text(stringResource(label), Modifier.padding(12.dp).testTag(tag),
                             style = MaterialTheme.typography.bodyMedium)
                     }

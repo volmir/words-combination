@@ -46,9 +46,10 @@ class LevelsLayoutTest {
         }
         compose.onNodeWithTag("level_card_1").assertIsEnabled()
             .assert(hasContentDescription("Уровень недоступен").not())
+        val threshold = context.getString(R.string.level_stars_threshold, items.first().requiredStars)
         assertStars(context.getString(R.string.level_stars_label),
             context.resources.getQuantityString(R.plurals.level_stars_progress, items.first().maxStars,
-                0, items.first().maxStars))
+                0, items.first().maxStars) + " · " + threshold)
         compose.onNodeWithTag("level_card_2").assertIsEnabled()
             .assert(hasContentDescription("Уровень недоступен"))
         // Ряд звёзд на карте только показывает прогресс: «Задания» здесь вводит в заблуждение.
@@ -68,7 +69,8 @@ class LevelsLayoutTest {
             else if (i == 1) item.copy(unlocked = true) else item
         }) }
         val maxStars = items.first().maxStars
-        val starsDescription = context.resources.getQuantityString(R.plurals.level_stars_progress, maxStars, maxStars, maxStars)
+        val starsDescription = context.resources.getQuantityString(R.plurals.level_stars_progress, maxStars, maxStars, maxStars) +
+            " · " + threshold
         assertStars(context.getString(R.string.level_stars_label), starsDescription)
         compose.onNodeWithTag("level_card_1")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, starsDescription))

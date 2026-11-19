@@ -16,7 +16,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 
-/** Контраст звёзд на белом фоне и на всех фонах карточек уровней. */
+/** Контраст звёзд и текста на белом фоне и на всех фонах карточек уровней. */
 @RunWith(AndroidJUnit4::class)
 class StarsContrastTest {
     @Test
@@ -29,8 +29,10 @@ class StarsContrastTest {
         for (background in backgrounds) {
             val filled = contrastRatio(WordsColors.starDone, background)
             val outline = contrastRatio(WordsColors.starEmpty, background)
+            val text = contrastRatio(WordsColors.text, background)
             assertTrue("Заполненная звезда на $background: контраст $filled < 3:1", filled >= 3.0)
             assertTrue("Контурная звезда на $background: контраст $outline < 3:1", outline >= 3.0)
+            assertTrue("Текст на $background: контраст $text < 4,5:1", text >= 4.5)
         }
         assertNotEquals(WordsColors.starDone, WordsColors.starEmpty)
     }

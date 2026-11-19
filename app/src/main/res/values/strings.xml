@@ -98,9 +98,9 @@
     <string name="rules_item_7">7. Подсказка открывает по одной букве слова из ещё не выполненного задания. На уровне есть запас подсказок (на ранних этапах больше), и ещё одна добавляется за каждые 4 найденных слова. Первая буква ответа в задании с описаниями бесплатна.</string>
     <string name="rules_footer">Подсказки не отнимают звёзд.</string>
     <string name="rules_colors_title">Цвета уровней</string>
-    <string name="rules_color_locked">Розовый — уровень пока закрыт.</string>
-    <string name="rules_color_available">Зелёный — уровень доступен, но ещё не пройден.</string>
-    <string name="rules_color_passed">Голубой — уровень пройден, можно добрать звёзды.</string>
+    <string name="rules_color_locked">Серый — уровень пока закрыт.</string>
+    <string name="rules_color_available">Белый — уровень доступен, но ещё не пройден.</string>
+    <string name="rules_color_passed">Зелёный — уровень пройден, можно добрать звёзды.</string>
     <string name="rules_color_all_stars">Золотистый — собраны все звёзды уровня.</string>
 
     <!-- Об игре -->
@@ -132,6 +132,7 @@
     <string name="levels_master">Мастер — все звёзды собраны!</string>
     <string name="level_crown">Корона: финал кампании достигнут</string>
     <string name="level_stars_label">Звёзды</string>
+    <string name="level_stars_threshold">порог открытия: %1$d</string>
     <string name="level_unlock_requirement">Чтобы открыть этот уровень, получите %2$d %3$s на уровне %1$d.</string>
     <string name="star_one">звезду</string>
     <string name="star_few">звезды</string>

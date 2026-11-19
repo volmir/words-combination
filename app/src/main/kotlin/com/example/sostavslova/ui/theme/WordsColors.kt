@@ -14,9 +14,11 @@ object WordsColors {
     val defaultButtonText = Color(0xFF333333)
     val dangerButton = Color(0xFFD9534F)
     val successButton = Color(0xFF5CB85C)
-    val levelAvailableBackground = successButton.copy(alpha = 0.18f)
-    val levelLockedBackground = dangerButton.copy(alpha = 0.16f)
-    val levelPassedBackground = primary.copy(alpha = 0.17f)
+    val levelAvailableBackground = Color(0xFFFFFFFF)
+    /** Нейтральный серый вместо цвета ошибки: закрытый уровень не должен выглядеть сбоем. */
+    val levelLockedBackground = Color(0xFFE9E9E9)
+    /** Зелёный — звёзд не меньше порога открытия следующего уровня. */
+    val levelPassedBackground = successButton.copy(alpha = 0.18f)
     val wellBackground = Color(0xFFF5F5F5)
     val wellBorder = Color(0xFFE3E3E3)
     val inputFocusBorder = Color(0xFF66AFE9)

@@ -17,9 +17,9 @@ class RulesScreenTest {
         compose.setContent { WordsTheme { RulesScreen() } }
         compose.onNodeWithText("Цвета уровней").performScrollTo().assertIsDisplayed()
         val descriptions = listOf(
-            "rules_level_color_locked" to "Розовый — уровень пока закрыт.",
-            "rules_level_color_available" to "Зелёный — уровень доступен, но ещё не пройден.",
-            "rules_level_color_passed" to "Голубой — уровень пройден, можно добрать звёзды.",
+            "rules_level_color_locked" to "Серый — уровень пока закрыт.",
+            "rules_level_color_available" to "Белый — уровень доступен, но ещё не пройден.",
+            "rules_level_color_passed" to "Зелёный — уровень пройден, можно добрать звёзды.",
             "rules_level_color_all_stars" to "Золотистый — собраны все звёзды уровня.",
         )
         for ((tag, text) in descriptions) {
