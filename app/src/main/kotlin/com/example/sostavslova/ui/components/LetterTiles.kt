@@ -25,9 +25,9 @@ import com.example.sostavslova.ui.theme.LocalWordsPalette
 import java.util.Locale
 
 /**
- * Плитки исходного слова: строки распределяются равномерно, а размер плитки
- * подстраивается под ширину (28–36 dp). Шрифт масштабируется вместе с плиткой,
- * рамка — 2 dp, поэтому перенос не зависит от системного масштаба шрифта.
+ * Плитки исходного слова: строки распределяются равномерно (balancedRows),
+ * размер плитки подстраивается под ширину (32–36 dp). Шрифт пропорционален
+ * плитке и не обрезается при системном масштабе; рамка — 4 dp, отступы — 2 dp.
  */
 @Composable
 fun LetterTiles(word: String, modifier: Modifier = Modifier) {
@@ -40,7 +40,8 @@ fun LetterTiles(word: String, modifier: Modifier = Modifier) {
             .testTag("source_word_tiles")
             .semantics(mergeDescendants = true) { contentDescription = description },
     ) {
-        val layout = letterSlotsLayout(maxWidth, letters.length)
+        val maxCell = if (letters.length > 20) 32.dp else 36.dp
+        val layout = letterSlotsLayout(maxWidth, letters.length, spacing = 2.dp, minCell = 32.dp, maxCell = maxCell)
         // Dp.toSp учитывает fontScale: физический размер буквы остаётся
         // пропорционален плитке при любом системном масштабе.
         val fontSize = with(LocalDensity.current) { (layout.cell * 0.5f).toSp() }
@@ -55,7 +56,7 @@ fun LetterTiles(word: String, modifier: Modifier = Modifier) {
                         val tileIndex = index++
                         Box(
                             Modifier.size(layout.cell)
-                                .border(2.dp, LocalWordsPalette.current.tileBorder)
+                                .border(4.dp, LocalWordsPalette.current.tileBorder)
                                 .testTag("source_word_tile_${tileIndex + 1}"),
                             contentAlignment = Alignment.Center,
                         ) {
