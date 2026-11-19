@@ -11,7 +11,6 @@ data class HintCategory(val key: String, val text: String)
 data class HintWordData(
     val category: HintCategory? = null,
     val definition: String? = null,
-    val definitionWiktionary: Boolean = false,
     val forms: Set<String> = emptySet(),
     val related: Set<String> = emptySet(),
     val familiar: Boolean = false,

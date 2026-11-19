@@ -1,10 +1,8 @@
 package com.example.sostavslova.core
 
-import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GameStateTest {
@@ -37,13 +35,6 @@ class GameStateTest {
         var s = start()
         for (w in listOf("рот", "тор", "тот")) s = s.submit(w).state
         assertTrue(s.isFinished)
-        assertNull(s.hintWord())
-    }
-
-    @Test
-    fun hintIsNeverAnAlreadyFoundWord() {
-        val s = start().submit("рот").state
-        repeat(50) { assertTrue(s.hintWord(Random(it)) in listOf("тор", "тот")) }
     }
 
     @Test

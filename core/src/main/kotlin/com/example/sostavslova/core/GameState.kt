@@ -1,7 +1,5 @@
 package com.example.sostavslova.core
 
-import kotlin.random.Random
-
 enum class AnswerResult {
     /** Слово найдено и засчитано («Правильно!»). */
     CORRECT,
@@ -118,19 +116,6 @@ data class GameState(
             }
         }
         return Submission(this, AnswerResult.NOT_COUNTED, probabilistic = !exact)
-    }
-
-    /** Случайное ещё не найденное слово для подсказки (или null, если всё найдено). */
-    fun hintWord(random: Random = Random.Default): String? {
-        val remaining = allWords.filter { it !in foundSet }
-        if (remaining.isEmpty()) return null
-        return remaining[random.nextInt(remaining.size)]
-    }
-
-    /** Ограниченный набор ненайденных ответов для поиска пригодного толкования. */
-    fun hintCandidates(random: Random = Random.Default, limit: Int = 24): List<String> {
-        require(limit > 0)
-        return allWords.filter { it !in foundSet }.shuffled(random).take(limit.coerceAtMost(24))
     }
 
     /** Таблица «длина слова -> отгадано / всего / %» и итоговая строка. */

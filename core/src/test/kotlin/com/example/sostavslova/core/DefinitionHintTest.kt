@@ -6,7 +6,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.random.Random
 
 class DefinitionHintTest {
     @Test
@@ -54,15 +53,5 @@ class DefinitionHintTest {
             assertNull(DefinitionHint.prepare("дом", "Синтетический предмет описан в $link"))
         }
         assertNotNull(DefinitionHint.prepare("сайт", "Участок всемирной сети WWW."))
-    }
-
-    @Test
-    fun hintCandidatesAreBoundedDistinctAndNeverAlreadyFound() {
-        val game = GameState("торт", listOf("рот", "тор", "тот"), found = listOf("рот"))
-        val candidates = game.hintCandidates(Random(42), 2)
-        assertEquals(setOf("тор", "тот"), candidates.toSet())
-        assertEquals(candidates, game.hintCandidates(Random(42), 2))
-        assertEquals(1, game.hintCandidates(Random(42), 1).size)
-        assertTrue(game.copy(found = game.allWords).hintCandidates().isEmpty())
     }
 }
