@@ -41,8 +41,8 @@
   "model_sets": {
     "opencode": {
       "free": {
-        "light": "opencode/glm-5.3-flash-free",
-        "standard": "opencode/glm-5.3-flash-free#max",
+        "light": "opencode/deepseek-v4.1-flash-free",
+        "standard": "opencode/deepseek-v4.1-flash-free#max",
         "heavy": "opencode/beam-free#max"
       }
     }
