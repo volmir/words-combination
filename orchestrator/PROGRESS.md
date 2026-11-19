@@ -50,3 +50,6 @@
 
 - [CLEAN-16] ✓ 2026-11-19T14:27:57+00:00 — Устаревшие ссылки — **ИТОГ**
 <!-- orchestrator:v1 {"id": "CLEAN-16", "fingerprint": "9176da193f4e47243bda9ea6891b770458b7db537259a8152d95a76d2a3bf1aa", "date": "2026-11-19T14:27:57+00:00", "gate": "passed", "manual": false, "summary": "**ИТОГ**", "model": "opencode/deepseek-v4.1-flash-free", "effort": "medium"} -->
+
+- [HINT-04] ✓ 2026-11-19T14:43:47+00:00 — Подсказка по умолчанию должна помогать с трудными заданиями (core) — ИТОГ: Реализовано HINT-04 в `:core`: новый порядок выбора цели подсказки (T4, затем незавершённые задания по возрастанию числа подходящих слов), для T3 выбирается кратчайшее подходящее слово; добавлены `HintState.preferredTaskId` и `HintRules.selectTask`, `HintLadder.paidSteps` для учёта платных сту
+<!-- orchestrator:v1 {"id": "HINT-04", "fingerprint": "949c685461b63cdd3464a409c1d7544ebebf1ef2379f4033d723b58ea26155c5", "date": "2026-11-19T14:43:47+00:00", "gate": "passed", "manual": false, "summary": "ИТОГ: Реализовано HINT-04 в `:core`: новый порядок выбора цели подсказки (T4, затем незавершённые задания по возрастанию числа подходящих слов), для T3 выбирается кратчайшее подходящее слово; добавлены `HintState.preferredTaskId` и `HintRules.selectTask`, `HintLadder.paidSteps` для учёта платных сту", "model": "opencode/beam-free#max", "effort": "high"} -->

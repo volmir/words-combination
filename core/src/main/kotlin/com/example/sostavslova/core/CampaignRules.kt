@@ -109,7 +109,9 @@ object CampaignRules {
                 // Неполный/старый снимок игры не возвращает уже потраченный бюджет.
                 hints = if (evaluated.hints.shownSteps > saved.hints.shownSteps ||
                     (evaluated.hints.shownSteps == saved.hints.shownSteps &&
-                        (evaluated.hints.ladder.target != null || saved.hints.ladder.target?.word in evaluated.game.found))
+                        (evaluated.hints.ladder.target != null || saved.hints.ladder.target?.word in evaluated.game.found ||
+                            evaluated.hints.preferredTaskId != saved.hints.preferredTaskId ||
+                            evaluated.hints.ladder.paidSteps != saved.hints.ladder.paidSteps))
                 ) evaluated.hints else saved.hints,
             )),
             highestUnlockedLevel = frontier,

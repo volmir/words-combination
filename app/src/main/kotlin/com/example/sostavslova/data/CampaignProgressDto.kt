@@ -76,20 +76,23 @@ internal data class HintStateDto(
     val revealedPositions: Set<Int> = emptySet(),
     val shownSteps: Int = 0,
     val paidUnits: Int = 0,
+    val preferredTaskId: String? = null,
     val ownedContentVersion: Int = 0,
     val letterLadderVersion: Int = 0,
+    val paidSteps: Int = 0,
 ) {
     fun toCore() = HintState(
-        HintLadder(target?.toCore(), steps.map { it.toCore() }, nextStepIndex, revealedPositions, letterLadderVersion),
-        shownSteps, paidUnits,
+        HintLadder(target?.toCore(), steps.map { it.toCore() }, nextStepIndex, revealedPositions, letterLadderVersion, paidSteps),
+        shownSteps, paidUnits, preferredTaskId,
     ).let { if (ownedContentVersion < 1) it.withoutLegacyDefinitions() else it }
 
     companion object {
         fun fromCore(state: HintState) = HintStateDto(
             state.ladder.target?.let(HintTargetDto::fromCore),
             state.ladder.steps.map(HintStepDto::fromCore), state.ladder.nextStepIndex,
-            state.ladder.revealedPositions, state.shownSteps, state.paidUnits, ownedContentVersion = 1,
-            letterLadderVersion = state.ladder.letterLadderVersion,
+            state.ladder.revealedPositions, state.shownSteps, state.paidUnits, preferredTaskId = state.preferredTaskId,
+            ownedContentVersion = 1, letterLadderVersion = state.ladder.letterLadderVersion,
+            paidSteps = state.ladder.paidSteps,
         )
     }
 }

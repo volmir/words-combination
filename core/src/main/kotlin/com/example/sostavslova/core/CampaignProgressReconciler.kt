@@ -227,12 +227,13 @@ object CampaignProgressReconciler {
         game: GameState,
         changes: MutableList<ReconciliationChange>,
     ): HintState {
-        val target = hints.ladder.target ?: return hints
-        val taskExists = target.taskId?.let { id -> level.tasks.any { it.id == id } } ?: true
-        val wordExists = target.word.isNotEmpty() && target.word in game.allWords
-        if (taskExists && wordExists) return hints
-        changes += ReconciliationChange(level.word, ReconciliationChangeKind.HINT_LADDER_RESET, target.word)
-        return hints.copy(ladder = HintLadder())
+        val target = hints.ladder.target
+        val taskExists = target?.taskId?.let { id -> level.tasks.any { it.id == id } } ?: true
+        val wordExists = target?.word?.isNotEmpty() == true && target.word in game.allWords
+        val preferredExists = hints.preferredTaskId?.let { id -> level.tasks.any { it.id == id } } ?: true
+        if (taskExists && wordExists && preferredExists) return hints
+        changes += ReconciliationChange(level.word, ReconciliationChangeKind.HINT_LADDER_RESET, target?.word)
+        return hints.copy(ladder = HintLadder(), preferredTaskId = if (preferredExists) hints.preferredTaskId else null)
     }
 
     /**

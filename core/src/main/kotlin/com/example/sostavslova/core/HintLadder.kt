@@ -46,6 +46,7 @@ data class HintLadder(
     val nextStepIndex: Int = 0,
     val revealedPositions: Set<Int> = emptySet(),
     val letterLadderVersion: Int = 0,
+    val paidSteps: Int = 0,
 ) {
     val shown: List<HintStep> get() = steps.take(nextStepIndex)
     val stage: HintStage? get() = shown.lastOrNull()?.stage
@@ -76,7 +77,7 @@ data class HintLadder(
             word.indices.shuffled(Random(word.hashCode()))
         appendLetters(word, target, positions, order, retained)
         return copy(steps = retained, nextStepIndex = open, revealedPositions = positions,
-            letterLadderVersion = 1)
+            letterLadderVersion = 1, paidSteps = paidSteps)
     }
 
     companion object {
@@ -136,6 +137,7 @@ data class HintState(
     val ladder: HintLadder = HintLadder(),
     val shownSteps: Int = 0,
     val paidUnits: Int = 0,
+    val preferredTaskId: String? = null,
 ) {
     /** Upgrade to owned hints: keep target, counters and every revealed letter. */
     fun withoutLegacyDefinitions(): HintState {

@@ -49,8 +49,21 @@ object HintRules {
     ): HintResult {
         val found = normalizedFound(current)
         var hints = restore(current, words).hints
+        // Предпочтение игрока проверяется по текущей кампании; недопустимое значение
+        // сбрасывается, чтобы следующий выбор был автоматическим.
+        val candidates = current.game.allWords.filter { it !in found && it !in forbiddenTargets }.distinct()
+        val completed = TaskRules.evaluate(current, countMinLength).state.completedTaskIds
+        val preferred = hints.preferredTaskId
+        if (preferred != null) {
+            val task = current.level.tasks.firstOrNull { it.id == preferred }
+            val eligible = if (task == null || task.id in completed) emptyList()
+            else eligibleWords(task, candidates, countMinLength)
+            if (task == null || task.id in completed || eligible.isEmpty()) {
+                hints = hints.copy(preferredTaskId = null)
+            }
+        }
         if (hints.ladder.target == null || hints.ladder.target.word in found) {
-            val target = selectTarget(current, words, countMinLength, random)
+            val target = selectTarget(current.copy(hints = hints), words, countMinLength, random)
             val ladder = if (target == null) HintLadder() else HintLadder.build(
                 target,
                 current.level.tasks.firstOrNull { it.id == target.taskId },
@@ -69,6 +82,7 @@ object HintRules {
             ladder = hints.ladder.copy(
                 nextStepIndex = hints.ladder.nextStepIndex + 1,
                 revealedPositions = hints.ladder.revealedPositions + step.revealedPositions,
+                paidSteps = hints.ladder.paidSteps + if (free) 0 else 1,
             ),
             shownSteps = hints.shownSteps + 1,
             paidUnits = hints.paidUnits + if (free) 0 else 1,
@@ -86,6 +100,28 @@ object HintRules {
         }
     }
 
+    /** Выбор задания для подсказки. Возвращает состояние с обновлённым предпочтением. */
+    fun selectTask(
+        current: CurrentCampaignLevel,
+        taskId: String? = null,
+        countMinLength: Int = 4,
+    ): CurrentCampaignLevel {
+        val hints = current.hints
+        // После покупки платной ступени текущая лестница и цель фиксируются.
+        if (hints.ladder.paidSteps > 0) return current
+        val found = normalizedFound(current)
+        val candidates = current.game.allWords.filter { it !in found && it !in forbiddenTargets }.distinct()
+        val completed = TaskRules.evaluate(current, countMinLength).state.completedTaskIds
+        val valid = taskId == null || run {
+            val task = current.level.tasks.firstOrNull { it.id == taskId }
+            task != null && task.id !in completed && eligibleWords(task, candidates, countMinLength).isNotEmpty()
+        }
+        val newPreferred = if (valid) taskId else null
+        val changed = newPreferred != hints.preferredTaskId
+        val newLadder = if (changed) HintLadder() else hints.ladder
+        return current.copy(hints = hints.copy(preferredTaskId = newPreferred, ladder = newLadder))
+    }
+
     private fun selectTarget(
         current: CurrentCampaignLevel,
         words: Map<String, HintWordData>,
@@ -98,20 +134,35 @@ object HintRules {
         if (candidates.isEmpty()) return null
         val completed = TaskRules.evaluate(current, countMinLength).state.completedTaskIds
         val unfinished = current.level.tasks.filter { it.id !in completed }
-        val ordered = unfinished.filterIsInstance<CampaignTask.T4>() + unfinished.filterNot { it is CampaignTask.T4 }
-        for (task in ordered) {
-            val eligible = candidates.filter { word ->
-                when (task) {
-                    is CampaignTask.T1 -> word.length >= countMinLength
-                    is CampaignTask.T2 -> word.length >= countMinLength && word.first() == task.letter
-                    is CampaignTask.T3 -> word == task.hintTarget && word.length >= task.minLength
-                    is CampaignTask.T4 -> word in task.targets
-                    is CampaignTask.T5 -> word.length >= task.minLength && word.endsWith(task.ending)
-                    is CampaignTask.T6 -> word in task.words
-                    is CampaignTask.T7 -> task.letter in word
+        // Предпочтение игрока имеет приоритет над автоматическим порядком.
+        val preferredId = current.hints.preferredTaskId
+        if (preferredId != null) {
+            val task = unfinished.firstOrNull { it.id == preferredId }
+            if (task != null) {
+                val eligible = eligibleWords(task, candidates, countMinLength)
+                val word = selectWord(task, eligible, words, random, countMinLength)
+                if (word != null) {
+                    val letter = when (task) {
+                        is CampaignTask.T2 -> task.letter
+                        is CampaignTask.T7 -> task.letter
+                        else -> null
+                    }
+                    return HintTarget(word, task.id, task.type, letter)
                 }
             }
-            val word = choose(eligible, words, random) ?: continue
+        }
+        val t4s = unfinished.filterIsInstance<CampaignTask.T4>()
+        val others = unfinished.filterNot { it is CampaignTask.T4 }
+        val sortedOthers = others.sortedWith(
+            compareBy<CampaignTask>(
+                { eligibleWords(it, candidates, countMinLength).size },
+                { current.level.tasks.indexOf(it) },
+            )
+        )
+        val ordered = t4s + sortedOthers
+        for (task in ordered) {
+            val eligible = eligibleWords(task, candidates, countMinLength)
+            val word = selectWord(task, eligible, words, random, countMinLength) ?: continue
             val letter = when (task) {
                 is CampaignTask.T2 -> task.letter
                 is CampaignTask.T7 -> task.letter
@@ -120,6 +171,36 @@ object HintRules {
             return HintTarget(word, task.id, task.type, letter)
         }
         return choose(candidates, words, random)?.let { HintTarget(it) }
+    }
+
+    private fun eligibleWords(task: CampaignTask, candidates: List<String>, countMinLength: Int): List<String> =
+        candidates.filter { word ->
+            when (task) {
+                is CampaignTask.T1 -> word.length >= countMinLength
+                is CampaignTask.T2 -> word.length >= countMinLength && word.first() == task.letter
+                is CampaignTask.T3 -> word.length >= task.minLength
+                is CampaignTask.T4 -> word in task.targets
+                is CampaignTask.T5 -> word.length >= task.minLength && word.endsWith(task.ending)
+                is CampaignTask.T6 -> word in task.words
+                is CampaignTask.T7 -> task.letter in word
+            }
+        }
+
+    private fun selectWord(
+        task: CampaignTask,
+        eligible: List<String>,
+        words: Map<String, HintWordData>,
+        random: Random,
+        countMinLength: Int,
+    ): String? {
+        if (eligible.isEmpty()) return null
+        return if (task is CampaignTask.T3) {
+            val minLen = eligible.minOf { it.length }
+            val shortest = eligible.filter { it.length == minLen }
+            if (task.hintTarget in shortest) task.hintTarget else shortest.random(random)
+        } else {
+            choose(eligible, words, random)
+        }
     }
 
     private fun choose(candidates: List<String>, words: Map<String, HintWordData>, random: Random): String? {
