@@ -336,8 +336,13 @@ class GameViewModel(
         val game = before.game ?: return
         if (!before.canPlay) return
         val raw = before.input
-        // Латиница, цифры и знаки после нормализации дают пустую строку. Раньше
-        // такая отправка молча ничего не делала, и поле казалось сломанным.
+        // Не отбрасываем посторонние символы молча: иначе проверяется не то
+        // слово, которое набрал игрок.
+        if (Alphabet.hasForeignCharacters(raw)) {
+            mutableState.update { it.copy(message = GameMessage(R.string.answer_invalid_characters, type = AlertType.Danger)) }
+            return
+        }
+        // Пустой ввод после нормализации получает отдельное сообщение.
         if (Alphabet.normalize(raw).isEmpty()) {
             mutableState.update { it.copy(message = GameMessage(R.string.answer_empty, type = AlertType.Danger)) }
             return

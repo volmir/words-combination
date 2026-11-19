@@ -250,7 +250,7 @@ class GameViewModelTest {
         assertEquals(listOf("пар"), saved())
         assertEquals(R.string.answer_already_found, model.answer("ПАР").message?.text)
         assertEquals("пар", model.uiState.value.message?.word)
-        assertEquals(R.string.word_too_short, model.answer("пaр").message?.text)
+        assertEquals(R.string.answer_invalid_characters, model.answer("пaр").message?.text)
         assertEquals(R.string.answer_unknown, model.answer("нос").message?.text)
         assertEquals(R.string.answer_same_as_source, model.answer("ПОРТАЛ").message?.text)
         assertEquals(1, model.uiState.value.game?.foundCount)
@@ -280,7 +280,7 @@ class GameViewModelTest {
         seed("торт")
         val model = model(); val initial = model.ready()
         // Отказ сохраняет текст: опечатку можно исправить без повторного набора.
-        assertEquals(R.string.word_too_short, model.answer("пaр").message?.text)
+        assertEquals(R.string.answer_invalid_characters, model.answer("пaр").message?.text)
         assertEquals("пaр", model.uiState.value.input)
         assertEquals(R.string.answer_unknown, model.answer("нос").message?.text)
         assertEquals("нос", model.uiState.value.input)
@@ -296,16 +296,19 @@ class GameViewModelTest {
         assertEquals("", model.uiState.value.input)
     }
 
-    @Test fun emptyOrNonRussianSubmissionExplainsItselfAndLongInputIsKeptWhole() = runTest {
+    @Test fun emptySubmissionExplainsItselfAndLongInputIsKeptWhole() = runTest {
         seed("портал")
         val handle = SavedStateHandle(mapOf("index" to route))
         val model = model(handle); model.ready()
         val before = saved()
-        val state = model.answer("123--")
-        // Нормализация выбрасывает латиницу/цифры; молчаливый no-op выглядел как
-        // сломанная кнопка. Пользователь должен увидеть, что нужны русские буквы.
+        val state = model.answer("")
+        // Пустой ввод не отправляется на проверку и не выглядит сломанной кнопкой.
         assertEquals(R.string.answer_empty, state.message?.text)
-        assertEquals("123--", state.input)
+        assertEquals("", state.input)
+        assertEquals(before, saved())
+        val spaces = model.answer("   ")
+        assertEquals(R.string.answer_empty, spaces.message?.text)
+        assertEquals("   ", spaces.input)
         assertEquals(before, saved())
         withContext(Dispatchers.Main) { model.onInputChanged("аб") }
         assertEquals("аб", model.uiState.value.input)
@@ -319,6 +322,24 @@ class GameViewModelTest {
         val snapshot = withContext(Dispatchers.Main) { handle.keys().associateWith { handle.get<Any?>(it) } }
         val restored = model(SavedStateHandle(snapshot))
         assertEquals("", restored.ready().input)
+    }
+
+    @Test fun invalidCharactersAreRejectedBeforeSubmissionAndKeepInput() = runTest {
+        seed("портал")
+        val model = model(); val initial = model.ready()
+        val before = saved()
+        for (raw in listOf("что-то", "кот пёс", "cat", "кот1", "123--")) {
+            val state = model.answer(raw)
+            assertEquals(R.string.answer_invalid_characters, state.message?.text)
+            assertEquals(raw, state.input)
+            assertFalse(state.busy)
+            assertTrue(state.canPlay)
+            assertEquals(initial.game, state.game)
+            assertEquals(before, saved())
+        }
+        // Пробелы по краям допустимы: корректное слово проверяется как обычно.
+        assertEquals(R.string.correct_answer, model.answer(" пар ").message?.text)
+        assertEquals(listOf("пар"), saved())
     }
 
     @Test fun firstStarsEmitEventsAndFinishedIsAnEventOnlyOnce() = runTest {

@@ -2,13 +2,27 @@ package com.example.sostavslova.core
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class AlphabetTest {
     @Test
     fun normalizeFoldsYoAndDropsForeignChars() {
         assertEquals("порталеж", Alphabet.normalize("ПортАл ЁЖ-1 abc"))
         assertEquals("еж", Alphabet.normalize("ёж"))
+    }
+
+    @Test
+    fun detectsForeignCharactersOutsideRussianLetters() {
+        assertFalse(Alphabet.hasForeignCharacters("кот"))
+        assertFalse(Alphabet.hasForeignCharacters("кот "))
+        assertFalse(Alphabet.hasForeignCharacters("Кот"))
+        assertFalse(Alphabet.hasForeignCharacters("котёл"))
+        assertTrue(Alphabet.hasForeignCharacters("что-то"))
+        assertTrue(Alphabet.hasForeignCharacters("кот пёс"))
+        assertTrue(Alphabet.hasForeignCharacters("cat"))
+        assertTrue(Alphabet.hasForeignCharacters("кот1"))
     }
 
     @Test

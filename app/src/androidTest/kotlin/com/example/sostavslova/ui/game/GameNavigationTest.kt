@@ -102,7 +102,7 @@ class GameNavigationTest {
         answer(valid.uppercase()); awaitText("Вы уже разгадали слово $valid")
         // Зачёт и повтор уже найденного очищают поле, отказы — нет.
         compose.onNode(hasSetTextAction()).assertTextEquals("")
-        answer("пaр"); awaitText("Введите слово длиной не менее 3-х символов")
+        answer("пaр"); awaitText("Допустимы только русские буквы, без пробелов и знаков")
         compose.onNode(hasSetTextAction()).assertTextEquals("пaр")
         val unknown = unknownAnswer()
         answer(unknown); awaitText("Слово «$unknown» не распознано словарём")

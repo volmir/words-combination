@@ -51,6 +51,7 @@
     <string name="answer_count_many">букв</string>
     <string name="answer_same_as_source">Это и есть исходное слово</string>
     <string name="answer_empty">Введите слово русскими буквами</string>
+    <string name="answer_invalid_characters">Допустимы только русские буквы, без пробелов и знаков</string>
     <string name="all_words_found">Вы отгадали все слова!</string>
     <string name="star_received">Получена звезда!</string>
     <plurals name="stars_received">

@@ -27,6 +27,19 @@ object Alphabet {
         }
         return sb.toString()
     }
+
+    /**
+     * true, если внутри слова есть символ, не являющийся русской буквой
+     * (буква «ё» допустима). Пробелы по краям не считаются частью слова:
+     * их может добавлять клавиатура.
+     */
+    fun hasForeignCharacters(raw: String): Boolean {
+        for (ch in raw.trim(' ')) {
+            val c = ch.lowercaseChar()
+            if (c != 'ё' && !indexByChar.containsKey(c)) return true
+        }
+        return false
+    }
 }
 
 /** Результат проверки слова, введённого для начала игры или поиска. */
