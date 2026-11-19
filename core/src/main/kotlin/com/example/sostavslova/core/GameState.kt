@@ -1,6 +1,5 @@
 package com.example.sostavslova.core
 
-import kotlin.math.roundToInt
 import kotlin.random.Random
 
 enum class AnswerResult {
@@ -41,13 +40,16 @@ data class Submission(
 )
 
 data class LengthStat(val length: Int, val found: Int, val total: Int) {
-    val percent: Int get() = if (total == 0) 0 else (found * 100.0 / total).roundToInt()
+    // Целочисленное деление округляет вниз: 199/200 даёт 99, а не 100.
+    // 100 — только когда найдены все слова (found == total).
+    val percent: Int get() = if (total == 0 || found == 0) 0 else if (found >= total) 100 else found * 100 / total
 }
 
 data class Statistics(val rows: List<LengthStat>) {
     val totalFound: Int get() = rows.sumOf { it.found }
     val totalWords: Int get() = rows.sumOf { it.total }
-    val totalPercent: Int get() = if (totalWords == 0) 0 else (totalFound * 100.0 / totalWords).roundToInt()
+    val totalPercent: Int get() =
+        if (totalWords == 0 || totalFound == 0) 0 else if (totalFound >= totalWords) 100 else totalFound * 100 / totalWords
 }
 
 /**

@@ -57,6 +57,18 @@ class GameStateTest {
     }
 
     @Test
+    fun percentDoesNotRoundUpTo100() {
+        assertEquals(99, LengthStat(3, 199, 200).percent)
+        assertEquals(0, LengthStat(3, 1, 200).percent)
+        assertEquals(100, LengthStat(3, 200, 200).percent)
+        assertEquals(0, LengthStat(3, 0, 0).percent)
+        assertEquals(99, Statistics(listOf(LengthStat(3, 199, 200))).totalPercent)
+        assertEquals(0, Statistics(listOf(LengthStat(3, 1, 200))).totalPercent)
+        assertEquals(100, Statistics(listOf(LengthStat(3, 200, 200))).totalPercent)
+        assertEquals(0, Statistics(emptyList()).totalPercent)
+    }
+
+    @Test
     fun restoredAnswersAreFilteredToValidOnes() {
         val s = GameState.start("торт", index, restoredFound = listOf("рот", "рот", "нос"))
         assertEquals(listOf("рот"), s.found)
