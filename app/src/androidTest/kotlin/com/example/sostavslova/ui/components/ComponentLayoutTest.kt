@@ -179,12 +179,13 @@ class LetterTilesLayoutTest {
         }
         assertEquals("$context: потеряны плитки", case.word.length, tiles.size)
         val density = compose.density.density
-        val minimum = 28f * density - 1f
-        val maximum = 36f * density + 1f
+        val expected = if (case.word.length > 20) 40f else 45f
+        val minimum = expected * density - 1f
+        val maximum = expected * density + 1f
         tiles.forEachIndexed { index, node ->
-            assertTrue("$context: плитка ${index + 1} меньше 28 dp: ${node.size}",
+            assertTrue("$context: плитка ${index + 1} меньше $expected dp: ${node.size}",
                 node.size.width >= minimum && node.size.height >= minimum)
-            assertTrue("$context: плитка ${index + 1} больше 36 dp: ${node.size}",
+            assertTrue("$context: плитка ${index + 1} больше $expected dp: ${node.size}",
                 node.size.width <= maximum && node.size.height <= maximum)
             val bounds = node.boundsInRoot
             val parent = container.boundsInRoot
