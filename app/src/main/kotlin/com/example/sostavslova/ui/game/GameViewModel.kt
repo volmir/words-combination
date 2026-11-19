@@ -93,6 +93,7 @@ data class GameUiState(
     val loadError: Boolean = false,
     val game: GameState? = null,
     val campaignLevel: CurrentCampaignLevel? = null,
+    val countMinLength: Int = 4,
     val totalLevels: Int = 0,
     val finaleSummary: CampaignSummary? = null,
     val finaleClosing: Boolean = false,
@@ -233,6 +234,7 @@ class GameViewModel(
             nextLevelNumber = nextLevelNumber,
             finaleSummary = finaleSummary,
             campaignLevel = current, campaignHint = shownHints.lastOrNull(), campaignHints = shownHints,
+            countMinLength = campaign?.countMinLength ?: 4,
             hintCost = cost, hintRemaining = HintRules.budget(current).remaining,
             statistics = stats, taskProgress = tasks,
             riddles = it.riddles.mapValues { (id, items) -> items.mapIndexed { index, riddle ->
@@ -373,6 +375,36 @@ class GameViewModel(
                         HintStatus.SHOWN -> null
                     }) }
                 }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) {
+                mutableState.update { it.copy(message = GameMessage(R.string.game_save_error, type = AlertType.Danger)) }
+            } finally {
+                mutableState.update { it.copy(hintLoading = false) }
+            }
+        }.also(progress::trackOperation)
+    }
+
+    /**
+     * Выбор задания действует до первой платной ступени; купленная ступень фиксирует
+     * цель, пока её слово не найдено. Повторное нажатие во время сохранения и
+     * заблокированная попытка не создают транзакцию.
+     */
+    fun onHintTask(taskId: String?) {
+        val state = uiState.value
+        if (!state.canPlay || hintJob?.isActive == true) return
+        val current = state.campaignLevel ?: return
+        val ladder = current.hints.ladder
+        // Платная ступень фиксирует цель, пока загаданное слово не найдено.
+        val locked = ladder.paidSteps > 0 && ladder.target?.word?.let { it in current.game.found } == false
+        if (locked) return
+        val activeCampaign = campaign ?: return
+        mutableState.update { it.copy(hintLoading = true) }
+        hintJob = viewModelScope.launch {
+            try {
+                val selected = progress.selectCampaignHintTask(activeCampaign, current.level.number,
+                    taskId, words.requireIndex())
+                currentCoroutineContext().ensureActive()
+                uiState.first { it.campaignLevel?.hints?.preferredTaskId == selected.hints.preferredTaskId }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) {
                 mutableState.update { it.copy(message = GameMessage(R.string.game_save_error, type = AlertType.Danger)) }

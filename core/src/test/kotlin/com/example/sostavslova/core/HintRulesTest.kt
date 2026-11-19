@@ -404,4 +404,36 @@ class HintRulesTest {
         assertNull(HintRules.currentStep(reopened))
         assertEquals(HintStatus.NO_TARGET, next(reopened).status)
     }
+
+    @Test fun taskOptionsExcludeCompletedAndUnreachableTasks() {
+        val tasks = listOf(
+            CampaignTask.T1("count", 2),
+            CampaignTask.T2("initial", 'к', 1),
+            CampaignTask.T3("long", 7, "станция"),
+            CampaignTask.T5("ending", "юю", 3),
+        )
+        val current = start(*tasks.toTypedArray())
+        assertEquals(listOf("count", "initial", "long"),
+            HintRules.taskOptions(current).map { it.id })
+        val completed = current.copy(completedTaskIds = setOf("count"))
+        assertEquals(listOf("initial", "long"),
+            HintRules.taskOptions(completed).map { it.id })
+        assertEquals(current, HintRules.selectTask(current, "ending"))
+    }
+
+    @Test fun selectionUnlocksOnlyAfterThePaidTargetIsFound() {
+        val current = start(CampaignTask.T3("long", 4, "станция"), CampaignTask.T1("count", 2))
+        val hinted = next(current)
+        val target = assertNotNull(hinted.state.hints.ladder.target)
+        assertTrue(hinted.state.hints.ladder.paidSteps > 0)
+        val other = if (target.taskId == "long") "count" else "long"
+        assertEquals(hinted.state, HintRules.selectTask(hinted.state, other))
+
+        val found = accept(hinted.state, target.word)
+        val changed = HintRules.selectTask(found, other)
+        assertEquals(other, changed.hints.preferredTaskId)
+        assertNull(changed.hints.ladder.target)
+        assertEquals(found.hints.paidUnits, changed.hints.paidUnits)
+        assertEquals(found.hints.shownSteps, changed.hints.shownSteps)
+    }
 }

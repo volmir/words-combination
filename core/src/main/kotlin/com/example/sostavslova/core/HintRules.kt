@@ -100,6 +100,19 @@ object HintRules {
         }
     }
 
+    /**
+     * Незавершённые задания, для которых ещё есть ненайденные подходящие слова.
+     * Только чтение: порядок уровня сохраняется, цель и счётчики не меняются.
+     */
+    fun taskOptions(current: CurrentCampaignLevel, countMinLength: Int = 4): List<CampaignTask> {
+        val found = normalizedFound(current)
+        val candidates = current.game.allWords.filter { it !in found && it !in forbiddenTargets }.distinct()
+        val completed = TaskRules.evaluate(current, countMinLength).state.completedTaskIds
+        return current.level.tasks.filter { task ->
+            task.id !in completed && eligibleWords(task, candidates, countMinLength).isNotEmpty()
+        }
+    }
+
     /** Выбор задания для подсказки. Возвращает состояние с обновлённым предпочтением. */
     fun selectTask(
         current: CurrentCampaignLevel,
@@ -107,15 +120,10 @@ object HintRules {
         countMinLength: Int = 4,
     ): CurrentCampaignLevel {
         val hints = current.hints
-        // После покупки платной ступени текущая лестница и цель фиксируются.
-        if (hints.ladder.paidSteps > 0) return current
-        val found = normalizedFound(current)
-        val candidates = current.game.allWords.filter { it !in found && it !in forbiddenTargets }.distinct()
-        val completed = TaskRules.evaluate(current, countMinLength).state.completedTaskIds
-        val valid = taskId == null || run {
-            val task = current.level.tasks.firstOrNull { it.id == taskId }
-            task != null && task.id !in completed && eligibleWords(task, candidates, countMinLength).isNotEmpty()
-        }
+        // После покупки платной ступени цель фиксируется, пока её слово не найдено.
+        val targetFound = hints.ladder.target?.word?.let { it in normalizedFound(current) } == true
+        if (hints.ladder.paidSteps > 0 && hints.ladder.target != null && !targetFound) return current
+        val valid = taskId == null || taskOptions(current, countMinLength).any { it.id == taskId }
         val newPreferred = if (valid) taskId else null
         val changed = newPreferred != hints.preferredTaskId
         val newLadder = if (changed) HintLadder() else hints.ladder

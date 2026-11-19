@@ -398,6 +398,65 @@ class GameViewModelTest {
         }
     }
 
+    @Test fun onHintTaskChangesTargetBeforePaidStepAndIgnoresAfter() = runTest {
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.ready()
+        withContext(Dispatchers.Main) { model.onHintTask("initial") }
+        val selected = model.await { !it.hintLoading && it.campaignLevel?.hints?.preferredTaskId == "initial" }
+        assertEquals("initial", selected.campaignLevel?.hints?.preferredTaskId)
+        withContext(Dispatchers.Main) { model.onHint() }
+        val hinted = model.await { !it.hintLoading && it.campaignHint != null }
+        val target = checkNotNull(hinted.campaignLevel).hints.ladder.target
+        // Заголовок в CampaignHint строится по этой задаче, поэтому он совпадает с target.taskId.
+        assertEquals("initial", target?.taskId)
+        assertTrue(checkNotNull(hinted.campaignLevel).hints.ladder.paidSteps > 0)
+        val before = hinted.campaignLevel?.hints
+        withContext(Dispatchers.Main) { model.onHintTask("long") }
+        assertFalse(model.uiState.value.hintLoading)
+        assertEquals(before, model.uiState.value.campaignLevel?.hints)
+        assertEquals("initial", model.uiState.value.campaignLevel?.hints?.preferredTaskId)
+    }
+
+    @Test fun onHintTaskUnlocksAfterTheHintedWordIsFound() = runTest {
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.ready()
+        withContext(Dispatchers.Main) { model.onHintTask("initial") }
+        model.await { !it.hintLoading && it.campaignLevel?.hints?.preferredTaskId == "initial" }
+        withContext(Dispatchers.Main) { model.onHint() }
+        val hinted = model.await { !it.hintLoading && it.campaignHint != null }
+        val target = checkNotNull(hinted.campaignLevel?.hints?.ladder?.target)
+        val paidUnits = checkNotNull(hinted.campaignLevel).hints.paidUnits
+        assertTrue(checkNotNull(hinted.campaignLevel).hints.ladder.paidSteps > 0)
+
+        withContext(Dispatchers.Main) {
+            model.onInputChanged(target.word)
+            model.onSubmit()
+        }
+        val found = model.await { !it.busy && target.word in it.game?.found.orEmpty() }
+        assertTrue(checkNotNull(found.campaignLevel).hints.ladder.paidSteps > 0)
+
+        withContext(Dispatchers.Main) { model.onHintTask("count") }
+        val changed = model.await { !it.hintLoading && it.campaignLevel?.hints?.preferredTaskId == "count" }
+        assertNull(changed.campaignLevel?.hints?.ladder?.target)
+        assertEquals(paidUnits, checkNotNull(changed.campaignLevel).hints.paidUnits)
+    }
+
+    @Test fun onHintTaskAutoRestoresAutomaticChoiceBeforePaidStep() = runTest {
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.ready()
+        withContext(Dispatchers.Main) { model.onHintTask("initial") }
+        model.await { !it.hintLoading && it.campaignLevel?.hints?.preferredTaskId == "initial" }
+        withContext(Dispatchers.Main) { model.onHintTask(null) }
+        val automatic = model.await { !it.hintLoading && it.campaignLevel?.hints?.preferredTaskId == null }
+        assertNull(automatic.campaignLevel?.hints?.ladder?.target)
+    }
+
     @Test fun hintLadderAccumulatesAndRestoresAcrossReturnRotationAndNewStore() = runTest {
         val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })

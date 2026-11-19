@@ -97,5 +97,5 @@ internal fun gameStageName(number: Int): String = stringResource(when (number) {
 })
 
 @Composable
-private fun categoryName(key: String): String = stringResource(
+internal fun categoryName(key: String): String = stringResource(
     com.example.sostavslova.data.CategoryNames.resource(key) ?: R.string.game_category_unknown)

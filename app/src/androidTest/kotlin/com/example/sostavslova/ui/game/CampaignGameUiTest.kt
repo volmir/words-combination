@@ -1,9 +1,17 @@
 package com.example.sostavslova.ui.game
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -34,6 +42,11 @@ class CampaignGameUiTest {
             RiddleUiState("Условное безопасное описание животного", solved = true),
             RiddleUiState("Вторая безопасная загадка"))),
     )
+    // Ни одно слово не найдено: все задания, у которых есть подходящие слова, доступны для выбора.
+    private val pendingGame = GameState("картотека", listOf("кот", "крот", "карта"), emptyList())
+    private val pending = GameUiState(loading = false, game = pendingGame,
+        campaignLevel = CurrentCampaignLevel(CampaignLevel(30, pendingGame.word, 6, 4, tasks), pendingGame),
+        totalLevels = 30, statistics = pendingGame.statistics())
 
     @Test fun allSevenTasksRiddlesGroupsAndLengthTotalsAtNativeSize() {
         val state = mutableStateOf(initial)
@@ -458,6 +471,133 @@ class CampaignGameUiTest {
         compose.onNodeWithText("К уровням").performScrollTo().performClick()
         assertEquals(listOf(false, true), actions)
         compose.onNodeWithTag("level_finale_dialog").assertDoesNotExist()
+    }
+
+    @Test fun hintTaskHeadingSelectedChoiceAndLockedExplanation() {
+        val ladder = HintLadder(target = HintTarget("крот", "initial", TaskType.T2, 'к'))
+        val hintState = HintState(ladder, preferredTaskId = "initial")
+        val level = checkNotNull(pending.campaignLevel)
+        val state = mutableStateOf(pending.copy(campaignLevel = level.copy(hints = hintState)))
+        var selected: String? = "unchanged"
+        compose.setContent {
+            WordsTheme {
+                GameScreen(state.value, {}, {}, {}, {}, onHintTask = { selected = it })
+            }
+        }
+        compose.onNodeWithTag("game_hint").performScrollTo()
+        compose.onNodeWithTag("game_hint_task")
+            .assertTextEquals("Подсказка для задания: Слова на букву К")
+        compose.onNodeWithTag("game_hint_task_initial")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
+            .assertContentDescriptionEquals("Подсказка для задания Слова на букву К")
+        compose.onNodeWithTag("game_hint_task_auto")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false))
+            .assertContentDescriptionEquals("Подсказка для задания, выбранного автоматически")
+        compose.onNodeWithTag("game_hint_task_initial").performClick()
+        assertEquals("initial", selected)
+        compose.onNodeWithTag("game_hint_task_auto").performClick()
+        assertNull(selected)
+        compose.runOnIdle {
+            state.value = state.value.copy(campaignLevel = state.value.campaignLevel?.copy(
+                hints = hintState.copy(ladder = ladder.copy(paidSteps = 1))))
+        }
+        compose.onNodeWithTag("game_hint_task_auto").assertIsNotEnabled()
+        compose.onNodeWithTag("game_hint_task_initial").assertIsNotEnabled()
+        compose.onNodeWithTag("game_hint_task_locked").assertTextEquals(
+            "Задание фиксируется после покупки подсказки. Найдите слово, чтобы выбрать другое.")
+        compose.onNodeWithTag("game_hint_task")
+            .assertTextEquals("Подсказка для задания: Слова на букву К")
+
+        compose.runOnIdle {
+            val foundGame = pendingGame.copy(found = listOf("крот"))
+            state.value = pending.copy(game = foundGame, campaignLevel = CurrentCampaignLevel(
+                level.level, foundGame, hints = hintState.copy(ladder = ladder.copy(paidSteps = 1))))
+        }
+        compose.onNodeWithTag("game_hint_task").assertDoesNotExist()
+        compose.onNodeWithTag("game_hint_task_locked").assertDoesNotExist()
+        compose.onNodeWithTag("game_hint_task_count").assertIsEnabled()
+        compose.onNodeWithTag("game_hint_task_auto").assertIsEnabled()
+    }
+
+    @Test fun hintTargetWithoutTaskHasNoHeadingButKeepsTheChooser() {
+        val level = checkNotNull(pending.campaignLevel)
+        val state = pending.copy(campaignLevel = level.copy(hints = HintState(
+            HintLadder(target = HintTarget("чемпион")))))
+        compose.setContent { WordsTheme { GameScreen(state, {}, {}, {}, {}) } }
+        compose.onNodeWithTag("game_hint").performScrollTo()
+        compose.onNodeWithTag("game_hint_task").assertDoesNotExist()
+        compose.onNodeWithTag("game_hint_task_auto").assertExists()
+    }
+
+    @Test fun levelWithOnlyOneTaskHasNoHintTaskChoice() {
+        val task = CampaignTask.T1("only", 3)
+        val level = CampaignLevel(1, "чемпионство", 1, 1, listOf(task))
+        val game = GameState("чемпионство", listOf("чемпион"), emptyList())
+        val state = GameUiState(loading = false, game = game,
+            campaignLevel = CurrentCampaignLevel(level, game), totalLevels = 15,
+            statistics = game.statistics())
+        compose.setContent { WordsTheme { GameScreen(state, {}, {}, {}, {}) } }
+        compose.onNodeWithTag("game_hint").performScrollTo()
+        compose.onNodeWithTag("game_hint_task").assertDoesNotExist()
+        compose.onNodeWithTag("game_hint_task_auto").assertDoesNotExist()
+        compose.onNodeWithTag("game_hint_task_choose").assertDoesNotExist()
+    }
+
+    @Test fun hintTaskChoicesWrapAt320To411DpAndBothFontScales() {
+        val cases = listOf(320, 360, 411).flatMap { width -> listOf(1f, 2f).map { width to it } }
+        val level = checkNotNull(pending.campaignLevel)
+        val layoutState = pending.copy(campaignLevel = level.copy(hints = HintState(
+            HintLadder(target = HintTarget("крот", "initial", TaskType.T2, 'к')),
+            preferredTaskId = "initial")))
+        val current = mutableStateOf(cases.first())
+        compose.setContent {
+            val base = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(base.density, current.value.second)) {
+                WordsTheme {
+                    Box(Modifier.width(current.value.first.dp).background(Color.White)) {
+                        GameScreen(layoutState, {}, {}, {}, {})
+                    }
+                }
+            }
+        }
+        val tags = listOf("game_hint_task", "game_hint_task_auto", "game_hint_task_count",
+            "game_hint_task_initial", "game_hint_task_long", "game_hint_task_riddles",
+            "game_hint_task_ending", "game_hint_task_theme", "game_hint_task_contains")
+        for (case in cases) {
+            compose.runOnIdle { current.value = case }
+            compose.waitForIdle()
+            compose.onNodeWithTag("game_hint_task_auto").performScrollTo()
+            val context = "${case.first}dp, fontScale=${case.second}"
+            assertTrue("$context: горизонтальная прокрутка подсказки",
+                compose.onAllNodes(hasScrollAction() and hasAnyAncestor(hasTestTag("game_hint")),
+                    useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
+            for (tag in tags) {
+                val chip = compose.onNodeWithTag(tag, useUnmergedTree = true)
+                chip.performScrollTo()
+                compose.waitForIdle()
+                val bounds = chip.fetchSemanticsNode().boundsInRoot
+                val well = compose.onNodeWithTag("game_hint").fetchSemanticsNode().boundsInRoot
+                assertTrue("$context: $tag выходит слева: $bounds vs $well",
+                    bounds.left >= well.left - 1f)
+                assertTrue("$context: $tag выходит справа: $bounds vs $well",
+                    bounds.right <= well.right + 1f)
+            }
+            for (node in compose.onAllNodes(hasClickAction() and hasAnyAncestor(hasTestTag("game_hint")),
+                useUnmergedTree = true).fetchSemanticsNodes()) {
+                val minimum = 48f * compose.density.density - 1f
+                assertTrue("$context: узкая цель ${node.size}",
+                    node.size.width >= minimum && node.size.height >= minimum)
+            }
+            for (node in compose.onAllNodes(
+                SemanticsMatcher.keyIsDefined(SemanticsProperties.Text) and
+                    hasAnyAncestor(hasTestTag("game_hint")),
+                useUnmergedTree = true,
+            ).fetchSemanticsNodes()) {
+                val layouts = mutableListOf<TextLayoutResult>()
+                node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
+                layouts.forEach { assertTextLayoutFits(it, context) }
+            }
+        }
     }
 
     private fun flatten(node: androidx.compose.ui.semantics.SemanticsNode): List<androidx.compose.ui.semantics.SemanticsNode> =

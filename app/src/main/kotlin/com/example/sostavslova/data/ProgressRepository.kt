@@ -307,6 +307,21 @@ class ProgressRepository(
         }
     }
 
+    /**
+     * Выбор задания до первой платной ступени, а после её покупки — до находки
+     * загаданного слова; одно сохранение вместе со сбросом лестницы.
+     */
+    suspend fun selectCampaignHintTask(
+        campaign: Campaign,
+        levelNumber: Int,
+        taskId: String?,
+        index: WordIndex,
+    ): CurrentCampaignLevel = editCampaign { saved ->
+        val current = openCampaignLevel(campaign, saved, levelNumber, index)
+        val selected = HintRules.selectTask(current, taskId, campaign.countMinLength)
+        CampaignRules.recordLevel(campaign, saved, selected) to selected
+    }
+
     /** Посещение не изменяет границу открытия и не подменяет правило «Продолжить». */
     suspend fun visitCampaignLevel(campaign: Campaign, levelNumber: Int) = editCampaign { saved ->
         require(CampaignRules.isUnlocked(campaign, saved, levelNumber)) { "Level is locked or unknown" }
