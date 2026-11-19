@@ -2,7 +2,7 @@ package com.example.sostavslova.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-/** Токены из docs/DESIGN.md; без динамических цветов и тёмной темы. */
+/** Токены палитры приложения; без динамических цветов и тёмной темы. */
 object WordsColors {
     val navbar = Color(0xFF222222)
     val navbarText = Color(0xFF9D9D9D)

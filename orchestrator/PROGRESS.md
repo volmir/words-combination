@@ -47,3 +47,6 @@
 
 - [CLEAN-15] ✓ 2026-11-19T14:21:39+00:00 — Удалить UI-ветки v1 — ## ИТОГ
 <!-- orchestrator:v1 {"id": "CLEAN-15", "fingerprint": "81bcfaf808541cae4c54a21837039fb7f681dbe5b7c96a1c6839ae0ae49c1958", "date": "2026-11-19T14:21:39+00:00", "gate": "passed", "manual": false, "summary": "## ИТОГ", "model": "opencode/deepseek-v4.1-flash-free#max", "effort": "medium"} -->
+
+- [CLEAN-16] ✓ 2026-11-19T14:27:57+00:00 — Устаревшие ссылки — **ИТОГ**
+<!-- orchestrator:v1 {"id": "CLEAN-16", "fingerprint": "9176da193f4e47243bda9ea6891b770458b7db537259a8152d95a76d2a3bf1aa", "date": "2026-11-19T14:27:57+00:00", "gate": "passed", "manual": false, "summary": "**ИТОГ**", "model": "opencode/deepseek-v4.1-flash-free", "effort": "medium"} -->
