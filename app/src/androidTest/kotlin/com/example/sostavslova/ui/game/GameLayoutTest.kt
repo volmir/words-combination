@@ -51,13 +51,53 @@ class GameLayoutTest {
             compose.runOnIdle { state.value = initial.copy(dialog = dialog) }
             checkLayout()
             when (dialog) {
-                GameDialog.Statistics -> compose.onAllNodesWithText("1 / 2")[1].performScrollTo().assertIsDisplayed()
                 GameDialog.Tasks -> compose.onNodeWithText("Введите 21 слово (1/21)").performScrollTo().assertIsDisplayed()
             }
         }
     }
 
     private data class SlotsCase(val width: Int, val fontScale: Float, val pattern: String)
+
+    @Test fun largestInstalledLevelFitsNarrowScreenAtDoubleFontScale() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val campaign = CampaignJson.decode(
+            context.assets.open("campaign.json").bufferedReader().use { it.readText() })
+        val index = WordIndex(context.assets.open("words.txt").bufferedReader().use { it.readLines() })
+        val games = campaign.levels.map { it to GameState.start(it.word, index) }
+        val (level, initialGame) = games.maxBy { it.second.total }
+        val game = initialGame.copy(found = initialGame.allWords)
+        assertTrue("Stress fixture must contain at least 600 words", game.foundCount >= 600)
+        val snapshot = GameUiState(loading = false, game = game, statistics = game.statistics(),
+            totalLevels = campaign.levels.size, campaignLevel = CurrentCampaignLevel(level, game))
+        compose.setContent {
+            val base = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(base.density, 2f)) {
+                WordsTheme {
+                    Box(Modifier.width(320.dp).background(Color.White)) {
+                        GameScreen(snapshot, {}, {}, {}, {}, {}, {})
+                    }
+                }
+            }
+        }
+        for (row in snapshot.statistics.rows) {
+            val group = compose.onNodeWithTag("level_found_group_${row.length}")
+            group.performScrollTo()
+            if (group.fetchSemanticsNode().config.getOrNull(SemanticsProperties.StateDescription) != "Раскрыта") {
+                group.performClick()
+            }
+            compose.onNodeWithTag("game_found_words_${row.length}").assertExists()
+            compose.onNodeWithTag("level_found_group_${row.length}")
+                .assertTextContains("${row.found} из ${row.total}", substring = true)
+        }
+        checkLayout()
+        val screen = compose.onNodeWithTag("game_screen").fetchSemanticsNode().boundsInRoot
+        compose.onAllNodes(hasAnyAncestor(hasTestTag("game_found_words")), useUnmergedTree = true)
+            .fetchSemanticsNodes().forEach { node ->
+                val bounds = node.boundsInRoot
+                assertTrue("Элемент выходит за экран 320 dp: $bounds",
+                    bounds.left >= screen.left - 1f && bounds.right <= screen.right + 1f)
+            }
+    }
 
     @Test fun letterSlotsStayVisibleAtNarrowWidthsAndLargeFontScale() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext

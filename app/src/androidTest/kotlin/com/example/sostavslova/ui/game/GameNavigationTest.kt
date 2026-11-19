@@ -91,7 +91,7 @@ class GameNavigationTest {
         assertEquals(saved, container.progressRepository.observeCampaignProgress().first())
     }
 
-    @Test fun levelAnswersStatisticsAndNonInteractiveFoundWordsRemainAvailable() = runTest {
+    @Test fun levelAnswersShowLengthTotalsAndNonInteractiveFoundWordsRemainAvailable() = runTest {
         start()
         val source = source()
         val valid = validAnswer(source)
@@ -107,18 +107,17 @@ class GameNavigationTest {
         val unknown = unknownAnswer()
         answer(unknown); awaitText("Слово «$unknown» не распознано словарём")
         compose.onNode(hasSetTextAction()).assertTextEquals(unknown)
-        compose.onNodeWithText("Статистика слов").performScrollTo().performClick()
-        compose.onNodeWithText("Статистика по слову", substring = true).assertIsDisplayed()
-        val total = container.wordRepository.startGame(source).total
-        compose.onNodeWithText("1 / $total").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Закрыть").performScrollTo().performClick()
-        compose.onNodeWithTag("level_found_group_3").performScrollTo().performClick()
+        val total = container.wordRepository.startGame(source).statistics().rows
+            .single { it.length == valid.length }.total
+        compose.onNodeWithTag("level_found_group_${valid.length}").performScrollTo()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Раскрыта"))
+            .assertTextContains("1 из $total", substring = true)
         compose.onNodeWithText(valid).performScrollTo().assertIsDisplayed().assertHasNoClickAction()
         compose.onNodeWithText(valid).performTouchInput { click() }
         compose.onNodeWithText("Значение слова").assertDoesNotExist()
         compose.onNodeWithTag("game_screen").assertExists()
         assertEquals(listOf(valid), foundAnswers(source))
-        compose.onNodeWithTag("level_found_group_3").performScrollTo().performClick()
+        compose.onNodeWithTag("level_found_group_${valid.length}").performScrollTo().performClick()
         compose.onNodeWithText(valid).assertDoesNotExist()
     }
 
@@ -154,10 +153,11 @@ class GameNavigationTest {
         awaitOpenedHint()
         assertEquals(listOf(valid), foundAnswers(source))
         assertEquals(saved, container.progressRepository.observeCampaignProgress().first())
-        compose.onNodeWithText("Статистика слов").performScrollTo().performClick()
-        val total = container.wordRepository.startGame(source).total
-        compose.onNodeWithText("1 / $total").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Закрыть").performScrollTo().performClick()
+        val total = container.wordRepository.startGame(source).statistics().rows
+            .single { it.length == valid.length }.total
+        compose.onNodeWithTag("level_found_group_${valid.length}").performScrollTo()
+            .assertTextContains("1 из $total", substring = true)
+        compose.onNodeWithText(valid).performScrollTo().assertIsDisplayed()
         container.levelsRepository.getCampaign()?.levels?.first()?.let { level ->
             val saved = container.progressRepository.observeCampaignProgress().first().levels[source]
             val completed = level.tasks.count { it.id in saved?.completedTaskIds.orEmpty() }

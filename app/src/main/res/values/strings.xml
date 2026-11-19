@@ -58,8 +58,6 @@
     <string name="hint_fallback">Слово из %1$d %2$s, начинается на «%3$s»</string>
     <string name="hint_letter_genitive_one">буквы</string>
     <string name="hint_letter_genitive_many">букв</string>
-    <string name="game_word_statistics">Статистика слов</string>
-    <string name="game_statistics_title">Статистика по слову \"%1$s\"</string>
     <string name="task_complete">Пройдите уровень</string>
     <string name="task_complete_remaining">Пройдите уровень (ещё %1$d %2$s)</string>
     <string name="task_words">Введите %1$d %2$s (%3$d/%1$d)</string>
@@ -140,12 +138,11 @@
     <string name="game_riddle_number">Загадка %1$d</string>
     <string name="game_riddle_solved">Разгадана</string>
     <string name="game_riddle_pending">Ещё не разгадана</string>
-    <string name="game_found_group">%1$d %2$s · %3$d %4$s</string>
+    <string name="game_found_group">%1$d %2$s · %3$d из %4$d</string>
     <string name="game_group_expanded">Раскрыта</string>
     <string name="game_group_collapsed">Свёрнута</string>
     <string name="game_group_open">Раскрыть</string>
     <string name="game_group_close">Свернуть</string>
-    <string name="game_stats_hints">Использовано подсказок: %1$d</string>
     <string name="game_stats_remaining">Осталось</string>
     <string name="correct_three_letter_answer">Слово засчитано. В заданиях на число слов и на первую букву учитываются слова от 4 букв.</string>
     <string name="game_next_opened">Открыт следующий уровень!</string>

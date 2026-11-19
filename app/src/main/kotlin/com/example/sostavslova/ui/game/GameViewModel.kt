@@ -80,7 +80,7 @@ internal fun submissionClearsInput(result: AnswerResult): Boolean = when (result
     AnswerResult.SAME_AS_SOURCE, AnswerResult.EMPTY, AnswerResult.TOO_SHORT -> false
 }
 
-enum class GameDialog { Statistics, Tasks }
+enum class GameDialog { Tasks }
 
 data class GameHint(val length: Int, val firstLetter: String)
 

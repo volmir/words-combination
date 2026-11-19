@@ -35,7 +35,7 @@ class CampaignGameUiTest {
             RiddleUiState("Вторая безопасная загадка"))),
     )
 
-    @Test fun allSevenTasksRiddlesGroupsAndStatisticsAtNativeSize() {
+    @Test fun allSevenTasksRiddlesGroupsAndLengthTotalsAtNativeSize() {
         val state = mutableStateOf(initial)
         compose.setContent {
             WordsTheme {
@@ -79,18 +79,23 @@ class CampaignGameUiTest {
         assertFalse(text.contains("крот", ignoreCase = true))
         assertFalse(text.contains("карта", ignoreCase = true))
         assertFalse(text.contains("https://"))
-        compose.onNodeWithText("кот").assertDoesNotExist()
-        compose.onNodeWithTag("level_found_group_3").performScrollTo().performClick()
+        compose.onNodeWithTag("level_found_group_3").performScrollTo()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Раскрыта"))
+            .assertTextContains("1 из 1", substring = true)
         compose.onNodeWithText("кот").performScrollTo().assertIsDisplayed().assertHasNoClickAction()
         compose.onNodeWithText("кот").performTouchInput { click() }
         compose.onNodeWithText("Значение слова").assertDoesNotExist()
         compose.runOnIdle { assertNull(state.value.dialog) }
         compose.onNodeWithTag("level_found_group_3").performScrollTo().performClick()
         compose.onNodeWithText("кот").assertDoesNotExist()
-        compose.onNodeWithText("Статистика слов").performScrollTo().performClick()
-        compose.onNodeWithTag("level_stats").assertExists()
-        compose.onNodeWithText("Осталось").assertExists()
-        compose.onNodeWithText("Использовано подсказок: 0").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("level_found_group_4").performScrollTo()
+            .assertIsNotEnabled()
+            .assertTextContains("0 из 1", substring = true)
+        compose.onNodeWithTag("level_found_group_5").performScrollTo()
+            .assertIsNotEnabled()
+            .assertTextContains("0 из 1", substring = true)
+        compose.onNodeWithTag("game_word_statistics").assertDoesNotExist()
+        compose.onAllNodesWithText("Статистика слов").assertCountEquals(0)
         assertTextFits()
     }
 

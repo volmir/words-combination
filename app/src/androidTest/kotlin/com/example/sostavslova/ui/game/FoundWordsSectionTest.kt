@@ -9,11 +9,13 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.font.FontWeight
 import com.example.sostavslova.core.CampaignLevel
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.CurrentCampaignLevel
 import com.example.sostavslova.core.GameState
 import com.example.sostavslova.core.Level
+import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.ui.assertTextLayoutFits
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.*
@@ -39,10 +41,9 @@ class FoundWordsSectionTest(private val legacy: Boolean) {
             level = if (legacy) Level(1, game.word, 8, 150, 'а', 5) else null)
     }
 
-    @Test fun emptyAnd146WordsShareOneSectionAndKeepOnlyGroupAndStatisticsActions() {
+    @Test fun emptyStateShowsEveryLengthAndKeepsEmptyGroupsCollapsed() {
         val state = mutableStateOf(state(emptyList()))
-        val restoration = StateRestorationTester(compose)
-        restoration.setContent {
+        compose.setContent {
             WordsTheme {
                 GameScreen(state.value, {}, {}, {}, { state.value = state.value.copy(dialog = it) },
                     { state.value = state.value.copy(dialog = null) }, {})
@@ -52,73 +53,93 @@ class FoundWordsSectionTest(private val legacy: Boolean) {
         compose.onNodeWithTag("game_found_summary").performScrollTo()
             .assertTextEquals("Найденные слова · 0 из 147")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit))
-        sectionActions().assertCountEquals(1)
-        compose.onNodeWithTag("game_word_statistics").performScrollTo().performClick()
-        compose.onNodeWithTag("level_stats").assertExists()
-        compose.onNodeWithText("Закрыть").performScrollTo().performClick()
+        for (row in state.value.statistics.rows) {
+            compose.onNodeWithTag("level_found_group_${row.length}").performScrollTo()
+                .assertIsNotEnabled()
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Свёрнута"))
+                .assertTextContains("${row.length} ${RussianPlural.letters(row.length)} · 0 из ${row.total}")
+            compose.onNodeWithTag("game_found_words_${row.length}").assertDoesNotExist()
+        }
+        compose.onNodeWithTag("game_word_statistics").assertDoesNotExist()
+        compose.onAllNodesWithText("Статистика слов").assertCountEquals(0)
+        compose.onAllNodesWithText("Статистика по слову", substring = true).assertCountEquals(0)
+        assertTextFits()
+    }
+
+    @Test fun foundGroupsUseStatisticsAlphabeticalWordsAndBoldLastFound() {
+        val state = mutableStateOf(state(emptyList()))
+        val restoration = StateRestorationTester(compose)
+        restoration.setContent {
+            WordsTheme {
+                GameScreen(state.value, {}, {}, {}, { state.value = state.value.copy(dialog = it) },
+                    { state.value = state.value.copy(dialog = null) }, {})
+            }
+        }
         compose.runOnIdle { state.value = state(words.take(146)) }
         compose.onNodeWithTag("game_found_summary").performScrollTo().assertTextEquals("Найденные слова · 146 из 147")
         compose.onAllNodesWithText("Найденные слова", substring = true).assertCountEquals(1)
         compose.onAllNodesWithText("Найдено", substring = true).assertCountEquals(0)
-        compose.onAllNodesWithText("Статистика слов").assertCountEquals(1)
-        compose.onAllNodesWithTag("game_hint_button").assertCountEquals(1)
-        compose.onNodeWithText("Задания").assertDoesNotExist()
-        sectionActions().assertCountEquals(4)
-        for ((length, found) in words.take(146).groupBy { it.length }.toSortedMap()) {
-            val group = compose.onNodeWithTag("level_found_group_$length")
-            group.performScrollTo().assertHasClickAction()
+        compose.onAllNodesWithText("Статистика слов").assertCountEquals(0)
+
+        val lastFound = words[145]
+        val foundByLength = words.take(146).groupBy { it.length }.toSortedMap()
+        for ((length, found) in foundByLength) {
+            val expected = if (length == lastFound.length) "Раскрыта" else "Свёрнута"
+            compose.onNodeWithTag("level_found_group_$length").performScrollTo()
+                .assertHasClickAction()
                 .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
-                .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Свёрнута"))
-                .assertTextContains("$length ${if (length == 5) "букв" else "буквы"} · ${found.size} слов")
-            group.performClick()
-                .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Раскрыта"))
-            for (word in found) {
-                compose.onNodeWithText(word).assertHasNoClickAction()
-                    .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.CustomActions))
-                    .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Role))
-            }
-            compose.onNodeWithText(found.last()).performScrollTo().assertIsDisplayed()
-            assertTextFits()
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, expected))
+                .assertTextContains("$length ${RussianPlural.letters(length)} · ${found.size} из ${found.size}")
         }
-        sectionActions().assertCountEquals(4)
-        val headerY = compose.onNodeWithTag("game_found_summary").fetchSemanticsNode().positionInRoot.y
-        val firstGroupY = compose.onNodeWithTag("level_found_group_3").fetchSemanticsNode().positionInRoot.y
-        val lastGroupY = compose.onNodeWithTag("level_found_group_5").fetchSemanticsNode().positionInRoot.y
-        val statisticsY = compose.onNodeWithTag("game_word_statistics").fetchSemanticsNode().positionInRoot.y
-        assertTrue(headerY < firstGroupY && firstGroupY < lastGroupY && lastGroupY < statisticsY)
-        if (!legacy) {
-            compose.onNodeWithTag("game_hint_stage").assertTextEquals("Подсказка ещё не открыта")
-            compose.onAllNodesWithTag("game_hint_pattern").assertCountEquals(0)
-            val tasksY = compose.onNodeWithTag("game_tasks").fetchSemanticsNode().positionInRoot.y
-            val hintY = compose.onNodeWithTag("game_hint").fetchSemanticsNode().positionInRoot.y
-            assertTrue(tasksY < hintY && hintY < headerY)
-        }
-        compose.onNodeWithText("Показать значение", substring = true).assertDoesNotExist()
-        compose.onNodeWithText("Значение слова").assertDoesNotExist()
-        val statistics = compose.onNodeWithTag("game_word_statistics")
-        statistics.performScrollTo().assertIsDisplayed()
-        restoration.emulateSavedInstanceStateRestore()
-        statistics.assertIsDisplayed() // Scroll position, as well as group expansion, survives restoration.
-        for (length in 3..5) {
-            compose.onNodeWithTag("level_found_group_$length")
-                .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Раскрыта"))
-        }
-        statistics.performClick()
-        compose.onNodeWithTag("level_stats").assertExists()
-        compose.onNodeWithText("146 / 147").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Закрыть").performScrollTo().performClick()
-        for (length in 3..5) {
-            compose.onNodeWithTag("level_found_group_$length").performScrollTo().performClick()
+        val emptyGroup = state.value.statistics.rows.single { it.found == 0 }
+        compose.onNodeWithTag("level_found_group_${emptyGroup.length}").performScrollTo()
+            .assertIsNotEnabled()
+            .assertTextContains("${emptyGroup.length} ${RussianPlural.letters(emptyGroup.length)} · 0 из ${emptyGroup.total}")
+        for (length in listOf(3, 5)) {
             compose.onNodeWithTag("game_found_words_$length").assertDoesNotExist()
         }
-        // Include a long unbroken word to exercise wrapping inside the FlowRow.
+
+        assertEquals(foundByLength.getValue(lastFound.length).sorted(), wordTexts(lastFound.length))
+        assertBold(lastFound, true)
+        assertBold(foundByLength.getValue(lastFound.length).first { it != lastFound }, false)
+        for (word in foundByLength.getValue(3)) {
+            compose.onNodeWithText(word).assertDoesNotExist()
+        }
+
+        compose.onNodeWithTag("level_found_group_3").performScrollTo().performClick()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Раскрыта"))
+        compose.onNodeWithTag("game_found_words_3").assertExists()
+        assertEquals(foundByLength.getValue(3).sorted(), wordTexts(3))
+        for (word in foundByLength.getValue(3)) {
+            compose.onNodeWithText(word).assertHasNoClickAction()
+                .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.CustomActions))
+                .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Role))
+        }
+
+        // A manually collapsed last-found group stays collapsed after recreation.
+        compose.onNodeWithTag("level_found_group_${lastFound.length}").performScrollTo().performClick()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Свёрнута"))
+        compose.onNodeWithTag("game_found_words_${lastFound.length}").assertDoesNotExist()
+        restoration.emulateSavedInstanceStateRestore()
+        compose.onNodeWithTag("level_found_group_${lastFound.length}")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Свёрнута"))
+        compose.onNodeWithTag("game_found_words_${lastFound.length}").assertDoesNotExist()
+        compose.onNodeWithTag("level_found_group_3")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Раскрыта"))
+
+        // The next found word reopens its own length group and is highlighted.
         compose.runOnIdle { state.value = state(words) }
-        compose.onNodeWithTag("level_found_group_${words.last().length}").performScrollTo().performClick()
-        compose.onNodeWithText(words.last()).performScrollTo().assertIsDisplayed().assertHasNoClickAction()
+        val newest = words.last()
+        compose.onNodeWithTag("level_found_group_${newest.length}").performScrollTo()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Раскрыта"))
+        compose.onNodeWithText(newest).performScrollTo().assertIsDisplayed().assertHasNoClickAction()
+        assertBold(newest, true)
+        compose.onNodeWithTag("level_found_group_${lastFound.length}")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Свёрнута"))
         assertTextFits()
     }
 
-    @Test fun largestInstalledLevelKeepsStatisticsReachableWithEveryGroupExpanded() {
+    @Test fun largestInstalledLevelShowsEveryLengthTotalWithAllGroupsExpanded() {
         val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
         val campaign = com.example.sostavslova.data.CampaignJson.decode(
             context.assets.open("campaign.json").bufferedReader().use { it.readText() })
@@ -135,19 +156,39 @@ class FoundWordsSectionTest(private val legacy: Boolean) {
                 GameScreen(snapshot, {}, {}, {}, {}, {}, {})
             }
         }
-        for ((length, found) in game.found.groupBy { it.length }.toSortedMap()) {
-            compose.onNodeWithTag("level_found_group_$length").performScrollTo().performClick()
-            compose.onNodeWithText(found.last()).performScrollTo().assertIsDisplayed().assertHasNoClickAction()
+        for (row in snapshot.statistics.rows) {
+            val group = compose.onNodeWithTag("level_found_group_${row.length}")
+            group.performScrollTo()
+            if (group.fetchSemanticsNode().config.getOrNull(SemanticsProperties.StateDescription) != "Раскрыта") {
+                group.performClick()
+            }
+            compose.onNodeWithTag("game_found_words_${row.length}").assertExists()
+            val lastWord = game.found.filter { it.length == row.length }.max()
+            compose.onNodeWithText(lastWord).performScrollTo().assertIsDisplayed().assertHasNoClickAction()
+            compose.onNodeWithTag("level_found_group_${row.length}")
+                .assertTextContains("${row.found} из ${row.total}", substring = true)
         }
-        compose.onNodeWithTag("game_word_statistics").performScrollTo().assertIsDisplayed().assertHasClickAction()
+        compose.onNodeWithTag("game_word_statistics").assertDoesNotExist()
         compose.onNodeWithText("Значение слова").assertDoesNotExist()
-        for (length in game.found.map { it.length }.distinct()) {
-            compose.onNodeWithTag("level_found_group_$length").performScrollTo().performClick()
-            compose.onNodeWithTag("game_found_words_$length").assertDoesNotExist()
+        for (row in snapshot.statistics.rows) {
+            compose.onNodeWithTag("level_found_group_${row.length}").performScrollTo().performClick()
+            compose.onNodeWithTag("game_found_words_${row.length}").assertDoesNotExist()
         }
     }
 
-    private fun sectionActions() = compose.onAllNodes(hasClickAction() and hasAnyAncestor(hasTestTag("game_found_words")))
+    private fun wordTexts(length: Int): List<String> = compose.onAllNodes(
+        SemanticsMatcher.keyIsDefined(SemanticsProperties.Text) and
+            hasAnyAncestor(hasTestTag("game_found_words_$length")),
+        useUnmergedTree = true,
+    ).fetchSemanticsNodes().flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }.map { it.text }
+
+    private fun assertBold(word: String, bold: Boolean) {
+        val layouts = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText(word).fetchSemanticsNode()
+            .config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
+        val weight = layouts.single().layoutInput.style.fontWeight
+        if (bold) assertEquals(FontWeight.Bold, weight) else assertNotEquals(FontWeight.Bold, weight)
+    }
 
     private fun assertTextFits() {
         compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true)

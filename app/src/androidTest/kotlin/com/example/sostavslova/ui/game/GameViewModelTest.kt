@@ -407,7 +407,7 @@ class GameViewModelTest {
 
 
 
-    @Test fun statisticsAndTasksDoNotLoadWordDefinitionsOrChangeProgress() = runTest {
+    @Test fun tasksDialogDoesNotLoadWordDefinitionsOrChangeProgress() = runTest {
         seed("портал", listOf("пар"))
         val reads = AtomicInteger()
         val meanings = RiddlesRepository { reads.incrementAndGet(); error("No riddle task") }

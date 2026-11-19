@@ -44,9 +44,6 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -67,14 +64,12 @@ import com.example.sostavslova.ui.components.AlertBanner
 import com.example.sostavslova.ui.components.LetterSlots
 import com.example.sostavslova.ui.components.LetterTiles
 import com.example.sostavslova.ui.components.StarsRow
-import com.example.sostavslova.ui.components.StatsTable
 import com.example.sostavslova.ui.components.Well
 import com.example.sostavslova.ui.components.WordInputRow
 import com.example.sostavslova.ui.components.FoundWords
 import com.example.sostavslova.ui.components.WordsDialog
 import com.example.sostavslova.ui.theme.WordsColors
 import com.example.sostavslova.ui.theme.WordsControlShape
-import java.util.Locale
 import kotlinx.coroutines.delay
 
 @Composable
@@ -228,30 +223,40 @@ fun GameScreen(
                     Text(stringResource(R.string.game_found_summary, game.foundCount, game.total),
                         Modifier.testTag("game_found_summary").semantics { heading() },
                         style = MaterialTheme.typography.titleMedium)
-                    for ((length, found) in game.found.groupBy { it.length }.toSortedMap()) {
-                        var expanded by rememberSaveable(game.word, length) { mutableStateOf(false) }
+                    val lastFound = game.found.lastOrNull()
+                    for (row in state.statistics.rows) {
+                        val found = game.found.filter { it.length == row.length }.sorted()
+                        var handledLastFound by rememberSaveable(game.word) { mutableStateOf(lastFound) }
+                        var expanded by rememberSaveable(game.word, row.length) {
+                            mutableStateOf(row.length == lastFound?.length)
+                        }
+                        LaunchedEffect(lastFound) {
+                            if (lastFound != handledLastFound) {
+                                if (row.length == lastFound?.length) expanded = true
+                                handledLastFound = lastFound
+                            }
+                        }
                         val groupState = stringResource(if (expanded) R.string.game_group_expanded else R.string.game_group_collapsed)
                         Column(Modifier.fillMaxWidth()) {
                             TextButton({ expanded = !expanded }, Modifier.fillMaxWidth()
-                                .testTag("level_found_group_$length").heightIn(min = 48.dp)
-                                .semantics { stateDescription = groupState }) {
+                                .testTag("level_found_group_${row.length}").heightIn(min = 48.dp)
+                                .semantics { stateDescription = groupState }, enabled = found.isNotEmpty()) {
                                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(stringResource(R.string.game_found_group, length,
-                                        RussianPlural.form(length, stringResource(R.string.game_letter_one),
+                                    Text(stringResource(R.string.game_found_group, row.length,
+                                        RussianPlural.form(row.length, stringResource(R.string.game_letter_one),
                                             stringResource(R.string.game_letter_few), stringResource(R.string.hint_letter_genitive_many)),
-                                        found.size, RussianPlural.words(found.size)),
+                                        row.found, row.total),
                                         style = MaterialTheme.typography.titleSmall)
                                     Text(stringResource(if (expanded) R.string.game_group_close else R.string.game_group_open),
                                         style = MaterialTheme.typography.labelLarge)
                                 }
                             }
-                            if (expanded) FoundWords(found, Modifier.fillMaxWidth().testTag("game_found_words_$length"))
+                            if (expanded && found.isNotEmpty()) {
+                                FoundWords(found, Modifier.fillMaxWidth().testTag("game_found_words_${row.length}"),
+                                    highlighted = lastFound)
+                            }
                         }
                         HorizontalDivider()
-                    }
-                    TextButton({ onDialog(GameDialog.Statistics) }, enabled = state.canPlay,
-                        modifier = Modifier.heightIn(min = 48.dp).testTag("game_word_statistics")) {
-                        Text(stringResource(R.string.game_word_statistics), style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
@@ -281,24 +286,6 @@ fun GameScreen(
         }
     }
     when (state.dialog.takeIf { state.finaleSummary == null }) {
-        GameDialog.Statistics -> {
-            val word = state.game?.word.orEmpty().uppercase(Locale.ROOT)
-            val title = stringResource(R.string.game_statistics_title, word)
-            val styled = buildAnnotatedString {
-                append(title)
-                val start = title.indexOf(word)
-                if (word.isNotEmpty() && start >= 0) addStyle(SpanStyle(fontWeight = FontWeight.Bold), start, start + word.length)
-            }
-            WordsDialog(title, onDismissDialog, titleText = styled) {
-                Column(Modifier.testTag("level_stats")) {
-                    StatsTable(state.statistics, showRemaining = true)
-                    state.campaignLevel?.hints?.let { hints ->
-                        Text(stringResource(R.string.game_stats_hints, hints.shownSteps), style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-                CloseDialogButton(onDismissDialog)
-            }
-        }
         GameDialog.Tasks -> if (state.campaignLevel == null) state.level?.let { level ->
             val found = state.game?.found.orEmpty()
             WordsDialog(stringResource(R.string.tasks), onDismissDialog) {

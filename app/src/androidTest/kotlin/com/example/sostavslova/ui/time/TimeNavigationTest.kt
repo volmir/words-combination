@@ -70,9 +70,8 @@ class TimeNavigationTest {
         compose.onNodeWithTag("level_card_1").performClick()
         awaitTag("game_tasks_summary")
         compose.onNode(hasSetTextAction()).assertTextEquals("")
-        compose.onNodeWithText("Статистика слов").performScrollTo().performClick()
-        compose.onNodeWithText("Статистика по слову", substring = true).assertExists()
-        compose.onNodeWithText("Закрыть").performScrollTo().performClick()
+        compose.onNodeWithTag("game_found_summary").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("game_word_statistics").assertDoesNotExist()
         compose.onNodeWithTag("game_back").performClick()
     }
 }
