@@ -113,8 +113,10 @@ class GameSubmissionUiTest {
         val initial = GameUiState(loading = false, game = game, statistics = game.statistics())
         val state = mutableStateOf(initial)
         compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, {}, {}) } }
-        fun show(submission: Submission, answer: String) {
-            compose.runOnIdle { state.value = initial.copy(message = submissionMessage(submission, answer)) }
+        fun show(submission: Submission, answer: String, threeLetterCampaignAnswer: Boolean = false) {
+            compose.runOnIdle {
+                state.value = initial.copy(message = submissionMessage(submission, answer, threeLetterCampaignAnswer))
+            }
         }
         fun checkText(text: String) {
             compose.onNodeWithText(text).performScrollTo().assertIsDisplayed()
@@ -136,8 +138,10 @@ class GameSubmissionUiTest {
         checkText(context.getString(R.string.answer_letters_missing_error))
         show(game.submit("ыыыыы", index), "ыыыыы")
         checkText(context.getString(R.string.answer_unknown, "ыыыыы"))
+        show(game.submit("кот", index), "кот", threeLetterCampaignAnswer = true)
+        checkText("Слово записано в найденные. Для заданий «Набери N» и «На букву» нужны слова от 4 букв.")
         show(game.submit("кот", index), "кот")
-        checkText(context.getString(R.string.correct_answer))
+        checkText("Правильно!")
         show(game.submit("кот", index).state.submit("кот", index), "кот")
         checkText(context.getString(R.string.answer_already_found, "кот"))
         show(game.submit("ко", index), "ко")

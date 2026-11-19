@@ -153,7 +153,7 @@
     <string name="game_group_open">Раскрыть</string>
     <string name="game_group_close">Свернуть</string>
     <string name="game_stats_remaining">Осталось</string>
-    <string name="correct_three_letter_answer">Слово засчитано. В заданиях на число слов и на первую букву учитываются слова от 4 букв.</string>
+    <string name="correct_three_letter_answer">Слово записано в найденные. Для заданий «Набери N» и «На букву» нужны слова от 4 букв.</string>
     <string name="game_next_opened">Открыт следующий уровень!</string>
     <string name="game_finale_title">Игра пройдена</string>
     <string name="game_finale_stars">Звёзды: %1$d из %2$d</string>

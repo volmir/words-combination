@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -43,6 +44,12 @@ class MainScenariosUiTest {
         compose.onNodeWithText(text, substring = substring).performScrollTo().assertIsDisplayed()
     }
 
+    private fun string(@StringRes id: Int, vararg args: Any): String =
+        InstrumentationRegistry.getInstrumentation().targetContext.getString(id, *args)
+
+    private fun awaitString(@StringRes id: Int, vararg args: Any) =
+        awaitText(string(id, *args))
+
     private fun startLevel() {
         compose.onNodeWithTag("level_card_1").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_screen").fetchSemanticsNodes().isNotEmpty() &&
@@ -51,8 +58,7 @@ class MainScenariosUiTest {
         if (compose.onAllNodesWithText("Новые задания этапа").fetchSemanticsNodes().isNotEmpty()) {
             compose.onNodeWithText("Закрыть").performClick()
         }
-        compose.onNodeWithText(InstrumentationRegistry.getInstrumentation().targetContext
-            .getString(R.string.check_answer)).assertIsEnabled()
+        compose.onNodeWithText(string(R.string.check_answer)).assertIsEnabled()
     }
     private suspend fun source() = requireNotNull(container.levelsRepository.getCampaign()).levels.first().word
 
@@ -84,7 +90,7 @@ class MainScenariosUiTest {
         assertTrue(valid in game.allWords)
 
         answerWord(valid)
-        awaitText("Правильно!")
+        awaitString(R.string.correct_answer)
         awaitText("Найденные слова · 1 из", substring = true)
         assertEquals(listOf(valid), foundAnswers(source))
     }
@@ -94,9 +100,8 @@ class MainScenariosUiTest {
         startLevel()
         val source = source()
         val answer = container.wordRepository.startGame(source).allWords.first { it.length == 3 }
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
         answerWord(answer)
-        awaitText(context.getString(R.string.correct_three_letter_answer))
+        awaitString(R.string.correct_three_letter_answer)
         awaitText("Найденные слова · 1 из", substring = true)
         compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsEnabled()
         assertEquals(listOf(answer), foundAnswers(source))
@@ -124,7 +129,7 @@ class MainScenariosUiTest {
         val source = source()
         val valid = validAnswer(source)
         answerWord(valid)
-        awaitText("Правильно!")
+        awaitString(R.string.correct_answer)
 
         val unknown = unknownAnswer()
         answerWord(unknown)
@@ -146,7 +151,7 @@ class MainScenariosUiTest {
         val source = source()
         val valid = validAnswer(source)
         answerWord(valid)
-        awaitText("Правильно!")
+        awaitString(R.string.correct_answer)
 
         val found = foundAnswers(source)
         val allBuildable = container.wordRepository.search(source)?.words ?: emptyList()
@@ -183,7 +188,7 @@ class MainScenariosUiTest {
     fun backToMapAndReopenPreservesAnswers() = runTest {
         val source = source()
         val valid = validAnswer(source)
-        startLevel(); answerWord(valid); awaitText("Правильно!")
+        startLevel(); answerWord(valid); awaitString(R.string.correct_answer)
         compose.onNodeWithText("Завершить игру").assertDoesNotExist()
         compose.onNodeWithTag("game_back").performClick()
         compose.onNodeWithTag("levels_screen").assertIsDisplayed()
