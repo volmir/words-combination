@@ -217,6 +217,11 @@ fun GameScreen(
                     Text(stringResource(R.string.game_found_summary, game.foundCount, game.total),
                         Modifier.testTag("game_found_summary").semantics { heading() },
                         style = MaterialTheme.typography.titleMedium)
+                    val countedFound = game.countedFoundCount(state.countMinLength)
+                    Text(stringResource(R.string.game_found_counted, countedFound, RussianPlural.words(countedFound),
+                        state.countMinLength, letterForm(state.countMinLength)),
+                        Modifier.testTag("game_found_counted"),
+                        style = MaterialTheme.typography.bodyMedium)
                     val lastFound = game.found.lastOrNull()
                     for (row in state.statistics.rows) {
                         val found = game.found.filter { it.length == row.length }.sorted()
@@ -231,16 +236,17 @@ fun GameScreen(
                             }
                         }
                         val groupState = stringResource(if (expanded) R.string.game_group_expanded else R.string.game_group_collapsed)
+                        val rowLetterForm = RussianPlural.form(row.length, stringResource(R.string.game_letter_one),
+                            stringResource(R.string.game_letter_few), stringResource(R.string.hint_letter_genitive_many))
+                        val groupTitle = stringResource(
+                            if (row.length < state.countMinLength) R.string.game_found_group_uncounted else R.string.game_found_group,
+                            row.length, rowLetterForm, row.found, row.total)
                         Column(Modifier.fillMaxWidth()) {
                             TextButton({ expanded = !expanded }, Modifier.fillMaxWidth()
                                 .testTag("level_found_group_${row.length}").heightIn(min = 48.dp)
                                 .semantics { stateDescription = groupState }, enabled = found.isNotEmpty()) {
                                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(stringResource(R.string.game_found_group, row.length,
-                                        RussianPlural.form(row.length, stringResource(R.string.game_letter_one),
-                                            stringResource(R.string.game_letter_few), stringResource(R.string.hint_letter_genitive_many)),
-                                        row.found, row.total),
-                                        style = MaterialTheme.typography.titleSmall)
+                                    Text(groupTitle, style = MaterialTheme.typography.titleSmall)
                                     Text(stringResource(if (expanded) R.string.game_group_close else R.string.game_group_open),
                                         style = MaterialTheme.typography.labelLarge)
                                 }
@@ -275,7 +281,7 @@ fun GameScreen(
     }
     if (state.explanations.isNotEmpty() && !state.loading && state.finaleSummary == null) {
         WordsDialog(stringResource(R.string.game_explanations), onDismissExplanations) {
-            state.explanations.forEach { Text(stringResource(explanationText(it)), style = MaterialTheme.typography.bodyLarge) }
+            state.explanations.forEach { Text(explanationText(it, state.countMinLength), style = MaterialTheme.typography.bodyLarge) }
             CloseDialogButton(onDismissExplanations)
         }
     }
@@ -397,9 +403,9 @@ private fun HintTaskChip(
 /** Короткая подпись задания для заголовка и чипов; для T4 — номер конкретной загадки. */
 @Composable
 private fun hintTaskLabel(task: CampaignTask, countMinLength: Int, riddleNumber: Int? = null): String = when (task) {
-    is CampaignTask.T1 -> stringResource(R.string.hint_task_min_length, countMinLength)
+    is CampaignTask.T1 -> stringResource(R.string.hint_task_min_length, countMinLength, letterForm(countMinLength))
     is CampaignTask.T2 -> stringResource(R.string.hint_task_t2, task.letter.uppercaseChar().toString())
-    is CampaignTask.T3 -> stringResource(R.string.hint_task_min_length, task.minLength)
+    is CampaignTask.T3 -> stringResource(R.string.hint_task_min_length, task.minLength, letterForm(task.minLength))
     is CampaignTask.T4 -> riddleNumber?.let { stringResource(R.string.game_riddle_number, it) }
         ?: stringResource(R.string.hint_task_t4)
     is CampaignTask.T5 -> stringResource(R.string.hint_task_t5, task.ending)

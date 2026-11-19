@@ -70,6 +70,10 @@ data class GameState(
     val total: Int get() = allWords.size
     val foundCount: Int get() = found.size
 
+    /** Количество уникальных нормализованных найденных слов длиной не меньше [minLength]. */
+    fun countedFoundCount(minLength: Int): Int =
+        found.map(Alphabet::normalize).toHashSet().count { it.length >= minLength }
+
     /** Игра окончена, если найдены все слова (и слова вообще существуют). */
     val isFinished: Boolean get() = allWords.isNotEmpty() && found.size == allWords.size
 

@@ -90,4 +90,19 @@ class GameStateTest {
         assertTrue(s.hasNoWords)
         assertFalse(s.isFinished)
     }
+
+    @Test
+    fun countedFoundCountHandlesEmptyShortOnlyAndMixedFoundWords() {
+        val allWords = listOf("рот", "тор", "крот", "торт", "колея", "елка")
+        assertEquals(0, GameState("тест", allWords, emptyList()).countedFoundCount(4))
+        assertEquals(0, GameState("тест", allWords, listOf("рот", "тор")).countedFoundCount(4))
+
+        val mixed = GameState("тест", allWords, listOf("рот", "тор", "крот", "торт", "колея"))
+        assertEquals(3, mixed.countedFoundCount(4))
+        assertEquals(1, mixed.countedFoundCount(5))
+        assertEquals(5, mixed.countedFoundCount(3))
+
+        val unnormalized = GameState("тест", allWords, listOf(" кот ", " ЁЛКА ", "елка"))
+        assertEquals(1, unnormalized.countedFoundCount(4))
+    }
 }

@@ -46,6 +46,7 @@ class GameLayoutTest {
         val game = initialGame.copy(found = initialGame.allWords)
         assertTrue("Stress fixture must contain at least 600 words", game.foundCount >= 600)
         val snapshot = GameUiState(loading = false, game = game, statistics = game.statistics(),
+            countMinLength = campaign.countMinLength,
             totalLevels = campaign.levels.size, campaignLevel = CurrentCampaignLevel(level, game))
         compose.setContent {
             val base = LocalDensity.current
@@ -57,6 +58,9 @@ class GameLayoutTest {
                 }
             }
         }
+        val counted = game.countedFoundCount(campaign.countMinLength)
+        compose.onNodeWithTag("game_found_counted").performScrollTo()
+            .assertTextEquals("Учитывается в заданиях: $counted ${RussianPlural.words(counted)} (от ${campaign.countMinLength} букв)")
         for (row in snapshot.statistics.rows) {
             val group = compose.onNodeWithTag("level_found_group_${row.length}")
             group.performScrollTo()
@@ -64,8 +68,13 @@ class GameLayoutTest {
                 group.performClick()
             }
             compose.onNodeWithTag("game_found_words_${row.length}").assertExists()
+            val expectedTitle = if (row.length < campaign.countMinLength) {
+                "${row.length} ${RussianPlural.letters(row.length)} · ${row.found} из ${row.total} · в заданиях на число слов и на букву не учитываются"
+            } else {
+                "${row.length} ${RussianPlural.letters(row.length)} · ${row.found} из ${row.total}"
+            }
             compose.onNodeWithTag("level_found_group_${row.length}")
-                .assertTextContains("${row.found} из ${row.total}", substring = true)
+                .assertTextContains(expectedTitle)
         }
         checkLayout()
         val screen = compose.onNodeWithTag("game_screen").fetchSemanticsNode().boundsInRoot

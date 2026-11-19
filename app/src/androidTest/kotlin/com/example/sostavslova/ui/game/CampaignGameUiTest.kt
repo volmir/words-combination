@@ -78,6 +78,8 @@ class CampaignGameUiTest {
             val minimum = 48f * compose.density.density - 1f
             assertTrue(node.size.toString(), node.size.width >= minimum && node.size.height >= minimum)
         }
+        compose.onNodeWithText("Наберите 2 слова от 4 букв").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Найдите 1 слово на букву «к» (слова от 4 букв)").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Найдите 1 слово по теме «Животные»").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("level_riddle_1").onChildren().filter(hasText("Разгадана")).assertCountEquals(1)
         compose.onNodeWithTag("level_riddle_2").onChildren().filter(hasText("Ещё не разгадана")).assertCountEquals(1)
@@ -613,6 +615,19 @@ class CampaignGameUiTest {
                         "tag=${node.config.getOrNull(SemanticsProperties.TestTag)}")
                 }
             }
+    }
+
+    @Test fun t1AndT2ExplanationsUseConfiguredCountMinLength() {
+        val state = pending.copy(
+            countMinLength = 5,
+            explanations = listOf(TaskType.T1, TaskType.T2),
+        )
+        compose.setContent { WordsTheme { GameScreen(state, {}, {}, {}, {}) } }
+        compose.onNodeWithText("Набирайте слова от 5 букв. Каждое задание даёт одну звезду; для прохождения подходят любые задания до порога.")
+            .assertIsDisplayed()
+        compose.onNodeWithText("В задании «на букву» учитываются слова от 5 букв с заданной первой буквой.")
+            .assertIsDisplayed()
+        assertTextFits()
     }
 
 }

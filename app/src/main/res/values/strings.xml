@@ -40,6 +40,7 @@
     <string name="about_code_heading">Программный код</string>
     <string name="about_code_sources">Программный код проекта «Составь слова» распространяется по лицензии MIT. Полный текст лицензии — в файле LICENSE в исходном репозитории и в составе APK.</string>
     <string name="game_found_summary">Найденные слова · %1$d из %2$d</string>
+    <string name="game_found_counted">Учитывается в заданиях: %1$d %2$s (от %3$d %4$s)</string>
     <string name="answer_already_found">Вы уже нашли слово %1$s</string>
     <string name="answer_unknown">Слово «%1$s» не распознано словарём</string>
     <string name="answer_not_counted">Слово «%1$s» есть в словаре, но не входит в игровой набор</string>
@@ -137,8 +138,8 @@
     <string name="game_task_done">Выполнено</string>
     <string name="game_task_pending">В работе</string>
     <string name="game_tasks_summary">Задания · %1$d из %2$d</string>
-    <string name="game_task_t1">Наберите %1$d %2$s длиной от 4 букв</string>
-    <string name="game_task_t2">Найдите %1$d %2$s на букву «%3$s» длиной от 4 букв</string>
+    <string name="game_task_t1">Наберите %1$d %2$s от %3$d %4$s</string>
+    <string name="game_task_t2">Найдите %1$d %2$s на букву «%3$s» (слова от %4$d %5$s)</string>
     <string name="game_task_t3">Найдите слово длиной от %1$d %2$s</string>
     <string name="game_task_t4">Угадайте слова по описаниям</string>
     <string name="game_task_t5">Найдите слово с окончанием «%1$s» длиной от %2$d %3$s</string>
@@ -148,6 +149,7 @@
     <string name="game_riddle_solved">Разгадана</string>
     <string name="game_riddle_pending">Ещё не разгадана</string>
     <string name="game_found_group">%1$d %2$s · %3$d из %4$d</string>
+    <string name="game_found_group_uncounted">%1$d %2$s · %3$d из %4$d · в заданиях на число слов и на букву не учитываются</string>
     <string name="game_group_expanded">Раскрыта</string>
     <string name="game_group_collapsed">Свёрнута</string>
     <string name="game_group_open">Раскрыть</string>
@@ -162,8 +164,8 @@
     <string name="game_finale_continue">Продолжить собирать звёзды</string>
     <string name="game_finale_levels">К уровням</string>
     <string name="game_explanations">Новые задания этапа</string>
-    <string name="game_explain_t1">Набирайте слова от четырёх букв. Каждое задание даёт одну звезду; для прохождения подходят любые задания до порога.</string>
-    <string name="game_explain_t2">В задании «на букву» учитываются слова от четырёх букв с заданной первой буквой.</string>
+    <string name="game_explain_t1">Набирайте слова от %1$d %2$s. Каждое задание даёт одну звезду; для прохождения подходят любые задания до порога.</string>
+    <string name="game_explain_t2">В задании «на букву» учитываются слова от %1$d %2$s с заданной первой буквой.</string>
     <string name="game_explain_t3">Подойдёт любое слово не короче указанной длины.</string>
     <string name="game_explain_t4">Читайте загадки и вводите ответы в обычное поле. Для звезды разгадайте все загадки задания. Первая буква ответа открывается бесплатно.</string>
     <string name="game_explain_t5">Найдите слово с заданным окончанием и не короче указанной длины.</string>
@@ -220,7 +222,7 @@
     <string name="hint_task_auto_description">Подсказка для задания, выбранного автоматически</string>
     <string name="hint_task_description">Подсказка для задания %1$s</string>
     <string name="hint_task_locked">Задание фиксируется после покупки подсказки. Найдите слово, чтобы выбрать другое.</string>
-    <string name="hint_task_min_length">Слова от %1$d букв</string>
+    <string name="hint_task_min_length">Слова от %1$d %2$s</string>
     <string name="hint_task_t2">Слова на букву %1$s</string>
     <string name="hint_task_t4">Загадки</string>
     <string name="hint_task_t5">Слова с окончанием «%1$s»</string>

@@ -34,7 +34,7 @@ internal fun CampaignTasks(state: GameUiState) {
             Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)
                 .testTag("level_task_${task.type.name.lowercase()}"),
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                TaskRow(taskTitle(task), done)
+                TaskRow(taskTitle(task, state.countMinLength), done)
                 Text(stringResource(R.string.game_task_progress, progress?.current ?: 0, progress?.target ?: 1),
                     style = MaterialTheme.typography.bodyMedium)
                 Text(stringResource(if (done) R.string.game_task_done else R.string.game_task_pending),
@@ -62,9 +62,11 @@ private fun RiddleText(riddle: RiddleUiState) {
 }
 
 @Composable
-private fun taskTitle(task: CampaignTask): String = when (task) {
-    is CampaignTask.T1 -> stringResource(R.string.game_task_t1, task.n, RussianPlural.words(task.n))
-    is CampaignTask.T2 -> stringResource(R.string.game_task_t2, task.n, RussianPlural.words(task.n), task.letter.toString())
+private fun taskTitle(task: CampaignTask, countMinLength: Int): String = when (task) {
+    is CampaignTask.T1 -> stringResource(R.string.game_task_t1, task.n, RussianPlural.words(task.n),
+        countMinLength, letterForm(countMinLength))
+    is CampaignTask.T2 -> stringResource(R.string.game_task_t2, task.n, RussianPlural.words(task.n),
+        task.letter.toString(), countMinLength, letterForm(countMinLength))
     is CampaignTask.T3 -> stringResource(R.string.game_task_t3, task.minLength, letterForm(task.minLength))
     is CampaignTask.T4 -> stringResource(R.string.game_task_t4)
     is CampaignTask.T5 -> stringResource(R.string.game_task_t5, task.ending, task.minLength, letterForm(task.minLength))
@@ -73,17 +75,18 @@ private fun taskTitle(task: CampaignTask): String = when (task) {
 }
 
 @Composable
-private fun letterForm(n: Int) = RussianPlural.form(n, stringResource(R.string.hint_letter_genitive_one),
+internal fun letterForm(n: Int) = RussianPlural.form(n, stringResource(R.string.hint_letter_genitive_one),
     stringResource(R.string.hint_letter_genitive_many), stringResource(R.string.hint_letter_genitive_many))
 
-internal fun explanationText(type: TaskType): Int = when (type) {
-    TaskType.T1 -> R.string.game_explain_t1
-    TaskType.T2 -> R.string.game_explain_t2
-    TaskType.T3 -> R.string.game_explain_t3
-    TaskType.T4 -> R.string.game_explain_t4
-    TaskType.T5 -> R.string.game_explain_t5
-    TaskType.T6 -> R.string.game_explain_t6
-    TaskType.T7 -> R.string.game_explain_t7
+@Composable
+internal fun explanationText(type: TaskType, countMinLength: Int): String = when (type) {
+    TaskType.T1 -> stringResource(R.string.game_explain_t1, countMinLength, letterForm(countMinLength))
+    TaskType.T2 -> stringResource(R.string.game_explain_t2, countMinLength, letterForm(countMinLength))
+    TaskType.T3 -> stringResource(R.string.game_explain_t3)
+    TaskType.T4 -> stringResource(R.string.game_explain_t4)
+    TaskType.T5 -> stringResource(R.string.game_explain_t5)
+    TaskType.T6 -> stringResource(R.string.game_explain_t6)
+    TaskType.T7 -> stringResource(R.string.game_explain_t7)
 }
 
 @Composable
