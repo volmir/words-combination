@@ -4048,7 +4048,7 @@
   "inputs": {
     "campaign": {
       "path": "data/campaign.json",
-      "sha256": "c7c936e87437daf5fe5ece90cea388a3733643503eed74b770dd9d14d51e73d7"
+      "sha256": "995e8c8d454dfe1c50a7c68b8c6d3308716263d41183e4bf6b06fd73990451e4"
     },
     "config": {
       "path": "tools/vocabulary_audit_config.json",
@@ -4578,7 +4578,7 @@
           "id": "l13-t3",
           "margin": 19,
           "needed": 1,
-          "parameter": "minLength=8, hintTarget=вероника",
+          "parameter": "minLength=8, hintTarget=ровесник",
           "threshold_share": 0.05,
           "type": "T3"
         },

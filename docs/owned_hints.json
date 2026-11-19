@@ -1,7 +1,7 @@
 {
   "schema": "owned-game-hints",
   "version": 1,
-  "campaign_sha256": "c7c936e87437daf5fe5ece90cea388a3733643503eed74b770dd9d14d51e73d7",
+  "campaign_sha256": "995e8c8d454dfe1c50a7c68b8c6d3308716263d41183e4bf6b06fd73990451e4",
   "status": "candidate-not-installed",
   "provenance": "newly-authored-for-game",
   "license_review": "pending-owner-approval",
@@ -362,25 +362,6 @@
       "owner_license_approval": "pending"
     },
     {
-      "word": "вероника",
-      "normalized": "вероника",
-      "part_of_speech": "noun",
-      "hint": "Невысокая трава с мелкими синими цветками, собранными в длинные узкие кисти.",
-      "roles": [
-        {
-          "level": 13,
-          "task_id": "l13-t3",
-          "type": "T3",
-          "selection_source": "campaign.hintTarget"
-        }
-      ],
-      "provenance": "newly-authored-for-game",
-      "license_review": "pending-owner-approval",
-      "review_note": "Растение, не женское имя; ботаническая точность требует ручной проверки.",
-      "owner_text_approval": "pending",
-      "owner_license_approval": "pending"
-    },
-    {
       "word": "весна",
       "normalized": "весна",
       "part_of_speech": "noun",
@@ -662,6 +643,25 @@
       "provenance": "newly-authored-for-game",
       "license_review": "pending-owner-approval",
       "review_note": "Родственное название канала связи опущено.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "ровесник",
+      "normalized": "ровесник",
+      "part_of_speech": "noun",
+      "hint": "Человек одного возраста с другим",
+      "roles": [
+        {
+          "level": 13,
+          "task_id": "l13-t3",
+          "type": "T3",
+          "selection_source": "campaign.hintTarget"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Нейтральное определение без оценки; слово заменяет прежнюю цель «вероника».",
       "owner_text_approval": "pending",
       "owner_license_approval": "pending"
     },

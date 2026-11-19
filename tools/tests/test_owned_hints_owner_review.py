@@ -12,8 +12,8 @@ from tools.build_owned_hints import inputs, verify
 from tools.owned_hints import norm, targets
 
 ROOT = Path(__file__).resolve().parents[2]
-CANDIDATE_SHA = '50557e8906e0cfe8e1adee1d17fd6fd4a0ed3ef77743eeade5655e75d8f7c76c'
-CAMPAIGN_SHA = 'c7c936e87437daf5fe5ece90cea388a3733643503eed74b770dd9d14d51e73d7'
+CANDIDATE_SHA = '214a14ca721cc33d7abc1933e5ecdd605e722441910dbecf4a137b4bd70e784d'
+CAMPAIGN_SHA = '995e8c8d454dfe1c50a7c68b8c6d3308716263d41183e4bf6b06fd73990451e4'
 
 
 class OwnedHintsOwnerReviewTest(unittest.TestCase):
@@ -38,7 +38,7 @@ class OwnedHintsOwnerReviewTest(unittest.TestCase):
 
     def test_all_39_review_rows_are_verbatim_and_complete(self):
         candidate = json.loads((ROOT / 'docs/owned_hints.json').read_bytes())
-        review = (ROOT / 'docs/LEX11_01_OWNER_REVIEW.md').read_text(encoding='utf-8')
+        review = (ROOT / 'docs/LEX13_01_OWNER_REVIEW.md').read_text(encoding='utf-8')
         rows = [line for line in review.splitlines()
                 if line.startswith('| ') and line.split(' | ')[0][2:].isdigit()]
         self.assertEqual(39, len(rows))
@@ -49,7 +49,7 @@ class OwnedHintsOwnerReviewTest(unittest.TestCase):
                                   for r in entry['roles'])
                 self.assertEqual([str(number), entry['word'], roles,
                                   entry['hint'], entry['review_note']], cells)
-        self.assertEqual(2879, sum(len(e['hint']) for e in candidate['entries']))
+        self.assertEqual(2835, sum(len(e['hint']) for e in candidate['entries']))
         self.assertEqual(99, max(len(e['hint']) for e in candidate['entries']))
         self.assertIn(CANDIDATE_SHA, review)
         self.assertIn(CAMPAIGN_SHA, review)

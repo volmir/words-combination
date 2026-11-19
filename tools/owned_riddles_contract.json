@@ -1,9 +1,9 @@
 {
   "schema": "owned-riddles-source-contract-v1",
-  "candidate_sha256": "50557e8906e0cfe8e1adee1d17fd6fd4a0ed3ef77743eeade5655e75d8f7c76c",
-  "approval_sha256": "6588cc4fa77b27f86d6f4475115bed6b0413f26d0d24d1204b789cd6c03d9e44",
-  "audit_sha256": "c9e1c6c24d92bf632d3b4f8807c772d56a8ca770d3177385d2fed005929aa2c6",
-  "index_sha256": "8b0cdacd93fdf6b2de4e34f99a4b334f0e674f2d440bb7c4b6c43fea3868eb80",
+  "candidate_sha256": "214a14ca721cc33d7abc1933e5ecdd605e722441910dbecf4a137b4bd70e784d",
+  "approval_sha256": "2856445f4405c5f3b7fb6b1865f4629795c8a4f1fac5451237210da191fda63d",
+  "audit_sha256": "00f49e4fae3dd39f32987ba065de6741c538532d8a7eee7801ad0a5c2a97d3c4",
+  "index_sha256": "cc81d46456985374f05f874ff5dd680f97d7e1aa5c3ee5e555b067e6d1938058",
   "t4_keys": [
     "артист",
     "банк",

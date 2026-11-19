@@ -3,10 +3,10 @@
   "version": 1,
   "reviewer": "Project Owner",
   "reviewed_on": "2026-11-19",
-  "candidate_sha256": "50557e8906e0cfe8e1adee1d17fd6fd4a0ed3ef77743eeade5655e75d8f7c76c",
-  "campaign_sha256": "c7c936e87437daf5fe5ece90cea388a3733643503eed74b770dd9d14d51e73d7",
+  "candidate_sha256": "214a14ca721cc33d7abc1933e5ecdd605e722441910dbecf4a137b4bd70e784d",
+  "campaign_sha256": "995e8c8d454dfe1c50a7c68b8c6d3308716263d41183e4bf6b06fd73990451e4",
   "database_sha256": "73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d",
-  "owner_approval_sha256": "6588cc4fa77b27f86d6f4475115bed6b0413f26d0d24d1204b789cd6c03d9e44",
+  "owner_approval_sha256": "2856445f4405c5f3b7fb6b1865f4629795c8a4f1fac5451237210da191fda63d",
   "checked": 39,
   "bad": 0,
   "entries": [
@@ -155,14 +155,6 @@
       "no_answer_leak": "pass"
     },
     {
-      "word": "вероника",
-      "hint_sha256": "ea86e2d357cfffc9f8c9f06c9e549e33cc79430ab6ff604e8686631479660bd4",
-      "quality": "pass",
-      "originality": "pass",
-      "correctness": "pass",
-      "no_answer_leak": "pass"
-    },
-    {
       "word": "весна",
       "hint_sha256": "357cb5a9f1881845a26205b2117681d9e0b2f8a615834325f06fe95a6a137415",
       "quality": "pass",
@@ -277,6 +269,14 @@
     {
       "word": "радист",
       "hint_sha256": "b5f3aa5e2219933e132a3f51ff97be1b651781797bcedf00f28a4c0f02786a05",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "ровесник",
+      "hint_sha256": "05157d80eccc6e6d34195b5b50f7321e8420e05d64bb98a5a9796b5cce05813f",
       "quality": "pass",
       "originality": "pass",
       "correctness": "pass",

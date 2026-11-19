@@ -11,7 +11,7 @@ runtime-assets не изменяются; регенерация не запус
 
 Входные файлы:
 - `data/words.txt` — SHA-256 `0ca0904a47577bd8502dd465239e4d5885f22b4899fce2448f72745b42fb36aa`
-- `data/campaign.json` — SHA-256 `c7c936e87437daf5fe5ece90cea388a3733643503eed74b770dd9d14d51e73d7`
+- `data/campaign.json` — SHA-256 `995e8c8d454dfe1c50a7c68b8c6d3308716263d41183e4bf6b06fd73990451e4`
 - `tools/vocabulary_audit_config.json` — SHA-256 `35c3a2fb556dc93922eac78c97ffea7256b8d29ad1ec6baa715af4db5ec965ac`
 
 ## Сводка категорий
@@ -237,7 +237,7 @@ runtime-assets не изменяются; регенерация не запус
 | 12 | l12-t5 | T5 | ending=ка, minLength=5 | 56 | 1 | 55 | 1.8% |
 | 13 | l13-t1 | T1 | n=21 | 461 | 21 | 440 | 4.6% |
 | 13 | l13-t2 | T2 | n=6, letter=с | 95 | 6 | 89 | 6.3% |
-| 13 | l13-t3 | T3 | minLength=8, hintTarget=вероника | 20 | 1 | 19 | 5.0% |
+| 13 | l13-t3 | T3 | minLength=8, hintTarget=ровесник | 20 | 1 | 19 | 5.0% |
 | 13 | l13-t4 | T4 | targets=ковер, весна | 2 | 2 | 0 | 100.0% |
 | 13 | l13-t5 | T5 | ending=ние, minLength=6 | 9 | 1 | 8 | 11.1% |
 | 14 | l14-t1 | T1 | n=22 | 435 | 22 | 413 | 5.1% |
@@ -262,7 +262,7 @@ runtime-assets не изменяются; регенерация не запус
 
 ## Риски чистки
 
-Текущий SHA-256 `data/campaign.json`: `c7c936e87437daf5fe5ece90cea388a3733643503eed74b770dd9d14d51e73d7`. В приложении этот
+Текущий SHA-256 `data/campaign.json`: `995e8c8d454dfe1c50a7c68b8c6d3308716263d41183e4bf6b06fd73990451e4`. В приложении этот
 хэш является идентификатором кампании (`campaignProgressV2`). Любое изменение
 файла кампании — замена `hintTarget`, цели T4, списка T6, порога или окончания —
 меняет SHA-256 и даёт `campaign-mismatch`: сохранения игроков по кампании
