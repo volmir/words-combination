@@ -26,4 +26,18 @@ class RulesScreenTest {
             compose.onNodeWithTag(tag).performScrollTo().assertIsDisplayed().assertTextEquals(text)
         }
     }
+
+    @Test fun rulesListContainsSevenItems() {
+        compose.setContent { WordsTheme { RulesScreen() } }
+        // Exactly seven rule items are displayed: rules_item_1..rules_item_7, no rules_item_8.
+        for (index in 1..7) {
+            compose.onNodeWithTag("rules_item_$index").performScrollTo().assertIsDisplayed()
+        }
+        compose.onNodeWithTag("rules_item_8").assertDoesNotExist()
+        val item7 = "7. Подсказка открывает по одной букве слова из ещё не выполненного задания. " +
+            "На уровне есть запас подсказок (на ранних этапах больше), и ещё одна добавляется за каждые 4 найденных слова. " +
+            "Первая буква ответа в задании с описаниями бесплатна."
+        compose.onNodeWithTag("rules_item_7").performScrollTo().assertTextEquals(item7)
+        compose.onNodeWithText("Подсказки не отнимают звёзд.").performScrollTo().assertIsDisplayed()
+    }
 }

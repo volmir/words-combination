@@ -71,12 +71,14 @@ fun RulesScreen() {
                     R.string.rules_item_4,
                     R.string.rules_item_5,
                     R.string.rules_item_6,
+                    R.string.rules_item_7,
                 )
 
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for (item in items) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("rules_items")) {
+                    for ((index, item) in items.withIndex()) {
                         Text(
                             stringResource(item),
+                            modifier = Modifier.testTag("rules_item_${index + 1}"),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
