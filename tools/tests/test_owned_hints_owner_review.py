@@ -1,4 +1,4 @@
-"""RIGHTS-01: pin the unsigned review packet; never author an owner decision.
+"""Pin the current review packet and preserve the 2026-11-16 unsigned packet.
 
 Read only the project's own hints, without embedding imported article prose.
 """
@@ -12,8 +12,8 @@ from tools.build_owned_hints import inputs, verify
 from tools.owned_hints import norm, targets
 
 ROOT = Path(__file__).resolve().parents[2]
-CANDIDATE_SHA = '061633244ec968aeec2e0dc50aca1b61ecb8ca735590c5510938ab5085b711b0'
-CAMPAIGN_SHA = '1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e'
+CANDIDATE_SHA = '50557e8906e0cfe8e1adee1d17fd6fd4a0ed3ef77743eeade5655e75d8f7c76c'
+CAMPAIGN_SHA = 'c7c936e87437daf5fe5ece90cea388a3733643503eed74b770dd9d14d51e73d7'
 
 
 class OwnedHintsOwnerReviewTest(unittest.TestCase):
@@ -38,7 +38,7 @@ class OwnedHintsOwnerReviewTest(unittest.TestCase):
 
     def test_all_39_review_rows_are_verbatim_and_complete(self):
         candidate = json.loads((ROOT / 'docs/owned_hints.json').read_bytes())
-        review = (ROOT / 'docs/OWN_HINTS_OWNER_REVIEW.md').read_text(encoding='utf-8')
+        review = (ROOT / 'docs/LEX11_01_OWNER_REVIEW.md').read_text(encoding='utf-8')
         rows = [line for line in review.splitlines()
                 if line.startswith('| ') and line.split(' | ')[0][2:].isdigit()]
         self.assertEqual(39, len(rows))
@@ -49,12 +49,15 @@ class OwnedHintsOwnerReviewTest(unittest.TestCase):
                                   for r in entry['roles'])
                 self.assertEqual([str(number), entry['word'], roles,
                                   entry['hint'], entry['review_note']], cells)
-        self.assertEqual(2928, sum(len(e['hint']) for e in candidate['entries']))
+        self.assertEqual(2879, sum(len(e['hint']) for e in candidate['entries']))
         self.assertEqual(99, max(len(e['hint']) for e in candidate['entries']))
         self.assertIn(CANDIDATE_SHA, review)
         self.assertIn(CAMPAIGN_SHA, review)
-        self.assertIn('Решение владельца пока НЕ получено', review)
-        self.assertIn('READY_FOR_OWNER_REVIEW', review)
+        self.assertIn('OWNER_APPROVED_2026-11-19', review)
+        historical = (ROOT / 'docs/OWN_HINTS_OWNER_REVIEW.md').read_text(encoding='utf-8')
+        self.assertIn('Решение владельца пока НЕ получено', historical)
+        self.assertIn('READY_FOR_OWNER_REVIEW', historical)
+        self.assertIn('061633244ec968aeec2e0dc50aca1b61ecb8ca735590c5510938ab5085b711b0', historical)
 
     def test_template_is_exact_and_unsigned(self):
         template = json.loads((ROOT / 'docs/OWN_HINTS_OWNER_APPROVAL.template.json').read_bytes())

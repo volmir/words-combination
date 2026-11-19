@@ -55,7 +55,7 @@
       "брудершафт": "owner-excluded-source-and-target; docs/CAMPAIGN.md",
       "праймериз": "owner-excluded-source-and-target; docs/CAMPAIGN.md"
     },
-    "word_exclusions": {"менталист": "owner-excluded-all-roles; SHORT15-05"},
+    "word_exclusions": {"адресок": "owner-excluded-all-roles; productive diminutive; LEX11-01", "менталист": "owner-excluded-all-roles; SHORT15-05"},
     "reviewed_nouns": {
       "акмеист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"], "specialist_labels": ["филол"]},
       "атомист": {"reason": "owner-reviewed-existing-noun; SHORT15-05", "allow_reasons": ["usage_unconfirmed", "low_frequency", "narrow_term", "restricted_usage_frequency"]},

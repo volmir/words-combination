@@ -1,7 +1,7 @@
 {
   "schema": "owned-game-hints",
   "version": 1,
-  "campaign_sha256": "1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e",
+  "campaign_sha256": "c7c936e87437daf5fe5ece90cea388a3733643503eed74b770dd9d14d51e73d7",
   "status": "candidate-not-installed",
   "provenance": "newly-authored-for-game",
   "license_review": "pending-owner-approval",
@@ -29,25 +29,6 @@
       "provenance": "newly-authored-for-game",
       "license_review": "pending-owner-approval",
       "review_note": "Отвлечённое понятие; возможен ответ «нелепость», но он не составим из исходника.",
-      "owner_text_approval": "pending",
-      "owner_license_approval": "pending"
-    },
-    {
-      "word": "адресок",
-      "normalized": "адресок",
-      "part_of_speech": "noun",
-      "hint": "Разговорное название записи с улицей, домом и квартирой, по которой можно найти человека.",
-      "roles": [
-        {
-          "level": 11,
-          "task_id": "l11-t3",
-          "type": "T3",
-          "selection_source": "campaign.hintTarget"
-        }
-      ],
-      "provenance": "newly-authored-for-game",
-      "license_review": "pending-owner-approval",
-      "review_note": "Уменьшительная форма уже назначена кампанией; замена цели вне этой задачи.",
       "owner_text_approval": "pending",
       "owner_license_approval": "pending"
     },
@@ -605,6 +586,25 @@
       "provenance": "newly-authored-for-game",
       "license_review": "pending-owner-approval",
       "review_note": "Синоним «гостиница» не составим из исходника.",
+      "owner_text_approval": "pending",
+      "owner_license_approval": "pending"
+    },
+    {
+      "word": "постель",
+      "normalized": "постель",
+      "part_of_speech": "noun",
+      "hint": "То, что застилают простынёй и в чём спят",
+      "roles": [
+        {
+          "level": 11,
+          "task_id": "l11-t3",
+          "type": "T3",
+          "selection_source": "campaign.hintTarget"
+        }
+      ],
+      "provenance": "newly-authored-for-game",
+      "license_review": "pending-owner-approval",
+      "review_note": "Предмет домашнего обихода; новая цель T3 уровня 11 по LEX11-01; текст авторский.",
       "owner_text_approval": "pending",
       "owner_license_approval": "pending"
     },

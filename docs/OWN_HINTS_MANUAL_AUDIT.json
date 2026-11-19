@@ -2,25 +2,17 @@
   "schema": "owned-hints-human-audit",
   "version": 1,
   "reviewer": "Project Owner",
-  "reviewed_on": "2026-11-16",
-  "candidate_sha256": "061633244ec968aeec2e0dc50aca1b61ecb8ca735590c5510938ab5085b711b0",
-  "campaign_sha256": "1734a3338f39ad00b019871b18aef010e8bc738b4dfd830b8668af717b20d76e",
+  "reviewed_on": "2026-11-19",
+  "candidate_sha256": "50557e8906e0cfe8e1adee1d17fd6fd4a0ed3ef77743eeade5655e75d8f7c76c",
+  "campaign_sha256": "c7c936e87437daf5fe5ece90cea388a3733643503eed74b770dd9d14d51e73d7",
   "database_sha256": "73d09ac2d445ad7f4c30226248b30769d6e46bd6858a8907750d16561b258d7d",
-  "owner_approval_sha256": "50ea8dd86af6a32a13165e21378273b9734557f6980cc5ccea518a7d04e3e128",
+  "owner_approval_sha256": "6588cc4fa77b27f86d6f4475115bed6b0413f26d0d24d1204b789cd6c03d9e44",
   "checked": 39,
   "bad": 0,
   "entries": [
     {
       "word": "абсурд",
       "hint_sha256": "e2efbf01bf923200692659d45530a88902e3c2c4ae04aeb6a9678e3b100badf9",
-      "quality": "pass",
-      "originality": "pass",
-      "correctness": "pass",
-      "no_answer_leak": "pass"
-    },
-    {
-      "word": "адресок",
-      "hint_sha256": "55f01b4291c8b0e709b5179c305686159c957ea827aac1f15cbd8c93b9f6a74f",
       "quality": "pass",
       "originality": "pass",
       "correctness": "pass",
@@ -253,6 +245,14 @@
     {
       "word": "отель",
       "hint_sha256": "f7a395314daf41b746fbb6d1442bcbee21fcad27379d7334e7e2b1dbe6088d69",
+      "quality": "pass",
+      "originality": "pass",
+      "correctness": "pass",
+      "no_answer_leak": "pass"
+    },
+    {
+      "word": "постель",
+      "hint_sha256": "5b12d947964d31079e00e70f92fcc44b0f17c1296226a8788ad91b94786c317f",
       "quality": "pass",
       "originality": "pass",
       "correctness": "pass",
