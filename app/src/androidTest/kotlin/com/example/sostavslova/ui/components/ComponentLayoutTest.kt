@@ -1,13 +1,26 @@
 package com.example.sostavslova.ui.components
 
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,12 +35,14 @@ import com.example.sostavslova.core.LengthStat
 import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.core.Statistics
 import com.example.sostavslova.nav.Destination
+import com.example.sostavslova.ui.assertTextLayoutFits
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import kotlin.math.roundToInt
 
 /** Прямой рендер компонентов на Android, включая нативные окна диалогов. */
 @RunWith(Parameterized::class)
@@ -118,4 +133,85 @@ private enum class ComponentExample {
         }
     }
 
+}
+
+/**
+ * Плитки исходного слова на ширинах 320/360/411 dp и системном масштабе
+ * шрифта 1.0/1.3/2.0: строки ровные, плитки не выходят за экран.
+ * Отдельный класс, потому что [ComponentLayoutTest] параметризован по компонентам.
+ */
+class LetterTilesLayoutTest {
+    @get:Rule val compose = createComposeRule()
+
+    private data class WordCase(val width: Int, val fontScale: Float, val word: String)
+
+    @Test
+    fun sourceWordTilesWrapEvenlyWithoutClipping() {
+        val words = listOf("чемпионство", "журналистика", "благодарность")
+        assertEquals("Длины слов фикстуры", listOf(11, 12, 13), words.map { it.length })
+        val cases = listOf(320, 360, 411).flatMap { width ->
+            listOf(1f, 1.3f, 2f).flatMap { fontScale ->
+                words.map { word -> WordCase(width, fontScale, word) }
+            }
+        }
+        val current = mutableStateOf(cases.first())
+        compose.setContent {
+            val base = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(base.density, current.value.fontScale)) {
+                WordsTheme {
+                    Box(Modifier.width(current.value.width.dp).background(Color.White).padding(16.dp)) {
+                        LetterTiles(current.value.word)
+                    }
+                }
+            }
+        }
+        for (case in cases) {
+            compose.runOnIdle { current.value = case }
+            compose.waitForIdle()
+            verifySourceWord(case)
+        }
+    }
+
+    private fun verifySourceWord(case: WordCase) {
+        val context = "${case.width}dp, fontScale=${case.fontScale}, ${case.word}"
+        val container = compose.onNodeWithTag("source_word_tiles", useUnmergedTree = true).fetchSemanticsNode()
+        val tiles = case.word.indices.map { index ->
+            compose.onNodeWithTag("source_word_tile_${index + 1}", useUnmergedTree = true).fetchSemanticsNode()
+        }
+        assertEquals("$context: потеряны плитки", case.word.length, tiles.size)
+        val density = compose.density.density
+        val minimum = 28f * density - 1f
+        val maximum = 36f * density + 1f
+        tiles.forEachIndexed { index, node ->
+            assertTrue("$context: плитка ${index + 1} меньше 28 dp: ${node.size}",
+                node.size.width >= minimum && node.size.height >= minimum)
+            assertTrue("$context: плитка ${index + 1} больше 36 dp: ${node.size}",
+                node.size.width <= maximum && node.size.height <= maximum)
+            val bounds = node.boundsInRoot
+            val parent = container.boundsInRoot
+            assertTrue("$context: плитка ${index + 1} обрезана слева", bounds.left >= parent.left - 1f)
+            assertTrue("$context: плитка ${index + 1} обрезана справа", bounds.right <= parent.right + 1f)
+        }
+        val rows = tiles.groupBy { it.boundsInRoot.top.roundToInt() }.values.map { it.size }
+        val widest = rows.maxOrNull() ?: 0
+        val narrowest = rows.minOrNull() ?: 0
+        assertTrue("$context: неровные строки $rows", widest - narrowest <= 1)
+        assertEquals("$context: потеряны буквы в строках", case.word.length, rows.sum())
+        assertEquals("$context: описание исходного слова", "Исходное слово: ${case.word}",
+            container.config[SemanticsProperties.ContentDescription].joinToString(""))
+        assertTrue("$context: не должно быть горизонтальной прокрутки",
+            compose.onAllNodes(hasScrollAction() and hasAnyAncestor(hasTestTag("source_word_tiles")),
+                useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
+        val letterNodes = compose.onAllNodes(
+            SemanticsMatcher.keyIsDefined(SemanticsProperties.Text) and
+                hasAnyAncestor(hasTestTag("source_word_tiles")),
+            useUnmergedTree = true,
+        ).fetchSemanticsNodes()
+        assertEquals("$context: потеряны буквы", case.word.length, letterNodes.size)
+        for (node in letterNodes) {
+            val layouts = mutableListOf<TextLayoutResult>()
+            node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
+            for (layout in layouts) assertTextLayoutFits(layout, context)
+        }
+    }
 }
