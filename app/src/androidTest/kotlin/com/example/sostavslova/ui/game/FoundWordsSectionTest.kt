@@ -87,6 +87,8 @@ class FoundWordsSectionTest(private val legacy: Boolean) {
         val statisticsY = compose.onNodeWithTag("game_word_statistics").fetchSemanticsNode().positionInRoot.y
         assertTrue(headerY < firstGroupY && firstGroupY < lastGroupY && lastGroupY < statisticsY)
         if (!legacy) {
+            compose.onNodeWithTag("game_hint_stage").assertTextEquals("Подсказка ещё не открыта")
+            compose.onAllNodesWithTag("game_hint_pattern").assertCountEquals(0)
             val tasksY = compose.onNodeWithTag("game_tasks").fetchSemanticsNode().positionInRoot.y
             val hintY = compose.onNodeWithTag("game_hint").fetchSemanticsNode().positionInRoot.y
             assertTrue(tasksY < hintY && hintY < headerY)

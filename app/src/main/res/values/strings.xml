@@ -104,7 +104,7 @@
         <item quantity="other">Получено %1$d из %2$d звёзд</item>
     </plurals>
     <string name="hint_budget_exhausted">Подсказки закончились. Каждые 4 найденных слова дают ещё одну подсказку.</string>
-    <string name="hint_ladder_complete">Все шаги этой подсказки уже показаны.</string>
+    <string name="hint_ladder_complete">Слово показано целиком. Введите его, чтобы получить новую подсказку.</string>
     <string name="levels_campaign_progress">Звёзд %1$d из %2$d · пройдено %3$d из %4$d</string>
     <string name="levels_continue">Продолжить</string>
     <string name="levels_stage">%1$s · уровни %2$d–%3$d</string>
@@ -158,7 +158,7 @@
     <string name="game_explain_t1">Набирайте слова от четырёх букв. Каждое задание даёт одну звезду; для прохождения подходят любые задания до порога.</string>
     <string name="game_explain_t2">В задании «на букву» учитываются слова от четырёх букв с заданной первой буквой.</string>
     <string name="game_explain_t3">Подойдёт любое слово не короче указанной длины.</string>
-    <string name="game_explain_t4">Читайте загадки и вводите ответы в обычное поле. Для звезды разгадайте все загадки задания.</string>
+    <string name="game_explain_t4">Читайте загадки и вводите ответы в обычное поле. Для звезды разгадайте все загадки задания. Первая буква ответа открывается бесплатно.</string>
     <string name="game_explain_t5">Найдите слово с заданным окончанием и не короче указанной длины.</string>
     <string name="game_explain_t6">Находите слова указанной темы.</string>
     <string name="game_explain_t7">Найдите слова с указанной буквой в любой позиции. Один ответ может продвинуть несколько заданий.</string>
@@ -205,12 +205,18 @@
     <string name="game_category_other">Другие общеупотребительные понятия</string>
     <string name="game_letter_one">буква</string>
     <string name="game_letter_few">буквы</string>
-    <string name="hint_stage">Подсказка · открыто %1$d из %2$d частей</string>
-    <string name="hint_unopened">Подсказка · откройте первую часть</string>
-    <string name="hint_part">Часть %1$d</string>
-    <string name="hint_part_description">Часть %1$d из %2$d</string>
-    <string name="hint_action_unavailable">Получить подсказку · недоступно · осталось %1$d</string>
-    <string name="hint_action">Получить подсказку · цена %1$d · осталось %2$d</string>
+    <string name="hint_stage">Подсказка · открыто %1$d из %2$d</string>
+    <string name="hint_unopened">Подсказка ещё не открыта</string>
+    <plurals name="hint_word_length">
+        <item quantity="one">Слово из %1$d буквы</item>
+        <item quantity="few">Слово из %1$d букв</item>
+        <item quantity="many">Слово из %1$d букв</item>
+        <item quantity="other">Слово из %1$d букв</item>
+    </plurals>
+    <string name="hint_remaining">Осталось подсказок: %1$d</string>
+    <string name="hint_action_unavailable">Подсказка · недоступно</string>
+    <string name="hint_action_free">Подсказка · бесплатно</string>
+    <string name="hint_action_paid">Подсказка (−%1$d, останется %2$d)</string>
     <string name="game_next_level_title">Следующий уровень открыт!</string>
     <string name="game_next_level_message">Вы можете перейти дальше или остаться здесь, чтобы отгадывать слова и собирать оставшиеся звёзды.</string>
     <string name="game_next_level_action">Перейти на уровень %1$d →</string>

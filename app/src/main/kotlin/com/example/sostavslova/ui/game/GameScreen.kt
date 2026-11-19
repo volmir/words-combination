@@ -60,8 +60,11 @@ import com.example.sostavslova.R
 import com.example.sostavslova.di.appContainer
 import com.example.sostavslova.time.observePlayTimeLifecycle
 import com.example.sostavslova.core.LevelRules
+import com.example.sostavslova.core.HintLadder
+import com.example.sostavslova.core.HintRules
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.ui.components.AlertBanner
+import com.example.sostavslova.ui.components.LetterSlots
 import com.example.sostavslova.ui.components.LetterTiles
 import com.example.sostavslova.ui.components.StarsRow
 import com.example.sostavslova.ui.components.StatsTable
@@ -315,28 +318,23 @@ fun GameScreen(
 /** Read the current snapshot only: no local accumulation or cached target across restoration. */
 @Composable
 private fun CampaignHint(state: GameUiState, onHint: () -> Unit) {
-    val current = state.campaignLevel?.let { com.example.sostavslova.core.HintRules.restore(it) } ?: return
-    val ladder = current.hints.ladder.takeUnless { it.target?.word in current.game.found }
-        ?: com.example.sostavslova.core.HintLadder()
-    val total = ladder.steps.size
-    val shown = if (com.example.sostavslova.core.HintRules.currentStep(current) != null) ladder.shown else emptyList()
-    val complete = shown.isNotEmpty() && shown.size == total
+    val current = state.campaignLevel?.let { HintRules.restore(it) } ?: return
+    val ladder = current.hints.ladder.takeUnless { it.target?.word in current.game.found } ?: HintLadder()
+    val step = HintRules.currentStep(current)
+    val pattern = step?.text?.takeIf { it.isNotEmpty() }
+    val total = ladder.target?.word?.length ?: pattern?.length ?: 0
+    val opened = pattern?.count { it != '_' } ?: 0
+    val complete = pattern != null && ladder.steps.isNotEmpty() && ladder.shown.size == ladder.steps.size
     val cost = state.hintCost
     Well(Modifier.testTag("game_hint").semantics { liveRegion = LiveRegionMode.Polite }) {
-        Text(if (total == 0) stringResource(R.string.hint_unopened)
-            else stringResource(R.string.hint_stage, shown.size, total),
+        Text(if (pattern == null) stringResource(R.string.hint_unopened)
+            else stringResource(R.string.hint_stage, opened, total),
             Modifier.testTag("game_hint_stage").semantics { heading() },
             style = MaterialTheme.typography.titleMedium)
-        shown.forEachIndexed { index, step ->
-            val partDescription = stringResource(R.string.hint_part_description, index + 1, total)
-            Column(Modifier.fillMaxWidth().testTag("game_hint_part_${index + 1}")
-                .semantics(mergeDescendants = true) { stateDescription = partDescription },
-                verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.hint_part, index + 1), style = MaterialTheme.typography.titleSmall)
-                step.text?.let { Text(it, style = MaterialTheme.typography.bodyLarge) }
-
-            }
-            HorizontalDivider()
+        if (pattern != null) {
+            Text(pluralStringResource(R.plurals.hint_word_length, pattern.length, pattern.length),
+                Modifier.testTag("game_hint_length"), style = MaterialTheme.typography.bodyLarge)
+            LetterSlots(pattern, Modifier.testTag("game_hint_pattern"))
         }
         if (state.hintLoading) Text(stringResource(R.string.hint_loading), style = MaterialTheme.typography.bodyMedium)
         val explanation = when {
@@ -347,8 +345,14 @@ private fun CampaignHint(state: GameUiState, onHint: () -> Unit) {
         }
         explanation?.let { Text(stringResource(it), Modifier.testTag("game_hint_budget"),
             style = MaterialTheme.typography.bodyMedium) }
-        GamePrimaryAction(if (cost == null) stringResource(R.string.hint_action_unavailable, state.hintRemaining)
-            else stringResource(R.string.hint_action, cost, state.hintRemaining),
+        Text(stringResource(R.string.hint_remaining, state.hintRemaining),
+            Modifier.testTag("game_hint_remaining"), style = MaterialTheme.typography.bodyMedium)
+        val action = when {
+            cost == null -> stringResource(R.string.hint_action_unavailable)
+            cost == 0 -> stringResource(R.string.hint_action_free)
+            else -> stringResource(R.string.hint_action_paid, cost, state.hintRemaining)
+        }
+        GamePrimaryAction(action,
             state.canPlay && !complete && cost != null && cost <= state.hintRemaining,
             onHint, "game_hint_button")
     }

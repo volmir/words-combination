@@ -70,7 +70,7 @@ class GameNavigationTest {
         awaitText(InstrumentationRegistry.getInstrumentation().targetContext.getString(message))
     }
     private suspend fun awaitOpenedHint() {
-        val tag = if (container.levelsRepository.getCampaign() != null) "game_hint_part_1" else "game_hint"
+        val tag = if (container.levelsRepository.getCampaign() != null) "game_hint_pattern" else "game_hint"
         compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
     }
     private fun back() = compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }

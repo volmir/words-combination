@@ -14,6 +14,22 @@ class HintTextTest {
     } ?: emptyList()
 
     @Test
+    fun slotsDescriptionNamesLengthAndOpenedPositions() {
+        assertEquals("Слово из 9 букв. Открыто: 1-я П, 4-я О.",
+            HintText.slotsDescription("п__о_____"))
+        assertEquals("Слово из 7 букв. Открыто: 1-я П, 4-я О, 7-я Я.",
+            HintText.slotsDescription("п__о__я"))
+        assertEquals("Слово из 9 букв. Открытых букв пока нет",
+            HintText.slotsDescription("_________"))
+    }
+
+    @Test
+    fun slotsDescriptionUsesGenitiveAndUppercase() {
+        assertEquals("Слово из 3 букв. Открыто: 2-я Б.", HintText.slotsDescription("_б_"))
+        assertEquals("Слово из 21 буквы. Открыто: 21-я Я.", HintText.slotsDescription("_".repeat(20) + "я"))
+    }
+
+    @Test
     fun sharedSyntheticVectors() {
         val vectors = JSONArray(File("../tools/hint_vectors.json").readText())
         for (index in 0 until vectors.length()) {

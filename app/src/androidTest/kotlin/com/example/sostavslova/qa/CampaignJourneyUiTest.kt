@@ -22,6 +22,7 @@ import com.example.sostavslova.core.CampaignProgress
 import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.HintRules
 import com.example.sostavslova.core.HintStage
+import com.example.sostavslova.core.HintText
 import com.example.sostavslova.core.TaskType
 import com.example.sostavslova.di.AppContainer
 import com.example.sostavslova.di.LocalAppContainer
@@ -158,7 +159,7 @@ class CampaignJourneyUiTest {
         // Предложение не мешает остаться и заработать следующую звезду.
         answer("крот", 2)
         compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
-        awaitTag("game_hint_part_1")
+        awaitTag("game_hint_pattern")
         val first = saved().levels.getValue("картотека")
         assertEquals(2, first.completedTaskIds.size)
         assertTrue(first.completedTaskIds.size < 3)
@@ -177,7 +178,7 @@ class CampaignJourneyUiTest {
         compose.onNodeWithTag("game_next_level_button").performScrollTo().assertIsEnabled()
         compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("")
         assertEquals(first, saved().levels.getValue("картотека"))
-        compose.onNodeWithTag("game_hint_part_1").performScrollTo().assertExists()
+        compose.onNodeWithTag("game_hint_pattern").performScrollTo().assertExists()
         toMap(); open(2)
         answer("трек", 3)
         compose.onNodeWithTag("game_next_level_button").performScrollTo()
@@ -223,14 +224,25 @@ class CampaignJourneyUiTest {
             assertEquals(stage, hints.ladder.stage)
             assertEquals(paidUnits[step], hints.paidUnits)
             compose.onNodeWithTag("game_hint_stage").performScrollTo()
-                .assertTextEquals("Подсказка · открыто ${step + 1} из 3 частей")
-            compose.onNodeWithTag("game_hint_part_${step + 1}").assertExists()
-            compose.onNodeWithTag("game_hint_part_${step + 2}").assertDoesNotExist()
+                .assertTextEquals("Подсказка · открыто ${step + 1} из 3")
+            val pattern = requireNotNull(hints.ladder.shown.last().text)
+            compose.onNodeWithTag("game_hint_length").assertTextEquals("Слово из 3 букв")
+            compose.onNodeWithTag("game_hint_pattern")
+                .assertContentDescriptionEquals(HintText.slotsDescription(pattern))
+            for (index in pattern.indices) {
+                val slot = compose.onNodeWithTag("game_hint_slot_${index + 1}", useUnmergedTree = true)
+                slot.assertExists()
+                val letter = pattern[index].takeUnless { it == '_' }
+                if (letter == null) slot.onChildren().assertCountEquals(0)
+                else slot.onChildren().filter(hasText(letter.uppercaseChar().toString())).assertCountEquals(1)
+            }
+            compose.onAllNodesWithText("_", useUnmergedTree = true).assertCountEquals(0)
             if (stage != HintStage.ANSWER) {
                 assertTrue(hints.ladder.shown.none { it.text?.contains("кот", ignoreCase = true) == true })
                 compose.onNodeWithText("кот").assertDoesNotExist()
             } else {
-                compose.onNodeWithText("кот").assertExists()
+                compose.onNodeWithTag("game_hint_budget").performScrollTo()
+                    .assertTextEquals("Слово показано целиком. Введите его, чтобы получить новую подсказку.")
             }
         }
         val hinted = saved()
@@ -240,7 +252,7 @@ class CampaignJourneyUiTest {
         restart()
         assertEquals(hinted, saved())
         open(1, explanationExpected = false)
-        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 3 из 3 частей")
+        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 3 из 3")
         val campaign = requireNotNull(container.levelsRepository.getCampaign())
         val current = requireNotNull(CampaignRules.openLevel(campaign, saved(), 1, container.wordRepository.requireIndex()))
         assertEquals(3, HintRules.budget(current).remaining)
@@ -315,7 +327,7 @@ class CampaignJourneyUiTest {
         compose.onNodeWithText("Синтетическое существо для проверки игрового сценария.").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("кот").assertDoesNotExist()
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled().performClick()
-        awaitTag("game_hint_part_1")
+        awaitTag("game_hint_pattern")
         val hints = saved().levels.getValue("картотека").hints
         assertEquals(0, hints.paidUnits)
         answer("кот", 1)
