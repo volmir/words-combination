@@ -17,7 +17,7 @@ class StatsPresentationTest {
 
     private fun state(records: Map<Int, LevelPlayTime>, progress: CampaignProgress = CampaignProgress()): StatsUiState {
         val summary = CampaignTimeStatistics.aggregate(campaign,
-            CampaignTimeSnapshot(requireNotNull(campaign.contentSha256), records.mapValues { (number, record) ->
+            CampaignTimeSnapshot(CampaignIdentity.of(campaign), records.mapValues { (number, record) ->
                 LevelTimeMeasurement(campaign.levels.single { it.number == number }.word,
                     record.cumulativeActiveMs, record.lastSequence > 0, record.timeToRMs, record.timeToFullMs)
             }))
@@ -25,7 +25,7 @@ class StatsPresentationTest {
     }
 
     private fun progress(vararg stars: Pair<Int, Int>): CampaignProgress = CampaignProgress(
-        campaignId = campaign.contentSha256,
+        campaignId = CampaignIdentity.of(campaign),
         levels = stars.associate { (number, count) ->
             val level = campaign.levels.single { it.number == number }
             level.word to CampaignLevelProgress(
@@ -74,7 +74,7 @@ class StatsPresentationTest {
         val fresh = state(empty)
         assertEquals(LevelTimeStatus.Unplayed, row(fresh, 1).timeStatus)
         assertEquals(BigInteger.ZERO, requireNotNull(fresh.statistics).totalTimeMs)
-        val history = CampaignProgress(campaignId = campaign.contentSha256,
+        val history = CampaignProgress(campaignId = CampaignIdentity.of(campaign),
             levels = mapOf("картотека" to CampaignLevelProgress()), lastVisitedLevel = 1)
         assertEquals(LevelTimeStatus.Historical, row(state(empty, history), 1).timeStatus)
         assertEquals(LevelTimeStatus.Unplayed,

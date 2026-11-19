@@ -2,6 +2,8 @@ package com.example.sostavslova.qa
 
 import android.util.Log
 import com.example.sostavslova.core.Campaign
+import com.example.sostavslova.core.CampaignIdentity
+
 import com.example.sostavslova.core.CampaignLevelProgress
 import com.example.sostavslova.core.CampaignProgress
 import com.example.sostavslova.core.CampaignRules
@@ -105,7 +107,7 @@ class QaCampaignStorageTest {
         app.playTimeRepository.initialize(campaign, 1, 3)
         app.playTimeRepository.appendSegment(campaign, 1, 1, 40, 3)
         app.playTimeTracker.updateLevel("fresh", PlayTimeTarget(campaign, 1, 0))
-        app.playTimeTracker.checkpointProgress(CampaignProgress(campaignId = campaign.contentSha256,
+        app.playTimeTracker.checkpointProgress(CampaignProgress(campaignId = CampaignIdentity.of(campaign),
             levels = mapOf("картотека" to CampaignLevelProgress(completedTaskIds = setOf("riddle1")))))
         var failure: IllegalArgumentException? = null
         try { app.closeQa() } catch (error: IllegalArgumentException) { failure = error }
@@ -142,7 +144,7 @@ class QaCampaignStorageTest {
             val tracker = PlayTimeTracker(diagnostic, scope, { 0L })
             tracker.updateLevel("fresh", PlayTimeTarget(campaign, 1, 0))
             tracker.checkpointProgress(CampaignProgress(
-                campaignId = campaign.contentSha256,
+                campaignId = CampaignIdentity.of(campaign),
                 levels = mapOf("картотека" to CampaignLevelProgress(
                     completedTaskIds = setOf("riddle1"))),
             ))

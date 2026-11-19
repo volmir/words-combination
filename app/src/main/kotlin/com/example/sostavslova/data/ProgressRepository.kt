@@ -8,8 +8,10 @@ import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import com.example.sostavslova.core.Alphabet
 import com.example.sostavslova.core.AnswerResult
 import com.example.sostavslova.core.Campaign
+import com.example.sostavslova.core.CampaignIdentity
 import com.example.sostavslova.core.CampaignLevelProgress
 import com.example.sostavslova.core.CampaignProgress
+import com.example.sostavslova.core.CampaignProgressReconciler
 import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.CurrentCampaignLevel
@@ -22,6 +24,7 @@ import com.example.sostavslova.core.KnownWords
 import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.core.LevelRules
+import com.example.sostavslova.core.ReconciliationChangeKind
 import com.example.sostavslova.core.TaskRules
 import com.example.sostavslova.core.TaskSubmission
 import com.example.sostavslova.core.TaskType
@@ -140,9 +143,11 @@ class ProgressRepository(
      * Чтение v1 и временный адаптер уровней не запускают миграцию. Повторный вызов
      * возвращает уже записанный снимок без пересчёта и без изменения ключей v1.
      *
-     * Идентичность — SHA-256 установленного campaign.json. Сохранение другой
-     * кампании не превращается в звёзды этой: несовместимый v2 архивируется, а
-     * новый снимок получает явную метку resetReason. Ключи v1 не удаляются.
+     * Идентичность — [CampaignIdentity] по исходным словам уровней. Правка порогов,
+     * заданий, порядка или SHA файла не сбрасывает прогресс: уровни согласуются
+     * адресно по слову через [CampaignProgressReconciler]. Полный сброс с архивом
+     * остаётся только для нечитаемого v2 и сохранения, где ни одно слово не совпало.
+     * Ключи v1 не удаляются.
      */
     suspend fun migrateCampaign(campaign: Campaign, index: WordIndex): CampaignProgress {
         require(campaign.version == 2 && campaign.levels.isNotEmpty()) { "Real v2 campaign is required" }
@@ -154,7 +159,7 @@ class ProgressRepository(
         currentCoroutineContext().ensureActive()
         return committedWrite {
             val committed = dataStore.edit { preferences ->
-                val identity = campaign.contentSha256
+                val identity = CampaignIdentity.of(campaign)
                 if (preferences[campaignProgressKey] != null) {
                     // Проверка также запрещает перезаписывать будущую версию или битый v2.
                     val existing = readCampaignDto(preferences)
@@ -162,27 +167,36 @@ class ProgressRepository(
                     // Даже при совпадении/отсутствии ID проверяем версию и типы:
                     // повреждённый v2 не должен молча оставаться "валидным".
                     val existingCore = existing.toCore()
-                    when {
-                        identity == null || existing.campaignId == identity -> Unit
-                        existing.campaignId == null && compatibleUnidentifiedV2(existing, campaign) -> {
-                            val core = existingCore.copy(
-                                campaignId = identity,
-                                highestUnlockedLevel = CampaignRules.frontier(campaign, existingCore),
-                                // Событие финала не восстанавливается по старым флагам/ID.
-                                finaleReached = false,
-                                finaleShown = false,
-                            )
-                            preferences[campaignProgressKey] = json.encodeToString(CampaignProgressDto.fromCore(core))
+                    val raw = preferences[campaignProgressKey] ?: throw SerializationException("Null campaign progress")
+                    val reconciliation = CampaignProgressReconciler.reconcile(existingCore, campaign, index)
+                    if (reconciliation.isCompatible) {
+                        val lostData = reconciliation.resetLevels.isNotEmpty() ||
+                            reconciliation.changes.any {
+                                it.kind == ReconciliationChangeKind.FOUND_WORDS_FILTERED ||
+                                    it.kind == ReconciliationChangeKind.TASK_SEMANTICS_CHANGED
+                            }
+                        if (lostData) archiveCampaignProgress(preferences, raw)
+                        val reconciled = reconciliation.state.copy(
+                            resetReason = when {
+                                reconciliation.resetLevels.isNotEmpty() ->
+                                    reconciliation.resetLevels.joinToString(
+                                        prefix = "campaign-reconciled:", separator = ","
+                                    ) { it.word }
+                                existingCore.resetReason?.startsWith("campaign-reconciled:") == true ->
+                                    existingCore.resetReason
+                                else -> null
+                            },
+                        )
+                        if (reconciled != existingCore) {
+                            preferences[campaignProgressKey] = json.encodeToString(CampaignProgressDto.fromCore(reconciled))
                         }
-                        else -> {
-                            val old = preferences[campaignProgressKey] ?: throw SerializationException("Null campaign progress")
-                            archiveCampaignProgress(preferences, old)
-                            val reset = CampaignProgress(
-                                campaignId = identity,
-                                resetReason = "campaign-mismatch:${existing.campaignId ?: "unidentified-v2"}",
-                            )
-                            preferences[campaignProgressKey] = json.encodeToString(CampaignProgressDto.fromCore(reset))
-                        }
+                    } else {
+                        archiveCampaignProgress(preferences, raw)
+                        val reset = CampaignProgress(
+                            campaignId = identity,
+                            resetReason = "campaign-mismatch:${existing.campaignId ?: "unidentified-v2"}",
+                        )
+                        preferences[campaignProgressKey] = json.encodeToString(CampaignProgressDto.fromCore(reset))
                     }
                     return@edit
                 }
@@ -236,15 +250,6 @@ class ProgressRepository(
             }
             readCampaign(committed)
         }
-    }
-
-    /** Старый v2 без identity принимается только если все его слова есть в этой кампании. */
-    private fun compatibleUnidentifiedV2(dto: CampaignProgressDto, campaign: Campaign): Boolean {
-        val words = campaign.levels.map { it.word }.toSet()
-        val size = campaign.levels.size
-        return dto.highestUnlockedLevel in 1..size &&
-            (dto.lastVisitedLevel?.let { it in 1..size } ?: true) &&
-            dto.levels.keys.all { it in words }
     }
 
     /** Сохранить несовместимый v2 отдельно; повторный сброс не затирает прошлый архив. */

@@ -5,6 +5,7 @@ import com.example.sostavslova.data.jsonstore.Preferences
 import com.example.sostavslova.data.jsonstore.edit
 import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import com.example.sostavslova.core.Campaign
+import com.example.sostavslova.core.CampaignIdentity
 import com.example.sostavslova.core.CampaignLevel
 import com.example.sostavslova.core.CampaignTimeSnapshot
 import com.example.sostavslova.core.CampaignTimeStatistics
@@ -160,11 +161,10 @@ class PlayTimeRepository(private val dataStore: DataStore<Preferences>) : PlayTi
         dataStore.edit { it.clear() }
     }
 
+    /** Идентичность по словам уровней: SHA файла и порядок уровней не участвуют. */
     private fun identity(campaign: Campaign): String {
-        val sha = campaign.contentSha256
-        require(sha != null && sha.matches(Regex("[0-9a-f]{64}"))) { "Verified campaign SHA-256 required" }
-        require(campaign.levels.isNotEmpty() && campaign.levels.map { it.number }.distinct().size == campaign.levels.size)
-        return sha
+        require(campaign.levels.map { it.number }.distinct().size == campaign.levels.size)
+        return CampaignIdentity.of(campaign)
     }
 
     private fun level(campaign: Campaign, number: Int): CampaignLevel {
@@ -172,25 +172,44 @@ class PlayTimeRepository(private val dataStore: DataStore<Preferences>) : PlayTi
         return requireNotNull(campaign.levels.singleOrNull { it.number == number }) { "Unknown level" }
     }
 
+    /** Новый ключ адресуется словом уровня, а не его номером: перестановка не теряет время. */
     private fun key(campaign: Campaign, level: CampaignLevel): Preferences.Key<String> {
         require(level.number > 0 && level.word.isNotBlank())
         require(level.requiredStars in 1..level.maxStars)
-        return stringPreferencesKey("playTimeV1:${identity(campaign)}:${level.number}:${level.word}")
+        return stringPreferencesKey("playTimeV1:${identity(campaign)}:${level.word}")
+    }
+
+    /**
+     * Прежний формат: `playTimeV1:<sha-файла>:<номер>:<слово>`. Читаем его без записи,
+     * пока для слова нет нового ключа. Если подходящих записей несколько и они разные,
+     * не выбираем наугад: уровень считается неизмеренным, старые ключи не удаляются.
+     */
+    private fun legacyRaw(preferences: Preferences, level: CampaignLevel): String? {
+        val suffix = ":${level.word}"
+        return preferences.asMap().entries.asSequence()
+            .filter { (key, _) ->
+                key.name.startsWith("playTimeV1:") && key.name.endsWith(suffix) &&
+                    !key.name.startsWith("playTimeV1:${CampaignIdentity.PREFIX}")
+            }
+            .map { it.value as String }.toSet().singleOrNull()
     }
 
     private fun read(preferences: Preferences, campaign: Campaign, level: CampaignLevel): LevelPlayTime {
-        val raw = preferences[key(campaign, level)] ?: return LevelPlayTime()
+        val raw = preferences[key(campaign, level)] ?: legacyRaw(preferences, level) ?: return LevelPlayTime()
         val value = json.decodeFromString<LevelPlayTime>(raw)
         // Отсутствующие поля старых DTO имеют defaults; запись без initialized невалидна.
         require(value.version == 1 && value.initialized) { "Invalid timing schema" }
         require(value.cumulativeActiveMs >= 0L && value.lastSequence >= 0L)
         require(value.lastStars in 0..level.maxStars)
-        require(value.rAccounted == (value.lastStars >= level.requiredStars))
-        require(value.fullAccounted == (value.lastStars >= level.maxStars))
-        require(value.timeToRMs == null || (value.rAccounted && value.timeToRMs in 0L..value.cumulativeActiveMs))
-        require(value.timeToFullMs == null || (value.fullAccounted && value.timeToFullMs in 0L..value.cumulativeActiveMs))
+        require(value.timeToRMs == null || value.timeToRMs in 0L..value.cumulativeActiveMs)
+        require(value.timeToFullMs == null || value.timeToFullMs in 0L..value.cumulativeActiveMs)
         require(value.timeToRMs == null || value.timeToFullMs == null || value.timeToRMs <= value.timeToFullMs)
         require(value.lastSequence != 0L || (value.cumulativeActiveMs == 0L && value.timeToRMs == null && value.timeToFullMs == null))
-        return value
+        // Пороги и число заданий могли измениться. Флаги не отнимают уже учтённые
+        // достижения и не превращают старый замер в новый.
+        return value.copy(
+            rAccounted = value.rAccounted || value.lastStars >= level.requiredStars,
+            fullAccounted = value.fullAccounted || value.lastStars >= level.maxStars,
+        )
     }
 }

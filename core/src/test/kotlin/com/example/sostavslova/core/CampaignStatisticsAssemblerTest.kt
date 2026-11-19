@@ -24,10 +24,10 @@ class CampaignStatisticsAssemblerTest {
     private fun progress(vararg levels: Pair<Int, CampaignLevelProgress>): CampaignProgress =
         CampaignProgress(levels = levels.associate { (number, value) ->
             campaign.levels.single { it.number == number }.word to value
-        }, campaignId = campaign.contentSha256)
+        }, campaignId = CampaignIdentity.of(campaign))
 
     private fun time(vararg values: Pair<Int, LevelTimeMeasurement>): CampaignTimeSummary =
-        CampaignTimeStatistics.aggregate(campaign, CampaignTimeSnapshot(requireNotNull(campaign.contentSha256),
+        CampaignTimeStatistics.aggregate(campaign, CampaignTimeSnapshot(CampaignIdentity.of(campaign),
             values.associate { (number, measurement) ->
                 number to measurement.copy(word = campaign.levels.single { it.number == number }.word)
             }))

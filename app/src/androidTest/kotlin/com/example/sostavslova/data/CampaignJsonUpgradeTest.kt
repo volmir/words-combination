@@ -5,7 +5,9 @@ import com.example.sostavslova.data.jsonstore.edit
 import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.BuildConfig
+import com.example.sostavslova.core.CampaignIdentity
 import com.example.sostavslova.core.CampaignRules
+
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.HintRules
 import com.example.sostavslova.core.HintStage
@@ -43,7 +45,7 @@ class CampaignJsonUpgradeTest {
             {"stage":"ANSWER","text":"проблема","revealedPositions":[0,1,2,3,4,5,6]}],
             "nextStepIndex":2,"revealedPositions":[0,2]}}""")
         entries.put(target.word, json)
-        val seed = JSONObject().put("version",2).put("campaignId",campaign.contentSha256)
+        val seed = JSONObject().put("version",2).put("campaignId",CampaignIdentity.of(campaign))
             .put("highestUnlockedLevel",12).put("levels",entries).toString()
         val file = temporary.newFolder().resolve("upgrade.json")
         val key = stringPreferencesKey("campaignProgressV2")

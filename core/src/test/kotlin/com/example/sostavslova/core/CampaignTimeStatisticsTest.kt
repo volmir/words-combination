@@ -9,7 +9,7 @@ import kotlin.test.assertNull
 class CampaignTimeStatisticsTest {
     private val campaign = requireNotNull(TestData.campaign)
     private fun snapshot(vararg times: Pair<Int, LevelTimeMeasurement>) =
-        CampaignTimeSnapshot(requireNotNull(campaign.contentSha256), times.toMap())
+        CampaignTimeSnapshot(CampaignIdentity.of(campaign), times.toMap())
 
     private fun time(number: Int, ms: Long, r: Long? = null, full: Long? = null) =
         number to LevelTimeMeasurement(campaign.levels.single { it.number == number }.word, ms, true, r, full)
@@ -75,7 +75,7 @@ class CampaignTimeStatisticsTest {
 
     @Test fun otherCampaignWordAndInvalidIntervalsCannotPolluteStatistics() {
         assertFailsWith<IllegalArgumentException> {
-            CampaignTimeStatistics.aggregate(campaign, snapshot(time(1, 10)).copy(campaignSha256 = "b".repeat(64)))
+            CampaignTimeStatistics.aggregate(campaign, snapshot(time(1, 10)).copy(campaignId = CampaignIdentity.PREFIX + "b".repeat(64)))
         }
         assertFailsWith<IllegalArgumentException> {
             CampaignTimeStatistics.aggregate(campaign, snapshot(1 to LevelTimeMeasurement("other", 10, true)))

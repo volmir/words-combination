@@ -7,6 +7,7 @@ import com.example.sostavslova.data.jsonstore.Preferences
 import com.example.sostavslova.data.jsonstore.PreferencesSerializer
 import com.example.sostavslova.data.jsonstore.edit
 import com.example.sostavslova.data.jsonstore.stringPreferencesKey
+import com.example.sostavslova.core.CampaignIdentity
 import com.example.sostavslova.core.CampaignRules
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -36,7 +37,8 @@ class PlayTimeRepositoryTest {
     private lateinit var store: DataStore<Preferences>
     private lateinit var repository: PlayTimeRepository
     private val campaign = CampaignJson.decode(miniCampaignJson).copy(contentSha256 = "a".repeat(64))
-    private val key = stringPreferencesKey("playTimeV1:${campaign.contentSha256}:1:картотека")
+    private val identity = CampaignIdentity.of(campaign)
+    private val key = stringPreferencesKey("playTimeV1:$identity:картотека")
 
     @Before fun setUp() {
         file = File(temporaryFolder.newFolder(), "time.json")
@@ -143,7 +145,8 @@ class PlayTimeRepositoryTest {
         val stats = readOnly.observeStatistics(campaign).first()
         assertEquals(java.math.BigInteger.valueOf(80), stats.screenActiveMs)
         assertEquals(80L, stats.levels.first().timeToRMs)
-        assertEquals(0, readOnly.observeStatistics(campaign.copy(contentSha256 = "b".repeat(64))).first().measuredLevelCount)
+        val renamed = campaign.copy(levels = campaign.levels.map { it.copy(word = it.word + "а") })
+        assertEquals(0, readOnly.observeStatistics(renamed).first().measuredLevelCount)
         assertEquals(before, store.data.first())
     }
 
@@ -196,21 +199,48 @@ class PlayTimeRepositoryTest {
         assertEquals(30L, repository.snapshot(campaign).getValue(1).cumulativeActiveMs)
     }
 
-    @Test fun campaignHashNumberAndWordIsolateRecordsAndUnidentifiedCampaignIsRejected() = runTest {
+    @Test fun campaignIdentityUsesWordsNotFileHashOrLevelNumber() = runTest {
         repository.initialize(campaign, 1, 0)
         repository.appendSegment(campaign, 1, 1, 55, 2)
-        val imported = campaign.copy(contentSha256 = "b".repeat(64))
-        assertEquals(LevelPlayTime(), repository.snapshot(imported).getValue(1))
-        repository.initialize(imported, 1, 0)
-        repository.appendSegment(imported, 1, 1, 7, 1)
+        // Другой SHA файла при тех же словах — та же кампания и те же замеры.
+        val newHash = campaign.copy(contentSha256 = "b".repeat(64))
+        assertEquals(55L, repository.snapshot(newHash).getValue(1).cumulativeActiveMs)
+        // Перестановка/смена номеров не теряет время: ключ адресован словом.
+        val renumbered = campaign.copy(levels = campaign.levels.map { it.copy(number = it.number + 2) })
+        assertEquals(55L, repository.snapshot(renumbered).getValue(3).cumulativeActiveMs)
+        // Другой набор слов изолирован.
         val renamed = campaign.copy(levels = campaign.levels.map { it.copy(word = it.word + "а") })
         assertEquals(LevelPlayTime(), repository.snapshot(renamed).getValue(1))
-        val renumbered = campaign.copy(levels = campaign.levels.map { it.copy(number = it.number + 2) })
-        assertEquals(LevelPlayTime(), repository.snapshot(renumbered).getValue(3))
-        assertEquals(55L, repository.snapshot(campaign).getValue(1).cumulativeActiveMs)
-        rejected { repository.snapshot(campaign.copy(contentSha256 = null)) }
-        rejected { repository.snapshot(campaign.copy(contentSha256 = "invalid")) }
+        // Некорректная кампания по-прежнему отвергается.
+        val duplicate = campaign.copy(levels = campaign.levels.map { it.copy(word = campaign.levels.first().word) })
+        rejected { repository.snapshot(duplicate) }
+        rejected { repository.snapshot(campaign.copy(levels = campaign.levels.map {
+            if (it.number == 1) it.copy(requiredStars = 0) else it
+        })) }
         rejected { repository.initialize(campaign, 99, 0) }
+    }
+
+    @Test fun legacyHashKeyIsReadOnceAndMigratedOnNextWrite() = runTest {
+        val legacy = stringPreferencesKey("playTimeV1:${"c".repeat(64)}:1:картотека")
+        store.edit {
+            it[legacy] = """{"initialized":true,"cumulativeActiveMs":40,"lastSequence":1,"lastStars":1,"version":1}"""
+        }
+        assertEquals(40L, repository.snapshot(campaign).getValue(1).cumulativeActiveMs)
+        val appended = repository.appendSegment(campaign, 1, 2, 10, 2)
+        assertEquals(50L, appended.cumulativeActiveMs)
+        assertEquals(50L, repository.snapshot(campaign).getValue(1).cumulativeActiveMs)
+        assertNotNull(store.data.first()[key])
+    }
+
+    @Test fun thresholdChangeKeepsMeasurementsInsteadOfFailingClosed() = runTest {
+        repository.initialize(campaign, 1, 0)
+        repository.appendSegment(campaign, 1, 1, 70, 2)
+        val stricter = campaign.copy(levels = campaign.levels.map {
+            if (it.number == 1) it.copy(requiredStars = 4)
+            else it
+        })
+        assertEquals(70L, repository.snapshot(stricter).getValue(1).cumulativeActiveMs)
+        assertEquals(70L, repository.snapshot(campaign).getValue(1).cumulativeActiveMs)
     }
 
     @Test fun malformedJsonInvalidValuesAndFutureSchemaFailClosedWithoutOverwriting() = runTest {
@@ -219,7 +249,7 @@ class PlayTimeRepositoryTest {
         for (bad in listOf("{", "null", "{}", valid.replace("\"version\":1", "\"version\":2"),
             valid.replace("\"cumulativeActiveMs\":0", "\"cumulativeActiveMs\":-1"),
             valid.replace("\"cumulativeActiveMs\":0", "\"cumulativeActiveMs\":9223372036854775808"),
-            valid.replace("\"timeToRMs\":null", "\"timeToRMs\":0"))) {
+            valid.replace("\"lastStars\":0", "\"lastStars\":99"))) {
             store.edit { it[key] = bad }
             rejected { repository.snapshot(campaign) }
             rejected { repository.initialize(campaign, 1, 0) }
@@ -237,11 +267,12 @@ class PlayTimeRepositoryTest {
         val other = PlayTimeRepository(store)
         val updated = other.appendSegment(campaign, 1, 1, 25, 2)
         assertEquals(updated, repository.snapshot(campaign).getValue(1))
-        // Даже при том же SHA изменённые пороги требуют новой проверки записи.
+        // Изменённые пороги сохраняют время; запись проверяется по актуальной кампании.
         val differentRules = campaign.copy(levels = campaign.levels.map {
-            if (it.number == 1) it.copy(requiredStars = 3) else it
+            if (it.number == 1) it.copy(requiredStars = 3)
+            else it
         })
-        rejected { repository.snapshot(differentRules) }
+        assertEquals(25L, repository.snapshot(differentRules).getValue(1).cumulativeActiveMs)
         val raw = requireNotNull(store.data.first()[key])
         store.edit { it[key] = "broken" }
         rejected { repository.snapshot(campaign) }

@@ -2,8 +2,8 @@ package com.example.sostavslova.core
 
 import java.math.BigInteger
 
-/** Снимок только времени. SHA и слово не позволяют смешать разные кампании/уровни. */
-data class CampaignTimeSnapshot(val campaignSha256: String, val levels: Map<Int, LevelTimeMeasurement>)
+/** Снимок только времени. Идентичность кампании и слово не позволяют смешать разные наборы. */
+data class CampaignTimeSnapshot(val campaignId: String, val levels: Map<Int, LevelTimeMeasurement>)
 
 data class LevelTimeMeasurement(
     val word: String,
@@ -51,8 +51,7 @@ data class CampaignTimeSummary(
 /** Чистая функция: не читает часы, прогресс или хранилище, ничего не записывает. */
 object CampaignTimeStatistics {
     fun aggregate(campaign: Campaign, snapshot: CampaignTimeSnapshot): CampaignTimeSummary {
-        require(campaign.contentSha256?.matches(Regex("[0-9a-f]{64}")) == true)
-        require(snapshot.campaignSha256 == campaign.contentSha256) { "Different campaign timing snapshot" }
+        require(snapshot.campaignId == CampaignIdentity.of(campaign)) { "Different campaign timing snapshot" }
         require(campaign.levels.map { it.number }.distinct().size == campaign.levels.size)
         require(campaign.stages.map { it.number }.distinct().size == campaign.stages.size)
         require(snapshot.levels.keys.all { number -> campaign.levels.any { it.number == number } })

@@ -19,7 +19,7 @@ data class CampaignProgress(
     val finaleShown: Boolean = false,
     val lastVisitedLevel: Int? = null,
     val seenExplanations: Set<TaskType> = emptySet(),
-    /** SHA-256 кампании, к которой относится этот снимок; null — сохранение до появления ID. */
+    /** Идентичность набора слов ([CampaignIdentity]); null — сохранение до появления ID. */
     val campaignId: String? = null,
     /** Диагностическая метка явного сброса при несовместимой кампании; UI её не показывает. */
     val resetReason: String? = null,

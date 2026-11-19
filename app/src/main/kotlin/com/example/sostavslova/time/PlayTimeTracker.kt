@@ -2,6 +2,7 @@ package com.example.sostavslova.time
 
 import com.example.sostavslova.core.ActiveTimeCounter
 import com.example.sostavslova.core.Campaign
+import com.example.sostavslova.core.CampaignIdentity
 import com.example.sostavslova.core.CampaignProgress
 import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.data.PlayTimeStore
@@ -19,10 +20,10 @@ import kotlinx.coroutines.launch
 /** Загруженная игра; stars используются только как baseline при первом подключении. */
 data class PlayTimeTarget(val campaign: Campaign, val levelNumber: Int, val stars: Int) {
     private val level = campaign.levels.single { it.number == levelNumber }
-    val identity: String = "${campaign.contentSha256}:$levelNumber:${level.word}"
+    /** Идентичность набора слов и уровень; SHA файла и порядок не участвуют. */
+    val identity: String = "${CampaignIdentity.of(campaign)}:$levelNumber:${level.word}"
 
     init {
-        require(campaign.contentSha256?.matches(Regex("[0-9a-f]{64}")) == true)
         require(stars in 0..level.maxStars)
     }
 }
@@ -139,7 +140,9 @@ class PlayTimeTracker(
     /** Вызывается внутри принятой записи прогресса, переживающей отмену ViewModel. */
     fun checkpointProgress(progress: CampaignProgress) = synchronized(lock) {
         lastTargets.values.toList().forEach { previous ->
-            if (previous.campaign.contentSha256 == progress.campaignId) {
+            val sameCampaign = CampaignIdentity.of(previous.campaign) == progress.campaignId ||
+                previous.campaign.contentSha256 == progress.campaignId
+            if (sameCampaign) {
                 val level = previous.campaign.levels.single { it.number == previous.levelNumber }
                 val updated = recordStars(previous.copy(stars = CampaignRules.stars(level, progress)))
                 loaded.entries.forEach { entry -> if (entry.value.identity == updated.identity) entry.setValue(updated) }

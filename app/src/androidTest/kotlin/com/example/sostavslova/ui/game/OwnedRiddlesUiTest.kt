@@ -14,7 +14,9 @@ import com.example.sostavslova.data.jsonstore.stringPreferencesKey
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.*
 import com.example.sostavslova.MainActivity
+import com.example.sostavslova.core.CampaignIdentity
 import com.example.sostavslova.core.CampaignTask
+
 import com.example.sostavslova.data.LevelsRepository
 import com.example.sostavslova.di.AppContainer
 import com.example.sostavslova.di.LocalAppContainer
@@ -64,7 +66,7 @@ class OwnedRiddlesUiTest {
             val seedStore = PreferenceDataStoreFactory.create(scope=seedScope) { file }
             try {
                 seedStore.edit { it[stringPreferencesKey("campaignProgressV2")] = JSONObject()
-                    .put("version",2).put("campaignId",campaign.contentSha256).put("highestUnlockedLevel",14)
+                    .put("version",2).put("campaignId",CampaignIdentity.of(campaign)).put("highestUnlockedLevel",14)
                     .put("levels",entries).toString() }
             } finally { seedScope.cancel();seedScope.coroutineContext.job.join() }
             container=AppContainer(isolated,progressFile={ file })

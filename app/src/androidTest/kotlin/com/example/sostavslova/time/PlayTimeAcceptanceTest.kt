@@ -275,10 +275,11 @@ class PlayTimeAcceptanceTest {
         } finally { process.close() }
     }
 
-    @Test fun coldStartsBeforeAndAfterFixtureCampaignChangeKeepVersionsIsolatedAndArchiveProgress() = runTest {
+    @Test fun coldStartsKeepProgressAndTimeAcrossFileHashChangeAndArchiveOnlyWordChange() = runTest {
         val a = Campaign(listOf(Stage(1, 1, 1)), listOf(CampaignLevel(1, "картотека", 1, 1,
             listOf(CampaignTask.T1("r", 1), CampaignTask.T7("m", 'т', 1)))), contentSha256 = "a".repeat(64))
-        val b = a.copy(contentSha256 = "b".repeat(64)) // TEST fixture only: same words, different version
+        // Тот же набор слов и другие байты файла: это та же кампания по ARCH-01.
+        val b = a.copy(contentSha256 = "b".repeat(64))
         val index = WordIndex(listOf("кора", "крот"))
         var process = Process()
         try {
@@ -292,29 +293,25 @@ class PlayTimeAcceptanceTest {
             process.close()
             process = Process()
             assertEquals(savedA, process.progress.migrateCampaign(a, index))
-            assertEquals(timeA, process.time.snapshot(a))
-            val rawA = process.progressStore.data.first()[stringPreferencesKey("campaignProgressV2")]
-            val reset = process.progress.migrateCampaign(b, index)
-            assertEquals(rawA, process.progressStore.data.first()[stringPreferencesKey("campaignProgressV2Archive")])
-            assertEquals(b.contentSha256, reset.campaignId)
-            assertTrue(reset.levels.isEmpty())
-            assertTrue(requireNotNull(reset.resetReason).startsWith("campaign-mismatch:"))
-            assertEquals(0L, process.time.observeStatistics(b).first().screenActiveMs.toLong())
-            assertEquals(timeA, process.time.snapshot(a))
+            assertEquals(savedA, process.progress.migrateCampaign(b, index))
+            assertEquals(timeA, process.time.snapshot(b))
+            assertNull(process.progressStore.data.first()[stringPreferencesKey("campaignProgressV2Archive")])
             process.open(b, b.levels.first(), 0)
             process.clock.set(3000)
             process.progress.submitCampaignAnswer(b, 1, "крот", index)
             process.exit()
             val savedB = process.progress.observeCampaignProgress().first()
+            assertEquals(listOf("кора", "крот"), savedB.levels.getValue("картотека").found)
             assertEquals(2, CampaignRules.summary(b, savedB).stars)
-            val timeB = process.time.snapshot(b)
-            assertEquals(3000L, timeB.getValue(1).timeToFullMs)
-            assertEquals(timeA, process.time.snapshot(a))
-            process.close()
-            process = Process()
-            assertEquals(savedB, process.progress.migrateCampaign(b, index))
-            assertEquals(timeA, process.time.snapshot(a))
-            assertEquals(timeB, process.time.snapshot(b))
+            assertEquals(15_000L, process.time.snapshot(b).getValue(1).cumulativeActiveMs)
+            // Замена исходного слова — уже другая кампания: архив и явный сброс.
+            val c = a.copy(levels = listOf(a.levels.first().copy(word = "трактор")))
+            val rawB = process.progressStore.data.first()[stringPreferencesKey("campaignProgressV2")]
+            val reset = process.progress.migrateCampaign(c, index)
+            assertEquals(rawB, process.progressStore.data.first()[stringPreferencesKey("campaignProgressV2Archive")])
+            assertEquals(CampaignIdentity.of(c), reset.campaignId)
+            assertTrue(reset.levels.isEmpty())
+            assertTrue(requireNotNull(reset.resetReason).startsWith("campaign-mismatch:"))
         } finally { process.close() }
     }
 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import com.example.sostavslova.core.Campaign
 import com.example.sostavslova.core.CampaignLevel
+import com.example.sostavslova.core.CampaignIdentity
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.Stage
 import com.example.sostavslova.data.LevelPlayTime
@@ -79,8 +80,8 @@ class PlayTimeTrackerTest {
         }
     }
 
-    private fun confirmed(stars: Int, level: Int = 1, sha: String? = campaign.contentSha256) =
-        com.example.sostavslova.core.CampaignProgress(campaignId = sha, levels = mapOf(
+    private fun confirmed(stars: Int, level: Int = 1, id: String = CampaignIdentity.of(campaign)) =
+        com.example.sostavslova.core.CampaignProgress(campaignId = id, levels = mapOf(
             campaign.levels.single { it.number == level }.word to
                 com.example.sostavslova.core.CampaignLevelProgress(completedTaskIds =
                     campaign.levels.single { it.number == level }.tasks.take(stars).map { it.id }.toSet())))
@@ -144,7 +145,7 @@ class PlayTimeTrackerTest {
     @Test fun otherCampaignCommitCannotAwardMilestone() = runTest {
         val f = Fixture(this); f.open()
         advanceTimeBy(10)
-        f.tracker.checkpointProgress(confirmed(2, sha = "b".repeat(64)))
+        f.tracker.checkpointProgress(confirmed(2, id = CampaignIdentity.PREFIX + "b".repeat(64)))
         f.tracker.stop(); f.tracker.awaitSaved()
         assertNull(f.store.records.getValue(1).timeToRMs)
         assertEquals(0, f.store.records.getValue(1).lastStars)
@@ -406,7 +407,7 @@ class PlayTimeTrackerTest {
         val f = Fixture(this); f.open()
         advanceTimeBy(10)
         val progress = com.example.sostavslova.core.CampaignProgress(
-            campaignId = campaign.contentSha256,
+            campaignId = CampaignIdentity.of(campaign),
             levels = mapOf("портал" to com.example.sostavslova.core.CampaignLevelProgress(completedTaskIds = setOf("one"))))
         f.tracker.checkpointProgress(progress)
         f.tracker.updateLevel("entry1", f.target(stars = 0)) // stale rendering after durable commit

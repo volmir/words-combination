@@ -3,6 +3,7 @@ package com.example.sostavslova.ui.stats
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.core.Campaign
+import com.example.sostavslova.core.CampaignIdentity
 import com.example.sostavslova.core.CampaignProgress
 import com.example.sostavslova.core.CampaignStatistics
 import com.example.sostavslova.core.CampaignStatisticsAssembler
@@ -41,7 +42,7 @@ internal fun statsUiState(
     progress: CampaignProgress,
     stageNames: Map<Int, String>,
 ): StatsUiState {
-    val matchingProgress = progress.takeIf { it.campaignId == campaign.contentSha256 } ?: CampaignProgress()
+    val matchingProgress = progress.takeIf { it.campaignId == CampaignIdentity.of(campaign) } ?: CampaignProgress()
     val historical = campaign.levels.filter { level ->
         val record = records[level.number] ?: LevelPlayTime()
         // До учёта времени сохранение не фиксировало каждый заход: используем только известные следы.

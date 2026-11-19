@@ -14,6 +14,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.R
 import com.example.sostavslova.core.AnswerResult
+import com.example.sostavslova.core.CampaignIdentity
+
 import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.data.*
@@ -467,7 +469,7 @@ class GameViewModelTest {
                         org.json.JSONArray(previous.tasks.map { it.id })))
                 }
                 val seed = org.json.JSONObject().put("version", 2).put("highestUnlockedLevel", level.number)
-                    .put("campaignId", campaign.contentSha256).put("levels", earlier)
+                    .put("campaignId", CampaignIdentity.of(campaign)).put("levels", earlier)
                 store.edit { it[com.example.sostavslova.data.jsonstore.stringPreferencesKey("campaignProgressV2")] = seed.toString() }
                 val game = model(SavedStateHandle(mapOf("index" to level.number.toString())), meanings = meanings,
                     wordRepository = campaignWords, levelRepository = campaignLevels)
@@ -772,7 +774,7 @@ class GameViewModelTest {
         val campaign = requireNotNull(campaignLevels.getCampaign())
         val index = campaignWords.requireIndex()
         val migrated = progress.migrateCampaign(campaign, index)
-        assertEquals(campaign.contentSha256, migrated.campaignId)
+        assertEquals(CampaignIdentity.of(campaign), migrated.campaignId)
         assertFalse(migrated.finaleReached)
         progress.submitCampaignAnswer(campaign, 1, "карта", index)
         progress.submitCampaignAnswer(campaign, 2, "торт", index)
