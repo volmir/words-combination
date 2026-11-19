@@ -21,7 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.sostavslova.R
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.LocalWordsPalette
 import java.util.Locale
 
 /**
@@ -55,14 +55,14 @@ fun LetterTiles(word: String, modifier: Modifier = Modifier) {
                         val tileIndex = index++
                         Box(
                             Modifier.size(layout.cell)
-                                .border(2.dp, WordsColors.tileBorder)
+                                .border(2.dp, LocalWordsPalette.current.tileBorder)
                                 .testTag("source_word_tile_${tileIndex + 1}"),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 letters[tileIndex].toString(),
                                 modifier = Modifier.fillMaxWidth(),
-                                color = WordsColors.text,
+                                color = LocalWordsPalette.current.text,
                                 fontSize = fontSize,
                                 lineHeight = fontSize,
                                 fontWeight = FontWeight.Bold,

@@ -37,7 +37,9 @@ class CampaignJsonUpgradeTest {
         }
         val target = campaign.levels.single { it.number == 12 }
         val task = target.tasks.filterIsInstance<CampaignTask.T4>().single()
-        val json = JSONObject("""{"found":["билет"],"completedTaskIds":["l12-t3"],"hints":{
+        // Реальный v2-снимок всегда содержит производное поле solvedRiddleTargets:
+        // «билет» найден и является целью T4, поэтому оно не может быть пустым.
+        val json = JSONObject("""{"found":["билет"],"completedTaskIds":["l12-t3"],"solvedRiddleTargets":["билет"],"hints":{
             "ownedContentVersion":1,"letterLadderVersion":1,"shownSteps":7,"paidUnits":2,
             "target":{"word":"проблема","taskId":"${task.id}","taskType":"T4"},
             "steps":[{"stage":"FIRST_LETTER","text":"п______","revealedPositions":[0]},

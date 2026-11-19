@@ -16,14 +16,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.sostavslova.R
 import com.example.sostavslova.core.Statistics
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.LocalWordsPalette
 
 @Composable
 fun StatsTable(statistics: Statistics, modifier: Modifier = Modifier, showRemaining: Boolean = false) {
     Column(modifier.fillMaxWidth()) {
         StatsRow(
             stringResource(R.string.stats_letters), stringResource(R.string.stats_found_total),
-            stringResource(if (showRemaining) R.string.game_stats_remaining else R.string.stats_percent), WordsColors.tableHead, bold = true,
+            stringResource(if (showRemaining) R.string.game_stats_remaining else R.string.stats_percent), LocalWordsPalette.current.tableHead, bold = true,
         )
         for (row in statistics.rows) {
             StatsRow(
@@ -36,17 +36,17 @@ fun StatsTable(statistics: Statistics, modifier: Modifier = Modifier, showRemain
             stringResource(R.string.stats_total),
             stringResource(R.string.stats_pair, statistics.totalFound, statistics.totalWords),
             stringResource(R.string.stats_number, if (showRemaining) statistics.totalWords - statistics.totalFound else statistics.totalPercent),
-            WordsColors.tableFoot, bold = true,
+            LocalWordsPalette.current.tableFoot, bold = true,
         )
     }
 }
 
 @Composable
-private fun StatsRow(first: String, second: String, third: String, background: Color = WordsColors.background, bold: Boolean = false) {
+private fun StatsRow(first: String, second: String, third: String, background: Color = LocalWordsPalette.current.background, bold: Boolean = false) {
     Row(Modifier.fillMaxWidth().background(background).padding(vertical = 8.dp)) {
         val style = MaterialTheme.typography.bodyLarge.copy(fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)
-        Text(first, Modifier.weight(0.38f).padding(horizontal = 6.dp), style = style, color = WordsColors.text)
-        Text(second, Modifier.weight(0.35f).padding(horizontal = 6.dp), style = style, color = WordsColors.text, textAlign = TextAlign.Center)
-        Text(third, Modifier.weight(0.27f).padding(horizontal = 6.dp), style = style, color = WordsColors.text, textAlign = TextAlign.End)
+        Text(first, Modifier.weight(0.38f).padding(horizontal = 6.dp), style = style, color = LocalWordsPalette.current.text)
+        Text(second, Modifier.weight(0.35f).padding(horizontal = 6.dp), style = style, color = LocalWordsPalette.current.text, textAlign = TextAlign.Center)
+        Text(third, Modifier.weight(0.27f).padding(horizontal = 6.dp), style = style, color = LocalWordsPalette.current.text, textAlign = TextAlign.End)
     }
 }

@@ -1056,6 +1056,9 @@ class GameViewModelTest {
         tracker.setActivityResumed(true)
         tracker.setWindowFocused("activity", true)
         runCurrent()
+        // Initialize обрабатывается фоновой корутиной трекера: дожидаемся её,
+        // иначе первая проверка читает ещё пустой store.
+        tracker.awaitSaved()
 
         clock.set(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS.toInt())
         advanceTimeBy(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS)

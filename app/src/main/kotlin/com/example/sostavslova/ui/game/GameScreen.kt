@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -76,11 +77,13 @@ import com.example.sostavslova.ui.components.AlertBanner
 import com.example.sostavslova.ui.components.LetterSlots
 import com.example.sostavslova.ui.components.LetterTiles
 import com.example.sostavslova.ui.components.Well
+import com.example.sostavslova.ui.components.starTint
 import com.example.sostavslova.ui.components.WordInputRow
 import com.example.sostavslova.ui.components.FoundWords
 import com.example.sostavslova.ui.components.WordsDialog
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.LocalWordsPalette
 import com.example.sostavslova.ui.theme.WordsControlShape
+import com.example.sostavslova.ui.theme.WordsPalette
 import kotlinx.coroutines.delay
 
 @Composable
@@ -369,6 +372,29 @@ private fun CampaignHint(state: GameUiState, onHint: () -> Unit, onHintTask: (St
     }
 }
 
+/** Фон, текст и граница чипа подсказки зависят от состояния и активной палитры. */
+internal fun hintTaskChipColors(
+    palette: WordsPalette,
+    selected: Boolean,
+    enabled: Boolean,
+): Triple<Color, Color, Color> = Triple(
+    when {
+        selected -> palette.primary
+        !enabled -> palette.levelLockedBackground
+        else -> palette.background
+    },
+    when {
+        selected -> palette.background
+        enabled -> palette.text
+        else -> palette.defaultButtonText
+    },
+    when {
+        selected -> palette.primary
+        enabled -> palette.defaultButtonBorder
+        else -> palette.wellBorder
+    },
+)
+
 @Composable
 private fun HintTaskChip(
     label: String,
@@ -378,21 +404,7 @@ private fun HintTaskChip(
     onClick: () -> Unit,
     tag: String,
 ) {
-    val container = when {
-        selected -> WordsColors.primary
-        !enabled -> WordsColors.levelLockedBackground
-        else -> WordsColors.background
-    }
-    val content = when {
-        selected -> WordsColors.background
-        enabled -> WordsColors.text
-        else -> WordsColors.defaultButtonText
-    }
-    val borderColor = when {
-        selected -> WordsColors.primary
-        enabled -> WordsColors.defaultButtonBorder
-        else -> WordsColors.wellBorder
-    }
+    val (container, content, borderColor) = hintTaskChipColors(LocalWordsPalette.current, selected, enabled)
     Box(Modifier.heightIn(min = 48.dp).widthIn(min = 48.dp)
         .clip(WordsControlShape).background(container).border(1.dp, borderColor, WordsControlShape)
         .selectable(selected = selected, enabled = enabled, role = Role.Button, onClick = onClick)
@@ -440,7 +452,7 @@ internal fun TaskRow(text: String, done: Boolean) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
         Icon(painterResource(if (done) R.drawable.ic_star_filled else R.drawable.ic_star_outline),
             stringResource(if (done) R.string.task_done else R.string.task_pending), Modifier.size(24.dp),
-            tint = if (done) WordsColors.starDone else WordsColors.starEmpty)
+            tint = starTint(LocalWordsPalette.current, done))
         Text(text, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
     }
 }
@@ -462,7 +474,7 @@ private fun GameLoading(text: String) {
 private fun GamePrimaryAction(text: String, enabled: Boolean, onClick: () -> Unit, tag: String) {
     Button(onClick, enabled = enabled,
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag(tag), shape = WordsControlShape,
-        colors = ButtonDefaults.buttonColors(containerColor = WordsColors.primary, contentColor = WordsColors.background)) {
+        colors = ButtonDefaults.buttonColors(containerColor = LocalWordsPalette.current.primary, contentColor = LocalWordsPalette.current.background)) {
         Text(text, style = MaterialTheme.typography.bodyLarge)
     }
 }
@@ -470,8 +482,8 @@ private fun GamePrimaryAction(text: String, enabled: Boolean, onClick: () -> Uni
 @Composable
 private fun GameAction(text: String, enabled: Boolean, onClick: () -> Unit, icon: Int? = null, tag: String = "") {
     OutlinedButton(onClick, enabled = enabled, modifier = Modifier.heightIn(min = 48.dp).then(if (tag.isEmpty()) Modifier else Modifier.testTag(tag)), shape = WordsControlShape,
-        border = BorderStroke(1.dp, WordsColors.defaultButtonBorder),
-        colors = ButtonDefaults.outlinedButtonColors(containerColor = WordsColors.background, contentColor = WordsColors.text)) {
+        border = BorderStroke(1.dp, LocalWordsPalette.current.defaultButtonBorder),
+        colors = ButtonDefaults.outlinedButtonColors(containerColor = LocalWordsPalette.current.background, contentColor = LocalWordsPalette.current.text)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             if (icon != null) Icon(painterResource(icon), null, Modifier.size(20.dp))
             Text(text, Modifier.weight(1f, fill = false), style = MaterialTheme.typography.bodyLarge)

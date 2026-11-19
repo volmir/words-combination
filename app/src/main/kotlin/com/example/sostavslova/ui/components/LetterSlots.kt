@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.sostavslova.core.HintText
 import com.example.sostavslova.core.balancedRows
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.LocalWordsPalette
 
 /** Геометрия ряда слотов; переиспользуется плитками исходного слова в UX-13. */
 internal data class LetterSlotsLayout(val rows: List<Int>, val cell: Dp, val spacing: Dp)
@@ -81,10 +81,10 @@ fun LetterSlots(
                         Box(
                             Modifier.size(cell)
                                 .background(
-                                    if (open) WordsColors.primary.copy(alpha = 0.12f) else WordsColors.background,
+                                    if (open) LocalWordsPalette.current.primary.copy(alpha = 0.12f) else LocalWordsPalette.current.background,
                                     corner,
                                 )
-                                .border(2.dp, if (open) WordsColors.primary else WordsColors.defaultButtonBorder, corner)
+                                .border(2.dp, if (open) LocalWordsPalette.current.primary else LocalWordsPalette.current.defaultButtonBorder, corner)
                                 .testTag("${slotTagPrefix}_${cellIndex + 1}"),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -92,7 +92,7 @@ fun LetterSlots(
                                 Text(
                                     letter,
                                     modifier = Modifier.fillMaxWidth(),
-                                    color = WordsColors.primary,
+                                    color = LocalWordsPalette.current.primary,
                                     fontSize = fontSize,
                                     lineHeight = fontSize,
                                     fontWeight = FontWeight.Bold,

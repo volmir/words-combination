@@ -20,7 +20,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import com.example.sostavslova.R
 import com.example.sostavslova.nav.Destination
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.LocalWordsPalette
 import com.example.sostavslova.ui.theme.WordsControlShape
 
 @Composable
@@ -29,7 +29,7 @@ fun WordsDrawer(
     onExit: () -> Unit = {},
     onNavigate: (Destination) -> Unit,
 ) {
-    ModalDrawerSheet(drawerContainerColor = WordsColors.background) {
+    ModalDrawerSheet(drawerContainerColor = LocalWordsPalette.current.background) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
             Text(
                 stringResource(R.string.app_name),
@@ -41,7 +41,7 @@ fun WordsDrawer(
             DrawerSection(R.string.nav_help)
             DrawerItem(Destination.Rules, currentRoute, onNavigate)
             DrawerItem(Destination.About, currentRoute, onNavigate)
-            HorizontalDivider(Modifier.padding(vertical = 8.dp), color = WordsColors.wellBorder)
+            HorizontalDivider(Modifier.padding(vertical = 8.dp), color = LocalWordsPalette.current.wellBorder)
             WordsDrawerItem(stringResource(R.string.drawer_exit), onClick = onExit,
                 modifier = Modifier.testTag("drawer_exit"))
         }
@@ -50,7 +50,7 @@ fun WordsDrawer(
 
 @Composable
 private fun DrawerSection(@androidx.annotation.StringRes title: Int) {
-    HorizontalDivider(Modifier.padding(vertical = 8.dp), color = WordsColors.wellBorder)
+    HorizontalDivider(Modifier.padding(vertical = 8.dp), color = LocalWordsPalette.current.wellBorder)
     Text(
         stringResource(title),
         modifier = Modifier.padding(16.dp),
@@ -77,8 +77,8 @@ internal fun WordsDrawerItem(label: String, selected: Boolean = false, modifier:
         onClick = onClick,
         modifier = modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { this.selected = selected },
         shape = WordsControlShape,
-        color = if (selected) WordsColors.primary else WordsColors.background,
-        contentColor = if (selected) WordsColors.background else WordsColors.text,
+        color = if (selected) LocalWordsPalette.current.primary else LocalWordsPalette.current.background,
+        contentColor = if (selected) LocalWordsPalette.current.background else LocalWordsPalette.current.text,
     ) {
         Text(label, Modifier.padding(horizontal = 16.dp, vertical = 12.dp), style = MaterialTheme.typography.bodyLarge)
     }

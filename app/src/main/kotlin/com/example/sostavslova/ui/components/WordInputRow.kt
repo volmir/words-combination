@@ -31,7 +31,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.unit.dp
 import com.example.sostavslova.core.Alphabet
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.LocalWordsPalette
 import com.example.sostavslova.ui.theme.WordsControlShape
 
 @Composable
@@ -72,10 +72,10 @@ fun WordInputRow(
                     textStyle = MaterialTheme.typography.bodyLarge,
                     shape = WordsControlShape,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = WordsColors.inputFocusBorder,
-                        unfocusedBorderColor = WordsColors.defaultButtonBorder,
-                        focusedContainerColor = WordsColors.background,
-                        unfocusedContainerColor = WordsColors.background,
+                        focusedBorderColor = LocalWordsPalette.current.inputFocusBorder,
+                        unfocusedBorderColor = LocalWordsPalette.current.defaultButtonBorder,
+                        focusedContainerColor = LocalWordsPalette.current.background,
+                        unfocusedContainerColor = LocalWordsPalette.current.background,
                     ),
                     keyboardOptions = KeyboardOptions(
                         capitalization = KeyboardCapitalization.None,
@@ -115,8 +115,8 @@ private fun InputButton(text: String, enabled: Boolean, onClick: () -> Unit, mod
         shape = WordsControlShape,
         interactionSource = interaction,
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (pressed) WordsColors.primaryPressed else WordsColors.primary,
-            contentColor = WordsColors.background,
+            containerColor = if (pressed) LocalWordsPalette.current.primaryPressed else LocalWordsPalette.current.primary,
+            contentColor = LocalWordsPalette.current.background,
         ),
     ) { Text(text, style = MaterialTheme.typography.bodyLarge) }
 }

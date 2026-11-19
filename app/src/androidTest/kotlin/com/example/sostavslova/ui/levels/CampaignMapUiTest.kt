@@ -1,6 +1,7 @@
 package com.example.sostavslova.ui.levels
 
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
@@ -13,6 +14,8 @@ import com.example.sostavslova.core.*
 import com.example.sostavslova.ui.components.StarsRow
 import com.example.sostavslova.ui.theme.WordsTheme
 import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.DarkWordsPalette
+import com.example.sostavslova.ui.theme.LocalWordsPalette
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -94,6 +97,48 @@ class CampaignMapUiTest {
         assertBackground(WordsColors.levelAllStarsBackground, background(locked))
         locked.assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
             "Получено 5 из 5 звёзд · порог открытия: 2"))
+    }
+
+    @Test fun darkThemeLevelCardsRenderAdaptedStateColors() {
+        val state = mutableStateOf(LevelsUiState(loading = false,
+            levels = listOf(level(1), level(2).copy(unlocked = false), level(3, stars = 2), level(4, stars = 5)),
+            stages = listOf(Stage(1, 1, 4))))
+        compose.setContent {
+            WordsTheme {
+                CompositionLocalProvider(LocalWordsPalette provides DarkWordsPalette) {
+                    Surface(color = DarkWordsPalette.background) { LevelsScreen(state.value, {}, {}) }
+                }
+            }
+        }
+        fun background(card: SemanticsNodeInteraction): Color {
+            val pixels = card.captureToImage().toPixelMap()
+            return pixels[(6 * compose.density.density).toInt(), pixels.height / 2]
+        }
+        val available = background(compose.onNodeWithTag("level_card_1"))
+        val locked = background(compose.onNodeWithTag("level_card_2"))
+        val passed = background(compose.onNodeWithTag("level_card_3"))
+        val allStars = background(compose.onNodeWithTag("level_card_4"))
+
+        fun assertBackground(expected: Color, actual: Color) {
+            val opaque = expected.compositeOver(DarkWordsPalette.background)
+            assertEquals(opaque.red, actual.red, 2f / 255)
+            assertEquals(opaque.green, actual.green, 2f / 255)
+            assertEquals(opaque.blue, actual.blue, 2f / 255)
+        }
+        assertBackground(DarkWordsPalette.levelAvailableBackground, available)
+        assertBackground(DarkWordsPalette.levelLockedBackground, locked)
+        assertBackground(DarkWordsPalette.levelPassedBackground, passed)
+        assertBackground(DarkWordsPalette.levelAllStarsBackground, allStars)
+
+        val backgrounds = listOf(available, locked, passed, allStars)
+        assertEquals(4, backgrounds.map { Triple(it.red, it.green, it.blue) }.toSet().size)
+        assertTrue("Закрытый — нейтральный серый",
+            maxOf(locked.red, locked.green, locked.blue) - minOf(locked.red, locked.green, locked.blue) < 0.02f)
+        assertTrue("Доступный — тёмная поверхность",
+            maxOf(available.red, available.green, available.blue) < 0.25f)
+        assertTrue("Закрытый приглушённее доступного", locked.red < available.red)
+        assertTrue("Пройденный — зелёный", passed.green > passed.red && passed.green > passed.blue)
+        assertTrue("Все звёзды — янтарный", allStars.red > allStars.green && allStars.green > allStars.blue)
     }
 
     @Test fun fivePositionsHaveAccessibleProgress() {

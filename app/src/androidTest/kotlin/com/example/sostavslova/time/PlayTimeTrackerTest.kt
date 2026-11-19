@@ -426,7 +426,8 @@ class PlayTimeTrackerTest {
         advanceTimeBy(40_000L)
         f.tracker.onUserActivity()
         advanceTimeBy(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS - 1_000L); runCurrent()
-        assertEquals(PlayTimeTracker.CHECKPOINT_MS, f.store.total())
+        // Чекпоинты каждые 60 с сработали на 60-й и 120-й секундах (t=129 с).
+        assertEquals(2 * PlayTimeTracker.CHECKPOINT_MS, f.store.total())
         advanceTimeBy(1_000L); runCurrent()
         val expected = 40_000L + PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS
         assertEquals(expected, f.store.total())
@@ -454,7 +455,16 @@ class PlayTimeTrackerTest {
         advanceTimeBy(15_000L)
         f.tracker.stop(); f.tracker.awaitSaved()
         assertEquals(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS + 15_000L, f.store.total())
-        assertEquals(listOf(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS, 15_000L), f.store.calls.map { it.third })
+        // Первые 90 с пишутся чекпоинтом (60 с) и остатком при простое (30 с),
+        // затем 15 с после возврата из idle — как и в sixtySecondCheckpointWorksTogetherWithIdleTimeout.
+        assertEquals(
+            listOf(
+                PlayTimeTracker.CHECKPOINT_MS,
+                PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS - PlayTimeTracker.CHECKPOINT_MS,
+                15_000L,
+            ),
+            f.store.calls.map { it.third },
+        )
     }
 
     @Test fun backgroundTransitionWhileIdleOrActivePreservesExclusion() = runTest {

@@ -1,8 +1,9 @@
 package com.example.sostavslova.ui.theme
 
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-/** Токены палитры приложения; без динамических цветов и тёмной темы. */
+/** Эталонные значения светлой палитры; используются как источник [LightWordsPalette]. */
 object WordsColors {
     val navbar = Color(0xFF222222)
     val navbarText = Color(0xFF9D9D9D)
@@ -48,3 +49,139 @@ object WordsColors {
     val text = Color(0xFF333333)
     val background = Color(0xFFFFFFFF)
 }
+
+/** Полный набор семантических цветовых токенов игрового интерфейса. */
+data class WordsPalette(
+    val navbar: Color,
+    val navbarText: Color,
+    val navbarActive: Color,
+    val primary: Color,
+    val primaryPressed: Color,
+    val defaultButton: Color,
+    val defaultButtonBorder: Color,
+    val defaultButtonText: Color,
+    val dangerButton: Color,
+    val successButton: Color,
+    val levelAvailableBackground: Color,
+    val levelLockedBackground: Color,
+    val levelPassedBackground: Color,
+    val wellBackground: Color,
+    val wellBorder: Color,
+    val inputFocusBorder: Color,
+    val tileBorder: Color,
+    val starDone: Color,
+    val levelAllStarsBackground: Color,
+    val starEmpty: Color,
+    val tableHead: Color,
+    val tableFoot: Color,
+    val alertSuccessBackground: Color,
+    val alertSuccessText: Color,
+    val alertSuccessBorder: Color,
+    val alertInfoBackground: Color,
+    val alertInfoText: Color,
+    val alertInfoBorder: Color,
+    val alertWarningBackground: Color,
+    val alertWarningText: Color,
+    val alertWarningBorder: Color,
+    val alertDangerBackground: Color,
+    val alertDangerText: Color,
+    val alertDangerBorder: Color,
+    val labelBackground: Color,
+    val labelText: Color,
+    val blockquoteBorder: Color,
+    val text: Color,
+    val background: Color,
+)
+
+/** Светлая палитра: значения берутся из исходного [WordsColors] без изменений. */
+val LightWordsPalette = WordsPalette(
+    navbar = WordsColors.navbar,
+    navbarText = WordsColors.navbarText,
+    navbarActive = WordsColors.navbarActive,
+    primary = WordsColors.primary,
+    primaryPressed = WordsColors.primaryPressed,
+    defaultButton = WordsColors.defaultButton,
+    defaultButtonBorder = WordsColors.defaultButtonBorder,
+    defaultButtonText = WordsColors.defaultButtonText,
+    dangerButton = WordsColors.dangerButton,
+    successButton = WordsColors.successButton,
+    levelAvailableBackground = WordsColors.levelAvailableBackground,
+    levelLockedBackground = WordsColors.levelLockedBackground,
+    levelPassedBackground = WordsColors.levelPassedBackground,
+    wellBackground = WordsColors.wellBackground,
+    wellBorder = WordsColors.wellBorder,
+    inputFocusBorder = WordsColors.inputFocusBorder,
+    tileBorder = WordsColors.tileBorder,
+    starDone = WordsColors.starDone,
+    levelAllStarsBackground = WordsColors.levelAllStarsBackground,
+    starEmpty = WordsColors.starEmpty,
+    tableHead = WordsColors.tableHead,
+    tableFoot = WordsColors.tableFoot,
+    alertSuccessBackground = WordsColors.alertSuccessBackground,
+    alertSuccessText = WordsColors.alertSuccessText,
+    alertSuccessBorder = WordsColors.alertSuccessBorder,
+    alertInfoBackground = WordsColors.alertInfoBackground,
+    alertInfoText = WordsColors.alertInfoText,
+    alertInfoBorder = WordsColors.alertInfoBorder,
+    alertWarningBackground = WordsColors.alertWarningBackground,
+    alertWarningText = WordsColors.alertWarningText,
+    alertWarningBorder = WordsColors.alertWarningBorder,
+    alertDangerBackground = WordsColors.alertDangerBackground,
+    alertDangerText = WordsColors.alertDangerText,
+    alertDangerBorder = WordsColors.alertDangerBorder,
+    labelBackground = WordsColors.labelBackground,
+    labelText = WordsColors.labelText,
+    blockquoteBorder = WordsColors.blockquoteBorder,
+    text = WordsColors.text,
+    background = WordsColors.background,
+)
+
+/** Тёмная палитра: те же токены, адаптированные к тёмной поверхности. */
+val DarkWordsPalette = WordsPalette(
+    navbar = Color(0xFF121212),
+    navbarText = Color(0xFF9E9E9E),
+    navbarActive = Color(0xFFFFFFFF),
+    primary = Color(0xFF8AB4F8),
+    primaryPressed = Color(0xFF6C9ED0),
+    defaultButton = Color(0xFF2C2C2C),
+    defaultButtonBorder = Color(0xFF757575),
+    defaultButtonText = Color(0xFFE0E0E0),
+    dangerButton = Color(0xFFEF6A65),
+    successButton = Color(0xFF81C784),
+    levelAvailableBackground = Color(0xFF2C2C2C),
+    levelLockedBackground = Color(0xFF222222),
+    levelPassedBackground = Color(0xFF81C784).copy(alpha = 0.22f),
+    wellBackground = Color(0xFF232323),
+    wellBorder = Color(0xFF6E6E6E),
+    inputFocusBorder = Color(0xFF8AB4F8),
+    tileBorder = Color(0xFF5A7A7D),
+    starDone = Color(0xFFFFA726),
+    levelAllStarsBackground = Color(0xFFFFB300).copy(alpha = 0.24f),
+    starEmpty = Color(0xFFAAAAAA),
+    tableHead = Color(0xFF333333),
+    tableFoot = Color(0xFF2A2A2A),
+    alertSuccessBackground = Color(0xFF1B3A24),
+    alertSuccessText = Color(0xFFA5D6A7),
+    alertSuccessBorder = Color(0xFF4E8E57),
+    alertInfoBackground = Color(0xFF16354A),
+    alertInfoText = Color(0xFF90CAF9),
+    alertInfoBorder = Color(0xFF5095BC),
+    alertWarningBackground = Color(0xFF3B3518),
+    alertWarningText = Color(0xFFFFD54F),
+    alertWarningBorder = Color(0xFFA58F3A),
+    alertDangerBackground = Color(0xFF4A2020),
+    alertDangerText = Color(0xFFFFA4A2),
+    alertDangerBorder = Color(0xFFB96060),
+    labelBackground = Color(0xFF555555),
+    labelText = Color(0xFFFFFFFF),
+    blockquoteBorder = Color(0xFF6E6E6E),
+    text = Color(0xFFE0E0E0),
+    background = Color(0xFF121212),
+)
+
+/** Активная палитра: изменение значения вызывает рекомпозицию потребителей. */
+val LocalWordsPalette = compositionLocalOf { LightWordsPalette }
+
+/** Единственный источник выбора палитры — системный night mode. */
+internal fun wordsPalette(isDarkTheme: Boolean): WordsPalette =
+    if (isDarkTheme) DarkWordsPalette else LightWordsPalette

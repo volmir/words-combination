@@ -31,7 +31,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.sostavslova.time.LocalPlayTimeTracker
 import com.example.sostavslova.time.playTimeUserActivity
 import com.example.sostavslova.ui.theme.WordsCardShape
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.LocalWordsPalette
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,8 +54,8 @@ fun WordsDialog(
                     .semantics { paneTitle = title }
                     .pointerInput(Unit) { detectTapGestures {} },
                 shape = WordsCardShape,
-                color = WordsColors.background,
-                contentColor = WordsColors.text,
+                color = LocalWordsPalette.current.background,
+                contentColor = LocalWordsPalette.current.text,
             ) {
                 Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text(titleText ?: AnnotatedString(title), modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)

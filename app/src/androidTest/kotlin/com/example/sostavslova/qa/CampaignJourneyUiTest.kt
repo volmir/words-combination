@@ -24,6 +24,7 @@ import com.example.sostavslova.core.HintRules
 import com.example.sostavslova.core.HintStage
 import com.example.sostavslova.core.HintText
 import com.example.sostavslova.core.TaskType
+import com.example.sostavslova.data.CampaignJson
 import com.example.sostavslova.di.AppContainer
 import com.example.sostavslova.di.LocalAppContainer
 import com.example.sostavslova.nav.WordsNavHost
@@ -200,8 +201,14 @@ class CampaignJourneyUiTest {
             compose.onNodeWithTag("levels_grid").performScrollToNode(hasTestTag("level_card_$number"))
             compose.onNodeWithTag("level_card_$number")
                 .assert(hasContentDescription("Уровень недоступен")).performClick()
-            compose.onNodeWithText("Чтобы открыть этот уровень, выполните все задания", substring = true).assertExists()
-            compose.onNodeWithText("на уровне ${number - 1}.", substring = true).assertExists()
+            // Уровни QA-фикстуры имеют частичный порог (requiredStars < maxStars),
+            // поэтому диалог использует формулировку «нужно заданий: R из M».
+            val previous = CampaignJson.decode(QaCampaign.json).levels.single { it.number == number - 1 }
+            compose.onNodeWithText(
+                "Чтобы открыть этот уровень, на уровне ${number - 1} нужно заданий: " +
+                    "${previous.requiredStars} из ${previous.maxStars}.",
+                substring = true,
+            ).assertExists()
             compose.onNodeWithTag("game_screen").assertDoesNotExist()
             compose.onNodeWithText("Закрыть").performClick()
             assertEquals(clean, saved())

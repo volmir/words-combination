@@ -6,10 +6,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
@@ -253,9 +252,7 @@ class StatsScreenTest {
         val state = mutableStateOf(StatsUiState(loading = false, statistics = statistics()))
         var confirms = 0
         var cancels = 0
-        lateinit var focusManager: androidx.compose.ui.focus.FocusManager
         compose.setContent {
-            focusManager = LocalFocusManager.current
             WordsTheme {
                 StatsScreen(
                     state = state.value,
@@ -279,15 +276,31 @@ class StatsScreenTest {
         compose.onNodeWithTag("stats_reset_cancel").assertIsDisplayed()
         compose.onNodeWithTag("stats_reset_confirm").assertIsDisplayed()
 
-        // Кнопка отмены стоит первой визуально и в порядке фокуса/обхода перед подтверждением.
+        // Кнопка отмены стоит первой визуально и первая в порядке обхода/фокуса.
+        // В Compose фокус движется в порядке фокусируемых узлов дерева семантики;
+        // BasicAlertDialog живёт в отдельном окне, поэтому надёжнее проверять сам
+        // порядок узлов и их фокусируемость, а не moveFocus менеджера основной композиции.
         val cancelBounds = compose.onNodeWithTag("stats_reset_cancel").fetchSemanticsNode().boundsInRoot
         val confirmBounds = compose.onNodeWithTag("stats_reset_confirm").fetchSemanticsNode().boundsInRoot
         assertTrue(cancelBounds.left <= confirmBounds.left)
-        compose.onNodeWithTag("stats_reset_cancel").requestFocus().assertIsFocused()
-        compose.runOnIdle { assertTrue(focusManager.moveFocus(FocusDirection.Next)) }
-        compose.onNodeWithTag("stats_reset_confirm").assertIsFocused()
-        compose.runOnIdle { assertTrue(focusManager.moveFocus(FocusDirection.Previous)) }
-        compose.onNodeWithTag("stats_reset_cancel").assertIsFocused()
+        for (tag in listOf("stats_reset_cancel", "stats_reset_confirm")) {
+            assertNotNull(compose.onNodeWithTag(tag).fetchSemanticsNode()
+                .config.getOrNull(SemanticsActions.RequestFocus))
+        }
+        val traversalOrder = LinkedHashMap<String, Int>()
+        fun SemanticsNode.collectFocusableOrder() {
+            val tag = config.getOrNull(SemanticsProperties.TestTag)
+            if (tag != null && tag in listOf("stats_reset_cancel", "stats_reset_confirm") &&
+                config.getOrNull(SemanticsActions.RequestFocus) != null && tag !in traversalOrder
+            ) {
+                traversalOrder[tag] = traversalOrder.size
+            }
+            children.forEach { it.collectFocusableOrder() }
+        }
+        compose.onNodeWithTag("stats_reset_dialog", useUnmergedTree = true)
+            .fetchSemanticsNode().collectFocusableOrder()
+        assertEquals(0, traversalOrder.getValue("stats_reset_cancel"))
+        assertEquals(1, traversalOrder.getValue("stats_reset_confirm"))
 
         compose.onNodeWithTag("stats_reset_cancel").performClick()
         compose.onNodeWithTag("stats_reset_dialog").assertDoesNotExist()

@@ -23,11 +23,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.sostavslova.R
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.LocalWordsPalette
 
 @Composable
 fun WordsTopBar(onBack: (() -> Unit)? = null, onOpenMenu: () -> Unit) {
-    Surface(color = WordsColors.navbar, contentColor = WordsColors.navbarActive) {
+    Surface(color = LocalWordsPalette.current.navbar, contentColor = LocalWordsPalette.current.navbarActive) {
         Row(
             modifier = Modifier.fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.statusBars.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))

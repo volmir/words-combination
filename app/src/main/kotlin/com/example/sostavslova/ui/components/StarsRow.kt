@@ -11,6 +11,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -20,7 +21,16 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.example.sostavslova.R
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.LocalWordsPalette
+import com.example.sostavslova.ui.theme.WordsPalette
+
+/** Цвет звезды задаётся состоянием и активной палитрой, а не drawable. */
+internal fun starTint(palette: WordsPalette, done: Boolean): Color =
+    if (done) palette.starDone else palette.starEmpty
+
+/** Полупрозрачный маркер порога звёзд на подложке карточки. */
+internal fun thresholdMarkerColor(palette: WordsPalette): Color =
+    palette.starEmpty.copy(alpha = 0.6f)
 
 @Composable
 fun StarsRow(
@@ -64,12 +74,12 @@ private fun StarsRow(
                 painterResource(if (done) R.drawable.ic_star_filled else R.drawable.ic_star_outline),
                 contentDescription = null,
                 modifier = Modifier.size(24.dp).testTag("stars_position_$index"),
-                tint = if (done) WordsColors.starDone else WordsColors.starEmpty,
+                tint = starTint(LocalWordsPalette.current, done),
             )
             if (requiredStars != null && index == requiredStars - 1 && index < positions.lastIndex) {
                 Box(
                     Modifier.width(1.dp).height(20.dp).testTag("stars_threshold")
-                        .background(WordsColors.starEmpty.copy(alpha = 0.6f)),
+                        .background(thresholdMarkerColor(LocalWordsPalette.current)),
                 )
             }
         }

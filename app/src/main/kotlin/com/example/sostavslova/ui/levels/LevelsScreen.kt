@@ -35,6 +35,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -56,8 +57,23 @@ import com.example.sostavslova.ui.components.StarsRow
 import com.example.sostavslova.ui.components.Well
 import com.example.sostavslova.ui.components.starsStateDescription
 import com.example.sostavslova.ui.theme.WordsCardShape
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.LocalWordsPalette
+import com.example.sostavslova.ui.theme.WordsPalette
 import java.util.Locale
+
+/** Фон карточки уровня: закрытый, все звёзды, порог пройден, доступный. */
+internal fun levelCardBackground(
+    palette: WordsPalette,
+    unlocked: Boolean,
+    stars: Int,
+    maxStars: Int,
+    requiredStars: Int,
+): Color = when {
+    !unlocked -> palette.levelLockedBackground
+    stars == maxStars -> palette.levelAllStarsBackground
+    stars >= requiredStars -> palette.levelPassedBackground
+    else -> palette.levelAvailableBackground
+}
 
 @Composable
 fun LevelsRoute(notice: Int = 0, onOpenGame: (Int) -> Unit) {
@@ -203,19 +219,15 @@ private fun stageName(number: Int): String = stringResource(when (number) {
 @Composable
 private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Unit) {
     val stars = starsStateDescription(item.stars, item.maxStars, item.requiredStars)
-    val background = when {
-        !item.unlocked -> WordsColors.levelLockedBackground
-        item.stars == item.maxStars -> WordsColors.levelAllStarsBackground
-        item.stars >= item.requiredStars -> WordsColors.levelPassedBackground
-        else -> WordsColors.levelAvailableBackground
-    }
+    val palette = LocalWordsPalette.current
+    val background = levelCardBackground(palette, item.unlocked, item.stars, item.maxStars, item.requiredStars)
     OutlinedButton(onClick, Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("level_card_${item.index}")
         .semantics { stateDescription = stars },
         enabled = enabled, shape = WordsCardShape,
-        border = BorderStroke(if (item.recommended) 3.dp else 1.dp, WordsColors.defaultButtonBorder),
+        border = BorderStroke(if (item.recommended) 3.dp else 1.dp, palette.defaultButtonBorder),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = background,
-            disabledContainerColor = background, contentColor = WordsColors.text,
-            disabledContentColor = WordsColors.text),
+            disabledContainerColor = background, contentColor = palette.text,
+            disabledContentColor = palette.text),
         contentPadding = PaddingValues(12.dp)) {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {

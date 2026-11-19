@@ -54,7 +54,7 @@ import com.example.sostavslova.ui.components.StatsTable
 import com.example.sostavslova.ui.components.StarsRow
 import com.example.sostavslova.ui.components.WordsDialog
 import com.example.sostavslova.ui.game.gameStageName
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.LocalWordsPalette
 import com.example.sostavslova.ui.theme.WordsControlShape
 import java.math.BigInteger
 import java.util.Locale
@@ -188,7 +188,7 @@ fun StatsScreen(
                             onClick = onRequestReset,
                             enabled = !state.resetting,
                             shape = WordsControlShape,
-                            border = BorderStroke(1.dp, WordsColors.dangerButton),
+                            border = BorderStroke(1.dp, LocalWordsPalette.current.dangerButton),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer,
                                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
@@ -229,10 +229,10 @@ fun StatsScreen(
                     onClick = onDismissReset,
                     enabled = !state.resetting,
                     shape = WordsControlShape,
-                    border = BorderStroke(1.dp, WordsColors.defaultButtonBorder),
+                    border = BorderStroke(1.dp, LocalWordsPalette.current.defaultButtonBorder),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = WordsColors.defaultButton,
-                        contentColor = WordsColors.defaultButtonText,
+                        containerColor = LocalWordsPalette.current.defaultButton,
+                        contentColor = LocalWordsPalette.current.defaultButtonText,
                     ),
                     modifier = Modifier.heightIn(min = 48.dp).testTag("stats_reset_cancel"),
                 ) {
@@ -286,7 +286,7 @@ private fun StatsLevelRow(row: LevelStatsRow) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     LinearProgressIndicator(progress = { if (row.total == 0) 0f else row.found.toFloat() / row.total },
                         Modifier.weight(1f).height(8.dp).testTag("stats_progress_${row.number}"),
-                        color = WordsColors.primary, trackColor = WordsColors.wellBorder)
+                        color = LocalWordsPalette.current.primary, trackColor = LocalWordsPalette.current.wellBorder)
                     Text(percent, style = MaterialTheme.typography.bodyMedium)
                 }
                 Text(timeAndHints, Modifier.testTag("stats_time_${row.number}"),

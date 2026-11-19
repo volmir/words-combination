@@ -33,7 +33,7 @@ import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.data.LoadState
 import com.example.sostavslova.ui.components.Well
 import com.example.sostavslova.ui.theme.WordsCardShape
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.LocalWordsPalette
 import kotlinx.coroutines.CancellationException
 
 @Composable
@@ -42,8 +42,10 @@ fun RulesScreen(loadOptionalTaskLevel: (suspend () -> Int?)? = null) {
     var optionalTaskLevel by remember { mutableStateOf<Int?>(null) }
     LaunchedEffect(loadOptionalTaskLevel, container) {
         optionalTaskLevel = try {
-            loadOptionalTaskLevel?.invoke()
-                ?: container.levelsRepository.getCampaign()?.let(CampaignRules::firstOptionalTaskLevel)
+            // Явно переданная лямбда авторитетна, включая null («номера нет»):
+            // fallback к репозиторию допустим только когда лямбды нет вовсе.
+            if (loadOptionalTaskLevel != null) loadOptionalTaskLevel.invoke()
+            else container.levelsRepository.getCampaign()?.let(CampaignRules::firstOptionalTaskLevel)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
@@ -105,15 +107,15 @@ fun RulesScreen(loadOptionalTaskLevel: (suspend () -> Int?)? = null) {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.rules_colors_title), style = MaterialTheme.typography.titleMedium)
                 val colors = listOf(
-                    Triple("rules_level_color_locked", WordsColors.levelLockedBackground, R.string.rules_color_locked),
-                    Triple("rules_level_color_available", WordsColors.levelAvailableBackground, R.string.rules_color_available),
-                    Triple("rules_level_color_passed", WordsColors.levelPassedBackground, R.string.rules_color_passed),
-                    Triple("rules_level_color_all_stars", WordsColors.levelAllStarsBackground, R.string.rules_color_all_stars),
+                    Triple("rules_level_color_locked", LocalWordsPalette.current.levelLockedBackground, R.string.rules_color_locked),
+                    Triple("rules_level_color_available", LocalWordsPalette.current.levelAvailableBackground, R.string.rules_color_available),
+                    Triple("rules_level_color_passed", LocalWordsPalette.current.levelPassedBackground, R.string.rules_color_passed),
+                    Triple("rules_level_color_all_stars", LocalWordsPalette.current.levelAllStarsBackground, R.string.rules_color_all_stars),
                 )
                 for ((tag, color, label) in colors) {
                     // Белый фон доступного уровня сливается с экраном без рамки, как и у карточек на карте.
-                    Surface(Modifier.fillMaxWidth(), color = color, contentColor = WordsColors.text, shape = WordsCardShape,
-                        border = BorderStroke(1.dp, WordsColors.defaultButtonBorder)) {
+                    Surface(Modifier.fillMaxWidth(), color = color, contentColor = LocalWordsPalette.current.text, shape = WordsCardShape,
+                        border = BorderStroke(1.dp, LocalWordsPalette.current.defaultButtonBorder)) {
                         Text(stringResource(label), Modifier.padding(12.dp).testTag(tag),
                             style = MaterialTheme.typography.bodyMedium)
                     }
@@ -122,10 +124,10 @@ fun RulesScreen(loadOptionalTaskLevel: (suspend () -> Int?)? = null) {
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = WordsColors.alertInfoBackground,
-                contentColor = WordsColors.alertInfoText,
+                color = LocalWordsPalette.current.alertInfoBackground,
+                contentColor = LocalWordsPalette.current.alertInfoText,
                 shape = WordsCardShape,
-                border = BorderStroke(1.dp, WordsColors.alertInfoBorder),
+                border = BorderStroke(1.dp, LocalWordsPalette.current.alertInfoBorder),
             ) {
                 Text(
                     stringResource(R.string.rules_footer),
@@ -190,7 +192,7 @@ fun AboutScreen() {
             Text(
                 stringResource(R.string.about_version, BuildConfig.VERSION_NAME),
                 style = MaterialTheme.typography.bodyMedium,
-                color = WordsColors.text,
+                color = LocalWordsPalette.current.text,
                 modifier = Modifier.testTag("about_version"),
             )
 

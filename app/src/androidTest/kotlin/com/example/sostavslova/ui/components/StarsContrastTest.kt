@@ -6,7 +6,8 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.R
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.DarkWordsPalette
+import com.example.sostavslova.ui.theme.LightWordsPalette
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -16,26 +17,30 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 
-/** Контраст звёзд и текста на белом фоне и на всех фонах карточек уровней. */
+/** Контраст звёзд и текста на фоне обеих тем и на всех фонах карточек уровней. */
 @RunWith(AndroidJUnit4::class)
 class StarsContrastTest {
     @Test
     fun filledAndOutlineStarsKeepThreeToOneOnActualBackground() {
-        val backgrounds = listOf(WordsColors.background,
-            WordsColors.levelAvailableBackground.compositeOver(WordsColors.background),
-            WordsColors.levelLockedBackground.compositeOver(WordsColors.background),
-            WordsColors.levelPassedBackground.compositeOver(WordsColors.background),
-            WordsColors.levelAllStarsBackground.compositeOver(WordsColors.background))
-        for (background in backgrounds) {
-            val filled = contrastRatio(WordsColors.starDone, background)
-            val outline = contrastRatio(WordsColors.starEmpty, background)
-            val text = contrastRatio(WordsColors.text, background)
-            assertTrue("Заполненная звезда на $background: контраст $filled < 3:1", filled >= 3.0)
-            assertTrue("Контурная звезда на $background: контраст $outline < 3:1", outline >= 3.0)
-            assertTrue("Текст на $background: контраст $text < 4,5:1", text >= 4.5)
+        for ((theme, palette) in palettes()) {
+            val backgrounds = listOf(palette.background,
+                palette.levelAvailableBackground.compositeOver(palette.background),
+                palette.levelLockedBackground.compositeOver(palette.background),
+                palette.levelPassedBackground.compositeOver(palette.background),
+                palette.levelAllStarsBackground.compositeOver(palette.background))
+            for (background in backgrounds) {
+                val filled = contrastRatio(palette.starDone, background)
+                val outline = contrastRatio(palette.starEmpty, background)
+                val text = contrastRatio(palette.text, background)
+                assertTrue("$theme: заполненная звезда на $background: контраст $filled < 3:1", filled >= 3.0)
+                assertTrue("$theme: контурная звезда на $background: контраст $outline < 3:1", outline >= 3.0)
+                assertTrue("$theme: текст на $background: контраст $text < 4,5:1", text >= 4.5)
+            }
+            assertNotEquals("$theme: звёзды различаются только цветом", palette.starDone, palette.starEmpty)
         }
-        assertNotEquals(WordsColors.starDone, WordsColors.starEmpty)
     }
+
+    private fun palettes() = listOf("light" to LightWordsPalette, "dark" to DarkWordsPalette)
 
     @Test
     fun filledAndOutlineStarDrawablesDifferByGeometry() {

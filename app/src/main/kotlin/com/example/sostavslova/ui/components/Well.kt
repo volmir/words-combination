@@ -11,16 +11,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.sostavslova.ui.theme.WordsCardShape
-import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.LocalWordsPalette
 
 @Composable
 fun Well(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = WordsColors.wellBackground,
-        contentColor = WordsColors.text,
+        color = LocalWordsPalette.current.wellBackground,
+        contentColor = LocalWordsPalette.current.text,
         shape = WordsCardShape,
-        border = BorderStroke(1.dp, WordsColors.wellBorder),
+        border = BorderStroke(1.dp, LocalWordsPalette.current.wellBorder),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
     }
