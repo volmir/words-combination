@@ -366,9 +366,19 @@ private fun CampaignHint(state: GameUiState, onHint: () -> Unit, onHintTask: (St
             cost == 0 -> stringResource(R.string.hint_action_free)
             else -> stringResource(R.string.hint_action_paid, cost, state.hintRemaining)
         }
-        GamePrimaryAction(action,
-            state.canPlay && !complete && cost != null && cost <= state.hintRemaining,
-            onHint, "game_hint_button")
+        OutlinedButton(
+            onClick = onHint,
+            enabled = state.canPlay && !complete && cost != null && cost <= state.hintRemaining,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("game_hint_button"),
+            shape = WordsControlShape,
+            border = BorderStroke(1.dp, LocalWordsPalette.current.defaultButtonBorder),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = LocalWordsPalette.current.background,
+                contentColor = LocalWordsPalette.current.text,
+            ),
+        ) {
+            Text(action, style = MaterialTheme.typography.bodyLarge)
+        }
     }
 }
 
