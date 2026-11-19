@@ -25,41 +25,98 @@ class TimeScreenTest {
             in 1..3 -> 1; in 4..6 -> 2; in 7..9 -> 3; in 10..11 -> 4; in 12..13 -> 5; else -> 6
         }, 1, listOf(CampaignTask.T1("r", 1), CampaignTask.T1("m", 2)))
     }, contentSha256 = "a".repeat(64))
+    private val stageNames = listOf("Разминка", "Первая буква", "Длинные слова", "Загадки", "Окончания", "Мастер")
 
-    private fun ready(ms: Long? = null): TimeUiState = TimeUiState(loading = false, campaign = campaign,
-        summary = CampaignTimeStatistics.aggregate(campaign, CampaignTimeSnapshot(requireNotNull(campaign.contentSha256),
-            if (ms == null) emptyMap() else mapOf(1 to LevelTimeMeasurement("достопримечательность", ms, true, ms, null)))))
+    private fun ready(ms: Long? = null, stars: Int = 0, timeToRMs: Long? = ms): TimeUiState =
+        TimeUiState(loading = false, campaign = campaign,
+            summary = CampaignTimeStatistics.aggregate(campaign, CampaignTimeSnapshot(
+                requireNotNull(campaign.contentSha256),
+                if (ms == null) emptyMap() else mapOf(1 to LevelTimeMeasurement(
+                    "достопримечательность", ms, true, timeToRMs, null)))),
+            levelStars = campaign.levels.associate { it.number to stars })
 
     @Test fun localSnapshotChangesAppearWithoutRefreshAndMissingValuesAreExplicit() {
-        val state = mutableStateOf(ready().copy(historicalLevels = setOf(2)))
+        val state = mutableStateOf(ready(stars = 1).copy(historicalLevels = setOf(2)))
         compose.setContent { WordsTheme { TimeScreen(state.value) } }
-        compose.onNodeWithTag("time_total").assertTextEquals("Общее активное время: 0 ч 0 мин 0 с")
+        compose.onNodeWithTag("time_total").assertTextEquals("Общее активное время: 0 с")
         compose.onNodeWithTag("time_screen").performScrollToKey("level_1")
-        compose.onNodeWithTag("time_level_1").assertTextContains("Активное время: Ещё не играл: 0 ч 0 мин 0 с")
+        compose.onNodeWithTag("time_level_1")
+            .assertTextContains("Активное время: —")
+            .assertTextContains("Пройден за: время не измерено")
+            .assertTextContains("Все звёзды за: ещё не пройден")
         compose.onNodeWithTag("time_screen").performScrollToKey("level_2")
         compose.onNodeWithTag("time_level_2").assertTextContains("Активное время: Уже играл до включения измерения: время неизвестно")
-        compose.runOnIdle { state.value = ready(97_385_000) }
+        compose.runOnIdle { state.value = ready(97_385_000, stars = 2) }
         compose.onNodeWithTag("time_screen").performScrollToIndex(1)
         compose.onNodeWithTag("time_total").assertTextEquals("Общее активное время: 27 ч 3 мин 5 с")
         compose.onNodeWithTag("time_screen").performScrollToKey("level_1")
-        compose.onNodeWithTag("time_level_1").assertTextContains("До R звёзд (R = 1): 27 ч 3 мин 5 с")
-            .assertTextContains("До всех M звёзд (M = 2): Время отсутствует").assertHasNoClickAction()
+        compose.onNodeWithTag("time_level_1")
+            .assertTextContains("Активное время: 27 ч 3 мин 5 с")
+            .assertTextContains("Пройден за: 27 ч 3 мин 5 с")
+            .assertTextContains("Все звёзды за: время не измерено")
+            .assertHasNoClickAction()
+    }
+
+    @Test fun measuredTimeDoesNotRepeatHistoricalNoteAndStagesUseMapNames() {
+        compose.setContent {
+            WordsTheme { TimeScreen(ready(5_000, stars = 1, timeToRMs = null)
+                .copy(historicalLevels = setOf(1))) }
+        }
+        compose.onNodeWithTag("time_screen").performScrollToKey("level_1")
+        compose.onNodeWithTag("time_level_1")
+            .assertTextContains("Активное время: 5 с")
+            .assertTextContains("Пройден за: время не измерено")
+        compose.onNodeWithText("Уже играл до включения измерения", substring = true).assertDoesNotExist()
+        compose.onNodeWithTag("time_screen").performScrollToKey("stage_1")
+        compose.onNodeWithTag("time_stage_1").assertTextEquals("Разминка: 5 с")
+        compose.onNodeWithTag("time_screen").performScrollToKey("stage_6")
+        compose.onNodeWithTag("time_stage_6").assertTextEquals("Мастер: 0 с")
+    }
+
+    @Test fun thresholdLabelsHideInternalNotationAndAggregateStatistics() {
+        compose.setContent { WordsTheme { TimeScreen(ready(stars = 1)) } }
+        compose.onNodeWithTag("time_screen").performScrollToKey("level_1")
+        compose.onNodeWithTag("time_level_1")
+            .assertTextContains("Пройден за: время не измерено", substring = true)
+            .assertTextContains("Все звёзды за: ещё не пройден", substring = true)
+        compose.onAllNodesWithText("R", substring = true).assertCountEquals(0)
+        compose.onAllNodesWithText("M", substring = true).assertCountEquals(0)
+        compose.onNodeWithText("Среднее", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Медиана", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Самый быстрый", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Самый долгий", substring = true).assertDoesNotExist()
+    }
+
+    @Test fun allStarsLineIsHiddenWhenRequiredThresholdIsTheMaximum() {
+        val singleTaskCampaign = Campaign(listOf(Stage(1, 1, 1)),
+            listOf(CampaignLevel(1, "достопримечательность", 1, 1,
+                listOf(CampaignTask.T1("r", 1)))), contentSha256 = "a".repeat(64))
+        val state = TimeUiState(loading = false, campaign = singleTaskCampaign,
+            summary = CampaignTimeStatistics.aggregate(singleTaskCampaign,
+                CampaignTimeSnapshot(requireNotNull(singleTaskCampaign.contentSha256), emptyMap())),
+            levelStars = mapOf(1 to 1))
+        compose.setContent { WordsTheme { TimeScreen(state) } }
+        compose.onNodeWithTag("time_screen").performScrollToKey("level_1")
+        compose.onNodeWithTag("time_level_1")
+            .assertTextContains("Пройден за: время не измерено")
+        compose.onAllNodesWithText("Все звёзды за", substring = true).assertCountEquals(0)
     }
 
     @Test fun allFieldsFitNativeScreenAndKeepTalkBackHeadings() {
         compose.setContent {
-            WordsTheme { TimeScreen(ready(Long.MAX_VALUE)) }
+            WordsTheme { TimeScreen(ready(Long.MAX_VALUE, stars = 2)) }
         }
         compose.onNodeWithText("Время игры").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
         for (stage in 1..6) {
             compose.onNodeWithTag("time_screen").performScrollToKey("stage_$stage")
             compose.onNodeWithTag("time_stage_$stage").assertExists()
+                .assertTextContains(stageNames[stage - 1], substring = true)
         }
         for (level in 1..15) {
             compose.onNodeWithTag("time_screen").performScrollToKey("level_$level")
             compose.onNodeWithTag("time_level_$level").assertExists()
                 .assertTextContains("Уровень $level · достопримечательность")
-                .assertTextContains("До всех M звёзд (M = 2): Время отсутствует")
+                .assertTextContains("Все звёзды за: время не измерено")
             assertLevelFieldsFit(level)
         }
     }
@@ -74,7 +131,7 @@ class TimeScreenTest {
     }
 
     @Test fun veryLongDurationRemainsFullyReadableInSummaryAndLevel() {
-        compose.setContent { WordsTheme { TimeScreen(ready(Long.MAX_VALUE)) } }
+        compose.setContent { WordsTheme { TimeScreen(ready(Long.MAX_VALUE, stars = 2)) } }
         val duration = "2562047788015 ч 12 мин 55 с"
         compose.onNodeWithTag("time_screen").performScrollToIndex(1)
         val total = compose.onNodeWithTag("time_total")
@@ -87,7 +144,8 @@ class TimeScreenTest {
         compose.onNodeWithTag("time_screen").performScrollToKey("level_1")
         compose.onNodeWithTag("time_level_1")
             .assertTextContains("Активное время: $duration")
-            .assertTextContains("До R звёзд (R = 1): $duration")
+            .assertTextContains("Пройден за: $duration")
+            .assertTextContains("Все звёзды за: время не измерено")
         assertLevelFieldsFit(1)
     }
 

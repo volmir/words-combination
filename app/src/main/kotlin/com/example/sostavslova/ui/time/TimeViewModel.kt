@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.core.Campaign
 import com.example.sostavslova.core.CampaignProgress
+import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.CampaignTimeSummary
 import com.example.sostavslova.data.LevelPlayTime
 import com.example.sostavslova.data.LevelsRepository
@@ -24,6 +25,8 @@ data class TimeUiState(
     val summary: CampaignTimeSummary? = null,
     val historicalLevels: Set<Int> = emptySet(),
     val pendingLevels: Set<Int> = emptySet(),
+    /** Звёзды из прогресса кампании: порог определяется ими, а не наличием замера. */
+    val levelStars: Map<Int, Int> = emptyMap(),
 )
 
 /** Presentation evidence only: never initialize timing or migrate/write progress here. */
@@ -44,7 +47,10 @@ internal fun timeUiState(
     }.map { it.number }.toSet()
     return TimeUiState(loading = false, campaign = campaign, summary = summary,
         historicalLevels = historical,
-        pendingLevels = records.filter { it.value.initialized && it.value.lastSequence == 0L }.keys - historical)
+        pendingLevels = records.filter { it.value.initialized && it.value.lastSequence == 0L }.keys - historical,
+        levelStars = campaign.levels.associate { level ->
+            level.number to (matchingProgress?.let { CampaignRules.stars(level, it) } ?: 0)
+        })
 }
 
 class TimeViewModel(

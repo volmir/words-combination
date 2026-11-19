@@ -20,6 +20,14 @@ class TimePresentationTest {
                     record.cumulativeActiveMs, record.lastSequence > 0, record.timeToRMs, record.timeToFullMs)
             })), records, progress)
 
+    private fun progress(vararg stars: Pair<Int, Int>): CampaignProgress = CampaignProgress(
+        campaignId = campaign.contentSha256,
+        levels = stars.associate { (number, count) ->
+            val level = campaign.levels.single { it.number == number }
+            level.word to CampaignLevelProgress(
+                completedTaskIds = level.tasks.take(count).map { it.id }.toSet())
+        })
+
     @Test fun durationBoundariesTruncateSubsecondsWithoutWrappingHours() {
         val cases = mapOf(
             0L to listOf("0", "0", "0"),
@@ -43,6 +51,17 @@ class TimePresentationTest {
             BigInteger(parts[0]) * BigInteger.valueOf(3600) + BigInteger(parts[1]) * BigInteger.valueOf(60) + BigInteger(parts[2]))
     }
 
+    @Test fun durationTextKeepsOnlySignificantUnits() {
+        val units = listOf("ч", "мин", "с")
+        fun text(ms: Long) = durationText(durationParts(BigInteger.valueOf(ms)), units)
+        assertEquals("0 с", text(0))
+        assertEquals("45 с", text(45_000))
+        assertEquals("5 мин 3 с", text(303_000))
+        assertEquals("2 ч 14 мин", text(8_040_000))
+        assertEquals("2 ч 5 с", text(7_205_000))
+        assertEquals("27 ч 3 мин 5 с", text(97_385_999))
+    }
+
     @Test fun freshHistoricalPendingAndMeasuredZeroAreDifferentSnapshots() {
         val empty = mapOf(1 to LevelPlayTime(), 2 to LevelPlayTime())
         val fresh = state(empty)
@@ -59,6 +78,46 @@ class TimePresentationTest {
         val measured = pending + (1 to LevelPlayTime(initialized = true, lastSequence = 1))
         assertEquals(0L, state(measured).summary?.levels?.first()?.screenActiveMs)
         assertEquals(1, state(measured).summary?.measuredLevelCount)
+    }
+
+    @Test fun activeTimeAndThresholdStatesAreUnambiguous() {
+        val empty = mapOf(1 to LevelPlayTime(), 2 to LevelPlayTime())
+        val unplayed = state(empty)
+        assertNull(unplayed.summary?.levels?.first()?.screenActiveMs)
+        assertEquals(ActiveTimeStatus.Unplayed, activeTimeStatus(null, historical = false, pending = false))
+        assertEquals(ThresholdStatus.NotPassed, thresholdStatus(stars = 0, thresholdStars = 1, milliseconds = null))
+        assertEquals(ThresholdStatus.NotMeasured, thresholdStatus(stars = 1, thresholdStars = 1, milliseconds = null))
+        assertEquals(ThresholdStatus.Measured, thresholdStatus(stars = 1, thresholdStars = 1, milliseconds = 5_000))
+
+        val historical = state(empty, progress(1 to 1))
+        assertEquals(setOf(1), historical.historicalLevels)
+        assertEquals(1, historical.levelStars[1])
+        val historicalLevel = historical.summary?.levels?.first()
+        assertEquals(ActiveTimeStatus.Historical,
+            activeTimeStatus(historicalLevel?.screenActiveMs, historical = true, pending = false))
+        assertEquals(ThresholdStatus.NotMeasured,
+            thresholdStatus(historical.levelStars.getValue(1), 1, historicalLevel?.timeToRMs))
+
+        val measured = state(empty + (1 to LevelPlayTime(initialized = true, lastSequence = 1,
+            cumulativeActiveMs = 5_000, lastStars = 1, timeToRMs = 4_000)), progress(1 to 1))
+        assertEquals(5_000L, measured.summary?.levels?.first()?.screenActiveMs)
+        assertEquals(ActiveTimeStatus.Measured,
+            activeTimeStatus(measured.summary?.levels?.first()?.screenActiveMs, historical = false, pending = false))
+        assertEquals(ThresholdStatus.Measured,
+            thresholdStatus(measured.levelStars.getValue(1), 1, measured.summary?.levels?.first()?.timeToRMs))
+    }
+
+    @Test fun measuredTimeWinsOverHistoricalMarker() {
+        val record = LevelPlayTime(initialized = true, rAccounted = true, lastStars = 1,
+            lastSequence = 1, cumulativeActiveMs = 5_000)
+        val snapshot = state(mapOf(1 to record, 2 to LevelPlayTime()), progress(1 to 1))
+        assertTrue(1 in snapshot.historicalLevels)
+        assertEquals(5_000L, snapshot.summary?.levels?.first()?.screenActiveMs)
+        assertEquals(ActiveTimeStatus.Measured,
+            activeTimeStatus(snapshot.summary?.levels?.first()?.screenActiveMs,
+                historical = 1 in snapshot.historicalLevels, pending = false))
+        assertEquals(ThresholdStatus.NotMeasured,
+            thresholdStatus(snapshot.levelStars.getValue(1), 1, snapshot.summary?.levels?.first()?.timeToRMs))
     }
 
     @Test fun historicalThresholdDoesNotBecomeFullCompletionAndSnapshotsUpdate() {

@@ -233,25 +233,21 @@
     <string name="time_loading">Загрузка времени игры…</string>
     <string name="time_error">Не удалось прочитать время игры.</string>
     <string name="time_unavailable">Время игры доступно для кампании.</string>
-    <string name="time_duration">%1$s ч %2$s мин %3$s с</string>
+    <string name="time_unit_hours">ч</string>
+    <string name="time_unit_minutes">мин</string>
+    <string name="time_unit_seconds">с</string>
     <string name="time_total">Общее активное время: %1$s</string>
-    <string name="time_note">Только сохранённое активное время на уровнях. Старое время без замеров в суммы не входит. Среднее, медиана, быстрый и долгий уровни — по уровням с замерами, включая повторные заходы.</string>
+    <string name="time_note">Только сохранённое активное время на уровнях. Старое время без замеров в суммы не входит.</string>
     <string name="time_stages">Время по этапам</string>
-    <string name="time_stage">Этап %1$d: %2$s</string>
+    <string name="time_stage">%1$s: %2$s</string>
     <string name="time_levels">Время по уровням</string>
     <string name="time_level">Уровень %1$d · %2$s</string>
-    <string name="time_level_stage">Этап %1$d</string>
     <string name="time_active">Активное время: %1$s</string>
-    <string name="time_unplayed">Ещё не играл: 0 ч 0 мин 0 с</string>
+    <string name="time_unplayed">—</string>
     <string name="time_historical">Уже играл до включения измерения: время неизвестно</string>
     <string name="time_pending">Нет сохранённого замера</string>
-    <string name="time_missing">Время отсутствует</string>
-    <string name="time_to_r">До R звёзд (R = %1$d): %2$s</string>
-    <string name="time_to_m">До всех M звёзд (M = %1$d): %2$s</string>
-    <string name="time_mean">Среднее время уровня: %1$s</string>
-    <string name="time_median">Медиана времени уровня: %1$s</string>
-    <string name="time_fastest">Самый быстрый уровень: %1$s</string>
-    <string name="time_slowest">Самый долгий уровень: %1$s</string>
-    <string name="time_extreme">Уровень %1$d · %2$s · %3$s</string>
-    <string name="time_no_measurements">Нет измерений</string>
+    <string name="time_passed_for">Пройден за: %1$s</string>
+    <string name="time_all_stars_for">Все звёзды за: %1$s</string>
+    <string name="time_threshold_not_passed">ещё не пройден</string>
+    <string name="time_threshold_not_measured">время не измерено</string>
 </resources>
