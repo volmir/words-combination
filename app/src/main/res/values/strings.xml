@@ -52,6 +52,18 @@
     <string name="answer_empty">Введите слово русскими буквами</string>
     <string name="all_words_found">Вы отгадали все слова!</string>
     <string name="star_received">Получена звезда!</string>
+    <plurals name="stars_received">
+        <item quantity="one">Получена звезда!</item>
+        <item quantity="few">Получено звёзд: %1$d</item>
+        <item quantity="many">Получено звёзд: %1$d</item>
+        <item quantity="other">Получено звёзд: %1$d</item>
+    </plurals>
+    <plurals name="stars_received_next_level">
+        <item quantity="one">Получена звезда!\nОткрыт следующий уровень!</item>
+        <item quantity="few">Получено звёзд: %1$d\nОткрыт следующий уровень!</item>
+        <item quantity="many">Получено звёзд: %1$d\nОткрыт следующий уровень!</item>
+        <item quantity="other">Получено звёзд: %1$d\nОткрыт следующий уровень!</item>
+    </plurals>
     <string name="hint_all_found">Все слова уже найдены</string>
     <string name="hint_title">Подсказка:</string>
     <string name="show_hint">Получить подсказку</string>

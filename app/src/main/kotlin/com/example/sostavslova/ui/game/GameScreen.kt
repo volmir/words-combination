@@ -348,11 +348,13 @@ private fun CampaignHint(state: GameUiState, onHint: () -> Unit) {
 @Composable
 private fun GameBanner(message: GameMessage) {
     val missing = message.missingLetter
-    val text = if (missing == null) {
-        if (message.word == null) stringResource(message.text) else stringResource(message.text, message.word)
-    } else {
-        stringResource(message.text, message.word.orEmpty(), missing.letter.uppercaseChar().toString(),
-            missing.available, missing.required)
+    val pluralText = message.pluralText
+    val text = when {
+        pluralText != null -> pluralStringResource(pluralText, message.count, message.count)
+        missing != null -> stringResource(message.text, message.word.orEmpty(),
+            missing.letter.uppercaseChar().toString(), missing.available, missing.required)
+        message.word != null -> stringResource(message.text, message.word)
+        else -> stringResource(message.text)
     }
     AlertBanner(message.type, text)
 }

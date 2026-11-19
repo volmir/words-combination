@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.game
 
+import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -51,7 +52,15 @@ import kotlinx.coroutines.withContext
 
 data class GameMessage(@param:StringRes val text: Int, val word: String? = null,
     val missingLetter: com.example.sostavslova.core.MissingLetter? = null,
-    val type: AlertType = AlertType.Info)
+    val type: AlertType = AlertType.Info,
+    @param:PluralsRes val pluralText: Int? = null,
+    val count: Int = 0)
+
+/** Один баннер на ответ: число звёзд и открытие уровня не ждут друг друга в очереди. */
+internal fun starsMessage(count: Int, openedNextLevel: Boolean): GameMessage =
+    GameMessage(R.string.star_received, type = AlertType.Success,
+        pluralText = if (openedNextLevel) R.plurals.stars_received_next_level else R.plurals.stars_received,
+        count = count)
 
 /** Формулировка отказа сохраняет различие точного словаря и вероятного совпадения. */
 internal fun submissionMessage(submission: Submission, answer: String, threeLetterCampaignAnswer: Boolean = false): GameMessage? {
@@ -367,14 +376,16 @@ class GameViewModel(
                     mutableState.update { it.copy(input = "") }
                 }
                 mutableState.update { it.copy(message = message) }
-                if (submitted != null) {
-                    val evaluation = submitted.evaluation
-                    repeat(evaluation.newlyCompletedTaskIds.size) {
-                        notices.send(GameMessage(R.string.star_received, type = AlertType.Success))
-                    }
-                    if (campaignAnswer?.openedNextLevel == true) notices.send(GameMessage(R.string.game_next_opened, type = AlertType.Success))
-                } else if (stars.stars > before.levelProgress.stars) {
-                    notices.send(GameMessage(R.string.star_received, type = AlertType.Success))
+                val earnedStars = if (submitted != null) {
+                    submitted.evaluation.newlyCompletedTaskIds.size
+                } else {
+                    (stars.stars - before.levelProgress.stars).coerceAtLeast(0)
+                }
+                val openedNextLevel = campaignAnswer?.openedNextLevel == true
+                if (earnedStars > 0) {
+                    notices.send(starsMessage(earnedStars, openedNextLevel))
+                } else if (openedNextLevel) {
+                    notices.send(GameMessage(R.string.game_next_opened, type = AlertType.Success))
                 }
                 if (!game.isFinished && next.isFinished) notices.send(GameMessage(R.string.all_words_found, type = AlertType.Success))
                 if (next != game) {

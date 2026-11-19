@@ -84,6 +84,29 @@ class GameSubmissionUiTest {
         }
     }
 
+    @Test fun starNoticeUsesPluralAndKeepsOpenedLevelInOneBanner() {
+        val game = GameState("блокти", listOf("кот"))
+        val initial = GameUiState(loading = false, game = game, statistics = game.statistics())
+        val notice = mutableStateOf<GameMessage?>(null)
+        compose.setContent {
+            WordsTheme { GameScreen(initial, {}, {}, {}, {}, {}, {}, notice = notice.value) }
+        }
+        val resources = InstrumentationRegistry.getInstrumentation().targetContext.resources
+        fun show(message: GameMessage, expected: String) {
+            compose.runOnIdle { notice.value = message }
+            compose.onNodeWithText(expected).performScrollTo().assertIsDisplayed()
+        }
+        show(GameMessage(R.string.star_received,
+            pluralText = R.plurals.stars_received, count = 1),
+            resources.getQuantityString(R.plurals.stars_received, 1, 1))
+        show(GameMessage(R.string.star_received,
+            pluralText = R.plurals.stars_received, count = 2),
+            resources.getQuantityString(R.plurals.stars_received, 2, 2))
+        show(GameMessage(R.string.star_received,
+            pluralText = R.plurals.stars_received_next_level, count = 2),
+            resources.getQuantityString(R.plurals.stars_received_next_level, 2, 2))
+    }
+
     @Test fun rejectionMessagesKeepCategoriesCountsAndSafeFallback() {
         val game = GameState("блокти", listOf("кот"))
         val index = WordIndex(listOf("кот", "колокол", "блок"))

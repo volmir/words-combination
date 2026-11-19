@@ -88,6 +88,12 @@ class GameViewModelTest {
     private suspend fun GameViewModel.event() = withContext(Dispatchers.Default) {
         withTimeout(10_000) { events.first() }
     }
+    private fun assertStarEvent(message: GameMessage, count: Int, nextLevel: Boolean = false) {
+        assertEquals(R.string.star_received, message.text)
+        assertEquals(if (nextLevel) R.plurals.stars_received_next_level else R.plurals.stars_received,
+            message.pluralText)
+        assertEquals(count, message.count)
+    }
 
     @Test fun nextLevelUsesCommittedUnlockAllowsMoreStarsAndWaitsForSaveBarrier() = runTest {
         val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
@@ -322,10 +328,10 @@ class GameViewModelTest {
         assertEquals(LevelProgress(), model.uiState.value.levelProgress)
         model.answer("тор")
         assertEquals(LevelProgress(completed = true), model.uiState.value.levelProgress)
-        assertEquals(R.string.star_received, model.event().text)
+        assertStarEvent(model.event(), 1)
         model.answer("тот")
         assertEquals(LevelProgress(true, true, true), model.uiState.value.levelProgress)
-        assertEquals(R.string.star_received, model.event().text)
+        assertStarEvent(model.event(), 2)
         assertEquals(R.string.all_words_found, model.event().text)
         assertTrue(checkNotNull(model.uiState.value.game).isFinished)
         model.answer("ТОТ")
@@ -333,6 +339,69 @@ class GameViewModelTest {
         assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
         val recreated = model(); recreated.ready()
         assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { recreated.events.first() } })
+    }
+
+    @Test fun campaignAnswerWithoutNewStarsEmitsNoStarNotice() = runTest {
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.ready()
+        val answered = model.answer("рот")
+        assertEquals(listOf("рот"), answered.game?.found)
+        assertEquals(0, answered.campaignLevel?.completedTaskIds?.size)
+        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
+    }
+
+    @Test fun campaignAnswerWithOneStarEmitsOnePluralNotice() = runTest {
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.ready()
+        val answered = model.answer("торт")
+        assertEquals(setOf("long"), answered.campaignLevel?.completedTaskIds)
+        assertStarEvent(model.event(), 1)
+        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
+    }
+
+    @Test fun campaignAnswerWithTwoStarsEmitsOnePluralNotice() = runTest {
+        val noUnlock = miniCampaignJson.replace("\"requiredStars\": 2", "\"requiredStars\": 5")
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { noUnlock })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.ready()
+        val answered = model.answer("карта")
+        assertEquals(setOf("initial", "long"), answered.campaignLevel?.completedTaskIds)
+        assertStarEvent(model.event(), 2)
+        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
+    }
+
+    @Test fun campaignAnswerWithStarAndOpenedLevelEmitsOneCombinedNotice() = runTest {
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.ready()
+        val answered = model.answer("карта")
+        assertEquals(setOf("initial", "long"), answered.campaignLevel?.completedTaskIds)
+        assertStarEvent(model.event(), 2, nextLevel = true)
+        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
+    }
+
+    @Test fun campaignAnswerWithStarAndFinalWordKeepsFinalNoticeSeparate() = runTest {
+        val campaignLevels = LevelsRepository({ error("No v1") }, readCampaign = {
+            """{"version":2,"countMinLength":4,
+                "stages":[{"number":1,"firstLevel":1,"lastLevel":1}],
+                "levels":[{"number":1,"word":"кот","stage":1,"requiredStars":1,
+                "tasks":[{"id":"riddle","type":"T4","targets":["ток"]}]}]}"""
+        })
+        val campaignWords = WordRepository({ "кот\nток" })
+        val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.ready()
+        model.answer("ток")
+        assertStarEvent(model.event(), 1)
+        assertEquals(R.string.all_words_found, model.event().text)
+        assertTrue(checkNotNull(model.uiState.value.game).isFinished)
+        assertNotNull(model.uiState.value.finaleSummary)
+        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
     }
 
     @Test fun levelRestoresSavedAnswersThroughCoreAndFiltersInvalid() = runTest {
@@ -893,7 +962,7 @@ class GameViewModelTest {
         assertTrue(restored.riddles.getValue("riddle").single().solved)
     }
 
-    @Test fun oneCampaignAnswerWritesOnceAndEmitsEveryNewStarAndUnlockOnlyOnce() = runTest {
+    @Test fun oneCampaignAnswerWritesOnceAndEmitsOneCombinedStarAndUnlockNotice() = runTest {
         val writes = AtomicInteger()
         val counted = object : DataStore<Preferences> {
             override val data = store.data
@@ -910,9 +979,7 @@ class GameViewModelTest {
         val answered = model.answer("карта")
         assertEquals(1, writes.get())
         assertEquals(2, answered.campaignLevel?.completedTaskIds?.size)
-        assertEquals(R.string.star_received, model.event().text)
-        assertEquals(R.string.star_received, model.event().text)
-        assertEquals(R.string.game_next_opened, model.event().text)
+        assertStarEvent(model.event(), 2, nextLevel = true)
         assertEquals(2, progress.observeCampaignProgress().first().highestUnlockedLevel)
         model.answer("КАРТА")
         withContext(Dispatchers.Main) { repeat(3) { model.onGameOpened() } }
