@@ -4,9 +4,24 @@ import android.view.ViewTreeObserver
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 
 internal val LocalPlayTimeTracker = staticCompositionLocalOf<PlayTimeTracker?> { null }
+
+/** Наблюдение касаний на проходе Initial без потребления событий. */
+internal fun Modifier.playTimeUserActivity(tracker: PlayTimeTracker?): Modifier =
+    if (tracker == null) this
+    else pointerInput(tracker) {
+        awaitPointerEventScope {
+            while (true) {
+                awaitPointerEvent(PointerEventPass.Initial)
+                tracker.onUserActivity()
+            }
+        }
+    }
 
 /** Регистрируется также ВНУТРИ Dialog, где LocalView принадлежит его окну. */
 @Composable

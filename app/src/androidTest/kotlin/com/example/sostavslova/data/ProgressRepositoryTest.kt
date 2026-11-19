@@ -9,6 +9,15 @@ import com.example.sostavslova.core.GameState
 import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.LevelProgress
 import androidx.datastore.core.okio.OkioStorage
+import com.example.sostavslova.core.Campaign
+import com.example.sostavslova.core.CampaignIdentity
+import com.example.sostavslova.core.CampaignLevel
+import com.example.sostavslova.core.CampaignProgress
+import com.example.sostavslova.core.CampaignTask
+import com.example.sostavslova.core.InstallEvidence
+import com.example.sostavslova.core.Stage
+import com.example.sostavslova.core.WelcomeState
+import com.example.sostavslova.core.WordIndex
 import com.example.sostavslova.data.jsonstore.PreferencesSerializer
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
@@ -152,6 +161,65 @@ class ProgressRepositoryTest {
         assertEquals(listOf("река", "пир"), migrated.levels.getValue(source).found)
         assertEquals(setOf("count"), migrated.levels.getValue(source).completedTaskIds)
         assertNull(store.data.first()[stringPreferencesKey("levelSessionV1")])
+    }
+
+    @Test
+    fun resetCampaignProgressClearsProgressWithoutArchivePreservesWelcomeAndAllowsReplay() = runTest {
+        val freshInstallRepo = ProgressRepository(
+            dataStore = store,
+            installEvidence = { InstallEvidence.FRESH_INSTALL },
+            hadLocalStateAtStartup = false,
+        )
+        assertEquals(WelcomeState.SHOW, freshInstallRepo.resolveWelcomeState())
+        assertTrue(freshInstallRepo.markWelcomeDone())
+
+        val campaign = Campaign(
+            stages = listOf(Stage(1, 1, 2)),
+            levels = listOf(
+                CampaignLevel(1, "картотека", 1, 1, listOf(CampaignTask.T1("count1", 1))),
+                CampaignLevel(2, "трактор", 1, 1, listOf(CampaignTask.T1("count2", 1))),
+            ),
+        )
+        val index = WordIndex(listOf("крот", "кора"))
+        freshInstallRepo.migrateCampaign(campaign, index)
+        freshInstallRepo.submitCampaignAnswer(campaign, 1, "крот", index)
+        assertEquals(2, freshInstallRepo.observeCampaignProgress().first().highestUnlockedLevel)
+
+        freshInstallRepo.resetCampaignProgress()
+
+        val afterReset = freshInstallRepo.observeCampaignProgress().first()
+        assertEquals(CampaignProgress(), afterReset)
+        assertEquals(1, afterReset.highestUnlockedLevel)
+        assertTrue(afterReset.levels.isEmpty())
+
+        val prefs = store.data.first()
+        assertEquals(WelcomeState.DONE.name, prefs[stringPreferencesKey("welcomeStateV1")])
+        assertTrue(
+            prefs.asMap().keys.none {
+                it.name == "campaignProgressV2Archive" || it.name.startsWith("campaignProgressV2Archive.")
+            },
+        )
+        assertEquals(WelcomeState.DONE, freshInstallRepo.resolveWelcomeState())
+
+        // Перезапуск после сброса не показывает приветствие и позволяет играть с уровня 1.
+        scope.cancel()
+        scope.coroutineContext.job.join()
+        openStore()
+        val reopened = ProgressRepository(
+            dataStore = store,
+            installEvidence = { InstallEvidence.FRESH_INSTALL },
+            hadLocalStateAtStartup = true,
+        )
+        assertEquals(WelcomeState.DONE, reopened.resolveWelcomeState())
+        val migrated = reopened.migrateCampaign(campaign, index)
+        assertEquals(CampaignIdentity.of(campaign), migrated.campaignId)
+        assertEquals(1, migrated.highestUnlockedLevel)
+        reopened.submitCampaignAnswer(campaign, 1, "крот", index)
+        assertEquals(2, reopened.observeCampaignProgress().first().highestUnlockedLevel)
+
+        // В отличие от resetCampaignProgress, clearAll имитирует полную очистку данных и удаляет welcomeState.
+        reopened.clearAll()
+        assertNull(store.data.first()[stringPreferencesKey("welcomeStateV1")])
     }
 
 }

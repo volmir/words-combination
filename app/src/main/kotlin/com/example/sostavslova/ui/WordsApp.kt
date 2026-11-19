@@ -50,6 +50,7 @@ import kotlinx.coroutines.launch
 import com.example.sostavslova.time.LocalPlayTimeTracker
 import com.example.sostavslova.time.PlayTimeWindowFocus
 import com.example.sostavslova.time.observePlayTimeLifecycle
+import com.example.sostavslova.time.playTimeUserActivity
 
 @Composable
 fun WordsApp() {
@@ -97,6 +98,7 @@ fun WordsApp() {
     CompositionLocalProvider(LocalPlayTimeTracker provides tracker) {
         PlayTimeWindowFocus()
         ModalNavigationDrawer(
+            modifier = Modifier.playTimeUserActivity(tracker),
             drawerState = drawerState,
             gesturesEnabled = !inLevel,
             drawerContent = {
@@ -166,6 +168,7 @@ fun WordsApp() {
 internal fun ExitDialog(state: ExitUiState, onConfirm: () -> Unit, onCancel: () -> Unit) {
     if (!state.dialog) return
     AlertDialog(
+        modifier = Modifier.playTimeUserActivity(LocalPlayTimeTracker.current),
         onDismissRequest = onCancel,
         title = { Text(stringResource(R.string.exit_title)) },
         text = { Text(stringResource(when {

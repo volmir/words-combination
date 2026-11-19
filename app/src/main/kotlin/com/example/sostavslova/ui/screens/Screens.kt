@@ -88,6 +88,7 @@ fun RulesScreen(loadOptionalTaskLevel: (suspend () -> Int?)? = null) {
                     stringResource(R.string.rules_item_5),
                     stringResource(R.string.rules_item_6),
                     stringResource(R.string.rules_item_7),
+                    stringResource(R.string.rules_item_8),
                 )
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("rules_items")) {

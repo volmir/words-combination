@@ -63,7 +63,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.sostavslova.R
 import com.example.sostavslova.di.appContainer
+import com.example.sostavslova.time.LocalPlayTimeTracker
 import com.example.sostavslova.time.observePlayTimeLifecycle
+import com.example.sostavslova.time.playTimeUserActivity
 import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.HintLadder
@@ -143,7 +145,8 @@ fun GameScreen(
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     Column(
-        Modifier.fillMaxSize().testTag("game_screen").imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier.fillMaxSize().testTag("game_screen").playTimeUserActivity(LocalPlayTimeTracker.current)
+            .imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Column(Modifier.widthIn(max = 600.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {

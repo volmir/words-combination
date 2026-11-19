@@ -47,7 +47,9 @@ fun WordsNavHost(navController: NavHostController, modifier: Modifier = Modifier
                 }
             }) { message -> navController.returnToLevels(message) }
         }
-        composable(Destination.Stats.route) { com.example.sostavslova.ui.stats.StatsRoute() }
+        composable(Destination.Stats.route) {
+            com.example.sostavslova.ui.stats.StatsRoute { navController.returnToLevels() }
+        }
         composable(Destination.Rules.route) { RulesScreen() }
         composable(Destination.About.route) { AboutScreen() }
     }

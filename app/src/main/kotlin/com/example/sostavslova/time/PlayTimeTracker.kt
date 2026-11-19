@@ -40,7 +40,8 @@ data class PlayTimeWriteFailure(val levelNumber: Int, val operation: String, val
 class PlayTimeTracker(
     private val store: PlayTimeStore,
     private val scope: CoroutineScope,
-    monotonicMs: () -> Long,
+    private val monotonicMs: () -> Long,
+    private val idleTimeoutMs: Long = DEFAULT_IDLE_TIMEOUT_MS,
     private val reportFailure: (PlayTimeWriteFailure) -> Unit = {},
 ) {
     private val lock = Any()
@@ -55,23 +56,34 @@ class PlayTimeTracker(
     private var activityResumed = false
     private var drawerOpen = false
     private var exiting = false
+    private var idlePaused = false
+    private var lastActivityMs: Long? = null
     private var runningTarget: PlayTimeTarget? = null
     private var checkpoint: Job? = null
+    private var idleJob: Job? = null
 
     private sealed interface Command {
         data class Initialize(val target: PlayTimeTarget) : Command
         data class Segment(val target: PlayTimeTarget, val durationMs: Long, var sequence: Long? = null) : Command
         data class Barrier(val result: CompletableDeferred<Unit>) : Command
+        data object Reset : Command
     }
     private val commands = Channel<Command>(Channel.UNLIMITED)
     private val mutableFailure = MutableStateFlow<PlayTimeWriteFailure?>(null)
     val writeFailure = mutableFailure.asStateFlow()
 
     init {
+        require(idleTimeoutMs > 0L) { "idleTimeoutMs must be positive" }
         scope.launch {
             val pending = ArrayDeque<Command>()
             val sequences = mutableMapOf<String, Long>()
             for (command in commands) {
+                if (command is Command.Reset) {
+                    pending.clear()
+                    sequences.clear()
+                    mutableFailure.value = null
+                    continue
+                }
                 if (command !is Command.Barrier) pending.addLast(command)
                 try {
                     while (pending.isNotEmpty()) {
@@ -89,7 +101,7 @@ class PlayTimeTracker(
                                 val saved = store.appendSegment(target.campaign, target.levelNumber, sequence, item.durationMs, target.stars)
                                 sequences[target.identity] = saved.lastSequence
                             }
-                            is Command.Barrier -> error("Barrier cannot be pending")
+                            is Command.Barrier, is Command.Reset -> error("Control command cannot be pending")
                         }
                         pending.removeFirst()
                     }
@@ -103,7 +115,7 @@ class PlayTimeTracker(
                     val target = when (first) {
                         is Command.Initialize -> first.target
                         is Command.Segment -> first.target
-                        is Command.Barrier -> error("Barrier cannot be pending")
+                        is Command.Barrier, is Command.Reset -> error("Control command cannot be pending")
                     }
                     val failure = PlayTimeWriteFailure(target.levelNumber,
                         if (first is Command.Initialize) "initialize" else "append",
@@ -117,10 +129,24 @@ class PlayTimeTracker(
     }
 
     fun setRoute(id: String?, levelNumber: Int?) = synchronized(lock) {
-        if (routeId != id || routeNumber != levelNumber) stopSegment()
+        if (routeId != id || routeNumber != levelNumber) {
+            stopSegment()
+            idlePaused = false
+        }
         routeId = id
         routeNumber = levelNumber
         reconcile()
+    }
+
+    /** Идемпотентная и дешёвая отметка пользовательской активности (касание, ввод текста). */
+    fun onUserActivity() = synchronized(lock) {
+        if (idlePaused) {
+            idlePaused = false
+            lastActivityMs = null
+            reconcile()
+        } else if (counter.running) {
+            lastActivityMs = monotonicMs()
+        }
     }
 
     /** null — загрузка, ошибка, закрытый/несуществующий уровень; finished — финальный экран. */
@@ -193,6 +219,30 @@ class PlayTimeTracker(
     /** stop идемпотентен; дальнейший start требует нового события пригодности. */
     fun stop() = synchronized(lock) { stopSegment() }
 
+    /**
+     * Полный сброс кэшей трекера в памяти после очистки хранилища.
+     * Сбрасывает lastTargets, loaded, finishedLevels, resumedLevels, маршрут и кэш sequences,
+     * сохраняя активность окна/Activity, чтобы продолжение игры на уровне 1 сразу считало время.
+     */
+    fun resetAll() = synchronized(lock) {
+        counter.stop()
+        runningTarget = null
+        lastActivityMs = null
+        checkpoint?.cancel()
+        checkpoint = null
+        idleJob?.cancel()
+        idleJob = null
+        routeId = null
+        routeNumber = null
+        loaded.clear()
+        lastTargets.clear()
+        finishedLevels.clear()
+        resumedLevels.clear()
+        idlePaused = false
+        exiting = false
+        enqueue(Command.Reset)
+    }
+
     /** Вызывается после ProgressRepository.awaitSaved; ошибки не превращаются в успех. */
     suspend fun awaitSaved() {
         val result = CompletableDeferred<Unit>()
@@ -203,16 +253,39 @@ class PlayTimeTracker(
     private fun reconcile() {
         val target = loaded[routeId]?.takeIf { it.levelNumber == routeNumber }
         val eligible = target != null && routeId in resumedLevels && routeId !in finishedLevels && activityResumed &&
-            focusedWindows.isNotEmpty() && !drawerOpen && !exiting
+            focusedWindows.isNotEmpty() && !drawerOpen && !exiting && !idlePaused
         if (!eligible || runningTarget?.identity != target?.identity) stopSegment()
         if (eligible && !counter.running) {
             runningTarget = target
+            lastActivityMs = null
             counter.start()
             checkpoint = scope.launch {
                 while (isActive) {
                     delay(CHECKPOINT_MS)
                     synchronized(lock) {
                         if (isActive) runningTarget?.let { active -> counter.flush()?.let { enqueue(Command.Segment(active, it)) } }
+                    }
+                }
+            }
+            idleJob = scope.launch {
+                var nextWaitMs = idleTimeoutMs
+                while (isActive) {
+                    delay(nextWaitMs)
+                    nextWaitMs = synchronized(lock) {
+                        if (!isActive || !counter.running) return@launch
+                        val last = lastActivityMs
+                        if (last == null) {
+                            idlePaused = true
+                            stopSegment()
+                            return@launch
+                        }
+                        val elapsed = (monotonicMs() - last).coerceAtLeast(0L)
+                        if (elapsed >= idleTimeoutMs) {
+                            idlePaused = true
+                            stopSegment()
+                            return@launch
+                        }
+                        idleTimeoutMs - elapsed
                     }
                 }
             }
@@ -223,12 +296,18 @@ class PlayTimeTracker(
         val duration = counter.stop()
         val target = runningTarget
         runningTarget = null
+        lastActivityMs = null
         checkpoint?.cancel()
         checkpoint = null
+        idleJob?.cancel()
+        idleJob = null
         if (duration != null && target != null) enqueue(Command.Segment(target, duration))
     }
 
     private fun enqueue(command: Command) { check(commands.trySend(command).isSuccess) }
 
-    companion object { const val CHECKPOINT_MS = 60_000L }
+    companion object {
+        const val CHECKPOINT_MS = 60_000L
+        const val DEFAULT_IDLE_TIMEOUT_MS = 90_000L
+    }
 }

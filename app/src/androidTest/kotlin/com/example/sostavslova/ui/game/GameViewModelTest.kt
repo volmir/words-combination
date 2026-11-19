@@ -14,8 +14,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.R
 import com.example.sostavslova.core.AnswerResult
+import com.example.sostavslova.core.Campaign
 import com.example.sostavslova.core.CampaignIdentity
 import com.example.sostavslova.data.*
+import com.example.sostavslova.time.PlayTimeTracker
 import java.io.File
 import java.io.IOException
 import java.util.UUID
@@ -24,6 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.*
@@ -1016,6 +1020,56 @@ class GameViewModelTest {
             {"number":5,"firstLevel":11,"lastLevel":13},
             {"number":6,"firstLevel":14,"lastLevel":15}]"""
         return """{"version":2,"countMinLength":4,"stages":$stages,"levels":[$levels]}"""
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test fun inputChangesSignalUserActivityAndResumeIdleTracker() = runTest {
+        val clock = AtomicInteger(0)
+        val records = mutableMapOf<Int, LevelPlayTime>()
+        val timeStore = object : PlayTimeStore {
+            override suspend fun initialize(campaign: Campaign, levelNumber: Int, starsBeforeTracking: Int): LevelPlayTime =
+                records.getOrPut(levelNumber) { LevelPlayTime(initialized = true, lastStars = starsBeforeTracking) }
+
+            override suspend fun appendSegment(campaign: Campaign, levelNumber: Int, sequence: Long, activeMs: Long, starsAfter: Int): LevelPlayTime {
+                val old = records.getValue(levelNumber)
+                return old.copy(cumulativeActiveMs = old.cumulativeActiveMs + activeMs, lastSequence = sequence, lastStars = starsAfter)
+                    .also { records[levelNumber] = it }
+            }
+        }
+        val tracker = PlayTimeTracker(timeStore, backgroundScope, { clock.get().toLong() })
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val viewModel = withContext(Dispatchers.Main) {
+            GameViewModel(
+                SavedStateHandle(mapOf("index" to "1")),
+                campaignWords,
+                campaignLevels,
+                progress,
+                noDefinitions,
+                playTimeTracker = tracker,
+                playTimeOwner = "entry1",
+            )
+        }
+        viewModel.ready()
+        tracker.setRoute("entry1", 1)
+        tracker.setLevelResumed("entry1", true)
+        tracker.setActivityResumed(true)
+        tracker.setWindowFocused("activity", true)
+        runCurrent()
+
+        clock.set(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS.toInt())
+        advanceTimeBy(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS)
+        runCurrent()
+        assertEquals(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS, records.getValue(1).cumulativeActiveMs)
+
+        clock.set(120_000)
+        withContext(Dispatchers.Main) { viewModel.onInputChanged("к") }
+        runCurrent()
+        clock.set(120_500)
+        tracker.stop()
+        runCurrent()
+        tracker.awaitSaved()
+        assertEquals(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS + 500L, records.getValue(1).cumulativeActiveMs)
     }
 
 }

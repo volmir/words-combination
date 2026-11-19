@@ -290,12 +290,14 @@ class GameViewModel(
     }
 
     fun onInputChanged(raw: String) {
+        playTimeTracker?.onUserActivity()
         // Правильный ответ не длиннее исходника (≤ MAX_WORD_LENGTH), поэтому
         // произвольный ввод не обрезаем: скрытая потеря последних символов недопустима.
         mutableState.update { it.copy(input = raw, message = null) }
     }
 
     fun onSubmit() {
+        playTimeTracker?.onUserActivity()
         val before = uiState.value
         val game = before.game ?: return
         if (!before.canPlay) return
@@ -356,6 +358,7 @@ class GameViewModel(
     }
 
     fun onHint() {
+        playTimeTracker?.onUserActivity()
         val state = uiState.value
         if (!state.canPlay || hintJob?.isActive == true) return
         val current = state.campaignLevel ?: return
@@ -390,6 +393,7 @@ class GameViewModel(
      * заблокированная попытка не создают транзакцию.
      */
     fun onHintTask(taskId: String?) {
+        playTimeTracker?.onUserActivity()
         val state = uiState.value
         if (!state.canPlay || hintJob?.isActive == true) return
         val current = state.campaignLevel ?: return

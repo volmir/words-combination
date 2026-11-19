@@ -23,22 +23,40 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import com.example.sostavslova.time.LocalPlayTimeTracker
+import com.example.sostavslova.time.playTimeUserActivity
 import com.example.sostavslova.ui.theme.WordsCardShape
 import com.example.sostavslova.ui.theme.WordsColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WordsDialog(title: String, onDismiss: () -> Unit, titleText: AnnotatedString? = null, content: @Composable ColumnScope.() -> Unit) {
+fun WordsDialog(
+    title: String,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    titleText: AnnotatedString? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val density = LocalDensity.current
     BasicAlertDialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         CompositionLocalProvider(LocalDensity provides density) {
         com.example.sostavslova.time.PlayTimeWindowFocus()
-        Box(Modifier.fillMaxSize().pointerInput(onDismiss) { detectTapGestures { onDismiss() } }.padding(24.dp), contentAlignment = Alignment.Center) {
-            Surface(Modifier.widthIn(max = 560.dp).fillMaxWidth().pointerInput(Unit) { detectTapGestures {} }, shape = WordsCardShape, color = WordsColors.background, contentColor = WordsColors.text) {
+        Box(Modifier.fillMaxSize().playTimeUserActivity(LocalPlayTimeTracker.current)
+            .pointerInput(onDismiss) { detectTapGestures { onDismiss() } }.padding(24.dp),
+            contentAlignment = Alignment.Center) {
+            Surface(
+                modifier.widthIn(max = 560.dp).fillMaxWidth()
+                    .semantics { paneTitle = title }
+                    .pointerInput(Unit) { detectTapGestures {} },
+                shape = WordsCardShape,
+                color = WordsColors.background,
+                contentColor = WordsColors.text,
+            ) {
                 Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text(titleText ?: AnnotatedString(title), modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
                     content()

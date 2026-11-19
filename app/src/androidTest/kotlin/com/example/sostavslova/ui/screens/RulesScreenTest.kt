@@ -31,16 +31,16 @@ class RulesScreenTest {
         }
     }
 
-    @Test fun rulesListContainsSevenItems() {
+    @Test fun rulesListContainsEightItems() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val campaign = CampaignJson.decode(context.assets.open("campaign.json").bufferedReader().use { it.readText() })
         val firstOptional = requireNotNull(CampaignRules.firstOptionalTaskLevel(campaign))
         compose.setContent { WordsTheme { RulesScreen() } }
-        // Exactly seven rule items are displayed: rules_item_1..rules_item_7, no rules_item_8.
-        for (index in 1..7) {
+        // Exactly eight rule items are displayed: rules_item_1..rules_item_8, no rules_item_9.
+        for (index in 1..8) {
             compose.onNodeWithTag("rules_item_$index").performScrollTo().assertIsDisplayed()
         }
-        compose.onNodeWithTag("rules_item_8").assertDoesNotExist()
+        compose.onNodeWithTag("rules_item_9").assertDoesNotExist()
         compose.waitUntil(5_000) {
             compose.onAllNodesWithText("с уровня $firstOptional", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
@@ -52,6 +52,10 @@ class RulesScreenTest {
             "На уровне есть запас подсказок (на ранних этапах больше), и ещё одна добавляется за каждые 4 найденных слова. " +
             "Первая буква ответа в задании с описаниями бесплатна."
         compose.onNodeWithTag("rules_item_7").performScrollTo().assertTextEquals(item7)
+        val item8 = "8. В игре используются преимущественно существительные в начальной форме: «кошка», а не «кошки» или «кошку». " +
+            "Слова, существующие только во множественном числе (например, «ножницы», «часы»), также могут приниматься, " +
+            "если они есть в игровом словаре."
+        compose.onNodeWithTag("rules_item_8").performScrollTo().assertTextEquals(item8)
         compose.onNodeWithText("Подсказки не отнимают звёзд.").performScrollTo().assertIsDisplayed()
     }
 

@@ -471,14 +471,24 @@ class ProgressRepository(
         .map { readLegacyLevels(it).progress.mapValues { entry -> entry.value.toCore() } }
         .distinctUntilChanged().flowOn(computationDispatcher)
 
-    suspend fun clearAll() = committedWrite {
+    /**
+     * Явный пользовательский сброс кампании («Начать заново»).
+     * Удаляет прогресс v2, legacy-ключи и прежние архивы, не создавая новый campaignProgressV2Archive*,
+     * и сохраняет welcomeStateV1, чтобы приветственное окно не показывалось повторно.
+     */
+    suspend fun resetCampaignProgress() = clearProgressData(preserveWelcome = true)
+
+    suspend fun clearAll() = clearProgressData(preserveWelcome = false)
+
+    private suspend fun clearProgressData(preserveWelcome: Boolean) = committedWrite {
+        decodedCampaign = null
         dataStore.edit { preferences ->
             preferences.remove(currentGameKey)
             preferences.remove(levelProgressKey)
             preferences.remove(levelAnswersKey)
             preferences.remove(legacyLevelsKey)
             preferences.remove(campaignProgressKey)
-            preferences.remove(welcomeStateKey)
+            if (!preserveWelcome) preferences.remove(welcomeStateKey)
             preferences.asMap().keys
                 .filter { it.name == campaignProgressArchiveKey.name || it.name.startsWith("${campaignProgressArchiveKey.name}.") }
                 .forEach { preferences.remove(it) }

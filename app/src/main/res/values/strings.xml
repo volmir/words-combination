@@ -90,6 +90,7 @@
     <string name="rules_item_5">5. Пройденные уровни остаются доступными: можно вернуться и добрать оставшиеся звёзды.</string>
     <string name="rules_item_6">6. В игре 15 уровней, объединённых в шесть этапов. Достижение «Мастер» даётся за все звёзды игры.</string>
     <string name="rules_item_7">7. Подсказка открывает по одной букве слова из ещё не выполненного задания. На уровне есть запас подсказок (на ранних этапах больше), и ещё одна добавляется за каждые 4 найденных слова. Первая буква ответа в задании с описаниями бесплатна.</string>
+    <string name="rules_item_8">8. В игре используются преимущественно существительные в начальной форме: «кошка», а не «кошки» или «кошку». Слова, существующие только во множественном числе (например, «ножницы», «часы»), также могут приниматься, если они есть в игровом словаре.</string>
     <string name="rules_footer">Подсказки не отнимают звёзд.</string>
     <string name="rules_colors_title">Цвета уровней</string>
     <string name="rules_color_locked">Серый — уровень пока закрыт.</string>
@@ -272,5 +273,15 @@
     <string name="stats_not_passed">Уровень ещё не пройден</string>
     <string name="stats_all_stars_pending">Все звёзды ещё не получены</string>
     <string name="stats_time_note">«—» — время не измерено: до включения учёта оно не сохранялось.</string>
+    <string name="stats_idle_note">Если игра не получает касаний больше %1$d %2$s, время не считается.</string>
+    <string name="stats_second_genitive_one">секунды</string>
+    <string name="stats_second_genitive_many">секунд</string>
+    <string name="stats_data_heading">Данные</string>
+    <string name="stats_reset_button">Начать заново</string>
+    <string name="stats_reset_dialog_title">Начать заново?</string>
+    <string name="stats_reset_dialog_message">Весь прогресс, найденные слова и время будут удалены. Это нельзя отменить.</string>
+    <string name="stats_reset_cancel">Отмена</string>
+    <string name="stats_reset_confirm">Начать заново</string>
+    <string name="stats_reset_error">Не удалось сбросить данные. Нажмите «Начать заново», чтобы повторить.</string>
     <string name="stats_dash">—</string>
 </resources>

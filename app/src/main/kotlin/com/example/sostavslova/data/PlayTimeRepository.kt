@@ -156,8 +156,9 @@ class PlayTimeRepository(private val dataStore: DataStore<Preferences>) : PlayTi
         return read(saved, campaign, level)
     }
 
-    /** Явный сброс только файла времени, включая прежние кампании. В UI не подключён. */
+    /** Явный сброс только файла времени, включая прежние кампании. */
     suspend fun clearTimeStatistics() {
+        decodedSnapshot = null
         dataStore.edit { it.clear() }
     }
 

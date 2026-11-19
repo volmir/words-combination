@@ -69,7 +69,7 @@ class PlayTimeTrackerTest {
     private inner class Fixture(val test: TestScope, val store: FakeStore = FakeStore(), scope: CoroutineScope = test.backgroundScope) {
         var clockReads = 0
         val diagnostics = mutableListOf<PlayTimeWriteFailure>()
-        val tracker = PlayTimeTracker(store, scope, { clockReads++; test.testScheduler.currentTime }, diagnostics::add)
+        val tracker = PlayTimeTracker(store, scope, { clockReads++; test.testScheduler.currentTime }, reportFailure = diagnostics::add)
         fun target(level: Int = 1, stars: Int = 0) = PlayTimeTarget(campaign, level, stars)
         fun open(owner: String = "entry1", level: Int = 1, stars: Int = 0) {
             tracker.setRoute(owner, level)
@@ -419,5 +419,171 @@ class PlayTimeTrackerTest {
         assertEquals(20L, f.store.total())
         assertEquals(10L, f.store.records.getValue(1).timeToRMs)
         assertEquals(20L, f.store.records.getValue(1).timeToFullMs)
+    }
+
+    @Test fun idleTimeoutStopsAndFlushesAfterInactivityAndUserActivityExtendsWindow() = runTest {
+        val f = Fixture(this); f.open(); runCurrent()
+        advanceTimeBy(40_000L)
+        f.tracker.onUserActivity()
+        advanceTimeBy(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS - 1_000L); runCurrent()
+        assertEquals(PlayTimeTracker.CHECKPOINT_MS, f.store.total())
+        advanceTimeBy(1_000L); runCurrent()
+        val expected = 40_000L + PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS
+        assertEquals(expected, f.store.total())
+        val savedCalls = f.store.calls.toList()
+        advanceTimeBy(500_000L); runCurrent()
+        assertEquals(expected, f.store.total())
+        assertEquals(savedCalls, f.store.calls)
+    }
+
+    @Test fun userActivityResumesAfterIdleTimeoutAndIsIdempotentAndRespectsEligibility() = runTest {
+        val f = Fixture(this); f.open(); runCurrent()
+        advanceTimeBy(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS); runCurrent()
+        assertEquals(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS, f.store.total())
+        advanceTimeBy(120_000L); runCurrent()
+        assertEquals(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS, f.store.total())
+
+        // Открытие меню не запускает счётчик само по себе, а касание в меню при открытом drawer
+        // снимает idlePaused, не обходя запрет на учёт времени при открытом меню.
+        f.tracker.setDrawerOpen(true)
+        f.tracker.onUserActivity()
+        advanceTimeBy(30_000L); runCurrent()
+        assertEquals(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS, f.store.total())
+        f.tracker.setDrawerOpen(false)
+        repeat(5) { f.tracker.onUserActivity() }
+        advanceTimeBy(15_000L)
+        f.tracker.stop(); f.tracker.awaitSaved()
+        assertEquals(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS + 15_000L, f.store.total())
+        assertEquals(listOf(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS, 15_000L), f.store.calls.map { it.third })
+    }
+
+    @Test fun backgroundTransitionWhileIdleOrActivePreservesExclusion() = runTest {
+        val f = Fixture(this); f.open(); runCurrent()
+        advanceTimeBy(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS); runCurrent()
+        assertEquals(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS, f.store.total())
+
+        // Возврат из фона без касания не должен возобновлять остановленный по простою счёт.
+        f.tracker.setActivityResumed(false)
+        advanceTimeBy(50_000L)
+        f.tracker.setActivityResumed(true)
+        advanceTimeBy(40_000L); runCurrent()
+        assertEquals(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS, f.store.total())
+
+        // Последующая активность возобновляет, а уход в фон корректно отрезает активный сегмент.
+        f.tracker.onUserActivity()
+        advanceTimeBy(5_000L)
+        f.tracker.setActivityResumed(false)
+        advanceTimeBy(300_000L)
+        f.tracker.setActivityResumed(true)
+        advanceTimeBy(10_000L)
+        f.tracker.stop(); f.tracker.awaitSaved()
+        assertEquals(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS + 15_000L, f.store.total())
+    }
+
+    @Test fun dialogFocusCountsUntilIdleTimeoutAndResumesOnDialogActivity() = runTest {
+        val f = Fixture(this); f.open(); runCurrent()
+        f.tracker.setWindowFocused("hint-dialog", true)
+        f.tracker.setWindowFocused("activity", false)
+        advanceTimeBy(50_000L)
+        f.tracker.onUserActivity()
+        advanceTimeBy(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS); runCurrent()
+        val atPause = 50_000L + PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS
+        assertEquals(atPause, f.store.total())
+
+        advanceTimeBy(60_000L); runCurrent()
+        assertEquals(atPause, f.store.total())
+
+        f.tracker.onUserActivity()
+        advanceTimeBy(10_000L)
+        f.tracker.setWindowFocused("activity", true)
+        f.tracker.setWindowFocused("hint-dialog", false)
+        advanceTimeBy(2_000L)
+        f.tracker.stop(); f.tracker.awaitSaved()
+        assertEquals(atPause + 12_000L, f.store.total())
+    }
+
+    @Test fun sixtySecondCheckpointWorksTogetherWithIdleTimeout() = runTest {
+        val f = Fixture(this); f.open(); runCurrent()
+        advanceTimeBy(PlayTimeTracker.CHECKPOINT_MS); runCurrent()
+        assertEquals(listOf(PlayTimeTracker.CHECKPOINT_MS), f.store.calls.map { it.third })
+
+        val remainderToIdle = PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS - PlayTimeTracker.CHECKPOINT_MS
+        advanceTimeBy(remainderToIdle); runCurrent()
+        assertEquals(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS, f.store.total())
+        assertEquals(listOf(PlayTimeTracker.CHECKPOINT_MS, remainderToIdle), f.store.calls.map { it.third })
+
+        f.tracker.onUserActivity()
+        advanceTimeBy(PlayTimeTracker.CHECKPOINT_MS); runCurrent()
+        advanceTimeBy(20_000L)
+        f.tracker.onUserActivity()
+        advanceTimeBy(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS); runCurrent()
+        assertEquals(
+            PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS + PlayTimeTracker.CHECKPOINT_MS + 20_000L + PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS,
+            f.store.total(),
+        )
+    }
+
+    @Test fun customIdleTimeoutParameterOverridesDefault() = runTest {
+        val store = FakeStore()
+        val customTimeout = 5_000L
+        val tracker = PlayTimeTracker(store, backgroundScope, { testScheduler.currentTime }, idleTimeoutMs = customTimeout)
+        tracker.setRoute("entry1", 1)
+        tracker.updateLevel("entry1", PlayTimeTarget(campaign, 1, 0))
+        tracker.setLevelResumed("entry1", true)
+        tracker.setActivityResumed(true)
+        tracker.setWindowFocused("activity", true)
+        runCurrent()
+
+        advanceTimeBy(customTimeout); runCurrent()
+        assertEquals(customTimeout, store.total())
+        advanceTimeBy(PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS); runCurrent()
+        assertEquals(customTimeout, store.total())
+    }
+
+    @Test fun resetAllClearsCachesAndSequencesAndAllowsFreshLevel1Timing() = runTest {
+        val f = Fixture(this); f.open(level = 1, stars = 0); runCurrent()
+        advanceTimeBy(100L)
+        f.tracker.checkpointProgress(confirmed(2, level = 1))
+        f.tracker.setRoute("entry2", 2)
+        f.tracker.updateLevel("entry2", f.target(level = 2, stars = 2), finished = true)
+        f.tracker.awaitSaved()
+        assertEquals(100L, f.store.total(1))
+        assertEquals(2, f.store.records.getValue(1).lastStars)
+
+        // Атомарный сброс: очистка хранилища -> resetAll().
+        f.store.records.clear()
+        f.store.calls.clear()
+        f.store.initializations = 0
+        f.tracker.resetAll()
+
+        // После сброса старый снимок прогресса не должен воскресить звёзды из lastTargets.
+        f.tracker.checkpointProgress(confirmed(2, level = 1))
+        f.tracker.awaitSaved()
+        assertTrue(f.store.records.isEmpty())
+
+        // Продолжение игры на уровне 1 (без повторного setActivityResumed/setWindowFocused).
+        f.tracker.setRoute("entry1", 1)
+        f.tracker.updateLevel("entry1", f.target(level = 1, stars = 0))
+        f.tracker.setLevelResumed("entry1", true)
+        runCurrent()
+        advanceTimeBy(35L)
+        f.tracker.stop()
+        f.tracker.awaitSaved()
+
+        val fresh1 = f.store.records.getValue(1)
+        assertEquals(35L, fresh1.cumulativeActiveMs)
+        assertEquals(1L, fresh1.lastSequence)
+        assertEquals(0, fresh1.lastStars)
+        assertEquals(1, f.store.initializations)
+
+        // Сброшенный finishedLevels позволяет заново учитывать время и на уровне 2.
+        f.tracker.setRoute("entry2", 2)
+        f.tracker.updateLevel("entry2", f.target(level = 2, stars = 0), finished = false)
+        f.tracker.setLevelResumed("entry2", true)
+        runCurrent()
+        advanceTimeBy(15L)
+        f.tracker.stop()
+        f.tracker.awaitSaved()
+        assertEquals(15L, f.store.total(2))
     }
 }

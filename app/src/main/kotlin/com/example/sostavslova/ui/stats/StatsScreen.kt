@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.stats
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -12,12 +13,16 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
@@ -41,10 +47,15 @@ import com.example.sostavslova.core.LevelTimeStatus
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.core.Statistics
 import com.example.sostavslova.di.appContainer
+import com.example.sostavslova.time.PlayTimeTracker
+import com.example.sostavslova.ui.components.AlertBanner
+import com.example.sostavslova.ui.components.AlertType
 import com.example.sostavslova.ui.components.StatsTable
 import com.example.sostavslova.ui.components.StarsRow
+import com.example.sostavslova.ui.components.WordsDialog
 import com.example.sostavslova.ui.game.gameStageName
 import com.example.sostavslova.ui.theme.WordsColors
+import com.example.sostavslova.ui.theme.WordsControlShape
 import java.math.BigInteger
 import java.util.Locale
 
@@ -80,20 +91,35 @@ private fun duration(ms: BigInteger): String = durationText(durationParts(ms), l
 ))
 
 @Composable
-fun StatsRoute() {
+fun StatsRoute(onReturnToLevels: () -> Unit = {}) {
     val container = appContainer()
     val stageNames = (1..6).associateWith { gameStageName(it) }
     val factory = remember(container, stageNames) { viewModelFactory { initializer {
         StatsViewModel(container.levelsRepository, container.playTimeRepository,
-            container.progressRepository, container.wordRepository, stageNames)
+            container.progressRepository, container.wordRepository, stageNames,
+            playTimeTracker = container.playTimeTracker)
     } } }
     val model: StatsViewModel = viewModel(factory = factory)
     val state by model.uiState.collectAsStateWithLifecycle()
-    StatsScreen(state)
+    LaunchedEffect(state.resetCompleted) {
+        if (state.resetCompleted) onReturnToLevels()
+    }
+    StatsScreen(
+        state = state,
+        onRequestReset = model::onRequestReset,
+        onConfirmReset = model::onConfirmReset,
+        onDismissReset = model::onDismissReset,
+    )
 }
 
 @Composable
-fun StatsScreen(state: StatsUiState, modifier: Modifier = Modifier) {
+fun StatsScreen(
+    state: StatsUiState,
+    modifier: Modifier = Modifier,
+    onRequestReset: () -> Unit = {},
+    onConfirmReset: () -> Unit = {},
+    onDismissReset: () -> Unit = {},
+) {
     LazyColumn(modifier.fillMaxSize().testTag("stats_screen"),
         contentPadding = PaddingValues(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -132,6 +158,97 @@ fun StatsScreen(state: StatsUiState, modifier: Modifier = Modifier) {
                         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
                             .testTag("stats_time_note"),
                         style = MaterialTheme.typography.bodyMedium)
+                }
+                item(key = "stats_idle_note") {
+                    val idleSeconds = (PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS / 1_000L).toInt()
+                    val secondUnit = RussianPlural.form(
+                        idleSeconds,
+                        stringResource(R.string.stats_second_genitive_one),
+                        stringResource(R.string.stats_second_genitive_many),
+                        stringResource(R.string.stats_second_genitive_many),
+                    )
+                    Text(stringResource(R.string.stats_idle_note, idleSeconds, secondUnit),
+                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                            .testTag("stats_idle_note"),
+                        style = MaterialTheme.typography.bodyMedium)
+                }
+                item(key = "stats_data_section") {
+                    Column(
+                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)
+                            .testTag("stats_data_section"),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        HorizontalDivider()
+                        Text(
+                            stringResource(R.string.stats_data_heading),
+                            Modifier.semantics { heading() }.testTag("stats_data_heading"),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        OutlinedButton(
+                            onClick = onRequestReset,
+                            enabled = !state.resetting,
+                            shape = WordsControlShape,
+                            border = BorderStroke(1.dp, WordsColors.dangerButton),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                            ),
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("stats_reset_button"),
+                        ) {
+                            Text(stringResource(R.string.stats_reset_button))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (state.resetConfirmVisible) {
+        WordsDialog(
+            title = stringResource(R.string.stats_reset_dialog_title),
+            onDismiss = { if (!state.resetting) onDismissReset() },
+            modifier = Modifier.testTag("stats_reset_dialog"),
+        ) {
+            Text(
+                stringResource(R.string.stats_reset_dialog_message),
+                Modifier.testTag("stats_reset_dialog_message"),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            if (state.resetError) {
+                AlertBanner(
+                    AlertType.Danger,
+                    stringResource(R.string.stats_reset_error),
+                    Modifier.testTag("stats_reset_error"),
+                )
+            }
+            FlowRow(
+                Modifier.fillMaxWidth().semantics { isTraversalGroup = true },
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onDismissReset,
+                    enabled = !state.resetting,
+                    shape = WordsControlShape,
+                    border = BorderStroke(1.dp, WordsColors.defaultButtonBorder),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = WordsColors.defaultButton,
+                        contentColor = WordsColors.defaultButtonText,
+                    ),
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("stats_reset_cancel"),
+                ) {
+                    Text(stringResource(R.string.stats_reset_cancel))
+                }
+                Button(
+                    onClick = onConfirmReset,
+                    enabled = !state.resetting,
+                    shape = WordsControlShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("stats_reset_confirm"),
+                ) {
+                    Text(stringResource(R.string.stats_reset_confirm))
                 }
             }
         }
