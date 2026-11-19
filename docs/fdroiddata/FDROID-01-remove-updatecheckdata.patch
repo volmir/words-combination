@@ -1,0 +1,9 @@
+--- a/metadata/io.github.volmir.wordscombination.yml
++++ b/metadata/io.github.volmir.wordscombination.yml
+@@ -45,6 +45,5 @@ MaintainerNotes: |-
+ 
+ AutoUpdateMode: Version
+ UpdateCheckMode: Tags
+-UpdateCheckData: app/build.gradle.kts|versionCode *= *([0-9]+)|.|versionName *= *"([0-9.]+)"
+ CurrentVersion: 1.0.3
+ CurrentVersionCode: 4
