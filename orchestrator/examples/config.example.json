@@ -41,6 +41,10 @@
     "heavy": "high"
   },
   "checks": {
+    "docs": [
+      "python3 tools/check_docs.py",
+      "python3 -m unittest discover -s tools/tests -p test_spec_campaign_numbers.py"
+    ],
     "tools": ["python3 -m unittest discover -s tools/tests"],
     "core": ["bash ./gradlew :core:test --console=plain"],
     "data": ["bash ./gradlew :app:verifyDictionaryLicenses :core:test --console=plain"],

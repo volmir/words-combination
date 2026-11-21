@@ -554,6 +554,27 @@ class OrchestratorTests(QueueHelpers, unittest.TestCase):
         self.assertFalse((self.repo / 'orchestrator/PROGRESS.md').exists())
         self.assertFalse((self.repo / 'orchestrator/.runtime').exists())
 
+    def test_composite_gate_runs_all_profiles_in_order(self):
+        self.set_config(checks={'probe': ['printf first >> gate-order.txt'],
+                                'probe2': ['printf second >> gate-order.txt']})
+        self.save_tasks(task(gate='bash orchestrator/run.sh --check probe '
+                                 '&& bash orchestrator/run.sh --check probe2'))
+        self.commit()
+        self.run_cli()
+        self.assertEqual('firstsecond', (self.repo / 'gate-order.txt').read_text())
+        self.assertEqual('passed', self.progress()['A-1']['gate'])
+
+    def test_composite_gate_stops_after_first_failed_profile(self):
+        self.set_config(checks={'probe': ['exit 5'], 'probe2': ['printf second >> gate-order.txt']})
+        self.save_tasks(task(gate='bash orchestrator/run.sh --check probe '
+                                 '&& bash orchestrator/run.sh --check probe2', retries=0))
+        self.commit()
+        output = self.run_cli(ok=False)
+        self.assertIn('gate завершился с кодом 5', output)
+        self.assertFalse((self.repo / 'gate-order.txt').exists())
+        self.assertEqual(1, len(self.calls()))
+        self.assertEqual({}, self.progress())
+
     def test_python_check_inside_queue_does_not_create_protected_bytecode(self):
         self.env.pop('PYTHONDONTWRITEBYTECODE', None)
         # Вложенный запуск использует маленькую серию, чтобы не запускать этот
@@ -986,6 +1007,18 @@ class OrchestratorTests(QueueHelpers, unittest.TestCase):
         self.assertIn('INNER', parsed[0].prompt)
         (self.repo / 'orchestrator/TASKS.md').write_bytes(task().replace('\n', '\r\n').encode())
         self.assertEqual(module.parse_tasks(self.repo / 'orchestrator/TASKS.md')[0].id, 'A-1')
+
+    def test_gate_syntax_keeps_skip_and_composite_profiles(self):
+        self.save_tasks(
+            '## A-1: Вспомогательная задача\ntier: light\ngate: skip\nretries: 0\n'
+            '```prompt\nПричина пропуска gate: код и данные не меняются.\n```\n'
+            '\n## B-2: Две подсистемы\n'
+            'gate: bash orchestrator/run.sh --check core && bash orchestrator/run.sh --check android\n'
+            '```prompt\nПроверки обеих подсистем в одном gate.\n```\n')
+        parsed = module.parse_tasks(self.repo / 'orchestrator/TASKS.md')
+        self.assertEqual(
+            ['skip', 'bash orchestrator/run.sh --check core && bash orchestrator/run.sh --check android'],
+            [current.gate for current in parsed])
 
     def test_path_escape_and_bad_config_are_rejected(self):
         self.set_config(commit=False, tasks_file='../outside.md')

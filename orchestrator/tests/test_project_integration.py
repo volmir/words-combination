@@ -1,6 +1,8 @@
 """Проверки команд проекта без SDK, сети и запуска настоящего агента."""
+import importlib.util
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -9,6 +11,24 @@ import unittest
 
 
 PACKAGE = Path(__file__).resolve().parents[1]
+REPO = PACKAGE.parent
+
+
+def load_module(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+checks = load_module("project_checks", PACKAGE / "checks.py")
+orchestrator = load_module("project_orchestrator", PACKAGE / "orchestrator.py")
+
+DOCUMENTATION_COMMANDS = [
+    "python3 tools/check_docs.py",
+    "python3 -m unittest discover -s tools/tests -p test_spec_campaign_numbers.py",
+]
 
 
 class ProjectGateTests(unittest.TestCase):
@@ -52,6 +72,7 @@ class ProjectGateTests(unittest.TestCase):
     def test_profiles_run_project_checks_from_repository_root(self):
         expected = {
             "orchestrator": ["python3 -m unittest discover -s orchestrator/tests"],
+            "docs": DOCUMENTATION_COMMANDS,
             "tools": ["python3 -m unittest discover -s tools/tests"],
             "core": ["gradle :core:test --console=plain"],
             "data": ["gradle :app:verifyDictionaryLicenses :core:test --console=plain"],
@@ -99,6 +120,64 @@ class ProjectGateTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("full", result.stdout)
         self.assertEqual(calls, [])
+
+    def test_project_profiles_load_from_config_with_policy_names(self):
+        loaded = checks.load_checks()
+        self.assertEqual(["android", "core", "data", "docs", "full", "release", "tools"],
+                         sorted(loaded))
+        for name, commands in loaded.items():
+            with self.subTest(profile=name):
+                self.assertTrue(commands)
+                self.assertTrue(all(command.strip() for command in commands))
+        self.assertEqual(DOCUMENTATION_COMMANDS, loaded["docs"])
+
+    def test_unknown_profile_fails_and_lists_available_profiles(self):
+        result, calls = self.run_gate("no-such-profile")
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(calls, [])
+        self.assertIn("no-such-profile", result.stderr)
+        for name in sorted(checks.load_checks()):
+            self.assertIn(name, result.stderr)
+        self.assertIn("orchestrator", result.stderr)
+
+    def test_docs_profile_executes_real_documentation_checks(self):
+        for command in checks.load_checks()["docs"]:
+            with self.subTest(command=command):
+                result = subprocess.run(["bash", "-c", command], cwd=REPO,
+                                        capture_output=True, text=True, timeout=180)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        # Проверка должна ловить поломку документации, а не быть заглушкой.
+        with tempfile.TemporaryDirectory(prefix="docs check ") as temp:
+            root = Path(temp) / "repo"
+            (root / "tools").mkdir(parents=True)
+            (root / "docs").mkdir()
+            shutil.copy2(REPO / "tools" / "check_docs.py", root / "tools" / "check_docs.py")
+            (root / "docs" / "INDEX.md").write_text("# Индекс\n", encoding="utf-8")
+            readme = root / "README.md"
+            readme.write_text("[нет](docs/MISSING.md)\n", encoding="utf-8")
+            broken = subprocess.run([sys.executable, str(root / "tools" / "check_docs.py")],
+                                    cwd=root, capture_output=True, text=True, timeout=60)
+            self.assertNotEqual(broken.returncode, 0, broken.stdout)
+            self.assertIn("docs/MISSING.md", broken.stderr)
+            readme.write_text("[см.](README.md)\n", encoding="utf-8")
+            fixed = subprocess.run([sys.executable, str(root / "tools" / "check_docs.py")],
+                                   cwd=root, capture_output=True, text=True, timeout=60)
+            self.assertEqual(fixed.returncode, 0, fixed.stdout + fixed.stderr)
+
+    def test_example_queues_parse_and_use_configured_profiles(self):
+        available = set(checks.load_checks()) | {"orchestrator"}
+        for relative in ("orchestrator/TASKS.md", "orchestrator/examples/TASKS.md"):
+            with self.subTest(queue=relative):
+                tasks = orchestrator.parse_tasks(REPO / relative)
+                self.assertTrue(tasks)
+                used = set()
+                for task in tasks:
+                    if task.gate == "skip":
+                        self.assertIn("Причина пропуска", task.prompt)
+                        continue
+                    used.update(re.findall(r"--check\s+([A-Za-z][A-Za-z0-9_-]*)", task.gate))
+                self.assertEqual(set(), used - available, used - available)
+                self.assertIn("docs", used)
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ CC0-1.0. Все 39 авторских текстов и документы пр�
 
 ## 1. Быстрый цикл проверки
 
-Работай от малого к большому: после каждой правки запускай самую узкую проверку, полный гейт запускай один раз перед коммитом.
+Работай от малого к большому: после каждой правки запускай самую узкую проверку, перед коммитом — строку «Гейт перед коммитом» из таблицы ниже. Это локальная проверка перед коммитом; выбор gate для задач оркестратора описан в §12.
 
 | Что менял | Что запускать |
 |---|---|
@@ -23,6 +23,7 @@ CC0-1.0. Все 39 авторских текстов и документы пр�
 | Тесты в `androidTest` | `./gradlew :app:compileDebugAndroidTestKotlin`; `:app:connectedDebugAndroidTest` только при наличии эмулятора или устройства |
 | Строки, ресурсы, манифест | `./gradlew :app:lintDebug` |
 | `tools/` | `python3 -m unittest discover tools/tests` |
+| `docs/`, README, AGENTS | `bash orchestrator/run.sh --check docs` |
 | `orchestrator/` | `bash -n orchestrator/run.sh`, затем `bash orchestrator/run.sh --check orchestrator` |
 | `data/`, `legal/` | `./gradlew :app:verifyDictionaryLicenses`, затем `:core:test` |
 | Gradle, R8, манифест, подпись | `./gradlew :app:assembleRelease` |
@@ -157,10 +158,34 @@ legal/  лицензии и инвентарь библиотек (копиру�
   завершённых задач. Не коммить незавершённую работу ради очистки дерева.
   Посторонние изменения без контрольной точки и нарушения защищённых путей
   требуют разбора; автоматические повторы не обходят gate и согласования.
-* В задаче указывать `gate: bash orchestrator/run.sh --check full`: тесты `tools/`,
-  оркестратора, `:core:test` и `:app:assembleDebug`. Дополнительные проверки по §1
-  добавлять через `&&`; для Gradle/R8/подписи требуется также `:app:assembleRelease`.
-  Узкие профили `run.sh --check` нужны для промежуточной проверки и не заменяют полный гейт.
+* Выбор gate — по фактически изменяемым компонентам задачи, а не по её
+  названию. Профили заданы ключом `checks` в `orchestrator/config.json`;
+  `full` по умолчанию не назначается:
+
+  | Что меняется в задаче | gate |
+  |---|---|
+  | документация | `bash orchestrator/run.sh --check docs` |
+  | игровая логика `:core` | `bash orchestrator/run.sh --check core` |
+  | Android UI, строки, манифест | `bash orchestrator/run.sh --check android` |
+  | словарь и данные | `bash orchestrator/run.sh --check data` |
+  | `orchestrator/` | `bash orchestrator/run.sh --check orchestrator` |
+  | крупный рефакторинг | `bash orchestrator/run.sh --check full` |
+  | подготовка релиза | `bash orchestrator/run.sh --check full && bash orchestrator/run.sh --check release` |
+
+* Задача затрагивает несколько подсистем — gate включает проверки всех
+  затронутых подсистем через `&&`, например
+  `bash orchestrator/run.sh --check core && bash orchestrator/run.sh --check android`.
+  Узкий профиль заменяет `full` только для узкой задачи и не отменяет проверки
+  остальных реально затронутых подсистем.
+* `full` (тесты `tools/` и оркестратора, `:core:test`, `:app:assembleDebug`)
+  применяется к крупному рефакторингу и подготовке релиза; для Gradle/R8/подписи
+  добавлять `--check release`. Самопроверка оркестратора выполняется при
+  правках `orchestrator/` или в составе `full`. Профиль `docs` — лёгкие реальные
+  проверки документации: `python3 tools/check_docs.py` (UTF-8, ссылки документов
+  и данных, `docs/INDEX.md`) и сверка чисел `docs/SPEC.md` с `data/campaign.json`.
+* `gate: skip` — точное значение только для явно вспомогательных задач,
+  которые не меняют исполняемый код и данные; причина пропуска указывается
+  в задаче. Объединять `skip` с проверками через `&&` нельзя.
 * Отсутствие JDK/SDK и провал ручного аудита — причины остановки, а не повод
   подменять проверку `skip` или ослаблять её. Оркестратор не устанавливает SDK,
   не регенерирует данные и не разрешает публикацию.
