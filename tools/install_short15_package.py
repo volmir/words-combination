@@ -26,7 +26,6 @@ from game_data_providers import atomic_json  # noqa: E402
 
 PROFILE = "short15-release-v1"
 REQUIRED_LEVELS = 15
-REQUIRED_STARS = 49
 ARTIFACTS = (
     "words.txt",
     "word_sources.jsonl.gz",
@@ -88,7 +87,6 @@ def verify_campaign(campaign: dict) -> None:
     if actual_stages != list(STAGE_NAMES):
         raise ValueError("Ожидались шесть этапов [3,2,3,2,3,2]")
     stars = 0
-    types = set()
     for level in levels:
         number = level["number"]
         expected_stage = next(stage for stage, first, last in STAGE_NAMES if first <= number <= last)
@@ -100,14 +98,20 @@ def verify_campaign(campaign: dict) -> None:
         required = level.get("requiredStars")
         if not isinstance(required, int) or not 1 <= required <= len(tasks):
             raise ValueError(f"Уровень {number}: неверный порог R")
+        seen = set()
+        for task in tasks:
+            task_type = task.get("type")
+            if task_type not in {f"T{i}" for i in range(1, 8)}:
+                raise ValueError(f"Уровень {number}: неизвестный тип задания")
+            if task_type in seen:
+                raise ValueError(f"Уровень {number}: тип задания повторяется")
+            seen.add(task_type)
         stars += len(tasks)
-        types.update(task.get("type") for task in tasks)
-    if stars != REQUIRED_STARS:
-        raise ValueError(f"Ожидалось {REQUIRED_STARS} звёзд, получено {stars}")
-    if levels[-1].get("requiredStars") != 4:
-        raise ValueError("Финал должен проходить при 4/5")
-    if types != {f"T{i}" for i in range(1, 8)}:
-        raise ValueError("Кампания должна содержать T1–T7")
+    max_stars = campaign.get("maxStars")
+    if max_stars not in (None, stars):
+        raise ValueError("maxStars в кампании не совпадает с числом заданий")
+    if stars <= 0:
+        raise ValueError("Кампания должна содержать хотя бы одну звезду")
 
 
 def verify_package(package: Path) -> dict:
@@ -167,8 +171,9 @@ def verify_package(package: Path) -> dict:
         raise ValueError("quality_report.json относится к другой кампании")
     if campaign_block.get("levels") not in (None, REQUIRED_LEVELS):
         raise ValueError("quality_report.json описывает не 15 уровней")
-    if campaign_block.get("master_stars") not in (None, REQUIRED_STARS):
-        raise ValueError("quality_report.json ожидает не 49 звёзд")
+    actual_stars = sum(len(level.get("tasks") or []) for level in campaign.get("levels") or [])
+    if campaign_block.get("master_stars") not in (None, actual_stars):
+        raise ValueError("quality_report.json содержит неверное число звёзд")
     hashes = quality.get("hashes") or {}
     if hashes.get("campaign.json") not in (None, campaign_sha):
         raise ValueError("quality_report.hashes не совпадает с campaign.json")
@@ -183,6 +188,7 @@ def verify_package(package: Path) -> dict:
         validation_sha256=sha256(package / "validation_report.json"),
         quality_sha256=sha256(package / "quality_report.json"),
         words=len(words),
+        stars=actual_stars,
     )
 
 
@@ -195,7 +201,7 @@ def installed_manifest(info: dict) -> dict:
         "previous_levels_role": "historical comparison only; not v2 task source",
         "sha256": info["campaign_sha256"],
         "levels": REQUIRED_LEVELS,
-        "max_stars": REQUIRED_STARS,
+        "max_stars": info["stars"],
         "validation_report_sha256": info["validation_sha256"],
         "quality_report_sha256": info["quality_sha256"],
     }

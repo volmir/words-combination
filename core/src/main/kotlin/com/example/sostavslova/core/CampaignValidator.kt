@@ -161,35 +161,19 @@ internal object Release30CampaignValidator {
 }
 
 /**
- * SHORT15-01 / short15-release-v1. Числа намеренно повторяют один профиль
- * tools/campaign_profiles.json; Python и JVM проверяют одни и те же границы.
- * Проверка словаря (частоты, узнаваемость, резервы) остаётся в GEN-04/GEN-05.
+ * Production short15 profile: 15 levels and 6 stages remain fixed, task composition
+ * is flexible. Structural and parameter admissibility is enforced here; reachability
+ * and dictionary-backed checks remain in GEN-04/GEN-05 and dataset audit.
  */
 object Short15CampaignValidator {
-    private data class Row(val first: Int, val last: Int, val types: List<TaskType>, val required: Int)
-
-    private val schedule = listOf(
-        Row(1, 3, listOf(TaskType.T1), 1),
-        Row(4, 5, listOf(TaskType.T1, TaskType.T2), 2),
-        Row(6, 8, listOf(TaskType.T1, TaskType.T2, TaskType.T3), 3),
-        Row(9, 10, listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T4), 3),
-        Row(11, 13, listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T4, TaskType.T5), 4),
-        Row(14, 14, listOf(TaskType.T1, TaskType.T2, TaskType.T4, TaskType.T5, TaskType.T6), 4),
-        Row(15, 15, listOf(TaskType.T1, TaskType.T2, TaskType.T3, TaskType.T5, TaskType.T7), 4),
-    )
-    private val t1 = listOf(9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24)
-    private val t2 = listOf(3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7)
-    private val t3 = listOf(6, 6, 6, 7, 7, 7, 8, 8, 8)
-    private val t5 = listOf(5, 5, 6, 7, 7)
+    private val stageRanges = listOf(1 to 3, 4 to 5, 6 to 8, 9 to 10, 11 to 13, 14 to 15)
 
     fun validate(campaign: Campaign): List<CampaignValidationError> = buildList {
         addAll(CampaignValidator.validate(campaign))
         fun error(field: String, reason: String, level: CampaignLevel? = null, task: CampaignTask? = null) {
             add(CampaignValidationError(field, reason, level?.number, task?.id))
         }
-        val stageRanges = listOf(1 to 3, 4 to 5, 6 to 8, 9 to 10, 11 to 13, 14 to 15)
         if (campaign.levels.size != 15) error("levels.size", "Expected 15 levels")
-        if (campaign.maxStars != 49) error("maxStars", "Expected 49 stars")
         if (campaign.stages.size != 6) error("stages.size", "Expected 6 stages")
         for ((index, range) in stageRanges.withIndex()) {
             val number = index + 1
@@ -197,49 +181,19 @@ object Short15CampaignValidator {
             if (stage != Stage(number, range.first, range.second))
                 error("stages.range", "Expected stage $number range ${range.first}..${range.second}")
         }
-        var t3Index = 0
-        var t5Index = 0
+        if (campaign.maxStars != campaign.levels.sumOf { it.tasks.size })
+            error("maxStars", "Total stars must equal the sum of level tasks")
         for (level in campaign.levels) {
-            val row = schedule.singleOrNull { level.number in it.first..it.last }
-            if (row == null) {
-                error("schedule", "No short15 schedule row for level ${level.number}", level)
+            val expectedStage = stageRanges.indexOfFirst { level.number in it.first..it.second } + 1
+            if (expectedStage <= 0) {
+                error("schedule", "No short15 stage range for level ${level.number}", level)
                 continue
             }
-            val expectedStage = stageRanges.indexOfFirst { level.number in it.first..it.second } + 1
             if (level.stage != expectedStage) error("stage", "Expected stage $expectedStage", level)
             if (level.word.length !in 8..13) error("word", "Short15 source must be 8..13 letters", level)
-            if (level.maxStars != row.types.size) error("tasks", "Expected M=${row.types.size}", level)
-            if (level.requiredStars != row.required) error("requiredStars", "Expected R=${row.required}", level)
-            val kinds = level.tasks.map { it.type }
-            if (kinds.size != row.types.size || kinds.toSet() != row.types.toSet())
-                error("tasks.types", "Expected types ${row.types.joinToString(",")}", level)
-            for (task in level.tasks) {
-                when (task) {
-                    is CampaignTask.T1 -> if (task.n != t1[level.number - 1])
-                        error("t1_minimum", "Expected n=${t1[level.number - 1]}", level, task)
-                    is CampaignTask.T2 -> if (level.number < 4 || task.n != t2[level.number - 4])
-                        error("t2_minimum", "Expected n=${t2.getOrNull(level.number - 4)}", level, task)
-                    is CampaignTask.T3 -> if (task.minLength != t3.getOrNull(t3Index++))
-                        error("t3_min_length", "Expected minLength=${t3.getOrNull(t3Index - 1)}", level, task)
-                    is CampaignTask.T4 -> {
-                        val wanted = when (level.stage) { 4 -> 1; 5 -> 2; 6 -> 3; else -> 0 }
-                        if (task.targets.size != wanted) error("riddle_count", "Expected $wanted targets", level, task)
-                    }
-                    is CampaignTask.T5 -> if (task.minLength != t5.getOrNull(t5Index++))
-                        error("t5_min_length", "Expected minLength=${t5.getOrNull(t5Index - 1)}", level, task)
-                    is CampaignTask.T6 -> {
-                        if (task.category != "professions") error("t6_theme", "Expected professions", level, task)
-                        if (task.n != 4) error("t6_n", "Expected n=4", level, task)
-                    }
-                    is CampaignTask.T7 -> if (task.n != 8) error("t7_n", "Expected n=8", level, task)
-                }
-            }
+            if (level.tasks.size !in 1..5) error("tasks", "M must be in 1..5", level)
+            if (level.requiredStars !in 1..level.tasks.size) error("requiredStars", "R must be in 1..M", level)
+            if (level.maxStars != level.tasks.size) error("tasks", "M must equal task count", level)
         }
-        if (t3Index != t3.size) error("t3_min_length", "Expected ${t3.size} T3 tasks, got $t3Index")
-        if (t5Index != t5.size) error("t5_min_length", "Expected ${t5.size} T5 tasks, got $t5Index")
-        val allTypes = campaign.levels.flatMap { level -> level.tasks.map { it.type } }.toSet()
-        if (allTypes != TaskType.entries.toSet()) error("tasks.types", "Short15 must include all T1..T7")
-        if (campaign.levels.lastOrNull()?.requiredStars != 4) error("finale", "Level 15 must pass at 4/5")
-        if (campaign.levels.sumOf { it.maxStars } != 49) error("maxStars", "All tasks/stars must total 49")
     }
 }

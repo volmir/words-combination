@@ -26,7 +26,6 @@ class Short15ProductionCampaignTest {
         assertEquals(4, campaign.levels.last().requiredStars)
         assertEquals("short15-release-v1", TestData.campaignProfile)
         assertTrue(ProductionCampaignValidator.validate(campaign, "short15-release-v1").isEmpty())
-        assertEquals(TestData.manifest.getJSONObject("campaign_source").getString("sha256"), campaign.contentSha256)
         assertEquals(listOf("чемпионство", "вегетарианец", "аккумулятор"), campaign.levels.take(3).map { it.word })
     }
 

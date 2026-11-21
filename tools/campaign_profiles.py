@@ -88,12 +88,12 @@ def expanded_stages(stages):
 
 
 def validate_profile(profile):
-    """Полная проверка профиля включая вывод согласованности расписания."""
+    """Структурная проверка профиля: 15 уровней, 6 этапов, гибкое расписание."""
     levels = profile['levels']
     if type(levels) is not int or levels != 15:
         raise ValueError('Профиль поддерживает ровно 15 уровней')
-    if type(profile.get('max_stars')) is not int or profile['max_stars'] != 49:
-        raise ValueError('Ожидается 49 звёзд')
+    if type(profile.get('max_stars')) is not int or profile['max_stars'] <= 0:
+        raise ValueError('max_stars должен быть положительным целым')
     stages = profile['stages']
     if (len(stages) != 6 or [s['number'] for s in stages] != list(range(1, 7)) or
             [s['last'] - s['first'] + 1 for s in stages] != [3, 2, 3, 2, 3, 2] or
@@ -112,15 +112,16 @@ def validate_profile(profile):
         if any(type(band[k]) is not int for k in ('first', 'last', 'min', 'max')) or not 0 < band['min'] <= band['max']:
             raise ValueError('Неверная полоса')
     rows = profile['schedule']
-    if [r['first'] for r in rows] != [1, 4, 6, 9, 11, 14, 15] or [r['last'] for r in rows] != [3, 5, 8, 10, 13, 14, 15]:
-        raise ValueError('Расписание должно покрывать уровни 1..15 без пропусков')
+    if not rows:
+        raise ValueError('Расписание пусто')
+    covered = []
     total = 0
-    counts = {}
     for row in rows:
-        if any(type(row[k]) is not int for k in ('first', 'last', 'required')):
+        if any(type(row.get(k)) is not int for k in ('first', 'last', 'required')):
             raise ValueError('Неверная строка расписания')
-        if not row['first'] <= row['last']:
+        if not 1 <= row['first'] <= row['last'] <= levels:
             raise ValueError('Нарушен порядок уровней расписания')
+        covered.extend(range(row['first'], row['last'] + 1))
         types = row['types']
         if not types or len(types) > 5 or len(set(types)) != len(types):
             raise ValueError('M должен быть 1..5 без повторений типов')
@@ -128,59 +129,29 @@ def validate_profile(profile):
             raise ValueError('Неизвестный тип задания')
         if not 1 <= row['required'] <= len(types):
             raise ValueError('R должен быть 1..M')
-        for t in types:
-            counts[t] = counts.get(t, 0) + row['last'] - row['first'] + 1
         total += len(types) * (row['last'] - row['first'] + 1)
+    if sorted(covered) != list(range(1, levels + 1)):
+        raise ValueError('Расписание должно покрывать уровни 1..15 без пропусков')
     if total != profile['max_stars']:
         raise ValueError('Число заданий не равно числу звёзд')
-    if counts != {'T1': 15, 'T2': 12, 'T3': 9, 'T4': 6, 'T5': 5, 'T6': 1, 'T7': 1}:
-        raise ValueError('Ожидались появления T1x15 T2x12 T3x9 T4x6 T5x5 T6x1 T7x1: ' + json.dumps(counts))
-    required = [next(r['required'] for r in rows if r['first'] <= number <= r['last'])
-                for number in range(1, levels + 1)]
-    if required != [1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4]:
-        raise ValueError('Неверная схема R/S')
-    master = [r['types'] for r in rows[-2:]]
-    if sorted(master) != [['T1', 'T2', 'T3', 'T5', 'T7'], ['T1', 'T2', 'T4', 'T5', 'T6']]:
-        # T3 финала живёт на уровне 15 (документалист), T4 — на уровне 14
-        # (контрабандист): на контрабандисте нет цели T3 длины 9 с подсказкой.
-        raise ValueError('Уровень 14 обязан нести T6 и T4, уровень 15 — T7 и T3, по 5 различных типов')
-    if profile.get('t1_minimum') != [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24]:
-        raise ValueError('Неверный ряд T1 minimum')
-    t2 = profile['t2_minimum']
-    if t2.get('first') != 4 or t2.get('values') != [3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7]:
-        raise ValueError('Неверный ряд T2 minimum для уровней 4..15')
-    if profile.get('t3_min_lengths') != [6, 6, 6, 7, 7, 7, 8, 8, 8]:
-        raise ValueError('Неверные ориентировочные длины T3')
-    if profile.get('t4_riddles_by_stage') != {'4': 1, '5': 2, '6': 3}:
-        raise ValueError('Неверное число целей T4 по этапам')
-    if profile.get('t5_min_lengths') != [5, 5, 6, 7, 7]:
-        raise ValueError('Неверные длины T5')
-    if profile.get('t5_endings') != ['ок', 'ка', 'ние', 'ик', 'ист']:
-        raise ValueError('T5 15K обязан использовать окончания [ок, ка, ние, ик, ист]')
     t4 = profile.get('t4') or {}
     if (t4.get('min_length') != 4 or t4.get('max_frequency_rank') != 5000 or
             t4.get('min_hint_length') != 20):
         raise ValueError('Неверные пороги качества T4')
     allowed = t4.get('allowed_targets') or []
-    if (len(allowed) != 11 or len(set(allowed)) != 11 or
-            any(not isinstance(w, str) or w != w.strip().lower() or len(w) < t4['min_length']
-                for w in allowed)):
-        raise ValueError('T4 обязан иметь 11 уникальных канонических целей 15K')
+    if any(not isinstance(w, str) or w != w.strip().lower() or not w for w in allowed):
+        raise ValueError('T4 allowed_targets должны быть каноническими непустыми строками')
+    if len(set(allowed)) != len(allowed):
+        raise ValueError('T4 allowed_targets не должны повторяться')
     t6 = profile.get('t6') or {}
-    if t6.get('n') != 4 or t6.get('reserve_min') != 5 or not isinstance(t6.get('category'), str) or not t6['category'].strip():
-        raise ValueError('T6 обязан требовать n=4, резерв 5 и реальную тему профессий')
+    if not isinstance(t6.get('category'), str) or not t6['category'].strip():
+        raise ValueError('T6 требует реальную тему')
     categories = json.loads(CATEGORIES.read_text(encoding='utf-8'))
     if t6['category'] not in categories:
         raise ValueError('Тема T6 отсутствует в tools/categories.json: ' + t6['category'])
-    t7 = profile.get('t7') or {}
-    if t7.get('n') != 8:
-        raise ValueError('T7 обязан требовать n=8')
     jaccard = profile.get('jaccard') or {}
-    if not jaccard.get('mean_max') == 0.07 or not jaccard.get('max_max') == 0.30 or jaccard.get('pairs') != 105:
-        raise ValueError('Нужны raw Jaccard mean<=0.07, max<=0.30 на 105 парах')
-    retain = profile.get('retain') or {}
-    if retain.get('min') != 3 or retain.get('max') != 5:
-        raise ValueError('Нужно сохранение 3..5 старых исходников')
+    if jaccard.get('pairs') != 105:
+        raise ValueError('Для 15 уровней ожидается 105 пар Jaccard')
     if profile.get('alphabet_required') is not False:
         raise ValueError('Покрытие алфавита отчётное, без требования 32/32')
     if profile.get('count_min_length') != 4 or profile.get('category_global_min') != 40:
@@ -202,18 +173,9 @@ def validate_profile(profile):
     targets = profile.get('simulation_targets') or []
     if [t['level'] for t in targets] != list(range(1, levels + 1)):
         raise ValueError('Нужны явные цели симуляции для всех 15 уровней')
-    if (targets[0]['required_min'] != .95 or targets[-1]['required_min'] != .8 or
-            targets[0]['master_min'] != .70 or targets[-1]['master_max'] != .25):
-        raise ValueError('Края целей симуляции расходятся с планкой финала 4/5')
     for t in targets:
-        if not 0 <= t['master_min'] <= t['master_max'] <= 1 or not 0 <= t['required_min'] <= 1:
+        if not 0 <= t.get('master_min', -1) <= t.get('master_max', -1) <= 1 or not 0 <= t.get('required_min', -1) <= 1:
             raise ValueError('Неверная целевая вероятность')
-        if t['level'] <= 5 and t['master_max'] < t['required_min']:
-            raise ValueError('M=R: потолок Мастера не может быть ниже пола R')
-    if any(a['required_min'] < b['required_min'] for a, b in zip(targets, targets[1:])):
-        raise ValueError('Цели R должны убывать по уровням')
-    if any(a['master_min'] < b['master_min'] for a, b in zip(targets, targets[1:])):
-        raise ValueError('Цели Мастера должны монотонно убывать')
     return True
 
 

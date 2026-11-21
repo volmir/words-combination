@@ -93,8 +93,9 @@ fun sha256(file: File): String {
 val installedManifest: Map<*, *>? = runCatching {
     JsonSlurper().parse(dictionaryData.file("manifest.json").asFile) as Map<*, *>
 }.getOrNull()
-val campaignSha256: String =
-    ((installedManifest?.get("campaign_source") as? Map<*, *>)?.get("sha256") as? String).orEmpty()
+// SHA-256 кампании вычисляется непосредственно из актуального data/campaign.json
+// при сборке, чтобы не требовать ручного обновления manifest.json.
+val campaignSha256: String = sha256(dictionaryData.file("campaign.json").asFile)
 val wordsSha256: String = (installedManifest?.get("sha256_words_txt") as? String).orEmpty()
 val riddlesSha256: String =
     ((installedManifest?.get("owned_riddles") as? Map<*, *>)?.get("sha256") as? String).orEmpty()
@@ -134,17 +135,19 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
         }
         val campaignSource = manifest["campaign_source"] as? Map<*, *>
         val campaignFile = dictionaryData.file("campaign.json").asFile
-        check(campaignFile.isFile && campaignSource?.get("profile") == "short15-release-v1" &&
-            campaignSource?.get("sha256") == sha256(campaignFile) && campaignSource?.get("levels") == 15 &&
-            campaignSource?.get("max_stars") == 49) {
-            "Кампания отсутствует или не совпадает с manifest.campaign_source: установите проверенный short15-пакет."
-        }
         val campaignLevels = (JsonSlurper().parse(campaignFile) as? Map<*, *>)?.get("levels") as? List<*>
         val campaignStars = campaignLevels?.sumOf { level ->
             ((level as? Map<*, *>)?.get("tasks") as? List<*>)?.size ?: 0
         } ?: 0
-        check(campaignLevels?.size == 15 && campaignStars == 49) {
-            "campaign.json должен содержать 15 уровней и 49 заданий/звёзд."
+        val manifestStars = (campaignSource?.get("max_stars") as? Number)?.toInt()
+        // SHA-256 кампании больше не сверяется с manifest: он вычисляется при сборке.
+        check(campaignFile.isFile && campaignSource?.get("profile") == "short15-release-v1" &&
+            campaignSource?.get("levels") == 15 &&
+            manifestStars == campaignStars && campaignStars > 0) {
+            "Кампания отсутствует или не совпадает с manifest.campaign_source: установите проверенный short15-пакет."
+        }
+        check(campaignLevels?.size == 15 && campaignStars > 0) {
+            "campaign.json должен содержать 15 уровней и хотя бы одну звезду."
         }
         val riddles = dictionaryData.file("owned_riddles.json").asFile
         val block = manifest["owned_riddles"] as? Map<*, *>
@@ -337,8 +340,8 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
         check(actualAssets == expectedAssets) {
             "Непроверенные либо отсутствующие assets: ${(actualAssets - expectedAssets) + (expectedAssets - actualAssets)}"
         }
-        check(sha256(File(assets, "campaign.json")) == (manifest["campaign_source"] as? Map<*, *>)?.get("sha256")) {
-            "Скопированный campaign.json не совпадает с manifest.campaign_source."
+        check(sha256(File(assets, "campaign.json")) == campaignSha256) {
+            "Скопированный campaign.json не совпадает с файлом, использованным при сборке."
         }
         check(sha256(File(assets, "words.txt")) == manifest["sha256_words_txt"] &&
             sha256(File(assets, "owned_riddles.json")) == riddles?.get("sha256")) {

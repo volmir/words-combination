@@ -225,28 +225,42 @@ class CampaignTest {
         assertEquals("release-30", ProductionCampaignProfile.RELEASE_30.id)
     }
 
-    @Test fun short15RejectsFormerAndIncorrectNumericContract() {
+    @Test fun short15AllowsFlexibleTaskParametersAndCombinations() {
         val campaign = short15()
-        val oldT1 = listOf(10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40)
-        val oldT2 = listOf(5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
-        for (level in campaign.levels) for (task in level.tasks) {
-            val wrong: CampaignTask = when (task) {
-                is CampaignTask.T1 -> task.copy(n = oldT1[level.number - 1])
-                is CampaignTask.T2 -> task.copy(n = oldT2[level.number - 4])
-                is CampaignTask.T3 -> task.copy(minLength = task.minLength + 1)
-                is CampaignTask.T5 -> task.copy(minLength = task.minLength + 1)
-                is CampaignTask.T6 -> task.copy(n = 5)
-                is CampaignTask.T7 -> task.copy(n = 10)
-                is CampaignTask.T4 -> continue
+        val mixed = campaign.copy(levels = campaign.levels.map { level ->
+            val tasks = when (level.number) {
+                1 -> listOf(CampaignTask.T7("flex-1", 'к', 2))
+                14 -> listOf(CampaignTask.T3("flex-14", 3, "рот"))
+                15 -> listOf(
+                    CampaignTask.T6("flex-15", "professions", 1, listOf("кот")),
+                    CampaignTask.T1("flex-15b", 1),
+                )
+                else -> level.tasks
             }
-            val changed = campaign.copy(levels = campaign.levels.map { current ->
-                if (current.number == level.number) current.copy(tasks = current.tasks.map {
-                    if (it.id == task.id) wrong else it
-                }) else current
+            level.copy(tasks = tasks, requiredStars = 1)
+        })
+        assertEquals(emptyList(), ProductionCampaignValidator.validate(
+            mixed, ProductionCampaignProfile.SHORT15_RELEASE_V1))
+        assertTrue(mixed.maxStars != 49)
+    }
+
+    @Test fun short15RejectsInvalidOrInconsistentTaskParameters() {
+        val campaign = short15()
+        val badCases = listOf(
+            CampaignTask.T1("bad", 0) to "n",
+            CampaignTask.T2("bad", 'ё', 1) to "letter",
+            CampaignTask.T3("bad", 2, "кот") to "minLength",
+            CampaignTask.T4("bad", emptyList()) to "targets",
+            CampaignTask.T5("bad", "", 3) to "ending",
+            CampaignTask.T6("bad", "", 1, listOf("кот")) to "category",
+            CampaignTask.T7("bad", 'т', 0) to "n",
+        )
+        for ((task, field) in badCases) {
+            val changed = campaign.copy(levels = campaign.levels.map { level ->
+                if (level.number != 1) level else level.copy(tasks = listOf(task), requiredStars = 1)
             })
-            assertTrue(Short15CampaignValidator.validate(changed).any {
-                it.levelNumber == level.number && it.taskId == task.id
-            }, "Former/wrong parameter accepted: ${level.number} ${task.id}")
+            assertTrue(CampaignValidator.validate(changed).any { it.field == field && it.taskId == "bad" },
+                "Invalid parameter accepted: $field")
         }
     }
 
@@ -255,10 +269,10 @@ class CampaignTest {
             ProductionCampaignProfile.RELEASE_30).any { it.field == "levels.size" })
         assertTrue(ProductionCampaignValidator.validate(production(),
             ProductionCampaignProfile.SHORT15_RELEASE_V1).any { it.field == "levels.size" })
-        val wrongFinale = short15().copy(levels = short15().levels.dropLast(1) +
+        val flexibleFinale = short15().copy(levels = short15().levels.dropLast(1) +
             short15().levels.last().copy(requiredStars = 3))
-        assertTrue(ProductionCampaignValidator.validate(wrongFinale,
-            ProductionCampaignProfile.SHORT15_RELEASE_V1).any { it.levelNumber == 15 && it.field == "requiredStars" })
+        assertEquals(emptyList(), ProductionCampaignValidator.validate(flexibleFinale,
+            ProductionCampaignProfile.SHORT15_RELEASE_V1))
         val unknown = ProductionCampaignValidator.validate(short15(), "unknown-profile")
         assertTrue(unknown.any { it.field == "profile" })
     }

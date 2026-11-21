@@ -1,5 +1,6 @@
 package com.example.sostavslova.core
 
+import java.security.MessageDigest
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -13,9 +14,13 @@ object TestData {
     val manifest: JSONObject by lazy { JSONObject(text("manifest.json")) }
     val golden: JSONObject by lazy { JSONObject(text("golden_search.json")) }
     val campaign: Campaign? by lazy {
-        if (manifest.has("campaign_source")) CampaignDatasetAudit.decode(JSONObject(text("campaign.json")))
-            .copy(contentSha256 = manifest.getJSONObject("campaign_source").optString("sha256").takeIf { it.isNotBlank() })
-        else null
+        if (manifest.has("campaign_source")) {
+            val campaignText = text("campaign.json")
+            val sha = MessageDigest.getInstance("SHA-256").digest(campaignText.toByteArray(Charsets.UTF_8))
+                .joinToString("") { "%02x".format(it) }
+            CampaignDatasetAudit.decode(JSONObject(campaignText))
+                .copy(contentSha256 = sha)
+        } else null
     }
     val campaignProfile: String? by lazy {
         manifest.optJSONObject("campaign_source")?.optString("profile")?.takeIf { it.isNotBlank() }

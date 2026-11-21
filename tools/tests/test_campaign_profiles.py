@@ -107,21 +107,21 @@ class CampaignProfilesTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             profiles.validate_profile(broken)
 
-    def test_former_short15_parameters_are_rejected(self):
-        former = {
-            't1_minimum': [10, 12, 14, 16, 18, 20, 22, 25, 27, 29, 31, 33, 35, 37, 40],
-            't2_minimum': {'first': 4, 'values': [5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]},
-            't3_min_lengths': [6, 6, 6, 7, 7, 7, 8, 8, 9],
-            't5_min_lengths': [5, 5, 6, 7, 8],
-            't5_endings': ['ок', 'ка', 'ние', 'ик', 'ина'],
-            't6': dict(self.profile['t6'], n=5),
-            't7': {'n': 10},
-        }
-        for key, value in former.items():
-            with self.subTest(key=key), self.assertRaises(ValueError):
-                broken = deepcopy(self.profile)
-                broken[key] = value
-                profiles.validate_profile(broken)
+    def test_profile_accepts_flexible_schedule_and_task_parameters(self):
+        flexible = deepcopy(self.profile)
+        flexible['schedule'] = [
+            {'first': 1, 'last': 3, 'types': ['T1', 'T7'], 'required': 1},
+            {'first': 4, 'last': 5, 'types': ['T2', 'T3'], 'required': 1},
+            {'first': 6, 'last': 8, 'types': ['T4'], 'required': 1},
+            {'first': 9, 'last': 10, 'types': ['T5', 'T6'], 'required': 2},
+            {'first': 11, 'last': 13, 'types': ['T1', 'T2', 'T3', 'T4', 'T5'], 'required': 3},
+            {'first': 14, 'last': 14, 'types': ['T6'], 'required': 1},
+            {'first': 15, 'last': 15, 'types': ['T7', 'T1'], 'required': 1},
+        ]
+        flexible['max_stars'] = sum(len(row['types']) * (row['last'] - row['first'] + 1)
+                                    for row in flexible['schedule'])
+        self.assertTrue(profiles.validate_profile(flexible))
+        self.assertNotEqual(49, flexible['max_stars'])
 
     def test_profile_file_sha_is_stable_and_recorded(self):
         first = profiles.profiles_file_sha256()
