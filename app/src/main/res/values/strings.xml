@@ -61,11 +61,13 @@
         <item quantity="many">Получено звёзд: %1$d</item>
         <item quantity="other">Получено звёзд: %1$d</item>
     </plurals>
-    <plurals name="stars_received_next_level">
-        <item quantity="one">Получена звезда!\nОткрыт следующий уровень!</item>
-        <item quantity="few">Получено звёзд: %1$d\nОткрыт следующий уровень!</item>
-        <item quantity="many">Получено звёзд: %1$d\nОткрыт следующий уровень!</item>
-        <item quantity="other">Получено звёзд: %1$d\nОткрыт следующий уровень!</item>
+    <string name="achievement_received">Достижение «%1$s»!</string>
+    <string name="achievement_more">Ещё достижений: %1$d</string>
+    <plurals name="achievements_more">
+        <item quantity="one">Ещё достижений: %1$d</item>
+        <item quantity="few">Ещё достижений: %1$d</item>
+        <item quantity="many">Ещё достижений: %1$d</item>
+        <item quantity="other">Ещё достижений: %1$d</item>
     </plurals>
     <string name="hint_all_found">Все слова уже найдены</string>
     <string name="hint_letter_genitive_one">буквы</string>

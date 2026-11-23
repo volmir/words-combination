@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.R
 import com.example.sostavslova.core.Campaign
+import com.example.sostavslova.core.LevelAchievement
 import com.example.sostavslova.core.CampaignSummary
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.CampaignLevelProgress
@@ -28,6 +29,7 @@ import com.example.sostavslova.data.RiddlesRepository
 import com.example.sostavslova.data.LevelsRepository
 import com.example.sostavslova.data.ProgressRepository
 import com.example.sostavslova.data.WordRepository
+import com.example.sostavslova.ui.components.achievementNameRes
 import com.example.sostavslova.ui.components.AlertType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -48,13 +50,30 @@ data class GameMessage(@param:StringRes val text: Int, val word: String? = null,
     val missingLetter: com.example.sostavslova.core.MissingLetter? = null,
     val type: AlertType = AlertType.Info,
     @param:PluralsRes val pluralText: Int? = null,
-    val count: Int = 0)
+    val count: Int = 0,
+    @param:StringRes val argumentText: Int? = null,
+    val additionalLines: List<GameMessage> = emptyList())
 
-/** Один баннер на ответ: число звёзд и открытие уровня не ждут друг друга в очереди. */
-internal fun starsMessage(count: Int, openedNextLevel: Boolean): GameMessage =
-    GameMessage(R.string.star_received, type = AlertType.Success,
-        pluralText = if (openedNextLevel) R.plurals.stars_received_next_level else R.plurals.stars_received,
-        count = count)
+/** Только представление наград: правила выдачи и порядок достижений задаёт core. */
+internal fun awardMessage(
+    stars: Int,
+    openedNextLevel: Boolean,
+    achievements: List<LevelAchievement>,
+): GameMessage? {
+    val ordered = LevelAchievement.entries.filter { it in achievements }
+    val lines = buildList {
+        if (stars > 0) add(GameMessage(R.string.star_received, type = AlertType.Success,
+            pluralText = R.plurals.stars_received, count = stars))
+        if (openedNextLevel) add(GameMessage(R.string.game_next_opened, type = AlertType.Success))
+        ordered.take(3).forEach { achievement ->
+            add(GameMessage(R.string.achievement_received, type = AlertType.Success,
+                argumentText = achievementNameRes(achievement)))
+        }
+        if (ordered.size > 3) add(GameMessage(R.string.achievement_more, type = AlertType.Success,
+            pluralText = R.plurals.achievements_more, count = ordered.size - 3))
+    }
+    return lines.firstOrNull()?.copy(additionalLines = lines.drop(1))
+}
 
 /** Формулировка отказа сохраняет различие точного словаря и вероятного совпадения. */
 internal fun submissionMessage(submission: Submission, answer: String, threeLetterCampaignAnswer: Boolean = false): GameMessage? {
@@ -311,13 +330,11 @@ class GameViewModel(
                     mutableState.update { it.copy(input = "") }
                 }
                 mutableState.update { it.copy(message = message) }
-                val earnedStars = submitted.submission.evaluation.newlyCompletedTaskIds.size
-                val openedNextLevel = submitted.openedNextLevel
-                if (earnedStars > 0) {
-                    notices.send(starsMessage(earnedStars, openedNextLevel))
-                } else if (openedNextLevel) {
-                    notices.send(GameMessage(R.string.game_next_opened, type = AlertType.Success))
-                }
+                awardMessage(
+                    stars = submitted.submission.evaluation.newlyCompletedTaskIds.size,
+                    openedNextLevel = submitted.openedNextLevel,
+                    achievements = submitted.newAchievements.map { it.second },
+                )?.let { notices.send(it) }
                 if (!game.isFinished && next.isFinished) notices.send(GameMessage(R.string.all_words_found, type = AlertType.Success))
             } catch (cancelled: CancellationException) {
                 throw cancelled

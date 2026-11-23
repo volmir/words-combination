@@ -15,6 +15,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.R
 import com.example.sostavslova.core.AnswerResult
 import com.example.sostavslova.core.Campaign
+import com.example.sostavslova.core.LevelAchievement
 import com.example.sostavslova.core.CampaignIdentity
 import com.example.sostavslova.data.*
 import java.io.File
@@ -79,11 +80,10 @@ class GameViewModelTest {
     private suspend fun GameViewModel.event() = withContext(Dispatchers.Default) {
         withTimeout(10_000) { events.first() }
     }
-    private fun assertStarEvent(message: GameMessage, count: Int, nextLevel: Boolean = false) {
-        assertEquals(R.string.star_received, message.text)
-        assertEquals(if (nextLevel) R.plurals.stars_received_next_level else R.plurals.stars_received,
-            message.pluralText)
-        assertEquals(count, message.count)
+    private fun assertStarEvent(message: GameMessage, count: Int, nextLevel: Boolean = false,
+        achievements: List<LevelAchievement> = emptyList()) {
+        // UX-08: отдельные баннеры наград заменены одним сообщением со всеми строками.
+        assertEquals(awardMessage(count, nextLevel, achievements), message)
     }
 
     @Test fun nextLevelUsesCommittedUnlockAllowsMoreStarsAndWaitsForSaveBarrier() = runTest {
@@ -311,6 +311,20 @@ class GameViewModelTest {
         assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
     }
 
+    @Test fun achievementWithoutNewStarsEmitsExactlyOneNoticeAndDoesNotRepeat() = runTest {
+        val model = model()
+        model.ready()
+        model.answer("торт")
+        assertStarEvent(model.event(), 1)
+        val answered = model.answer("рот")
+        assertEquals(setOf("long"), answered.campaignLevel?.completedTaskIds)
+        assertEquals(awardMessage(0, false, listOf(LevelAchievement.EXPERT)), model.event())
+        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
+        model.answer("рот")
+        withContext(Dispatchers.Main) { model.onGameOpened() }
+        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
+    }
+
     @Test fun campaignAnswerWithTwoStarsEmitsOnePluralNotice() = runTest {
         val noUnlock = miniCampaignJson.replace("\"requiredStars\": 2", "\"requiredStars\": 5")
         val campaignLevels = LevelsRepository(readCampaign = { noUnlock })
@@ -330,7 +344,7 @@ class GameViewModelTest {
         model.ready()
         val answered = model.answer("карта")
         assertEquals(setOf("initial", "long"), answered.campaignLevel?.completedTaskIds)
-        assertStarEvent(model.event(), 2, nextLevel = true)
+        assertStarEvent(model.event(), 2, nextLevel = true, achievements = listOf(LevelAchievement.NO_HINTS))
         assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
     }
 
@@ -345,7 +359,8 @@ class GameViewModelTest {
         val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
         model.ready()
         model.answer("ток")
-        assertStarEvent(model.event(), 1)
+        assertStarEvent(model.event(), 1, achievements = listOf(LevelAchievement.NO_HINTS,
+            LevelAchievement.EXPERT, LevelAchievement.COLLECTOR, LevelAchievement.EXPLORER))
         assertEquals(R.string.all_words_found, model.event().text)
         assertTrue(checkNotNull(model.uiState.value.game).isFinished)
         assertNotNull(model.uiState.value.finaleSummary)
@@ -943,7 +958,7 @@ class GameViewModelTest {
         val answered = model.answer("карта")
         assertEquals(1, writes.get())
         assertEquals(2, answered.campaignLevel?.completedTaskIds?.size)
-        assertStarEvent(model.event(), 2, nextLevel = true)
+        assertStarEvent(model.event(), 2, nextLevel = true, achievements = listOf(LevelAchievement.NO_HINTS))
         assertEquals(2, progress.observeCampaignProgress().first().highestUnlockedLevel)
         model.answer("КАРТА")
         withContext(Dispatchers.Main) { repeat(3) { model.onGameOpened() } }

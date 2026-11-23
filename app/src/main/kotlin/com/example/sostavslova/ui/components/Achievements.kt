@@ -49,7 +49,10 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 @Composable
-private fun achievementName(achievement: LevelAchievement): String = stringResource(when (achievement) {
+private fun achievementName(achievement: LevelAchievement): String = stringResource(achievementNameRes(achievement))
+
+@androidx.annotation.StringRes
+internal fun achievementNameRes(achievement: LevelAchievement): Int = when (achievement) {
     LevelAchievement.NO_HINTS -> R.string.achievement_no_hints
     LevelAchievement.EXPERT -> R.string.achievement_expert
     LevelAchievement.COLLECTOR -> R.string.achievement_collector
@@ -58,7 +61,7 @@ private fun achievementName(achievement: LevelAchievement): String = stringResou
     LevelAchievement.LONG_WORD_MASTER -> R.string.achievement_long_word_master
     LevelAchievement.GIANT -> R.string.achievement_giant
     LevelAchievement.STRAIGHT_A -> R.string.achievement_straight_a
-})
+}
 
 @Composable
 private fun achievementCondition(achievement: LevelAchievement): String = when (achievement) {

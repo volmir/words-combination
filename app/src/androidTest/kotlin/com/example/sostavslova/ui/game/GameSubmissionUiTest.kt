@@ -84,9 +84,10 @@ class GameSubmissionUiTest {
         }
     }
 
-    @Test fun starNoticeUsesPluralAndKeepsOpenedLevelInOneBanner() {
+    @Test fun awardNoticeUsesPluralAndKeepsAllAwardsInOneBanner() {
         val game = GameState("блокти", listOf("кот"))
-        val initial = GameUiState(loading = false, game = game, statistics = game.statistics())
+        val initial = GameUiState(loading = false, game = game, statistics = game.statistics(),
+            message = GameMessage(R.string.correct_answer))
         val notice = mutableStateOf<GameMessage?>(null)
         compose.setContent {
             WordsTheme { GameScreen(initial, {}, {}, {}, {}, notice = notice.value) }
@@ -96,15 +97,25 @@ class GameSubmissionUiTest {
             compose.runOnIdle { notice.value = message }
             compose.onNodeWithText(expected).performScrollTo().assertIsDisplayed()
         }
-        show(GameMessage(R.string.star_received,
-            pluralText = R.plurals.stars_received, count = 1),
+        show(requireNotNull(awardMessage(1, false, emptyList())),
             resources.getQuantityString(R.plurals.stars_received, 1, 1))
-        show(GameMessage(R.string.star_received,
-            pluralText = R.plurals.stars_received, count = 2),
+        show(requireNotNull(awardMessage(2, false, emptyList())),
             resources.getQuantityString(R.plurals.stars_received, 2, 2))
-        show(GameMessage(R.string.star_received,
-            pluralText = R.plurals.stars_received_next_level, count = 2),
-            resources.getQuantityString(R.plurals.stars_received_next_level, 2, 2))
+        show(requireNotNull(awardMessage(2, true, listOf(LevelAchievement.EXPERT, LevelAchievement.NO_HINTS))),
+            listOf(resources.getQuantityString(R.plurals.stars_received, 2, 2),
+                resources.getString(R.string.game_next_opened),
+                resources.getString(R.string.achievement_received, resources.getString(R.string.achievement_no_hints)),
+                resources.getString(R.string.achievement_received, resources.getString(R.string.achievement_expert)))
+                .joinToString("\n"))
+        compose.onNodeWithText(resources.getString(R.string.correct_answer)).assertDoesNotExist()
+        val earned = LevelAchievement.entries.take(5)
+        show(requireNotNull(awardMessage(0, false, earned)),
+            (earned.take(3).map {
+                resources.getString(R.string.achievement_received,
+                    resources.getString(com.example.sostavslova.ui.components.achievementNameRes(it)))
+            } + resources.getQuantityString(R.plurals.achievements_more, 2, 2)).joinToString("\n"))
+        assertEquals("Ещё достижений: 2", resources.getQuantityString(R.plurals.achievements_more, 2, 2))
+
     }
 
     @Test fun rejectionMessagesKeepCategoriesCountsAndSafeFallback() {

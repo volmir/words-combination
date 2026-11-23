@@ -181,13 +181,12 @@ fun GameScreen(
                 // Feedback stays in flow directly under the input: heightIn reserves
                 // space for a single short banner (no jump on first message) while
                 // still growing for long/multi-line text, 200% font scale, or
-                // message + notice shown together, without covering input/buttons.
+                // a multi-line award notice, without covering input/buttons.
                 Column(
                     Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("game_feedback"),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    state.message?.let { GameBanner(it) }
-                    notice?.let { GameBanner(it) }
+                    (notice ?: state.message)?.let { GameBanner(it) }
                 }
                 state.nextLevelNumber?.let { number ->
                     Well(Modifier.testTag("game_next_level").semantics { liveRegion = LiveRegionMode.Polite }) {
@@ -431,16 +430,22 @@ private fun riddleNumber(task: CampaignTask, word: String?): Int? =
 
 @Composable
 private fun GameBanner(message: GameMessage) {
+    val text = (listOf(message) + message.additionalLines).map { gameMessageLine(it) }.joinToString("\n")
+    AlertBanner(message.type, text)
+}
+
+@Composable
+private fun gameMessageLine(message: GameMessage): String {
     val missing = message.missingLetter
     val pluralText = message.pluralText
-    val text = when {
+    return when {
         pluralText != null -> pluralStringResource(pluralText, message.count, message.count)
         missing != null -> stringResource(message.text, message.word.orEmpty(),
             missing.letter.uppercaseChar().toString(), missing.available, missing.required)
+        message.argumentText != null -> stringResource(message.text, stringResource(message.argumentText))
         message.word != null -> stringResource(message.text, message.word)
         else -> stringResource(message.text)
     }
-    AlertBanner(message.type, text)
 }
 
 @Composable
