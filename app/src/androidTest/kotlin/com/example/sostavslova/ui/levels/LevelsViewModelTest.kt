@@ -12,6 +12,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.data.*
+import com.example.sostavslova.core.AchievementRules
+import com.example.sostavslova.core.GameState
+import com.example.sostavslova.core.LevelAchievement
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.*
@@ -82,6 +85,25 @@ class LevelsViewModelTest {
         val updated = model.await { it.levels.getOrNull(1)?.unlocked == true }
         assertEquals(2, updated.levels.first().stars)
     }
+    @Test fun achievementAvailabilityComesFromCoreAndEarnedUpdatesWithSavedAnswers() = runTest {
+        val source = LevelsRepository(readCampaign = { miniCampaignJson })
+        val campaign = requireNotNull(source.getCampaign())
+        val model = model(source = source)
+        val initial = model.ready()
+        for ((level, item) in campaign.levels.zip(initial.levels)) {
+            val expected = AchievementRules.available(GameState.start(level.word, words.requireIndex()),
+                level.requiredStars, level.maxStars)
+            assertEquals(expected, item.achievementsAvailable)
+            assertTrue(item.achievements.isEmpty())
+            assertFalse(LevelAchievement.LONG_WORD in item.achievementsAvailable)
+        }
+        progress.submitCampaignAnswer(campaign, 1, "карта", words.requireIndex())
+        val updated = model.await { LevelAchievement.NO_HINTS in it.levels.first().achievements }
+        assertEquals(initial.levels.first().achievementsAvailable, updated.levels.first().achievementsAvailable)
+        assertTrue(LevelAchievement.STRAIGHT_A in updated.levels.first().achievementsAvailable)
+        assertFalse(LevelAchievement.STRAIGHT_A in updated.levels.first().achievements)
+    }
+
     @Test fun miniV2ContinueBackfillFinaleAndFullCollection() = runTest {
         val source = LevelsRepository(readCampaign = { miniCampaignJson })
         val dictionary = WordRepository({ "карта\nкрот\nкот\nторт\nрот\nрека" })

@@ -2,6 +2,8 @@ package com.example.sostavslova.ui.theme
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import com.example.sostavslova.core.LevelAchievement
+import com.example.sostavslova.ui.components.achievementShapeColor
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -54,6 +56,34 @@ class ThemeContrastTest {
                 3.0,
                 contrastRatio(palette.primary, palette.background),
             )
+        }
+    }
+
+    @Test
+    fun achievementShapesKeepThreeToOneInBothStatesAndThemes() {
+        for ((theme, palette) in palettes()) {
+            val backgrounds = surfaces(palette) + listOf(
+                "tableHead" to palette.tableHead,
+                "tableFoot" to palette.tableFoot,
+                "available card" to palette.levelAvailableBackground,
+                "passed card" to palette.levelPassedBackground.compositeOver(palette.background),
+                "all stars card" to palette.levelAllStarsBackground.compositeOver(palette.background),
+            )
+            for (achievement in LevelAchievement.entries) {
+                for (earned in listOf(false, true)) {
+                    val shape = achievementShapeColor(palette, achievement, earned)
+                    for ((name, background) in backgrounds) {
+                        assertAtLeast("$theme: $achievement earned=$earned на $name", 3.0,
+                            contrastRatio(shape, background))
+                    }
+                    // Надписи плиток являются частью пиктограммы и рисуются обратным цветом.
+                    if (earned && achievement in setOf(LevelAchievement.LONG_WORD,
+                            LevelAchievement.LONG_WORD_MASTER, LevelAchievement.GIANT)) {
+                        assertAtLeast("$theme: надпись $achievement", 3.0,
+                            contrastRatio(palette.background, shape))
+                    }
+                }
+            }
         }
     }
 

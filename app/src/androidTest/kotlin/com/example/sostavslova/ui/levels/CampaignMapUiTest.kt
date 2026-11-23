@@ -99,6 +99,39 @@ class CampaignMapUiTest {
             "Получено 5 из 5 звёзд · порог открытия: 2"))
     }
 
+    @Test fun achievementCountUsesAvailableIntersectionAndFollowsProgressAndUnlock() {
+        val all = LevelAchievement.entries.toSet()
+        val basic = AchievementRules.available(GameState("слово", listOf("лов")), 1, 1)
+        val state = mutableStateOf(LevelsUiState(loading = false, levels = listOf(
+            level(1).copy(achievementsAvailable = all, achievements = all),
+            level(2).copy(achievementsAvailable = basic, achievements = setOf(LevelAchievement.EXPERT, LevelAchievement.GIANT)),
+            level(3).copy(achievementsAvailable = emptySet(), achievements = all),
+            level(4).copy(unlocked = false, achievementsAvailable = all, achievements = all),
+        )))
+        compose.setContent { WordsTheme { LevelsScreen(state.value, {}, {}) } }
+        fun scroll(number: Int) { compose.onNodeWithTag("levels_grid").performScrollToKey("слово$number") }
+        fun count(number: Int, expected: String) {
+            compose.onNodeWithTag("level_achievements_$number", useUnmergedTree = true).assertTextEquals(expected)
+        }
+        scroll(1)
+        count(1, "Достижения: 8 из 8")
+        compose.onNodeWithTag("level_card_1").assert(SemanticsMatcher.expectValue(
+            SemanticsProperties.StateDescription, "Получено 0 из 5 звёзд · порог открытия: 2. Достижения: 8 из 8"))
+        scroll(2)
+        count(2, "Достижения: 1 из 4") // Сохранённый GIANT сейчас недоступен и не входит в числитель.
+        scroll(3)
+        compose.onNodeWithTag("level_achievements_3", useUnmergedTree = true).assertDoesNotExist()
+        scroll(4)
+        compose.onNodeWithTag("level_achievements_4", useUnmergedTree = true).assertDoesNotExist()
+        compose.runOnIdle { state.value = state.value.copy(levels = state.value.levels.map {
+            if (it.index == 4) it.copy(unlocked = true, achievements = emptySet()) else it
+        }) }
+        count(4, "Достижения: 0 из 8")
+        for (achievement in LevelAchievement.entries) {
+            compose.onNodeWithTag("achievement_icon_${achievement.name.lowercase(java.util.Locale.ROOT)}").assertDoesNotExist()
+        }
+    }
+
     @Test fun darkThemeLevelCardsRenderAdaptedStateColors() {
         val state = mutableStateOf(LevelsUiState(loading = false,
             levels = listOf(level(1), level(2).copy(unlocked = false), level(3, stars = 2), level(4, stars = 5)),

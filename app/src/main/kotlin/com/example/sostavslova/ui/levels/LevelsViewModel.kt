@@ -4,8 +4,11 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.R
+import com.example.sostavslova.core.AchievementRules
 import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.CampaignSummary
+import com.example.sostavslova.core.GameState
+import com.example.sostavslova.core.LevelAchievement
 import com.example.sostavslova.core.Stage
 import com.example.sostavslova.core.WelcomeState
 import com.example.sostavslova.data.LevelRouteRules
@@ -13,16 +16,20 @@ import com.example.sostavslova.data.LevelsRepository
 import com.example.sostavslova.data.ProgressRepository
 import com.example.sostavslova.data.WordRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class LevelUiState(
     val index: Int, val word: String, val stars: Int, val unlocked: Boolean,
     val maxStars: Int = 3, val requiredStars: Int = 1, val stage: Int = 0,
     val recommended: Boolean = false, val crowned: Boolean = false,
+    val achievements: Set<LevelAchievement> = emptySet(),
+    val achievementsAvailable: Set<LevelAchievement> = emptySet(),
 )
 
 data class LevelsUiState(
@@ -63,14 +70,24 @@ class LevelsViewModel(
                 // Кампания обязательна: при отсутствии или повреждении показываем ошибку загрузки,
                 // а не старый режим отдельных уровней.
                 val campaign = requireNotNull(levels.getCampaign()) { "Campaign asset is required" }
-                progress.migrateCampaign(campaign, words.requireIndex())
+                val index = words.requireIndex()
+                progress.migrateCampaign(campaign, index)
+                // Один поиск на уровень при загрузке карты; обновления прогресса используют кэш.
+                val available = withContext(Dispatchers.Default) {
+                    campaign.levels.associate { level ->
+                        level.number to AchievementRules.available(
+                            GameState.start(level.word, index), level.requiredStars, level.maxStars)
+                    }
+                }
                 progress.observeCampaignProgress().collect { saved ->
                     val recommended = CampaignRules.continueLevel(campaign, saved).number
                     val items = campaign.levels.map { level ->
                         LevelUiState(level.number, level.word, CampaignRules.stars(level, saved),
                             LevelRouteRules.isUnlocked(level.number, campaign, saved), level.maxStars,
                             level.requiredStars, level.stage, recommended == level.number,
-                            saved.finaleReached && level.number == campaign.levels.last().number)
+                            saved.finaleReached && level.number == campaign.levels.last().number,
+                            achievements = saved.levels[level.word]?.achievements.orEmpty(),
+                            achievementsAvailable = available.getValue(level.number))
                     }
                     val showWelcome = if (items.isNotEmpty()) resolveWelcomeAfterReady() else false
                     mutableState.update { it.copy(loading = false, levels = items, stages = campaign.stages,

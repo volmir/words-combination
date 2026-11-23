@@ -219,10 +219,15 @@ private fun stageName(number: Int): String = stringResource(when (number) {
 @Composable
 private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Unit) {
     val stars = starsStateDescription(item.stars, item.maxStars, item.requiredStars)
+    val achievements = if (item.unlocked && item.achievementsAvailable.isNotEmpty()) {
+        stringResource(R.string.level_achievements,
+            item.achievements.count { it in item.achievementsAvailable }, item.achievementsAvailable.size)
+    } else null
+    val description = achievements?.let { stringResource(R.string.level_progress_description, stars, it) } ?: stars
     val palette = LocalWordsPalette.current
     val background = levelCardBackground(palette, item.unlocked, item.stars, item.maxStars, item.requiredStars)
     OutlinedButton(onClick, Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("level_card_${item.index}")
-        .semantics { stateDescription = stars },
+        .semantics { stateDescription = description },
         enabled = enabled, shape = WordsCardShape,
         border = BorderStroke(if (item.recommended) 3.dp else 1.dp, palette.defaultButtonBorder),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = background,
@@ -238,6 +243,10 @@ private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Uni
             }
             val starsLabel = stringResource(R.string.level_stars_label)
             StarsRow(item.stars, item.maxStars, label = starsLabel, requiredStars = item.requiredStars)
+            achievements?.let {
+                Text(it, Modifier.testTag("level_achievements_${item.index}"),
+                    style = MaterialTheme.typography.bodyMedium)
+            }
         }
     }
 }

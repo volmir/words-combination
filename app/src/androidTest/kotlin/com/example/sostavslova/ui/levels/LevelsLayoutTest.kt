@@ -12,6 +12,14 @@ import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.R
 import com.example.sostavslova.core.Stage
+import com.example.sostavslova.core.LevelAchievement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.json.JSONObject
 import org.junit.Assert.*
@@ -80,6 +88,30 @@ class LevelsLayoutTest {
         compose.onNodeWithTag("levels_grid").performScrollToKey(items.last().word)
         compose.onNodeWithTag("level_card_15").assertExists()
         compose.onAllNodesWithTag("level_card_16").assertCountEquals(0)
+        checkLayout()
+    }
+
+    @Test fun achievementLineFitsNarrowCardAtLargeFontBelowStars() {
+        val all = LevelAchievement.entries.toSet()
+        val item = LevelUiState(1, "электростанция", 3, true, 5, 2,
+            achievements = all, achievementsAvailable = all)
+        compose.setContent { WordsTheme {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, 2f)) {
+                Box(Modifier.width(280.dp)) {
+                    LevelsScreen(LevelsUiState(loading = false, levels = listOf(item)), {}, {})
+                }
+            }
+        } }
+        val line = compose.onNodeWithTag("level_achievements_1", useUnmergedTree = true)
+            .assertIsDisplayed().assertTextEquals("Достижения: 8 из 8").fetchSemanticsNode().boundsInRoot
+        val stars = compose.onNodeWithContentDescription("Звёзды").fetchSemanticsNode().boundsInRoot
+        val card = compose.onNodeWithTag("level_card_1").assertHeightIsAtLeast(48.dp)
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue(line.top >= stars.bottom)
+        assertTrue(line.left >= card.left && line.right <= card.right && line.bottom <= card.bottom)
+        compose.onNodeWithTag("level_card_1").assert(SemanticsMatcher.expectValue(
+            SemanticsProperties.StateDescription, "Получено 3 из 5 звёзд · порог открытия: 2. Достижения: 8 из 8"))
         checkLayout()
     }
 
