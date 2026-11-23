@@ -15,7 +15,7 @@ class HintRulesTest {
             GameState.start(sourceWord, WordIndex(answers)))
     }
 
-    @Test fun ordinaryTasksPreferFamiliarThenDistanceThenShorterLength() {
+    @Test fun ordinaryTasksPreferFamiliarThenDistance() {
         val answers = listOf("аааа", "ааааа", "аааааа", "ааааааа", "ааааааааа")
         val tasks = listOf(
             CampaignTask.T1("t1", 2), CampaignTask.T2("t2", 'а', 2),
@@ -25,7 +25,7 @@ class HintRulesTest {
         for (task in tasks) {
             repeat(20) { seed ->
                 val current = targetState(answers, task)
-                assertEquals(answers[2], HintRules.next(current, random = Random(seed)).state.hints.ladder.target?.word)
+                assertTrue(HintRules.next(current, random = Random(seed)).state.hints.ladder.target?.word in answers.slice(2..3))
                 val metadata = answers.associateWith { HintWordData(familiar = it == answers[1]) }
                 assertEquals(answers[1], HintRules.next(current, metadata, random = Random(seed)).state.hints.ladder.target?.word)
             }
@@ -38,26 +38,26 @@ class HintRulesTest {
         assertEquals(answers.last(), result.state.hints.ladder.target?.word)
     }
 
-    @Test fun missingIntervalUsesDistanceAndShorterTieBeforeRandom() {
-        for ((answers, expected) in listOf(
-            listOf("аааа", "ааааа", "ааааааааа") to "ааааа",
-            listOf("аааа", "ааааааааа") to "ааааааааа",
-        )) {
-            assertEquals(expected, next(targetState(answers), emptyMap()).state.hints.ladder.target?.word)
-        }
+    @Test fun missingIntervalUsesDistanceThenRandom() {
+        val outside = listOf("аааа", "ааааа", "ааааааааа")
+        val selectedOutside = (0..50).map { seed ->
+            HintRules.next(targetState(outside), random = Random(seed)).state.hints.ladder.target?.word
+        }.toSet()
+        assertEquals(outside.drop(1).toSet(), selectedOutside)
+        assertEquals("ааааааааа", next(targetState(listOf("аааа", "ааааааааа")), emptyMap()).state.hints.ladder.target?.word)
         val tied = listOf("аааааа", "бббббб")
         val current = targetState(tied)
         val selected = (0..30).map { seed -> HintRules.next(current, random = Random(seed)).state.hints.ladder.target?.word }.toSet()
         assertEquals(tied.toSet(), selected)
     }
 
-    @Test fun t3MinimumAndHintTargetOnlyBreaksEqualQualityTies() {
+    @Test fun t3MinimumIsRespectedAndHintTargetDoesNotOverrideRandomTies() {
         val answers = listOf("ааааааа", "аааааааа", "бббббббб", "ааааааааа")
         val current = targetState(answers, CampaignTask.T3("long", 8, answers.last()))
         assertTrue(next(current, emptyMap()).state.hints.ladder.target?.word in setOf(answers[1], answers[2]))
         val tied = current.copy(level = current.level.copy(tasks = listOf(CampaignTask.T3("long", 8, answers[2]))))
         repeat(20) { seed ->
-            assertEquals(answers[2], HintRules.next(tied, random = Random(seed)).state.hints.ladder.target?.word)
+            assertTrue(HintRules.next(tied, random = Random(seed)).state.hints.ladder.target?.word in setOf(answers[1], answers[2]))
         }
         val familiarTooShort = answers.associateWith { HintWordData(familiar = it == answers.first()) }
         assertTrue(next(current, familiarTooShort).state.hints.ladder.target?.word in setOf(answers[1], answers[2]))

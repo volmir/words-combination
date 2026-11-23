@@ -209,6 +209,7 @@ class ProgressRepository(
                         val reset = CampaignProgress(
                             campaignId = identity,
                             resetReason = "campaign-mismatch:${existing.campaignId ?: "unidentified-v2"}",
+                            hintedWords = reconciliation.state.hintedWords,
                         )
                         preferences[campaignProgressKey] = json.encodeToString(CampaignProgressDto.fromCore(reset))
                     }
@@ -346,7 +347,7 @@ class ProgressRepository(
         val current = openCampaignLevel(campaign, saved, levelNumber, index)
         if (current.hints.shownSteps != expectedShownSteps) saved to null
         else {
-            val hint = HintRules.next(current, words, campaign.countMinLength)
+            val hint = HintRules.next(current, words, campaign.countMinLength, hintedWords = saved.hintedWords)
             CampaignRules.recordLevel(campaign, saved, hint.state) to hint
         }
     }

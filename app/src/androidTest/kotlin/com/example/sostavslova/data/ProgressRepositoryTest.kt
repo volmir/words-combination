@@ -72,6 +72,42 @@ class ProgressRepositoryTest {
     }
 
     @Test
+    fun hintedWordsPersistAtomicallyAcrossReopenAndOtherLevelAndReset() = runTest {
+        val fixture = Campaign(listOf(Stage(1, 1, 2)), listOf(
+            CampaignLevel(1, "электростанция", 1, 1, listOf(
+                CampaignTask.T4("riddle", listOf("станция")), CampaignTask.T1("count", 1))),
+            CampaignLevel(2, "электростанцияя", 1, 1, listOf(CampaignTask.T1("count2", 9))),
+        ))
+        val index = WordIndex(listOf("станция", "колея", "крот"))
+        repository.migrateCampaign(fixture, index)
+        repository.selectCampaignHintTask(fixture, 1, "count", index)
+        assertTrue(repository.observeCampaignProgress().first().hintedWords.isEmpty())
+        repository.selectCampaignHintTask(fixture, 1, "riddle", index)
+        val first = checkNotNull(repository.requestCampaignHint(fixture, 1, 0, index))
+        assertEquals(0, first.state.hints.paidUnits)
+        assertEquals(setOf("станция"), repository.observeCampaignProgress().first().hintedWords)
+        val beforeDuplicate = store.data.first()
+        assertNull(repository.requestCampaignHint(fixture, 1, 0, index))
+        assertEquals(beforeDuplicate, store.data.first())
+        repository.selectCampaignHintTask(fixture, 1, "count", index)
+        val switched = checkNotNull(repository.requestCampaignHint(fixture, 1, 1, index))
+        assertEquals("колея", switched.state.hints.ladder.target?.word)
+        repository.submitCampaignAnswer(fixture, 1, "крот", index)
+        scope.cancel()
+        scope.coroutineContext.job.join()
+        openStore()
+        assertEquals(setOf("станция", "колея"), repository.observeCampaignProgress().first().hintedWords)
+        val second = checkNotNull(repository.requestCampaignHint(fixture, 2, 0, index))
+        assertEquals("крот", second.state.hints.ladder.target?.word)
+        val saved = repository.observeCampaignProgress().first()
+        assertEquals(setOf("станция", "колея", "крот"), saved.hintedWords)
+        repository.migrateCampaign(fixture, WordIndex(listOf("станция", "крот")))
+        assertEquals(setOf("станция", "крот"), repository.observeCampaignProgress().first().hintedWords)
+        repository.resetCampaignProgress()
+        assertTrue(repository.observeCampaignProgress().first().hintedWords.isEmpty())
+    }
+
+    @Test
     fun inputModeDefaultsToTouchAndSurvivesReopenReconciliationAndCampaignReset() = runTest {
         assertEquals(InputMode.TOUCH, repository.observeInputMode().first())
         store.edit { it[stringPreferencesKey("inputModeV1")] = "FUTURE_MODE" }

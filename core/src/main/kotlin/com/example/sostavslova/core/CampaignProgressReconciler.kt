@@ -55,6 +55,7 @@ object CampaignProgressReconciler {
     ): CampaignReconciliationResult {
         require(campaign.levels.isNotEmpty()) { "Campaign must contain levels" }
         val targetId = CampaignIdentity.of(campaign)
+        val hintedWords = saved.hintedWords.map(Alphabet::normalize).filter(index::contains).toSet()
         val newByWord = campaign.levels.associateBy { Alphabet.normalize(it.word) }
         require(newByWord.size == campaign.levels.size) { "Campaign source words must be unique" }
         val changes = mutableListOf<ReconciliationChange>()
@@ -67,7 +68,7 @@ object CampaignProgressReconciler {
         if (addressed.isEmpty()) {
             if (saved.levels.isNotEmpty()) {
                 return CampaignReconciliationResult(
-                    state = CampaignProgress(campaignId = targetId),
+                    state = CampaignProgress(campaignId = targetId, hintedWords = hintedWords),
                     changes = changes,
                     resetLevels = resets,
                     incompatibleReason = "no-matching-level-words",
@@ -82,6 +83,7 @@ object CampaignProgressReconciler {
                     lastVisitedLevel = saved.lastVisitedLevel?.takeIf { it in 1..campaign.levels.size },
                     seenExplanations = saved.seenExplanations,
                     campaignId = targetId,
+                    hintedWords = hintedWords,
                 ),
                 changes = changes,
                 resetLevels = resets,
@@ -112,6 +114,7 @@ object CampaignProgressReconciler {
             seenExplanations = saved.seenExplanations,
             campaignId = targetId,
             resetReason = null,
+            hintedWords = hintedWords,
         )
         return CampaignReconciliationResult(state, changes, resets)
     }

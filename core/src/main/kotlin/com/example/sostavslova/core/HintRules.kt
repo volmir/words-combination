@@ -42,6 +42,7 @@ object HintRules {
         words: Map<String, HintWordData> = emptyMap(),
         countMinLength: Int = 4,
         random: Random = Random.Default,
+        hintedWords: Set<String> = emptySet(),
     ): HintResult {
         val found = normalizedFound(current)
         var hints = restore(current, words).hints
@@ -59,7 +60,7 @@ object HintRules {
             }
         }
         if (hints.ladder.target == null || hints.ladder.target.word in found) {
-            val target = selectTarget(current.copy(hints = hints), words, countMinLength, random)
+            val target = selectTarget(current.copy(hints = hints), words, countMinLength, random, hintedWords)
             val ladder = if (target == null) HintLadder() else HintLadder.build(
                 target,
                 current.level.tasks.firstOrNull { it.id == target.taskId },
@@ -135,6 +136,7 @@ object HintRules {
         words: Map<String, HintWordData>,
         countMinLength: Int,
         random: Random,
+        hintedWords: Set<String>,
     ): HintTarget? {
         val found = normalizedFound(current)
         // allWords уже проверены WordIndex при открытии уровня; здесь только местные ответы.
@@ -148,7 +150,7 @@ object HintRules {
             val task = unfinished.firstOrNull { it.id == preferredId }
             if (task != null) {
                 val eligible = eligibleWords(task, candidates, countMinLength)
-                val word = selectWord(task, eligible, words, random)
+                val word = selectWord(task, eligible, words, random, hintedWords)
                 if (word != null) {
                     val letter = when (task) {
                         is CampaignTask.T2 -> task.letter
@@ -170,7 +172,7 @@ object HintRules {
         val ordered = t4s + sortedOthers
         for (task in ordered) {
             val eligible = eligibleWords(task, candidates, countMinLength)
-            val word = selectWord(task, eligible, words, random) ?: continue
+            val word = selectWord(task, eligible, words, random, hintedWords) ?: continue
             val letter = when (task) {
                 is CampaignTask.T2 -> task.letter
                 is CampaignTask.T7 -> task.letter
@@ -178,7 +180,7 @@ object HintRules {
             }
             return HintTarget(word, task.id, task.type, letter)
         }
-        return choose(candidates, words, random)?.let { HintTarget(it) }
+        return choose(candidates, words, random, hintedWords)?.let { HintTarget(it) }
     }
 
     private fun eligibleWords(task: CampaignTask, candidates: List<String>, countMinLength: Int): List<String> =
@@ -199,29 +201,30 @@ object HintRules {
         eligible: List<String>,
         words: Map<String, HintWordData>,
         random: Random,
+        hintedWords: Set<String>,
     ): String? {
         if (task is CampaignTask.T4) return eligible.randomOrNull(random)
-        return choose(eligible, words, random, (task as? CampaignTask.T3)?.hintTarget)
+        return choose(eligible, words, random, hintedWords)
     }
 
     private fun choose(
         candidates: List<String>,
         words: Map<String, HintWordData>,
         random: Random,
-        preferred: String? = null,
+        hintedWords: Set<String>,
     ): String? {
         if (candidates.isEmpty()) return null
         val quality = compareBy<String>(
+            { if (it in hintedWords) 1 else 0 },
             { if (words[it]?.familiar != false) 0 else 1 },
             { word ->
                 val nearest = word.length.coerceIn(HintEconomy.TARGET_MIN_LENGTH, HintEconomy.TARGET_MAX_LENGTH)
                 kotlin.math.abs(word.length - nearest)
             },
-            { it.length },
         )
         val best = candidates.minWith(quality)
         val equal = candidates.filter { quality.compare(it, best) == 0 }
-        return if (preferred in equal) preferred else equal.random(random)
+        return equal.random(random)
     }
 
     private fun normalizedFound(current: CurrentCampaignLevel): Set<String> =

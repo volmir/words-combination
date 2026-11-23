@@ -25,6 +25,15 @@ class CampaignProgressDtoTest {
         "второй" to CampaignLevelProgress(achievements = setOf(LevelAchievement.EXPERT), achievementLevelNumber = 2),
     ))
 
+    @Test fun hintedWordsRoundTripAndLegacyDefault() {
+        val original = core().copy(hintedWords = setOf("станция", "колея"))
+        val raw = json.encodeToString(CampaignProgressDto.fromCore(original))
+        assertEquals(original, json.decodeFromString<CampaignProgressDto>(raw).toCore())
+        assertTrue(json.decodeFromString<CampaignProgressDto>("""{"version":2}""").toCore().hintedWords.isEmpty())
+        val unnormalized = """{"hintedWords":[" ЁЛКА ","елка",""]}"""
+        assertEquals(setOf("елка"), json.decodeFromString<CampaignProgressDto>(unnormalized).toCore().hintedWords)
+    }
+
     @Test fun roundTripKeepsAchievementsSeparatePerLevel() {
         val decoded = json.decodeFromString<CampaignProgressDto>(json.encodeToString(CampaignProgressDto.fromCore(core()))).toCore()
         assertEquals(setOf(LevelAchievement.EXPERT, LevelAchievement.COLLECTOR, LevelAchievement.LONG_WORD),

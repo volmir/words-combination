@@ -21,6 +21,17 @@ class CampaignProgressReconcilerTest {
     private fun levelProgress(found: List<String>, tasks: Set<String>, hints: HintState = HintState()) =
         CampaignLevelProgress(found, tasks, hints)
 
+    @Test fun hintedWordsAreNormalizedAndFilteredEvenWithoutSavedLevels() {
+        for (levels in listOf(emptyMap(), mapOf("рекуперация" to CampaignLevelProgress()),
+            mapOf("прежний" to CampaignLevelProgress()))) {
+            val saved = CampaignProgress(levels = levels, hintedWords = setOf("РЕКА", "перёц", "удалено"))
+            val reconciled = CampaignProgressReconciler.reconcile(saved, campaign("рекуперация"), index).state
+            assertEquals(setOf("река", "перец"), reconciled.hintedWords)
+            assertEquals(reconciled, CampaignProgressReconciler.reconcile(reconciled, campaign("рекуперация"), index).state)
+        }
+        assertTrue(CampaignRules.reset().hintedWords.isEmpty())
+    }
+
     @Test fun sameWordsKeepFoundStarsFrontierAndFinale() {
         val campaign = campaign("рекуперация", "опровержение")
         val saved = CampaignProgress(

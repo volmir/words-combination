@@ -1,5 +1,6 @@
 package com.example.sostavslova.data
 
+import com.example.sostavslova.core.Alphabet
 import com.example.sostavslova.core.CampaignLevelProgress
 import com.example.sostavslova.core.CampaignProgress
 import com.example.sostavslova.core.HintLadder
@@ -24,6 +25,7 @@ internal data class CampaignProgressDto(
     val finaleShown: Boolean = false,
     val campaignId: String? = null,
     val resetReason: String? = null,
+    val hintedWords: Set<String> = emptySet(),
 ) {
     fun toCore(): CampaignProgress {
         if (version != 2) throw SerializationException("Unsupported campaign progress version: $version")
@@ -36,6 +38,7 @@ internal data class CampaignProgressDto(
             finaleShown = finaleShown,
             campaignId = campaignId,
             resetReason = resetReason,
+            hintedWords = hintedWords.map(Alphabet::normalize).filter { it.isNotEmpty() }.toSet(),
         )
     }
 
@@ -49,6 +52,7 @@ internal data class CampaignProgressDto(
             finaleShown = state.finaleShown,
             campaignId = state.campaignId,
             resetReason = state.resetReason,
+            hintedWords = state.hintedWords,
         )
     }
 }

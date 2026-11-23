@@ -29,6 +29,8 @@ data class CampaignProgress(
     val campaignId: String? = null,
     /** Диагностическая метка явного сброса при несовместимой кампании; UI её не показывает. */
     val resetReason: String? = null,
+    /** Нормализованные цели, для которых уже показана хотя бы одна ступень. */
+    val hintedWords: Set<String> = emptySet(),
 )
 
 data class CampaignSummary(
@@ -133,6 +135,11 @@ object CampaignRules {
                 achievements = saved.achievements,
                 achievementLevelNumber = level.number.takeIf { saved.achievements.isNotEmpty() },
             )),
+            hintedWords = progress.hintedWords + listOfNotNull(
+                evaluated.hints.ladder.target?.word
+                    ?.takeIf { evaluated.hints.ladder.nextStepIndex > 0 }
+                    ?.let(Alphabet::normalize),
+            ),
             highestUnlockedLevel = frontier,
             finaleReached = progress.finaleReached || (last && passed),
         )
