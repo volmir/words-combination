@@ -14,7 +14,7 @@ import kotlin.random.Random
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.job
 
-/** Только синтетические данные; пользовательские progress и play_time не используются. */
+/** Только синтетические данные; пользовательский progress не используется. */
 internal object QaCampaign {
     val words = listOf("кот", "крот", "торт", "карта", "река", "трек", "рак", "рот")
     val json = """

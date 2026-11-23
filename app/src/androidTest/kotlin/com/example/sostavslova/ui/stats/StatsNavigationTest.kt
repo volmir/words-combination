@@ -34,12 +34,10 @@ class StatsNavigationTest {
         assertEquals(15, campaign.levels.size)
         assertEquals(6, campaign.stages.size)
         val beforeProgress = container.progressRepository.observeCampaignProgress().first()
-        val beforeTime = container.playTimeRepository.snapshot(campaign)
         compose.onNodeWithTag("levels_grid").performScrollToKey(campaign.levels.last().word)
         compose.onNodeWithTag("level_card_15").assertIsDisplayed()
         openStats()
         assertEquals(beforeProgress, container.progressRepository.observeCampaignProgress().first())
-        assertEquals(beforeTime, container.playTimeRepository.snapshot(campaign))
         compose.activityRule.scenario.recreate()
         awaitTag("stats_summary")
         back()
@@ -52,16 +50,12 @@ class StatsNavigationTest {
         }
         compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("черновик")
         openStats()
-        container.playTimeTracker.awaitSaved()
-        val stopped = container.playTimeRepository.snapshot(campaign)
         val progress = container.progressRepository.observeCampaignProgress().first()
-        // Recomposition, scrolling and recreation on the stats route never create new segments.
+        // Recomposition, scrolling and recreation on the stats route never change progress.
         compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_15")
         compose.activityRule.scenario.recreate()
         // После восстановления список остаётся на уровне 15, поэтому шапка уже вне окна.
         awaitTag("stats_level_15")
-        container.playTimeTracker.awaitSaved()
-        assertEquals(stopped, container.playTimeRepository.snapshot(campaign))
         assertEquals(progress, container.progressRepository.observeCampaignProgress().first())
         compose.onNodeWithTag("app_menu").performClick()
         compose.onNodeWithText("Правила").performClick()

@@ -56,8 +56,6 @@ class AppContainerTest {
         assertSame(container.levelsRepository, application.container.levelsRepository)
         assertSame(container.riddlesRepository, application.container.riddlesRepository)
         assertSame(container.progressRepository, application.container.progressRepository)
-        assertSame(container.playTimeRepository, application.container.playTimeRepository)
-        assertSame(container.playTimeTracker, application.container.playTimeTracker)
         val campaign = requireNotNull(container.levelsRepository.getCampaign())
         assertEquals(15, campaign.levels.size)
         assertEquals(49, campaign.maxStars)

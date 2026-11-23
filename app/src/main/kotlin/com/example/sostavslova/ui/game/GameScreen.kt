@@ -64,9 +64,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.sostavslova.R
 import com.example.sostavslova.di.appContainer
-import com.example.sostavslova.time.LocalPlayTimeTracker
-import com.example.sostavslova.time.observePlayTimeLifecycle
-import com.example.sostavslova.time.playTimeUserActivity
 import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.HintLadder
@@ -87,14 +84,13 @@ import com.example.sostavslova.ui.theme.WordsPalette
 import kotlinx.coroutines.delay
 
 @Composable
-fun GameRoute(playTimeOwner: String, onOpenLevel: (Int) -> Unit, onReturnLevels: (Int) -> Unit) {
+fun GameRoute(onOpenLevel: (Int) -> Unit, onReturnLevels: (Int) -> Unit) {
     BackHandler { onReturnLevels(0) }
     val container = appContainer()
-    val factory = remember(container, playTimeOwner) {
+    val factory = remember(container) {
         viewModelFactory { initializer {
             GameViewModel(createSavedStateHandle(), container.wordRepository, container.levelsRepository,
-                container.progressRepository, container.riddlesRepository,
-                playTimeTracker = container.playTimeTracker, playTimeOwner = playTimeOwner)
+                container.progressRepository, container.riddlesRepository)
         } }
     }
     val model: GameViewModel = viewModel(factory = factory)
@@ -103,16 +99,6 @@ fun GameRoute(playTimeOwner: String, onOpenLevel: (Int) -> Unit, onReturnLevels:
     }
     val state by model.uiState.collectAsStateWithLifecycle()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    DisposableEffect(model, lifecycle, playTimeOwner) {
-        model.syncPlayTime()
-        val dispose = observePlayTimeLifecycle(lifecycle) {
-            container.playTimeTracker.setLevelResumed(playTimeOwner, it)
-        }
-        onDispose {
-            dispose()
-            container.playTimeTracker.detachLevel(playTimeOwner)
-        }
-    }
     var notice by remember { mutableStateOf<GameMessage?>(null) }
     LaunchedEffect(model, lifecycle) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -148,7 +134,7 @@ fun GameScreen(
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     Column(
-        Modifier.fillMaxSize().testTag("game_screen").playTimeUserActivity(LocalPlayTimeTracker.current)
+        Modifier.fillMaxSize().testTag("game_screen")
             .imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

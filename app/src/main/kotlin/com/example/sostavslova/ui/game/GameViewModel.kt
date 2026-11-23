@@ -28,8 +28,6 @@ import com.example.sostavslova.data.RiddlesRepository
 import com.example.sostavslova.data.LevelsRepository
 import com.example.sostavslova.data.ProgressRepository
 import com.example.sostavslova.data.WordRepository
-import com.example.sostavslova.time.PlayTimeTarget
-import com.example.sostavslova.time.PlayTimeTracker
 import com.example.sostavslova.ui.components.AlertType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -125,8 +123,6 @@ class GameViewModel(
     private val progress: ProgressRepository,
     private val riddles: RiddlesRepository,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
-    private val playTimeTracker: PlayTimeTracker? = null,
-    private val playTimeOwner: String? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(GameUiState())
     val uiState = mutableState.asStateFlow()
@@ -149,7 +145,6 @@ class GameViewModel(
         if (sessionJob?.isActive == true || uiState.value.returnLevels ||
             (uiState.value.game != null && !uiState.value.loadError)) return
         mutableState.update { it.copy(loading = true, loadError = false) }
-        syncPlayTime()
         sessionJob = viewModelScope.launch {
             try {
                 val number = levelNumber
@@ -212,7 +207,6 @@ class GameViewModel(
                 throw cancelled
             } catch (_: Exception) {
                 mutableState.update { it.copy(loading = false, loadError = true) }
-                syncPlayTime()
             }
         }
     }
@@ -240,26 +234,6 @@ class GameViewModel(
             riddles = it.riddles.mapValues { (id, items) -> items.mapIndexed { index, riddle ->
                 riddle.copy(solved = solved[id]?.getOrNull(index) == true)
             } }) }
-        syncPlayTime()
-    }
-
-    // Вызывается после подтверждённого снимка ProgressRepository, даже если UI уже ушёл.
-    // busy/hintLoading/игровые диалоги не останавливают время текущего уровня.
-    internal fun syncPlayTime() {
-        val tracker = playTimeTracker ?: return
-        val owner = playTimeOwner ?: return
-        val state = uiState.value
-        val current = state.campaignLevel
-        val activeCampaign = campaign
-        val target = if (activeCampaign != null && current != null && state.game != null &&
-            !state.loading && !state.loadError && !state.returnLevels) {
-            PlayTimeTarget(activeCampaign, current.level.number, current.completedTaskIds.size)
-        } else null
-        tracker.updateLevel(owner, target, finished = state.finaleSummary != null)
-    }
-
-    override fun onCleared() {
-        playTimeOwner?.let { playTimeTracker?.detachLevel(it) }
     }
 
     // Черновик живёт только пока открыт экран, даже если ViewModel пережила Activity.
@@ -290,14 +264,12 @@ class GameViewModel(
     }
 
     fun onInputChanged(raw: String) {
-        playTimeTracker?.onUserActivity()
         // Правильный ответ не длиннее исходника (≤ MAX_WORD_LENGTH), поэтому
         // произвольный ввод не обрезаем: скрытая потеря последних символов недопустима.
         mutableState.update { it.copy(input = raw, message = null) }
     }
 
     fun onSubmit() {
-        playTimeTracker?.onUserActivity()
         val before = uiState.value
         val game = before.game ?: return
         if (!before.canPlay) return
@@ -358,7 +330,6 @@ class GameViewModel(
     }
 
     fun onHint() {
-        playTimeTracker?.onUserActivity()
         val state = uiState.value
         if (!state.canPlay || hintJob?.isActive == true) return
         val current = state.campaignLevel ?: return
@@ -393,7 +364,6 @@ class GameViewModel(
      * заблокированная попытка не создают транзакцию.
      */
     fun onHintTask(taskId: String?) {
-        playTimeTracker?.onUserActivity()
         val state = uiState.value
         if (!state.canPlay || hintJob?.isActive == true) return
         val current = state.campaignLevel ?: return
@@ -446,6 +416,5 @@ class GameViewModel(
 
     private fun leave(@StringRes message: Int = 0) {
         mutableState.update { it.copy(loading = false, returnLevels = true, levelsMessage = message) }
-        syncPlayTime()
     }
 }

@@ -353,7 +353,6 @@ class CampaignJourneyUiTest {
         compose.onNodeWithTag("exit_dialog_confirm").assertIsEnabled().performClick()
         compose.waitUntil(10_000) { activity.isFinishing }
         assertEquals(listOf("кот"), saved().levels.getValue("картотека").found)
-        assertTimeSaved()
     }
 
     @Test fun doubleSystemBackFromMapExitsWithSavedAnswers() = runTest {
@@ -364,14 +363,5 @@ class CampaignJourneyUiTest {
         compose.runOnUiThread { back.onBackPressed() }
         compose.waitUntil(10_000) { activity.isFinishing }
         assertEquals(listOf("кот"), saved().levels.getValue("картотека").found)
-        assertTimeSaved()
-    }
-
-    private suspend fun assertTimeSaved() {
-        val campaign = requireNotNull(container.levelsRepository.getCampaign())
-        val time = container.playTimeRepository.snapshot(campaign).getValue(1)
-        assertEquals(1, time.lastStars)
-        assertTrue(time.lastSequence > 0L)
-        assertNull(container.playTimeTracker.writeFailure.value)
     }
 }

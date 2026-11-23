@@ -43,11 +43,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.sostavslova.R
 import com.example.sostavslova.core.LevelStatsRow
-import com.example.sostavslova.core.LevelTimeStatus
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.core.Statistics
 import com.example.sostavslova.di.appContainer
-import com.example.sostavslova.time.PlayTimeTracker
 import com.example.sostavslova.ui.components.AlertBanner
 import com.example.sostavslova.ui.components.AlertType
 import com.example.sostavslova.ui.components.StatsTable
@@ -56,48 +54,19 @@ import com.example.sostavslova.ui.components.WordsDialog
 import com.example.sostavslova.ui.game.gameStageName
 import com.example.sostavslova.ui.theme.LocalWordsPalette
 import com.example.sostavslova.ui.theme.WordsControlShape
-import java.math.BigInteger
 import java.util.Locale
-
-/** Total hours, never a wall-clock time: no wrapping at 24 h or Long overflow. */
-internal fun durationParts(milliseconds: BigInteger): List<String> {
-    require(milliseconds.signum() >= 0)
-    val seconds = milliseconds / BigInteger.valueOf(1000)
-    return listOf((seconds / BigInteger.valueOf(3600)).toString(),
-        ((seconds / BigInteger.valueOf(60)) % BigInteger.valueOf(60)).toString(),
-        (seconds % BigInteger.valueOf(60)).toString())
-}
-
-/** Оставляет только значимые единицы: «45 с», «5 мин 3 с», «2 ч 14 мин», «0 с». */
-internal fun durationText(parts: List<String>, units: List<String>): String {
-    require(parts.size == 3 && units.size == 3)
-    val significant = parts.indices.filter { parts[it] != "0" }
-    if (significant.isEmpty()) return "0 ${units[2]}"
-    return significant.joinToString(" ") { "${parts[it]} ${units[it]}" }
-}
 
 /** Разряды через пробел: «1 204». */
 internal fun groupedNumber(value: Int): String =
     value.toString().reversed().chunked(3).joinToString(" ").reversed()
 
 @Composable
-private fun duration(ms: Long): String = duration(BigInteger.valueOf(ms))
-
-@Composable
-private fun duration(ms: BigInteger): String = durationText(durationParts(ms), listOf(
-    stringResource(R.string.time_unit_hours),
-    stringResource(R.string.time_unit_minutes),
-    stringResource(R.string.time_unit_seconds),
-))
-
-@Composable
 fun StatsRoute(onReturnToLevels: () -> Unit = {}) {
     val container = appContainer()
     val stageNames = (1..6).associateWith { gameStageName(it) }
     val factory = remember(container, stageNames) { viewModelFactory { initializer {
-        StatsViewModel(container.levelsRepository, container.playTimeRepository,
-            container.progressRepository, container.wordRepository, stageNames,
-            playTimeTracker = container.playTimeTracker)
+        StatsViewModel(container.levelsRepository, container.progressRepository,
+            container.wordRepository, stageNames)
     } } }
     val model: StatsViewModel = viewModel(factory = factory)
     val state by model.uiState.collectAsStateWithLifecycle()
@@ -136,12 +105,9 @@ fun StatsScreen(
                     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(stringResource(R.string.stats_summary, statistics.stars, statistics.maxStars,
-                            statistics.passedLevels, statistics.totalLevels, groupedNumber(statistics.foundWords)),
+                            statistics.passedLevels, statistics.totalLevels, groupedNumber(statistics.foundWords),
+                            statistics.hintsShown),
                             Modifier.testTag("stats_summary"), style = MaterialTheme.typography.bodyLarge)
-                        Text(stringResource(R.string.stats_time_summary,
-                            if (statistics.measuredLevelCount == 0) stringResource(R.string.stats_dash)
-                            else duration(statistics.totalTimeMs), statistics.hintsShown),
-                            Modifier.testTag("stats_time_summary"), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
                 statistics.stages.forEach { stage ->
@@ -152,25 +118,6 @@ fun StatsScreen(
                             style = MaterialTheme.typography.titleMedium)
                     }
                     items(stage.levels, key = { "stats_level_${it.number}" }) { row -> StatsLevelRow(row) }
-                }
-                item(key = "stats_time_note") {
-                    Text(stringResource(R.string.stats_time_note),
-                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
-                            .testTag("stats_time_note"),
-                        style = MaterialTheme.typography.bodyMedium)
-                }
-                item(key = "stats_idle_note") {
-                    val idleSeconds = (PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS / 1_000L).toInt()
-                    val secondUnit = RussianPlural.form(
-                        idleSeconds,
-                        stringResource(R.string.stats_second_genitive_one),
-                        stringResource(R.string.stats_second_genitive_many),
-                        stringResource(R.string.stats_second_genitive_many),
-                    )
-                    Text(stringResource(R.string.stats_idle_note, idleSeconds, secondUnit),
-                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
-                            .testTag("stats_idle_note"),
-                        style = MaterialTheme.typography.bodyMedium)
                 }
                 item(key = "stats_data_section") {
                     Column(
@@ -263,10 +210,8 @@ private fun StatsLevelRow(row: LevelStatsRow) {
     val words = stringResource(R.string.stats_words_progress, row.found, row.total,
         RussianPlural.words(row.total))
     val percent = stringResource(R.string.stats_percent_value, row.percent)
-    val time = activeTimeText(row)
-    val timeAndHints = if (row.hintsShown == 0) time
-        else stringResource(R.string.stats_time_hints, time, row.hintsShown)
-    val statusText = listOf(starsValue, words, timeAndHints).joinToString(" · ")
+    val hints = stringResource(R.string.stats_hints_value, row.hintsShown)
+    val statusText = listOf(starsValue, words, hints).joinToString(" · ")
     Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f).padding(start = 16.dp)
@@ -289,7 +234,7 @@ private fun StatsLevelRow(row: LevelStatsRow) {
                         color = LocalWordsPalette.current.primary, trackColor = LocalWordsPalette.current.wellBorder)
                     Text(percent, style = MaterialTheme.typography.bodyMedium)
                 }
-                Text(timeAndHints, Modifier.testTag("stats_time_${row.number}"),
+                Text(hints, Modifier.testTag("stats_hints_${row.number}"),
                     style = MaterialTheme.typography.bodyMedium)
             }
             TextButton({ expanded = !expanded }, Modifier.padding(end = 8.dp).heightIn(min = 48.dp)
@@ -305,37 +250,12 @@ private fun StatsLevelRow(row: LevelStatsRow) {
                     Text(stringResource(R.string.stats_not_passed),
                         Modifier.testTag("stats_not_passed_${row.number}"),
                         style = MaterialTheme.typography.bodyMedium)
-                } else {
-                    Text(stringResource(R.string.stats_passed_for,
-                        row.toRMs?.let { duration(it) } ?: stringResource(R.string.stats_dash)),
-                        Modifier.testTag("stats_passed_${row.number}"),
-                        style = MaterialTheme.typography.bodyMedium)
-                }
-                if (row.maxStars > row.requiredStars) {
-                    if (row.stars >= row.maxStars) {
-                        Text(stringResource(R.string.stats_all_stars_for,
-                            row.toFullMs?.let { duration(it) } ?: stringResource(R.string.stats_dash)),
-                            Modifier.testTag("stats_all_stars_${row.number}"),
-                            style = MaterialTheme.typography.bodyMedium)
-                    } else {
-                        Text(stringResource(R.string.stats_all_stars_pending),
-                            Modifier.testTag("stats_all_stars_${row.number}"),
-                            style = MaterialTheme.typography.bodyMedium)
-                    }
                 }
             }
         }
         HorizontalDivider()
     }
 }
-
-@Composable
-private fun activeTimeText(row: LevelStatsRow): String =
-    when (row.timeStatus) {
-        LevelTimeStatus.Measured -> row.activeMs?.let { duration(it) } ?: stringResource(R.string.stats_dash)
-        LevelTimeStatus.Historical, LevelTimeStatus.Pending, LevelTimeStatus.Unplayed ->
-            stringResource(R.string.stats_dash)
-    }
 
 @Composable
 private fun StatsHeading(text: String, tag: String) {

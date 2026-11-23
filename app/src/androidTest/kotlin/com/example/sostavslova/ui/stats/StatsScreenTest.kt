@@ -20,18 +20,13 @@ import androidx.datastore.core.okio.OkioStorage
 import com.example.sostavslova.core.*
 import com.example.sostavslova.data.CampaignJson
 import com.example.sostavslova.data.LevelsRepository
-import com.example.sostavslova.data.PlayTimeRepository
 import com.example.sostavslova.data.ProgressRepository
 import com.example.sostavslova.data.WordRepository
 import com.example.sostavslova.data.jsonstore.PreferenceDataStoreFactory
 import com.example.sostavslova.data.jsonstore.PreferencesSerializer
-import com.example.sostavslova.data.jsonstore.stringPreferencesKey
-import com.example.sostavslova.time.PlayTimeTarget
-import com.example.sostavslova.time.PlayTimeTracker
 import com.example.sostavslova.ui.assertTextLayoutFits
 import com.example.sostavslova.ui.theme.WordsTheme
 import java.io.File
-import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -61,15 +56,11 @@ class StatsScreenTest {
         requiredStars: Int = 2,
         found: Int = 0,
         total: Int = 325,
-        activeMs: Long? = null,
-        toRMs: Long? = null,
-        toFullMs: Long? = null,
         hints: Int = 0,
-        status: LevelTimeStatus = if (activeMs == null) LevelTimeStatus.Unplayed else LevelTimeStatus.Measured,
         byLength: List<LengthStat> = listOf(LengthStat(3, 0, 100), LengthStat(4, 0, 100),
             LengthStat(5, 0, total - 200)),
-    ) = LevelStatsRow(number, word, stageNames[stage - 1], stars, maxStars, requiredStars, found, total,
-        activeMs, toRMs, toFullMs, hints, byLength, status)
+    ) = LevelStatsRow(number, word, stageNames[stage - 1], stars, maxStars, requiredStars,
+        found, total, hints, byLength)
 
     private val rows = listOf(
         row(1, "чемпионство", 1, maxStars = 1, requiredStars = 1),
@@ -79,8 +70,7 @@ class StatsScreenTest {
         row(5, "благоразумие", 2, stars = 1, maxStars = 3, requiredStars = 2, found = 70),
         row(6, "безрассудство", 3, stars = 3, maxStars = 3, requiredStars = 3, found = 100),
         row(7, "журналистика", 3, stars = 2, maxStars = 3, requiredStars = 3, found = 142,
-            activeMs = 2_280_000, toRMs = 1_200_000, hints = 4,
-            byLength = listOf(LengthStat(3, 20, 100), LengthStat(5, 122, 225))),
+            hints = 4, byLength = listOf(LengthStat(3, 20, 100), LengthStat(5, 122, 225))),
         row(8, "поздравление", 3, stars = 3, maxStars = 3, requiredStars = 3, found = 110),
         row(9, "благодарность", 4, stars = 4, maxStars = 4, requiredStars = 3, found = 120),
         row(10, "пуэрториканец", 4, stars = 3, maxStars = 4, requiredStars = 3, found = 111),
@@ -88,8 +78,7 @@ class StatsScreenTest {
         row(12, "проблематика", 5, stars = 4, maxStars = 5, requiredStars = 4, found = 121),
         row(13, "складирование", 5, stars = 5, maxStars = 5, requiredStars = 4, found = 131),
         row(14, "контрабандист", 6, stars = 5, maxStars = 5, requiredStars = 4, found = 140),
-        row(15, "документалист", 6, stars = 4, maxStars = 5, requiredStars = 4, found = 141,
-            activeMs = 60_000, toRMs = 50_000, hints = 19),
+        row(15, "документалист", 6, stars = 4, maxStars = 5, requiredStars = 4, found = 141, hints = 19),
     )
 
     private fun statistics(rows: List<LevelStatsRow> = this.rows, foundWords: Int = 1_204): CampaignStatistics {
@@ -98,7 +87,6 @@ class StatsScreenTest {
         }
         return CampaignStatistics(stars = 18, maxStars = 49, passedLevels = 6, totalLevels = 15,
             foundWords = foundWords, totalWords = rows.sumOf { it.total }, hintsShown = 23,
-            totalTimeMs = java.math.BigInteger.valueOf(8_040_000), measuredLevelCount = 1,
             stages = stages, levels = rows)
     }
 
@@ -110,8 +98,7 @@ class StatsScreenTest {
     @Test fun summaryRowsAndExpansionUseOneSetOfCoreNumbers() {
         show()
         compose.onNodeWithTag("stats_summary")
-            .assertTextEquals("Звёзды 18/49 · Уровни 6/15 · Слов 1 204")
-        compose.onNodeWithTag("stats_time_summary").assertTextEquals("Время 2 ч 14 мин · Подсказок 23")
+            .assertTextEquals("Звёзды 18/49 · Уровни 6/15 · Слов 1 204 · Подсказок 23")
         compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_7")
         compose.onNodeWithTag("stats_level_7")
             .assertTextContains("7 · ЖУРНАЛИСТИКА")
@@ -119,60 +106,60 @@ class StatsScreenTest {
             .assertTextContains("для открытия: 3")
             .assertTextContains("142 из 325 слов")
             .assertTextContains("43%")
-            .assertTextContains("38 мин · подсказок 4")
+            .assertTextContains("подсказок 4")
         compose.onNodeWithTag("stats_expand_7").performClick()
         compose.onNodeWithTag("stats_table_7").assertExists()
         compose.onNodeWithText("Осталось").assertExists()
         // Уровень 7 ещё не пройден: 2 звезды при пороге 3.
         compose.onNodeWithTag("stats_not_passed_7").assertTextEquals("Уровень ещё не пройден")
         compose.onNodeWithTag("stats_passed_7").assertDoesNotExist()
-        // При M = R отдельной строки «Все звёзды» нет: это проверяет другой тест.
 
         compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_5")
         compose.onNodeWithTag("stats_expand_5").performClick()
-        compose.onNodeWithTag("stats_all_stars_5").assertTextEquals("Все звёзды ещё не получены")
+        compose.onNodeWithTag("stats_all_stars_5").assertDoesNotExist()
 
         compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_1")
         compose.onNodeWithTag("stats_level_1")
             .assertTextContains("0 из 325 слов")
             .assertTextContains("получено 0 из 1")
-        compose.onNodeWithTag("stats_time_1", useUnmergedTree = true).assertTextEquals("—")
+        compose.onNodeWithTag("stats_hints_1", useUnmergedTree = true).assertTextEquals("подсказок 0")
         compose.onNodeWithTag("stats_expand_1").performClick()
         compose.onNodeWithTag("stats_not_passed_1").assertTextEquals("Уровень ещё не пройден")
         compose.onNodeWithTag("stats_passed_1").assertDoesNotExist()
     }
 
-    @Test fun snapshotUpdatesWithoutRefreshAndMeasuredTimeWins() {
+    @Test fun snapshotUpdatesWithoutRefresh() {
         val state = mutableStateOf(StatsUiState(loading = false, statistics = statistics()))
         compose.setContent { WordsTheme { StatsScreen(state.value) } }
         compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_7")
-        compose.onNodeWithTag("stats_time_7", useUnmergedTree = true).assertTextEquals("38 мин · подсказок 4")
+        compose.onNodeWithTag("stats_hints_7", useUnmergedTree = true).assertTextEquals("подсказок 4")
         compose.runOnIdle {
             val changed = rows.map { if (it.number == 7) it.copy(hintsShown = 5) else it }
             state.value = StatsUiState(loading = false, statistics = statistics(changed))
         }
-        compose.onNodeWithTag("stats_time_7", useUnmergedTree = true).assertTextEquals("38 мин · подсказок 5")
+        compose.onNodeWithTag("stats_hints_7", useUnmergedTree = true).assertTextEquals("подсказок 5")
         // Шапка могла уехать за пределы окна при прокрутке к уровню 7.
         compose.onNodeWithTag("stats_screen").performScrollToIndex(1)
-        compose.onNodeWithTag("stats_time_summary").assertTextEquals("Время 2 ч 14 мин · Подсказок 23")
+        compose.onNodeWithTag("stats_summary")
+            .assertTextEquals("Звёзды 18/49 · Уровни 6/15 · Слов 1 204 · Подсказок 23")
     }
 
-    @Test fun allStarsLineIsHiddenWhenRequiredThresholdIsTheMaximum() {
+    @Test fun timeMilestonesAreAbsentWhenRequiredThresholdIsTheMaximum() {
         val single = listOf(row(1, "чемпионство", 1, stars = 1, maxStars = 1, requiredStars = 1, found = 3))
         val stages = listOf(StageStatsRows(1, "Разминка", 1, 1, single))
         val stats = CampaignStatistics(stars = 1, maxStars = 1, passedLevels = 1, totalLevels = 1,
-            foundWords = 3, totalWords = 325, hintsShown = 0, totalTimeMs = java.math.BigInteger.ZERO,
-            measuredLevelCount = 0, stages = stages, levels = single)
+            foundWords = 3, totalWords = 325, hintsShown = 0, stages = stages, levels = single)
         compose.setContent { WordsTheme { StatsScreen(StatsUiState(loading = false, statistics = stats)) } }
         compose.onNodeWithTag("stats_expand_1").performClick()
-        compose.onNodeWithTag("stats_passed_1").assertTextEquals("Пройден за —")
+        compose.onNodeWithTag("stats_table_1").assertExists()
+        compose.onNodeWithTag("stats_passed_1").assertDoesNotExist()
         compose.onNodeWithTag("stats_all_stars_1").assertDoesNotExist()
     }
 
     @Test fun internalNotationAndRemovedAggregatesAreAbsent() {
         show()
         for (text in listOf("R", "M", "Этап", "Среднее", "Медиана", "Самый быстрый", "Самый долгий",
-            "Активное время", "Пройден за:", "Все звёзды за:")) {
+            "Активное время", "Пройден за:", "Все звёзды за:", "Время", "бездействия")) {
             compose.onAllNodesWithText(text, substring = true).assertCountEquals(0)
         }
         compose.onNodeWithTag("stats_title").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
@@ -200,13 +187,6 @@ class StatsScreenTest {
                 .assertTextContains("$level · ${rows[level - 1].word.uppercase()}")
             assertLevelTextFits(level)
         }
-        compose.onNodeWithTag("stats_screen").performScrollToKey("stats_time_note")
-        compose.onNodeWithTag("stats_time_note").assertTextContains("до включения учёта", substring = true)
-        compose.onNodeWithTag("stats_screen").performScrollToKey("stats_idle_note")
-        val expectedIdleSeconds = (PlayTimeTracker.DEFAULT_IDLE_TIMEOUT_MS / 1_000L).toInt()
-        compose.onNodeWithTag("stats_idle_note")
-            .assertTextEquals("Если игра не получает касаний больше $expectedIdleSeconds секунд, время не считается.")
-        assertTextLayoutFitsNode("stats_idle_note")
         compose.onNodeWithTag("stats_screen").performScrollToKey("stats_data_section")
         compose.onNodeWithTag("stats_data_heading").assertTextEquals("Данные")
         compose.onNodeWithTag("stats_reset_button").assertTextEquals("Начать заново")
@@ -239,15 +219,6 @@ class StatsScreenTest {
         }
     }
 
-    private fun assertTextLayoutFitsNode(tag: String) {
-        val node = compose.onNodeWithTag(tag).fetchSemanticsNode()
-        val action = requireNotNull(node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action)
-        val layouts = mutableListOf<TextLayoutResult>()
-        assertTrue("Text layout must be available", action(layouts))
-        assertTrue("Text layout must not be empty", layouts.isNotEmpty())
-        layouts.forEach { assertTextLayoutFits(it, tag) }
-    }
-
     @Test fun resetDialogRequiresConfirmationIsReadableByTalkBackAndCancelIsFirstInFocusOrder() {
         val state = mutableStateOf(StatsUiState(loading = false, statistics = statistics()))
         var confirms = 0
@@ -272,7 +243,7 @@ class StatsScreenTest {
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Начать заново?"))
         compose.onNodeWithTag("stats_reset_dialog_message")
             .assertIsDisplayed()
-            .assertTextEquals("Весь прогресс, найденные слова и время будут удалены. Это нельзя отменить.")
+            .assertTextEquals("Весь прогресс и найденные слова будут удалены. Это нельзя отменить.")
         compose.onNodeWithTag("stats_reset_cancel").assertIsDisplayed()
         compose.onNodeWithTag("stats_reset_confirm").assertIsDisplayed()
 
@@ -312,10 +283,9 @@ class StatsScreenTest {
         assertEquals(1, confirms)
     }
 
-    @Test fun resetThroughViewModelRequiresConfirmationAndClearsProgressAndTimeKeepingWelcome() = runTest {
+    @Test fun resetThroughViewModelRequiresConfirmationAndClearsProgressKeepsWelcome() = runTest {
         val dir = temporary.newFolder("stats-reset")
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        val clock = AtomicLong(0L)
         try {
             fun store(name: String) = PreferenceDataStoreFactory.create(
                 storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer) {
@@ -324,7 +294,6 @@ class StatsScreenTest {
                 scope = scope,
             )
             val progressStore = store("progress.json")
-            val timeStore = store("time.json")
             val campaignJson = """{"version":2,"countMinLength":4,
                 "stages":[{"number":1,"firstLevel":1,"lastLevel":2}],
                 "levels":[
@@ -333,35 +302,21 @@ class StatsScreenTest {
                 ]}"""
             val campaign = CampaignJson.decode(campaignJson)
             val index = WordIndex(listOf("крот", "кора"))
-            val timeRepo = PlayTimeRepository(timeStore)
-            val tracker = PlayTimeTracker(timeRepo, scope, clock::get)
             val progressRepo = ProgressRepository(
                 dataStore = progressStore,
                 installEvidence = { InstallEvidence.FRESH_INSTALL },
                 hadLocalStateAtStartup = false,
-                onCampaignCommitted = tracker::checkpointProgress,
             )
             assertEquals(WelcomeState.SHOW, progressRepo.resolveWelcomeState())
             assertTrue(progressRepo.markWelcomeDone())
             progressRepo.migrateCampaign(campaign, index)
-            tracker.setRoute("entry1", 1)
-            tracker.updateLevel("entry1", PlayTimeTarget(campaign, 1, 0))
-            tracker.setLevelResumed("entry1", true)
-            tracker.setActivityResumed(true)
-            tracker.setWindowFocused("activity", true)
-            clock.set(12_000L)
             progressRepo.submitCampaignAnswer(campaign, 1, "крот", index)
-            tracker.detachLevel("entry1")
-            tracker.setRoute("stats", null)
-            tracker.awaitSaved()
 
             val vm = StatsViewModel(
                 levels = LevelsRepository(readCampaign = { campaignJson }),
-                time = timeRepo,
                 progress = progressRepo,
                 words = WordRepository(readWords = { "картотека\nтрактор\nкрот\nкора" }),
                 stageNames = mapOf(1 to "Разминка"),
-                playTimeTracker = tracker,
             )
             val returned = mutableStateOf(0)
             compose.setContent {
@@ -385,7 +340,6 @@ class StatsScreenTest {
 
             assertEquals(0, returned.value)
             assertEquals(2, progressRepo.observeCampaignProgress().first().highestUnlockedLevel)
-            assertEquals(12_000L, timeRepo.snapshot(campaign).getValue(1).cumulativeActiveMs)
 
             compose.onNodeWithTag("stats_reset_button").performClick()
             compose.onNodeWithTag("stats_reset_confirm").performClick()
@@ -394,7 +348,6 @@ class StatsScreenTest {
             val afterProgress = progressRepo.observeCampaignProgress().first()
             assertEquals(CampaignProgress(), afterProgress)
             assertEquals(1, afterProgress.highestUnlockedLevel)
-            assertTrue(timeRepo.snapshot(campaign).values.all { !it.initialized && it.cumulativeActiveMs == 0L })
             assertEquals(WelcomeState.DONE, progressRepo.resolveWelcomeState())
             assertTrue(
                 progressStore.data.first().asMap().keys.none {
