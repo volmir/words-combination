@@ -130,7 +130,7 @@ class GameLayoutTest {
         val games = campaign.levels.map { it to GameState.start(it.word, index) }
         val (level, initialGame) = games.maxBy { it.second.total }
         val game = initialGame.copy(found = initialGame.allWords)
-        assertTrue("Stress fixture must contain at least 600 words", game.foundCount >= 600)
+        assertEquals("Largest installed level", 632, game.foundCount)
         val snapshot = GameUiState(loading = false, game = game, statistics = game.statistics(),
             countMinLength = campaign.countMinLength,
             totalLevels = campaign.levels.size, campaignLevel = CurrentCampaignLevel(level, game),
@@ -148,6 +148,11 @@ class GameLayoutTest {
         val counted = game.countedFoundCount(campaign.countMinLength)
         compose.onNodeWithTag("game_found_counted").performScrollTo()
             .assertTextEquals("Учитывается в заданиях: $counted ${RussianPlural.words(counted)} (от ${campaign.countMinLength} букв)")
+        compose.onAllNodesWithTag("game_found_counted_note").assertCountEquals(1)
+        compose.onNodeWithTag("game_found_counted_note").performScrollTo()
+            .assertTextEquals("Слова короче ${campaign.countMinLength} букв записываются в найденные, но в заданиях на число слов и на букву не учитываются.")
+        compose.onAllNodesWithText("не учитываются", substring = true).assertCountEquals(1)
+        checkLayout()
         for (row in snapshot.statistics.rows) {
             val group = compose.onNodeWithTag("level_found_group_${row.length}")
             group.performScrollTo()
@@ -155,21 +160,19 @@ class GameLayoutTest {
                 group.performClick()
             }
             compose.onNodeWithTag("game_found_words_${row.length}").assertExists()
-            val expectedTitle = if (row.length < campaign.countMinLength) {
-                "${row.length} ${RussianPlural.letters(row.length)} · ${row.found} из ${row.total} · в заданиях на число слов и на букву не учитываются"
-            } else {
-                "${row.length} ${RussianPlural.letters(row.length)} · ${row.found} из ${row.total}"
-            }
+            val expectedTitle = "${row.length} ${RussianPlural.letters(row.length)} · ${row.found} из ${row.total}"
             compose.onNodeWithTag("level_found_group_${row.length}")
-                .assertTextContains(expectedTitle)
+                .assertTextEquals(expectedTitle, "Свернуть")
+            checkLayout()
         }
         checkLayout()
         val screen = compose.onNodeWithTag("game_screen").fetchSemanticsNode().boundsInRoot
         compose.onAllNodes(hasAnyAncestor(hasTestTag("game_found_words")), useUnmergedTree = true)
             .fetchSemanticsNodes().forEach { node ->
-                val bounds = node.boundsInRoot
-                assertTrue("Элемент выходит за экран 320 dp: $bounds",
-                    bounds.left >= screen.left - 1f && bounds.right <= screen.right + 1f)
+                val left = node.positionInRoot.x
+                val right = left + node.size.width
+                assertTrue("Элемент выходит за экран 320 dp: $left..$right",
+                    left >= screen.left - 1f && right <= screen.right + 1f)
             }
     }
 

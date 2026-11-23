@@ -40,6 +40,7 @@
     <string name="about_code_heading">Программный код</string>
     <string name="about_code_sources">Программный код проекта «Составь слова» распространяется по лицензии MIT. Полный текст лицензии — в файле LICENSE в исходном репозитории и в составе APK.</string>
     <string name="game_found_summary">Найденные слова · %1$d из %2$d</string>
+    <string name="game_found_counted_note">Слова короче %1$d %2$s записываются в найденные, но в заданиях на число слов и на букву не учитываются.</string>
     <string name="game_found_counted">Учитывается в заданиях: %1$d %2$s (от %3$d %4$s)</string>
     <string name="answer_already_found">Вы уже нашли слово %1$s</string>
     <string name="answer_unknown">Слово «%1$s» не распознано словарём</string>
@@ -164,7 +165,6 @@
     <string name="game_riddle_solved">Разгадана</string>
     <string name="game_riddle_pending">Ещё не разгадана</string>
     <string name="game_found_group">%1$d %2$s · %3$d из %4$d</string>
-    <string name="game_found_group_uncounted">%1$d %2$s · %3$d из %4$d · в заданиях на число слов и на букву не учитываются</string>
     <string name="game_group_expanded">Раскрыта</string>
     <string name="game_group_collapsed">Свёрнута</string>
     <string name="game_group_open">Раскрыть</string>

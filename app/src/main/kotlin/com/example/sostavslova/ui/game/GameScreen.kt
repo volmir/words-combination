@@ -219,6 +219,12 @@ fun GameScreen(
                         state.countMinLength, letterForm(state.countMinLength)),
                         Modifier.testTag("game_found_counted"),
                         style = MaterialTheme.typography.bodyMedium)
+                    if (game.allWords.any { it.length < state.countMinLength }) {
+                        Text(stringResource(R.string.game_found_counted_note,
+                            state.countMinLength, letterForm(state.countMinLength)),
+                            Modifier.fillMaxWidth().testTag("game_found_counted_note"),
+                            style = MaterialTheme.typography.bodyMedium)
+                    }
                     val lastFound = game.found.lastOrNull()
                     for (row in state.statistics.rows) {
                         val found = game.found.filter { it.length == row.length }.sorted()
@@ -235,8 +241,7 @@ fun GameScreen(
                         val groupState = stringResource(if (expanded) R.string.game_group_expanded else R.string.game_group_collapsed)
                         val rowLetterForm = RussianPlural.form(row.length, stringResource(R.string.game_letter_one),
                             stringResource(R.string.game_letter_few), stringResource(R.string.hint_letter_genitive_many))
-                        val groupTitle = stringResource(
-                            if (row.length < state.countMinLength) R.string.game_found_group_uncounted else R.string.game_found_group,
+                        val groupTitle = stringResource(R.string.game_found_group,
                             row.length, rowLetterForm, row.found, row.total)
                         Column(Modifier.fillMaxWidth()) {
                             TextButton({ expanded = !expanded }, Modifier.fillMaxWidth()

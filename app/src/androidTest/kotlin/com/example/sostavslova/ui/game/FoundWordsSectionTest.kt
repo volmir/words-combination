@@ -53,12 +53,9 @@ class FoundWordsSectionTest {
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit))
         compose.onNodeWithTag("game_found_counted").performScrollTo()
             .assertTextEquals("Учитывается в заданиях: 0 слов (от 4 букв)")
+        assertSingleCountedNote(state.value.countMinLength)
         for (row in state.value.statistics.rows) {
-            val expectedTitle = if (row.length < state.value.countMinLength) {
-                "${row.length} ${RussianPlural.letters(row.length)} · 0 из ${row.total} · в заданиях на число слов и на букву не учитываются"
-            } else {
-                "${row.length} ${RussianPlural.letters(row.length)} · 0 из ${row.total}"
-            }
+            val expectedTitle = "${row.length} ${RussianPlural.letters(row.length)} · 0 из ${row.total}"
             compose.onNodeWithTag("level_found_group_${row.length}").performScrollTo()
                 .assertIsNotEnabled()
                 .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Свёрнута"))
@@ -91,11 +88,7 @@ class FoundWordsSectionTest {
         val foundByLength = words.take(146).groupBy { it.length }.toSortedMap()
         for ((length, found) in foundByLength) {
             val expected = if (length == lastFound.length) "Раскрыта" else "Свёрнута"
-            val expectedTitle = if (length < state.value.countMinLength) {
-                "$length ${RussianPlural.letters(length)} · ${found.size} из ${found.size} · в заданиях на число слов и на букву не учитываются"
-            } else {
-                "$length ${RussianPlural.letters(length)} · ${found.size} из ${found.size}"
-            }
+            val expectedTitle = "$length ${RussianPlural.letters(length)} · ${found.size} из ${found.size}"
             compose.onNodeWithTag("level_found_group_$length").performScrollTo()
                 .assertHasClickAction()
                 .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
@@ -152,7 +145,7 @@ class FoundWordsSectionTest {
         assertTextFits()
     }
 
-    @Test fun countedSubtitleAndGroupMarkersFollowConfiguredCountMinLength() {
+    @Test fun countedSubtitleAndSingleNoteFollowConfiguredCountMinLength() {
         val threeLetter = words.filter { it.length == 3 }.take(2)
         val state = mutableStateOf(state(threeLetter, countMinLength = 4))
         compose.setContent {
@@ -164,8 +157,9 @@ class FoundWordsSectionTest {
             .assertTextEquals("Найденные слова · 2 из 147")
         compose.onNodeWithTag("game_found_counted").performScrollTo()
             .assertTextEquals("Учитывается в заданиях: 0 слов (от 4 букв)")
+        assertSingleCountedNote(state.value.countMinLength)
         compose.onNodeWithTag("level_found_group_3").performScrollTo()
-            .assertTextContains("в заданиях на число слов и на букву не учитываются", substring = true)
+            .assertTextEquals("3 буквы · 2 из 49", "Свернуть")
         compose.onNodeWithTag("level_found_group_4").performScrollTo()
             .assertTextEquals("4 буквы · 0 из 49", "Раскрыть")
 
@@ -175,15 +169,22 @@ class FoundWordsSectionTest {
             .assertTextEquals("Найденные слова · 6 из 147")
         compose.onNodeWithTag("game_found_counted").performScrollTo()
             .assertTextEquals("Учитывается в заданиях: 1 слово (от 5 букв)")
+        assertSingleCountedNote(state.value.countMinLength)
         compose.onNodeWithTag("level_found_group_3").performScrollTo()
-            .assertTextContains("в заданиях на число слов и на букву не учитываются", substring = true)
+            .assertTextEquals("3 буквы · 2 из 49", "Свернуть")
         compose.onNodeWithTag("level_found_group_4").performScrollTo()
-            .assertTextContains("в заданиях на число слов и на букву не учитываются", substring = true)
+            .assertTextEquals("4 буквы · 3 из 49", "Раскрыть")
         compose.onNodeWithTag("level_found_group_5").performScrollTo()
             .assertTextEquals("5 букв · 1 из 48", "Свернуть")
         compose.onNodeWithText("Наберите 150 слов от 5 букв").performScrollTo().assertExists()
         compose.onNodeWithText("Найдите 10 слов на букву «а» (слова от 5 букв)").performScrollTo().assertExists()
         assertTextFits()
+
+        compose.runOnIdle { state.value = state(mixed, countMinLength = 3) }
+        compose.onNodeWithTag("game_found_counted").performScrollTo()
+            .assertTextEquals("Учитывается в заданиях: 6 слов (от 3 букв)")
+        compose.onNodeWithTag("game_found_counted_note").assertDoesNotExist()
+        compose.onAllNodesWithText("не учитываются", substring = true).assertCountEquals(0)
     }
 
     @Test fun largestInstalledLevelShowsEveryLengthTotalWithAllGroupsExpanded() {
@@ -195,7 +196,7 @@ class FoundWordsSectionTest {
         val games = campaign.levels.map { it to GameState.start(it.word, index) }
         val (level, initial) = games.maxBy { it.second.total }
         val game = initial.copy(found = initial.allWords)
-        assertTrue("Stress fixture must contain at least 600 words", game.foundCount >= 600)
+        assertEquals("Largest installed level", 632, game.foundCount)
         val snapshot = GameUiState(loading = false, game = game, statistics = game.statistics(),
             countMinLength = campaign.countMinLength,
             totalLevels = campaign.levels.size, campaignLevel = CurrentCampaignLevel(level, game))
@@ -207,6 +208,7 @@ class FoundWordsSectionTest {
         val counted = game.countedFoundCount(campaign.countMinLength)
         compose.onNodeWithTag("game_found_counted").performScrollTo()
             .assertTextEquals("Учитывается в заданиях: $counted ${RussianPlural.words(counted)} (от ${campaign.countMinLength} букв)")
+        assertSingleCountedNote(campaign.countMinLength)
         for (row in snapshot.statistics.rows) {
             val group = compose.onNodeWithTag("level_found_group_${row.length}")
             group.performScrollTo()
@@ -216,11 +218,7 @@ class FoundWordsSectionTest {
             compose.onNodeWithTag("game_found_words_${row.length}").assertExists()
             val lastWord = game.found.filter { it.length == row.length }.max()
             compose.onNodeWithText(lastWord).performScrollTo().assertIsDisplayed().assertHasNoClickAction()
-            val expectedTitle = if (row.length < campaign.countMinLength) {
-                "${row.length} ${RussianPlural.letters(row.length)} · ${row.found} из ${row.total} · в заданиях на число слов и на букву не учитываются"
-            } else {
-                "${row.length} ${RussianPlural.letters(row.length)} · ${row.found} из ${row.total}"
-            }
+            val expectedTitle = "${row.length} ${RussianPlural.letters(row.length)} · ${row.found} из ${row.total}"
             compose.onNodeWithTag("level_found_group_${row.length}")
                 .assertTextContains(expectedTitle)
         }
@@ -230,6 +228,18 @@ class FoundWordsSectionTest {
             compose.onNodeWithTag("level_found_group_${row.length}").performScrollTo().performClick()
             compose.onNodeWithTag("game_found_words_${row.length}").assertDoesNotExist()
         }
+    }
+
+    private fun assertSingleCountedNote(countMinLength: Int) {
+        compose.onAllNodesWithTag("game_found_counted_note").assertCountEquals(1)
+        compose.onNodeWithTag("game_found_counted_note").performScrollTo()
+            .assertTextEquals("Слова короче $countMinLength букв записываются в найденные, но в заданиях на число слов и на букву не учитываются.")
+        compose.onAllNodesWithText("не учитываются", substring = true).assertCountEquals(1)
+        val counted = compose.onNodeWithTag("game_found_counted").fetchSemanticsNode()
+        val note = compose.onNodeWithTag("game_found_counted_note").fetchSemanticsNode()
+        val firstGroup = compose.onNodeWithTag("level_found_group_3").fetchSemanticsNode()
+        assertTrue("Пояснение под счётчиком", note.positionInRoot.y >= counted.positionInRoot.y + counted.size.height)
+        assertTrue("Пояснение перед группами", firstGroup.positionInRoot.y >= note.positionInRoot.y + note.size.height)
     }
 
     private fun wordTexts(length: Int): List<String> = compose.onAllNodes(
