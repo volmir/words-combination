@@ -4,7 +4,7 @@ Features:
 - 15 levels grouped into six stages
 - 49 challenges with different goals: word length, required letters, endings, riddles and more
 - Step-by-step letter hints purchased with earned in-game units, not real money
-- Local saving of words, level progress, stars, hints and play time
+- Local saving of words, level progress, stars, achievements and hints
 - No account, advertising, analytics or internet connection required
 
 The interface and dictionary are currently in Russian. You can play entirely offline.

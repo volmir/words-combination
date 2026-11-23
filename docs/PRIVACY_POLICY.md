@@ -9,7 +9,7 @@
 
 «Составь слова» — офлайн-игра. Регистрация и учётная запись не требуются.
 
-Приложение сохраняет **только на устройстве** данные, необходимые для продолжения игры: пройденные уровни и задания, найденные слова, звёзды, полученные и использованные подсказки, внутренние игровые единицы, игровое время и локальные настройки/признаки первого запуска. Эти сведения используются для работы игры и отображения прогресса.
+Приложение сохраняет **только на устройстве** данные, необходимые для продолжения игры: пройденные уровни и задания, найденные слова, звёзды, достижения, полученные и использованные подсказки, внутренние игровые единицы и локальные настройки/признаки первого запуска. Эти сведения используются для работы игры и отображения прогресса.
 
 Разработчик не получает эти данные с устройства. Приложение не запрашивает имя, адрес электронной почты, номер телефона, геолокацию, контакты или иные идентифицирующие сведения.
 
@@ -23,7 +23,7 @@
 
 Игровые данные хранятся в локальном хранилище приложения, пока пользователь не очистит данные приложения или не удалит его. В Android можно удалить их через **Настройки → Приложения → Составь слова → Хранилище → Очистить данные**; названия пунктов меню могут отличаться.
 
-Для приложения задано `android:allowBackup="false"`, чтобы отключить штатное облачное резервное копирование данных приложения. На некоторых устройствах производитель Android всё же может разрешать перенос данных непосредственно между устройствами. Разработчик не управляет такими системными механизмами.
+Облачное резервное копирование данных приложения отключено. На Android 12 и выше возможен перенос данных прогресса напрямую с телефона на телефон с помощью системной функции переноса данных. На Android 11 и ниже перенос не поддерживается. Разработчик не управляет системными механизмами переноса и не получает данные.
 
 ### 4. Дети
 
@@ -44,7 +44,7 @@
 
 Words Combination is an offline word game. No registration or account is required.
 
-The app stores **on the device only** the information needed to resume gameplay: completed levels and tasks, found words, stars, hints earned and used, in-game units, play time, and local settings/first-run flags. This information is used to operate the game and display progress.
+The app stores **on the device only** the information needed to resume gameplay: completed levels and tasks, found words, stars, achievements, hints earned and used, in-game units, and local settings/first-run flags. This information is used to operate the game and display progress.
 
 The developer does not receive this information from the device. The app does not request your name, email address, phone number, location, contacts, or other identifying information.
 
@@ -58,7 +58,7 @@ Android system services and the distribution platform from which you install the
 
 Gameplay data remains in the app's local storage until the user clears the app's data or uninstalls it. You can delete it in Android under **Settings → Apps → Words Combination → Storage → Clear data**; menu labels vary by device.
 
-The app declares `android:allowBackup="false"` to disable standard cloud backup of app data. Some Android device manufacturers may nevertheless allow direct device-to-device data transfers. The developer does not control these system features.
+Cloud backup of app data is disabled. On Android 12 and later, progress data can be transferred directly from phone to phone using the system data transfer feature. Transfer is not supported on Android 11 and earlier. The developer does not control these system transfer features and does not receive the data.
 
 ### 4. Children
 

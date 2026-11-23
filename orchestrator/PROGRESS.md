@@ -62,3 +62,6 @@
 
 - [SAVE-16] ✓ 2026-11-23T20:52:45+00:00 — Перенос между телефонами: правила резервной копии — ИТОГ: SAVE-16 выполнено: перенос только `files/datastore/progress.json` на Android 12+, облако исключено. На Android 7–11 копирование полностью отключено. Добавлены тесты и [отчёт](docs/SAVE_16_REPORT.md).
 <!-- orchestrator:v1 {"id": "SAVE-16", "fingerprint": "9ba9691d0fdf8b886cc2a82576e79e8739724e668d7a1e57fea8b6884cbd31a3", "date": "2026-11-23T20:52:45+00:00", "gate": "passed", "manual": false, "summary": "ИТОГ: SAVE-16 выполнено: перенос только `files/datastore/progress.json` на Android 12+, облако исключено. На Android 7–11 копирование полностью отключено. Добавлены тесты и [отчёт](docs/SAVE_16_REPORT.md).", "model": "gpt-6.1-sol", "effort": "medium"} -->
+
+- [PRIV-17] ✓ 2026-11-23T20:57:14+00:00 — Политика конфиденциальности и описания магазина — ИТОГ: PRIV-17 выполнено. Обновлены политика RU/EN, оба описания магазина и публикационный аудит с SHA-256.
+<!-- orchestrator:v1 {"id": "PRIV-17", "fingerprint": "04bb21065101a1ab45c30a26630f1350d77cee1feaf035801ee5b9af20d2d98f", "date": "2026-11-23T20:57:14+00:00", "gate": "passed", "manual": false, "summary": "ИТОГ: PRIV-17 выполнено. Обновлены политика RU/EN, оба описания магазина и публикационный аудит с SHA-256.", "model": "gpt-6.1-sol", "effort": "medium"} -->
