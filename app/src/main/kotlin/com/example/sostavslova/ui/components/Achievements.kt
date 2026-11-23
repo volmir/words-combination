@@ -49,7 +49,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 @Composable
-private fun achievementName(achievement: LevelAchievement): String = stringResource(achievementNameRes(achievement))
+internal fun achievementName(achievement: LevelAchievement): String = stringResource(achievementNameRes(achievement))
 
 @androidx.annotation.StringRes
 internal fun achievementNameRes(achievement: LevelAchievement): Int = when (achievement) {
@@ -64,7 +64,7 @@ internal fun achievementNameRes(achievement: LevelAchievement): Int = when (achi
 }
 
 @Composable
-private fun achievementCondition(achievement: LevelAchievement): String = when (achievement) {
+internal fun achievementCondition(achievement: LevelAchievement): String = when (achievement) {
     LevelAchievement.NO_HINTS -> stringResource(R.string.achievement_no_hints_condition)
     LevelAchievement.EXPERT -> stringResource(R.string.achievement_expert_condition)
     LevelAchievement.COLLECTOR -> stringResource(R.string.achievement_collector_condition)
@@ -76,7 +76,7 @@ private fun achievementCondition(achievement: LevelAchievement): String = when (
     LevelAchievement.STRAIGHT_A -> stringResource(R.string.achievement_straight_a_condition)
 }
 
-/** Рисунок занимает 28–40 dp, а отдельная цель нажатия — минимум 48 dp. */
+/** Рисунок занимает 28–40 dp; в интерактивном режиме цель нажатия — минимум 48 dp. */
 @Composable
 fun AchievementIcon(
     achievement: LevelAchievement,
@@ -84,7 +84,14 @@ fun AchievementIcon(
     size: Dp = 32.dp,
     modifier: Modifier = Modifier,
     testTag: String = "achievement_icon_${achievement.name.lowercase(Locale.ROOT)}",
+    interactive: Boolean = true,
 ) {
+    if (!interactive) {
+        Box(modifier.testTag(testTag), contentAlignment = Alignment.Center) {
+            AchievementGlyph(achievement, earned, size.coerceIn(28.dp, 40.dp))
+        }
+        return
+    }
     var expanded by rememberSaveable(achievement) { mutableStateOf(false) }
     val name = achievementName(achievement)
     val condition = achievementCondition(achievement)

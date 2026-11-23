@@ -3,6 +3,7 @@ package com.example.sostavslova.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,12 +30,18 @@ import com.example.sostavslova.BuildConfig
 import com.example.sostavslova.R
 import com.example.sostavslova.di.appContainer
 import com.example.sostavslova.core.CampaignRules
+import com.example.sostavslova.core.AchievementRules
+import com.example.sostavslova.core.LevelAchievement
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.data.LoadState
 import com.example.sostavslova.ui.components.Well
+import com.example.sostavslova.ui.components.AchievementIcon
+import com.example.sostavslova.ui.components.achievementName
+import com.example.sostavslova.ui.components.achievementCondition
 import com.example.sostavslova.ui.theme.WordsCardShape
 import com.example.sostavslova.ui.theme.LocalWordsPalette
 import kotlinx.coroutines.CancellationException
+import java.util.Locale
 
 @Composable
 fun RulesScreen(loadOptionalTaskLevel: (suspend () -> Int?)? = null) {
@@ -102,6 +109,30 @@ fun RulesScreen(loadOptionalTaskLevel: (suspend () -> Int?)? = null) {
                         )
                     }
                 }
+            }
+
+            Column(
+                Modifier.fillMaxWidth().testTag("rules_achievements"),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(stringResource(R.string.rules_achievements_title), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.rules_achievements_intro),
+                    Modifier.testTag("rules_achievements_intro"), style = MaterialTheme.typography.bodyLarge)
+                LevelAchievement.entries.forEach { achievement ->
+                    val tag = "rules_achievement_${achievement.name.lowercase(Locale.ROOT)}"
+                    Row(Modifier.fillMaxWidth().testTag(tag), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        AchievementIcon(achievement, earned = true, size = 28.dp,
+                            interactive = false, testTag = "${tag}_icon")
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(achievementName(achievement), Modifier.testTag("${tag}_name"),
+                                style = MaterialTheme.typography.titleSmall)
+                            Text(achievementCondition(achievement), Modifier.testTag("${tag}_condition"),
+                                style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+                Text(stringResource(R.string.rules_achievements_note, AchievementRules.GIANT_LENGTH),
+                    Modifier.testTag("rules_achievements_note"), style = MaterialTheme.typography.bodyLarge)
             }
 
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
