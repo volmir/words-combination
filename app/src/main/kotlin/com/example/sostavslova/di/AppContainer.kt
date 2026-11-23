@@ -7,12 +7,14 @@ import com.example.sostavslova.data.RiddlesRepository
 import com.example.sostavslova.data.LevelsRepository
 import com.example.sostavslova.data.ProgressRepository
 import com.example.sostavslova.data.JsonRiddlesRepository
+import com.example.sostavslova.data.LegacyTimeStoreCleanup
 import com.example.sostavslova.data.WordRepository
 import com.example.sostavslova.data.readInstallEvidence
 import com.example.sostavslova.data.jsonstore.LegacyPreferencesMigration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.io.File
 
 class AppContainer(
@@ -67,6 +69,10 @@ class AppContainer(
             installEvidence = appContext::readInstallEvidence,
             hadLocalStateAtStartup = hadLocalStateAtStartup,
         )
+    }
+
+    fun discardLegacyTimeFiles() {
+        applicationScope.launch(Dispatchers.IO) { LegacyTimeStoreCleanup.delete(storeDirectory) }
     }
 
     suspend fun awaitSaved() {

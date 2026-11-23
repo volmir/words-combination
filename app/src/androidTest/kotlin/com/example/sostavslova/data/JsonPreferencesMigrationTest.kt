@@ -22,7 +22,7 @@ import java.io.File
 class JsonPreferencesMigrationTest {
     @get:Rule val temporaryFolder = TemporaryFolder()
 
-    @Test fun oldCampaignAndPlayTimeSurviveOneTimeMigrationWithoutRewritingSource() = runBlocking {
+    @Test fun oldCampaignAndUnrelatedKeysSurviveOneTimeMigrationWithoutRewritingSource() = runBlocking {
         val directory = temporaryFolder.newFolder()
         val legacy = File(directory, "progress.preferences_pb")
         val output = File(directory, "progress.json")
@@ -30,7 +30,7 @@ class JsonPreferencesMigrationTest {
         val bytes = message(
             entry("campaignProgressV2", wireString(progress)),
             entry("welcomeStateV1", wireString("DONE")),
-            entry("synthetic_play_time", wireLong(1234L)),
+            entry("synthetic_legacy_value", wireLong(1234L)),
         )
         legacy.writeBytes(bytes)
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -39,7 +39,7 @@ class JsonPreferencesMigrationTest {
             val snapshot = store.data.first()
             assertEquals(progress, snapshot[stringPreferencesKey("campaignProgressV2")])
             assertEquals("DONE", snapshot[stringPreferencesKey("welcomeStateV1")])
-            assertEquals(1234L, snapshot[longPreferencesKey("synthetic_play_time")])
+            assertEquals(1234L, snapshot[longPreferencesKey("synthetic_legacy_value")])
             assertArrayEquals(bytes, legacy.readBytes())
             assertTrue(output.exists())
             assertEquals(snapshot, PreferencesSerializer.readFrom(output.inputStream()))

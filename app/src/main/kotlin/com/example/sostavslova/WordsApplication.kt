@@ -11,6 +11,7 @@ class WordsApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        container.discardLegacyTimeFiles()
         container.applicationScope.launch { container.wordRepository.ensureLoaded() }
     }
 }
