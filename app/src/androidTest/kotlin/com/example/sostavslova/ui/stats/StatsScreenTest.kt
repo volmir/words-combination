@@ -7,6 +7,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -60,7 +61,9 @@ class StatsScreenTest {
         byLength: List<LengthStat> = listOf(LengthStat(3, 0, 100), LengthStat(4, 0, 100),
             LengthStat(5, 0, total - 200)),
     ) = LevelStatsRow(number, word, stageNames[stage - 1], stars, maxStars, requiredStars,
-        found, total, hints, byLength)
+        found, total, hints, byLength,
+        achievements = setOf(LevelAchievement.EXPERT),
+        achievementsAvailable = setOf(LevelAchievement.NO_HINTS, LevelAchievement.EXPERT))
 
     private val rows = listOf(
         row(1, "чемпионство", 1, maxStars = 1, requiredStars = 1),
@@ -87,7 +90,7 @@ class StatsScreenTest {
         }
         return CampaignStatistics(stars = 18, maxStars = 49, passedLevels = 6, totalLevels = 15,
             foundWords = foundWords, totalWords = rows.sumOf { it.total }, hintsShown = 23,
-            stages = stages, levels = rows)
+            stages = stages, levels = rows, achievementsEarned = 17, achievementsTotal = 99)
     }
 
     private fun show(rows: List<LevelStatsRow> = this.rows, foundWords: Int = 1_204) {
@@ -97,51 +100,127 @@ class StatsScreenTest {
 
     @Test fun summaryRowsAndExpansionUseOneSetOfCoreNumbers() {
         show()
+        compose.onNodeWithTag("stats_title").assertTextEquals("Статистика")
+        compose.onNodeWithTag("stats_subtitle").assertTextEquals("Прогресс прохождения и достижения")
         compose.onNodeWithTag("stats_summary")
-            .assertTextEquals("Звёзды 18/49 · Уровни 6/15 · Слов 1 204 · Подсказок 23")
+            .assertTextEquals("Звёзды 18/49 · Уровни 6/15 · Слов 1 204")
+        // Эти числа намеренно отличаются от суммы тестовых строк: UI читает итоги :core.
+        compose.onNodeWithTag("stats_achievements_total")
+            .assertTextEquals("Подсказок 23 · Достижения 17 из 99")
         compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_7")
-        compose.onNodeWithTag("stats_level_7")
-            .assertTextContains("7 · ЖУРНАЛИСТИКА")
-            .assertTextContains("получено 2 из 3")
-            .assertTextContains("для открытия: 3")
-            .assertTextContains("142 из 325 слов")
-            .assertTextContains("43%")
-            .assertTextContains("подсказок 4")
-        compose.onNodeWithTag("stats_expand_7").performClick()
-        compose.onNodeWithTag("stats_table_7").assertExists()
-        compose.onNodeWithText("Осталось").assertExists()
-        // Уровень 7 ещё не пройден: 2 звезды при пороге 3.
-        compose.onNodeWithTag("stats_not_passed_7").assertTextEquals("Уровень ещё не пройден")
+        compose.onNodeWithTag("stats_row_7")
+            .assertTextContains("Уровень 7 · ЖУРНАЛИСТИКА")
+        assertMetrics(7, "142 / 325", "2 / 3")
+        for (field in listOf("percent", "progress", "hints", "table", "required")) {
+            compose.onNodeWithTag("stats_${field}_7", useUnmergedTree = true).assertDoesNotExist()
+        }
+        compose.onNodeWithTag("stats_toggle_7").performScrollTo().assertTextEquals("Подробнее ▾").performClick()
+        assertMetrics(7, "142 / 325", "2 / 3")
+        compose.onNodeWithTag("stats_percent_7", useUnmergedTree = true).assertTextEquals("43%")
+        compose.onNodeWithTag("stats_hints_7", useUnmergedTree = true).assertTextEquals("Подсказок использовано: 4")
+        compose.onNodeWithTag("stats_required_7", useUnmergedTree = true).assertTextEquals("для открытия: 3")
+        compose.onNodeWithTag("stats_progress_7", useUnmergedTree = true).assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo,
+                androidx.compose.ui.semantics.ProgressBarRangeInfo(142f / 325, 0f..1f)))
+        compose.onNodeWithTag("stats_table_7", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("Осталось", useUnmergedTree = true).assertExists()
+        // Таблица хранит прежние длины и остатки, включая общую сумму.
+        for (value in listOf("20 / 100", "122 / 225", "142 / 325", "80", "103", "183")) {
+            compose.onNode(hasText(value) and hasAnyAncestor(hasTestTag("stats_table_7")),
+                useUnmergedTree = true).assertExists()
+        }
+        compose.onNodeWithTag("stats_not_passed_7", useUnmergedTree = true)
+            .assertTextEquals("Уровень ещё не пройден")
         compose.onNodeWithTag("stats_passed_7").assertDoesNotExist()
 
         compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_5")
-        compose.onNodeWithTag("stats_expand_5").performClick()
+        compose.onNodeWithTag("stats_toggle_5").performScrollTo().performClick()
         compose.onNodeWithTag("stats_all_stars_5").assertDoesNotExist()
 
         compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_1")
-        compose.onNodeWithTag("stats_level_1")
-            .assertTextContains("0 из 325 слов")
-            .assertTextContains("получено 0 из 1")
-        compose.onNodeWithTag("stats_hints_1", useUnmergedTree = true).assertTextEquals("подсказок 0")
-        compose.onNodeWithTag("stats_expand_1").performClick()
-        compose.onNodeWithTag("stats_not_passed_1").assertTextEquals("Уровень ещё не пройден")
+        assertMetrics(1, "0 / 325", "0 / 1")
+        compose.onNodeWithTag("stats_toggle_1").performScrollTo().performClick()
+        compose.onNodeWithTag("stats_hints_1", useUnmergedTree = true)
+            .assertTextEquals("Подсказок использовано: 0")
+        compose.onNodeWithTag("stats_not_passed_1", useUnmergedTree = true)
+            .assertTextEquals("Уровень ещё не пройден")
         compose.onNodeWithTag("stats_passed_1").assertDoesNotExist()
+    }
+
+    private fun assertMetrics(level: Int, words: String, stars: String) {
+        for ((metric, label, value) in listOf(
+            Triple("words", "Найдено слов", words), Triple("stars", "Звёзды", stars),
+        )) {
+            val parent = hasAnyAncestor(hasTestTag("stats_metric_${metric}_$level"))
+            compose.onNode(parent and hasText(label), useUnmergedTree = true).assertExists()
+            compose.onNode(parent and hasText(value), useUnmergedTree = true).assertExists()
+        }
+    }
+
+    @Test fun cardAndBottomLinkToggleButAchievementTouchOnlyOpensDialog() {
+        show()
+        compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_7")
+        for (expanded in listOf(false, true)) {
+            val description = if (expanded) "развёрнуто" else "свёрнуто"
+            for (unmerged in listOf(false, true)) {
+                compose.onNodeWithTag("stats_row_7", useUnmergedTree = unmerged)
+                    .assertHasClickAction()
+                    .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+                    .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, description))
+            }
+            compose.onNodeWithTag("stats_row_7").assertTextContains("Уровень 7 · ЖУРНАЛИСТИКА")
+                .assertTextContains("Найдено слов").assertTextContains("142 / 325")
+                .assertTextContains("Звёзды").assertTextContains("2 / 3").assertTextContains("Достижения")
+            for ((name, title, earned) in listOf(
+                Triple("expert", "Знаток", true), Triple("no_hints", "Без подсказок", false),
+            )) {
+                val icon = compose.onNodeWithTag("stats_achievement_7_$name")
+                if (earned) icon.assertContentDescriptionEquals("Достижение «$title»: получено")
+                else icon.assertContentDescriptionEquals(
+                    "Достижение «$title»: не получено. Условие: Пройти уровень без подсказок")
+                // Проверяем настоящий touch: семантический performClick не проверяет поглощение жеста ребёнком.
+                icon.performScrollTo().performTouchInput { click() }
+                compose.onNodeWithTag("achievement_dialog").assertIsDisplayed()
+                compose.onNodeWithText(title).assertIsDisplayed()
+                compose.onNodeWithText(if (earned) "Получено" else "Не получено").assertIsDisplayed()
+                compose.onNodeWithText("Закрыть").performClick()
+                compose.onNodeWithTag("stats_row_7").assert(
+                    SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, description))
+            }
+            compose.onNodeWithTag("stats_achievement_7_giant").assertDoesNotExist()
+            if (!expanded) {
+                // Нажатие на обычный текст обрабатывает вся карточка.
+                compose.onNodeWithTag("stats_level_7", useUnmergedTree = true)
+                    .performScrollTo().performTouchInput { click() }
+            }
+        }
+        compose.onNodeWithTag("stats_toggle_7").performScrollTo()
+            .assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
+            .assertTextEquals("Свернуть ▴").performTouchInput { click() }
+        compose.onNodeWithTag("stats_row_7").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "свёрнуто"))
+        compose.onNodeWithTag("stats_table_7", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("stats_toggle_7").performScrollTo().performTouchInput { click() }
+        compose.onNodeWithTag("stats_row_7").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "развёрнуто"))
+        compose.onNodeWithTag("stats_table_7", useUnmergedTree = true).assertExists()
     }
 
     @Test fun snapshotUpdatesWithoutRefresh() {
         val state = mutableStateOf(StatsUiState(loading = false, statistics = statistics()))
         compose.setContent { WordsTheme { StatsScreen(state.value) } }
         compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_7")
-        compose.onNodeWithTag("stats_hints_7", useUnmergedTree = true).assertTextEquals("подсказок 4")
+        compose.onNodeWithTag("stats_toggle_7").performScrollTo().performClick()
+        compose.onNodeWithTag("stats_hints_7", useUnmergedTree = true).assertTextEquals("Подсказок использовано: 4")
         compose.runOnIdle {
             val changed = rows.map { if (it.number == 7) it.copy(hintsShown = 5) else it }
             state.value = StatsUiState(loading = false, statistics = statistics(changed))
         }
-        compose.onNodeWithTag("stats_hints_7", useUnmergedTree = true).assertTextEquals("подсказок 5")
+        compose.onNodeWithTag("stats_hints_7", useUnmergedTree = true).assertTextEquals("Подсказок использовано: 5")
         // Шапка могла уехать за пределы окна при прокрутке к уровню 7.
         compose.onNodeWithTag("stats_screen").performScrollToIndex(1)
         compose.onNodeWithTag("stats_summary")
-            .assertTextEquals("Звёзды 18/49 · Уровни 6/15 · Слов 1 204 · Подсказок 23")
+            .assertTextEquals("Звёзды 18/49 · Уровни 6/15 · Слов 1 204")
     }
 
     @Test fun timeMilestonesAreAbsentWhenRequiredThresholdIsTheMaximum() {
@@ -150,8 +229,8 @@ class StatsScreenTest {
         val stats = CampaignStatistics(stars = 1, maxStars = 1, passedLevels = 1, totalLevels = 1,
             foundWords = 3, totalWords = 325, hintsShown = 0, stages = stages, levels = single)
         compose.setContent { WordsTheme { StatsScreen(StatsUiState(loading = false, statistics = stats)) } }
-        compose.onNodeWithTag("stats_expand_1").performClick()
-        compose.onNodeWithTag("stats_table_1").assertExists()
+        compose.onNodeWithTag("stats_toggle_1").performClick()
+        compose.onNodeWithTag("stats_table_1", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("stats_passed_1").assertDoesNotExist()
         compose.onNodeWithTag("stats_all_stars_1").assertDoesNotExist()
     }
@@ -183,8 +262,8 @@ class StatsScreenTest {
         }
         for (level in 1..15) {
             compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_$level")
-            compose.onNodeWithTag("stats_level_$level").assertExists()
-                .assertTextContains("$level · ${rows[level - 1].word.uppercase()}")
+            compose.onNodeWithTag("stats_row_$level").assertExists()
+                .assertTextContains("Уровень $level · ${rows[level - 1].word.uppercase()}")
             assertLevelTextFits(level)
         }
         compose.onNodeWithTag("stats_screen").performScrollToKey("stats_data_section")
@@ -207,7 +286,7 @@ class StatsScreenTest {
     private fun assertLevelTextFits(level: Int) {
         val textNodes = compose.onAllNodes(
             SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult) and
-                hasAnyAncestor(hasTestTag("stats_level_$level")), useUnmergedTree = true,
+                hasAnyAncestor(hasTestTag("stats_row_$level")), useUnmergedTree = true,
         ).fetchSemanticsNodes()
         assertTrue("Every summary field must expose readable text", textNodes.size >= 4)
         textNodes.forEach { node ->

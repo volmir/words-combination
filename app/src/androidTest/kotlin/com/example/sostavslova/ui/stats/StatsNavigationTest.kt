@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.stats
 
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.example.sostavslova.MainActivity
@@ -37,9 +38,20 @@ class StatsNavigationTest {
         compose.onNodeWithTag("levels_grid").performScrollToKey(campaign.levels.last().word)
         compose.onNodeWithTag("level_card_15").assertIsDisplayed()
         openStats()
+        compose.onNodeWithTag("stats_achievements_total").assertExists()
+        compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_1")
+        compose.onNodeWithTag("stats_toggle_1").performScrollTo().performClick()
+        compose.onNodeWithTag("stats_achievement_1_no_hints").performScrollTo().performTouchInput { click() }
+        compose.onNodeWithTag("achievement_dialog").assertIsDisplayed()
+        compose.onNodeWithText("Закрыть").performClick()
+        compose.onNodeWithTag("stats_row_1").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "развёрнуто"))
         assertEquals(beforeProgress, container.progressRepository.observeCampaignProgress().first())
         compose.activityRule.scenario.recreate()
-        awaitTag("stats_summary")
+        awaitTag("stats_row_1")
+        compose.onNodeWithTag("stats_row_1").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "развёрнуто"))
+        assertEquals(beforeProgress, container.progressRepository.observeCampaignProgress().first())
         back()
         compose.onNodeWithTag("level_card_15").assertIsDisplayed()
         compose.onNodeWithTag("levels_grid").performScrollToKey(campaign.levels.first().word)
@@ -55,7 +67,7 @@ class StatsNavigationTest {
         compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_15")
         compose.activityRule.scenario.recreate()
         // После восстановления список остаётся на уровне 15, поэтому шапка уже вне окна.
-        awaitTag("stats_level_15")
+        awaitTag("stats_row_15")
         assertEquals(progress, container.progressRepository.observeCampaignProgress().first())
         compose.onNodeWithTag("app_menu").performClick()
         compose.onNodeWithText("Правила").performClick()

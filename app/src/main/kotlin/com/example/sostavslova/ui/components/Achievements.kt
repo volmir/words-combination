@@ -80,6 +80,7 @@ fun AchievementIcon(
     earned: Boolean,
     size: Dp = 32.dp,
     modifier: Modifier = Modifier,
+    testTag: String = "achievement_icon_${achievement.name.lowercase(Locale.ROOT)}",
 ) {
     var expanded by rememberSaveable(achievement) { mutableStateOf(false) }
     val name = achievementName(achievement)
@@ -87,7 +88,7 @@ fun AchievementIcon(
     val description = if (earned) stringResource(R.string.achievement_earned_description, name)
         else stringResource(R.string.achievement_not_earned_description, name, condition)
     Box(modifier
-        .testTag("achievement_icon_${achievement.name.lowercase(Locale.ROOT)}")
+        .testTag(testTag)
         .minimumInteractiveComponentSize()
         .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
         .clickable(role = Role.Button) { expanded = true }
@@ -103,11 +104,13 @@ fun AchievementStrip(
     achievements: Set<LevelAchievement>,
     availableAchievements: Set<LevelAchievement>,
     modifier: Modifier = Modifier,
+    iconTagPrefix: String = "achievement_icon",
 ) {
     FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
         LevelAchievement.entries.filter { it in availableAchievements }.forEach { achievement ->
-            AchievementIcon(achievement, achievement in achievements)
+            AchievementIcon(achievement, achievement in achievements,
+                testTag = "${iconTagPrefix}_${achievement.name.lowercase(Locale.ROOT)}")
         }
     }
 }

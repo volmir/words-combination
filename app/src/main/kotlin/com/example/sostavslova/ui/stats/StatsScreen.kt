@@ -1,16 +1,17 @@
 package com.example.sostavslova.ui.stats
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -33,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -43,13 +45,12 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.sostavslova.R
 import com.example.sostavslova.core.LevelStatsRow
-import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.core.Statistics
 import com.example.sostavslova.di.appContainer
 import com.example.sostavslova.ui.components.AlertBanner
 import com.example.sostavslova.ui.components.AlertType
+import com.example.sostavslova.ui.components.AchievementStrip
 import com.example.sostavslova.ui.components.StatsTable
-import com.example.sostavslova.ui.components.StarsRow
 import com.example.sostavslova.ui.components.WordsDialog
 import com.example.sostavslova.ui.game.gameStageName
 import com.example.sostavslova.ui.theme.LocalWordsPalette
@@ -92,7 +93,12 @@ fun StatsScreen(
     LazyColumn(modifier.fillMaxSize().testTag("stats_screen"),
         contentPadding = PaddingValues(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item { StatsHeading(stringResource(R.string.stats_title), "stats_title") }
+        item {
+            Column {
+                StatsHeading(stringResource(R.string.stats_title), "stats_title")
+                StatsText(stringResource(R.string.stats_subtitle), "stats_subtitle")
+            }
+        }
         when {
             state.loading -> item { StatsText(stringResource(R.string.stats_loading), "stats_loading") }
             state.error -> item { StatsText(stringResource(R.string.stats_error), "stats_error") }
@@ -105,9 +111,11 @@ fun StatsScreen(
                     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(stringResource(R.string.stats_summary, statistics.stars, statistics.maxStars,
-                            statistics.passedLevels, statistics.totalLevels, groupedNumber(statistics.foundWords),
-                            statistics.hintsShown),
+                            statistics.passedLevels, statistics.totalLevels, groupedNumber(statistics.foundWords)),
                             Modifier.testTag("stats_summary"), style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.stats_achievements_total, statistics.hintsShown,
+                            statistics.achievementsEarned, statistics.achievementsTotal),
+                            Modifier.testTag("stats_achievements_total"), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
                 statistics.stages.forEach { stage ->
@@ -205,55 +213,58 @@ fun StatsScreen(
 @Composable
 private fun StatsLevelRow(row: LevelStatsRow) {
     var expanded by rememberSaveable(row.number) { mutableStateOf(false) }
-    val starsValue = stringResource(R.string.stats_stars_value, row.stars, row.maxStars)
-    val required = stringResource(R.string.stats_required, row.requiredStars)
-    val words = stringResource(R.string.stats_words_progress, row.found, row.total,
-        RussianPlural.words(row.total))
-    val percent = stringResource(R.string.stats_percent_value, row.percent)
-    val hints = stringResource(R.string.stats_hints_value, row.hintsShown)
-    val statusText = listOf(starsValue, words, hints).joinToString(" · ")
-    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(1f).padding(start = 16.dp)
-                .testTag("stats_level_${row.number}").semantics(mergeDescendants = true) {
-                    stateDescription = statusText
-                }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(stringResource(R.string.stats_level_header, row.number, row.word.uppercase(Locale.ROOT)),
-                    style = MaterialTheme.typography.titleMedium)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    StarsRow(row.stars, row.maxStars, label = stringResource(R.string.level_stars_label))
-                    Text(starsValue, style = MaterialTheme.typography.bodyMedium)
-                    if (!row.passed) Text(required, style = MaterialTheme.typography.bodyMedium)
-                }
-                Text(words, style = MaterialTheme.typography.bodyLarge)
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    LinearProgressIndicator(progress = { if (row.total == 0) 0f else row.found.toFloat() / row.total },
-                        Modifier.weight(1f).height(8.dp).testTag("stats_progress_${row.number}"),
-                        color = LocalWordsPalette.current.primary, trackColor = LocalWordsPalette.current.wellBorder)
-                    Text(percent, style = MaterialTheme.typography.bodyMedium)
-                }
-                Text(hints, Modifier.testTag("stats_hints_${row.number}"),
-                    style = MaterialTheme.typography.bodyMedium)
-            }
-            TextButton({ expanded = !expanded }, Modifier.padding(end = 8.dp).heightIn(min = 48.dp)
-                .testTag("stats_expand_${row.number}")) {
-                Text(stringResource(if (expanded) R.string.stats_collapse else R.string.stats_details))
-            }
+    val expansionState = stringResource(if (expanded) R.string.stats_expanded else R.string.stats_collapsed)
+    val toggleLabel = stringResource(if (expanded) R.string.stats_collapse else R.string.stats_details)
+    Column(Modifier.fillMaxWidth()
+        .testTag("stats_row_${row.number}")
+        .clickable(role = Role.Button, onClickLabel = toggleLabel) { expanded = !expanded }
+        .semantics(mergeDescendants = true) { stateDescription = expansionState }
+        .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.stats_level_header, row.number, row.word.uppercase(Locale.ROOT)),
+            Modifier.testTag("stats_level_${row.number}"), style = MaterialTheme.typography.titleMedium)
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatsMetric(stringResource(R.string.stats_metric_words_label),
+                stringResource(R.string.stats_pair, row.found, row.total), "stats_metric_words_${row.number}")
+            StatsMetric(stringResource(R.string.stats_metric_stars_label),
+                stringResource(R.string.stats_pair, row.stars, row.maxStars), "stats_metric_stars_${row.number}")
+        }
+        Column(Modifier.fillMaxWidth().testTag("stats_achievements_${row.number}")) {
+            Text(stringResource(R.string.stats_achievements_label), style = MaterialTheme.typography.bodyMedium)
+            AchievementStrip(row.achievements, row.achievementsAvailable, Modifier.fillMaxWidth(),
+                iconTagPrefix = "stats_achievement_${row.number}")
         }
         if (expanded) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatsTable(Statistics(row.byLength), Modifier.testTag("stats_table_${row.number}"), showRemaining = true)
-                if (!row.passed) {
-                    Text(stringResource(R.string.stats_not_passed),
-                        Modifier.testTag("stats_not_passed_${row.number}"),
-                        style = MaterialTheme.typography.bodyMedium)
-                }
+            Text(stringResource(R.string.stats_percent_value, row.percent),
+                Modifier.testTag("stats_percent_${row.number}"), style = MaterialTheme.typography.bodyMedium)
+            LinearProgressIndicator(progress = { if (row.total == 0) 0f else row.found.toFloat() / row.total },
+                Modifier.fillMaxWidth().height(8.dp).testTag("stats_progress_${row.number}"),
+                color = LocalWordsPalette.current.primary, trackColor = LocalWordsPalette.current.wellBorder)
+            Text(stringResource(R.string.stats_hints_value, row.hintsShown),
+                Modifier.testTag("stats_hints_${row.number}"), style = MaterialTheme.typography.bodyMedium)
+            StatsTable(Statistics(row.byLength), Modifier.testTag("stats_table_${row.number}"), showRemaining = true)
+            if (!row.passed) {
+                Text(stringResource(R.string.stats_required, row.requiredStars),
+                    Modifier.testTag("stats_required_${row.number}"), style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.stats_not_passed),
+                    Modifier.testTag("stats_not_passed_${row.number}"), style = MaterialTheme.typography.bodyMedium)
             }
         }
-        HorizontalDivider()
+        TextButton({ expanded = !expanded }, Modifier.heightIn(min = 48.dp)
+            .testTag("stats_toggle_${row.number}")) {
+            Text(toggleLabel)
+        }
+    }
+    HorizontalDivider()
+}
+
+@Composable
+private fun StatsMetric(label: String, value: String, tag: String) {
+    Column(Modifier.widthIn(min = 120.dp).testTag(tag),
+        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Text(value, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
