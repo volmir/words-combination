@@ -31,6 +31,16 @@ class GameStateTest {
     }
 
     @Test
+    fun submitIgnoresWhitespaceAndInvisibleCharactersAroundAnswer() {
+        var s = start()
+        var sub = s.submit("рот\u00A0")
+        assertEquals(AnswerResult.CORRECT, sub.result); s = sub.state
+        sub = s.submit("\u200Bтор\n")
+        assertEquals(AnswerResult.CORRECT, sub.result); s = sub.state
+        assertEquals(listOf("рот", "тор"), s.found)
+    }
+
+    @Test
     fun finishesWhenAllFound() {
         var s = start()
         for (w in listOf("рот", "тор", "тот")) s = s.submit(w).state

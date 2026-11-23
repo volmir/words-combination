@@ -30,16 +30,25 @@ object Alphabet {
 
     /**
      * true, если внутри слова есть символ, не являющийся русской буквой
-     * (буква «ё» допустима). Пробелы по краям не считаются частью слова:
-     * их может добавлять клавиатура.
+     * (буква «ё» допустима). Пробелы и невидимые символы по краям не считаются
+     * частью слова: их могут добавлять клавиатура, вставка или перенос строки.
      */
     fun hasForeignCharacters(raw: String): Boolean {
-        for (ch in raw.trim(' ')) {
-            val c = ch.lowercaseChar()
+        var start = 0
+        var end = raw.length
+        while (start < end && isIgnorableEdge(raw[start])) start++
+        while (end > start && isIgnorableEdge(raw[end - 1])) end--
+        for (i in start until end) {
+            val c = raw[i].lowercaseChar()
             if (c != 'ё' && !indexByChar.containsKey(c)) return true
         }
         return false
     }
+
+    /** Unicode-пробелы и невидимые символы, допустимые по краям ввода. */
+    private fun isIgnorableEdge(ch: Char): Boolean =
+        Character.isWhitespace(ch) || Character.isSpaceChar(ch) ||
+            ch == '\u200B' || ch == '\u200C' || ch == '\u200D' || ch == '\uFEFF'
 }
 
 /** Результат проверки слова, введённого для начала игры или поиска. */
