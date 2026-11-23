@@ -96,7 +96,7 @@ class CampaignMapUiTest {
         }) }
         assertBackground(WordsColors.levelAllStarsBackground, background(locked))
         locked.assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
-            "Получено 5 из 5 звёзд · порог открытия: 2"))
+            "Получено 5 из 5 звёзд · для открытия нужно: 2"))
     }
 
     @Test fun achievementCountUsesAvailableIntersectionAndFollowsProgressAndUnlock() {
@@ -116,7 +116,7 @@ class CampaignMapUiTest {
         scroll(1)
         count(1, "Достижения: 8 из 8")
         compose.onNodeWithTag("level_card_1").assert(SemanticsMatcher.expectValue(
-            SemanticsProperties.StateDescription, "Получено 0 из 5 звёзд · порог открытия: 2. Достижения: 8 из 8"))
+            SemanticsProperties.StateDescription, "Получено 0 из 5 звёзд · для открытия нужно: 2. Достижения: 8 из 8"))
         scroll(2)
         count(2, "Достижения: 1 из 4") // Сохранённый GIANT сейчас недоступен и не входит в числитель.
         scroll(3)
@@ -196,7 +196,7 @@ class CampaignMapUiTest {
         assertTrue(divider.right <= next.left)
         compose.onNodeWithContentDescription("Звёзды").assert(
             SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
-                "Получено 3 из 5 звёзд · порог открытия: 3"))
+                "Получено 3 из 5 звёзд · для открытия нужно: 3"))
     }
 
     @Test fun summaryStageContinueLockedExplanationFinaleAndMaster() {
@@ -225,7 +225,7 @@ class CampaignMapUiTest {
             assertEquals("слово2", selected) // The click reaches the VM even though navigation is locked.
             state.value = state.value.copy(lockedRequirement = 1 to 2)
         }
-        compose.onNodeWithText("Чтобы открыть этот уровень, на уровне 1 нужно заданий: 2 из 5.").assertIsDisplayed()
+        compose.onNodeWithText("Чтобы открыть этот уровень, на уровне 1 выполните 2 из 5 заданий.").assertIsDisplayed()
         compose.onNodeWithText("Закрыть").performClick()
         compose.runOnIdle { state.value = state.value.copy(
             levels = listOf(level(1, 2), level(2, recommended = true)), recommendedLevel = 2,
@@ -236,7 +236,7 @@ class CampaignMapUiTest {
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово1")
         compose.onNodeWithTag("level_card_1").assert(
             SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
-                "Получено 2 из 5 звёзд · порог открытия: 2"))
+                "Получено 2 из 5 звёзд · для открытия нужно: 2"))
         compose.onNodeWithTag("level_card_1").performClick()
         compose.runOnIdle { assertEquals("слово1", selected) }
         compose.runOnIdle { state.value = state.value.copy(finaleReached = true,
@@ -247,14 +247,14 @@ class CampaignMapUiTest {
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово2")
         compose.onNodeWithTag("level_card_2")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
-                "Получено 2 из 5 звёзд · порог открытия: 2"))
+                "Получено 2 из 5 звёзд · для открытия нужно: 2"))
             .assertTextEquals("2. СЛОВО2")
         compose.onAllNodesWithText("Рекомендуемый уровень", substring = true).assertCountEquals(0)
         compose.onNodeWithContentDescription("Корона: финал кампании достигнут").assertExists()
         compose.onNodeWithTag("levels_grid").performScrollToKey("слово1")
         compose.onNodeWithTag("level_card_1").assert(
             SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
-                "Получено 5 из 5 звёзд · порог открытия: 2"))
+                "Получено 5 из 5 звёзд · для открытия нужно: 2"))
         compose.onNodeWithTag("level_card_1").performClick()
         compose.runOnIdle {
             assertEquals("слово1", selected)

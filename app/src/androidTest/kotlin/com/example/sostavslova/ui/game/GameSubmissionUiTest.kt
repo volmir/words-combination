@@ -152,7 +152,7 @@ class GameSubmissionUiTest {
         show(game.submit("ыыыыы", index), "ыыыыы")
         checkText(context.getString(R.string.answer_unknown, "ыыыыы"))
         show(game.submit("кот", index), "кот", threeLetterCampaignAnswer = true)
-        checkText("Слово записано в найденные. Для заданий «Набери N» и «На букву» нужны слова от 4 букв.")
+        checkText("Слово записано в найденные. В заданиях на число слов и на первую букву учитываются слова от 4 букв.")
         show(game.submit("кот", index), "кот")
         checkText("Правильно!")
         show(game.submit("кот", index).state.submit("кот", index), "кот")

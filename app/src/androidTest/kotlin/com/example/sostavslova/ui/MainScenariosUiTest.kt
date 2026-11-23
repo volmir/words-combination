@@ -102,7 +102,7 @@ class MainScenariosUiTest {
         val source = source()
         val answer = container.wordRepository.startGame(source).allWords.first { it.length == 3 }
         answerWord(answer)
-        awaitString(R.string.correct_three_letter_answer)
+        awaitString(R.string.correct_three_letter_answer, 4, "букв")
         awaitText("Найденные слова · 1 из", substring = true)
         compose.gameKeyboardInput().assertTextEquals("").assertIsEnabled()
         assertEquals(listOf(answer), foundAnswers(source))

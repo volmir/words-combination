@@ -93,7 +93,7 @@
     <string name="rules_title">Правила игры</string>
     <string name="rules_intro">Составляйте слова из букв исходного слова. Букву можно использовать не чаще, чем она встречается в исходнике; само исходное слово не засчитывается. Буква «ё» приравнивается к «е».</string>
     <string name="rules_description_heading">Как играть</string>
-    <string name="rules_item_1">1. Подходят слова из игрового словаря длиной от 3 букв. В заданиях на число слов и на слова с заданной первой буквой учитываются только слова от 4 букв; у других заданий могут быть свои условия длины.</string>
+    <string name="rules_item_1">1. Подходят слова из игрового словаря длиной не меньше трёх букв. В заданиях на число слов и на слова с заданной первой буквой учитываются слова не короче установленного минимума; у других заданий могут быть свои условия длины.</string>
     <string name="rules_item_2">2. Одно слово засчитывается один раз внутри уровня. На другом уровне его можно найти снова.</string>
     <string name="rules_item_3">3. Продуктивные уменьшительные вроде «котик» отсеяны, но закрепившиеся слова вроде «ручка» и «ножка» допустимы.</string>
     <string name="rules_item_4">4. За каждое выполненное задание даётся звезда. На первых уровнях нужно выполнить все задания, а начиная с уровня %1$d часть заданий можно пропустить. Сколько нужно, указано на экране уровня.</string>
@@ -141,14 +141,14 @@
     <string name="levels_master">Мастер — все звёзды собраны!</string>
     <string name="level_crown">Корона: финал кампании достигнут</string>
     <string name="level_stars_label">Звёзды</string>
-    <string name="level_stars_threshold">порог открытия: %1$d</string>
+    <string name="level_stars_threshold">для открытия нужно: %1$d</string>
     <string name="level_unlock_requirement_all">Чтобы открыть этот уровень, выполните все задания на уровне %1$d.</string>
-    <string name="level_unlock_requirement">Чтобы открыть этот уровень, на уровне %1$d нужно заданий: %2$d из %3$d.</string>
+    <string name="level_unlock_requirement">Чтобы открыть этот уровень, на уровне %1$d выполните %2$d из %3$d заданий.</string>
     <string name="game_level_header">%1$s · уровень %2$d из %3$d</string>
     <string name="game_level_threshold_all">Чтобы открыть следующий уровень, выполните все задания</string>
-    <string name="game_level_threshold">Чтобы открыть следующий уровень, нужно заданий: %1$d из %2$d</string>
+    <string name="game_level_threshold">Чтобы открыть следующий уровень, выполните %1$d из %2$d заданий</string>
     <string name="game_level_final_threshold_all">Чтобы завершить игру, выполните все задания</string>
-    <string name="game_level_final_threshold">Чтобы завершить игру, нужно заданий: %1$d из %2$d</string>
+    <string name="game_level_final_threshold">Чтобы завершить игру, выполните %1$d из %2$d заданий</string>
     <string name="game_task_progress">Выполнено: %1$d из %2$d</string>
     <string name="game_task_done">Выполнено</string>
     <string name="game_task_pending">В работе</string>
@@ -170,7 +170,7 @@
     <string name="game_group_open">Раскрыть</string>
     <string name="game_group_close">Свернуть</string>
     <string name="game_stats_remaining">Осталось</string>
-    <string name="correct_three_letter_answer">Слово записано в найденные. Для заданий «Набери N» и «На букву» нужны слова от 4 букв.</string>
+    <string name="correct_three_letter_answer">Слово записано в найденные. В заданиях на число слов и на первую букву учитываются слова от %1$d %2$s.</string>
     <string name="game_next_opened">Открыт следующий уровень!</string>
     <string name="game_finale_title">Игра пройдена</string>
     <string name="game_finale_stars">Звёзды: %1$d из %2$d</string>
@@ -179,7 +179,7 @@
     <string name="game_finale_continue">Продолжить собирать звёзды</string>
     <string name="game_finale_levels">К уровням</string>
     <string name="game_explanations">Новые задания этапа</string>
-    <string name="game_explain_t1">Набирайте слова от %1$d %2$s. Каждое задание даёт одну звезду; для прохождения подходят любые задания до порога.</string>
+    <string name="game_explain_t1">Набирайте слова от %1$d %2$s. За каждое выполненное задание даётся звезда; сколько заданий нужно для следующего уровня, указано на экране уровня.</string>
     <string name="game_explain_t2">В задании «на букву» учитываются слова от %1$d %2$s с заданной первой буквой.</string>
     <string name="game_explain_t3">Подойдёт любое слово не короче указанной длины.</string>
     <string name="game_explain_t4">Читайте загадки и вводите ответы в обычное поле. Для звезды разгадайте все загадки задания. Первая буква ответа открывается бесплатно.</string>
@@ -264,7 +264,7 @@
     <string name="stats_loading">Загрузка статистики…</string>
     <string name="stats_error">Не удалось прочитать статистику.</string>
     <string name="stats_unavailable">Статистика доступна для кампании.</string>
-    <string name="stats_summary">Звёзды %1$d/%2$d · Уровни %3$d/%4$d · Слов %5$s</string>
+    <string name="stats_summary">Звёзды %1$d/%2$d · Уровни %3$d/%4$d · Найдено слов на уровнях: %5$s</string>
     <string name="stats_achievements_total">Подсказок %1$d · Достижения %2$d из %3$d</string>
     <string name="stats_level_header">Уровень %1$d · %2$s</string>
     <string name="stats_metric_words_label">Найдено слов</string>

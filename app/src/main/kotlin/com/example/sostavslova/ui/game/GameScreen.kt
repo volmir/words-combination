@@ -192,7 +192,7 @@ fun GameScreen(
                     Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("game_feedback"),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    (notice ?: state.message)?.let { GameBanner(it) }
+                    (notice ?: state.message)?.let { GameBanner(it, state.countMinLength) }
                 }
                 state.nextLevelNumber?.let { number ->
                     Well(Modifier.testTag("game_next_level").semantics { liveRegion = LiveRegionMode.Polite }) {
@@ -474,13 +474,14 @@ private fun hintTaskLabel(task: HintPanelTask): String = when (task.label) {
 }
 
 @Composable
-private fun GameBanner(message: GameMessage) {
-    val text = (listOf(message) + message.additionalLines).map { gameMessageLine(it) }.joinToString("\n")
+private fun GameBanner(message: GameMessage, countMinLength: Int? = null) {
+    val text = (listOf(message) + message.additionalLines)
+        .map { gameMessageLine(it, countMinLength) }.joinToString("\n")
     AlertBanner(message.type, text)
 }
 
 @Composable
-private fun gameMessageLine(message: GameMessage): String {
+private fun gameMessageLine(message: GameMessage, countMinLength: Int? = null): String {
     val missing = message.missingLetter
     val pluralText = message.pluralText
     return when {
@@ -489,6 +490,8 @@ private fun gameMessageLine(message: GameMessage): String {
             missing.letter.uppercaseChar().toString(), missing.available, missing.required)
         message.argumentText != null -> stringResource(message.text, stringResource(message.argumentText))
         message.word != null -> stringResource(message.text, message.word)
+        message.text == R.string.correct_three_letter_answer && countMinLength != null ->
+            stringResource(message.text, countMinLength, letterForm(countMinLength))
         else -> stringResource(message.text)
     }
 }

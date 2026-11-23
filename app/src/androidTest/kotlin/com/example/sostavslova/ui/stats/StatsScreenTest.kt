@@ -103,7 +103,7 @@ class StatsScreenTest {
         compose.onNodeWithTag("stats_title").assertTextEquals("Статистика")
         compose.onNodeWithTag("stats_subtitle").assertTextEquals("Прогресс прохождения и достижения")
         compose.onNodeWithTag("stats_summary")
-            .assertTextEquals("Звёзды 18/49 · Уровни 6/15 · Слов 1 204")
+            .assertTextEquals("Звёзды 18/49 · Уровни 6/15 · Найдено слов на уровнях: 1 204")
         // Эти числа намеренно отличаются от суммы тестовых строк: UI читает итоги :core.
         compose.onNodeWithTag("stats_achievements_total")
             .assertTextEquals("Подсказок 23 · Достижения 17 из 99")
@@ -220,7 +220,7 @@ class StatsScreenTest {
         // Шапка могла уехать за пределы окна при прокрутке к уровню 7.
         compose.onNodeWithTag("stats_screen").performScrollToIndex(1)
         compose.onNodeWithTag("stats_summary")
-            .assertTextEquals("Звёзды 18/49 · Уровни 6/15 · Слов 1 204")
+            .assertTextEquals("Звёзды 18/49 · Уровни 6/15 · Найдено слов на уровнях: 1 204")
     }
 
     @Test fun timeMilestonesAreAbsentWhenRequiredThresholdIsTheMaximum() {

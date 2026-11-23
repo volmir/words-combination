@@ -111,7 +111,7 @@ class LevelsLayoutTest {
         assertTrue(line.top >= stars.bottom)
         assertTrue(line.left >= card.left && line.right <= card.right && line.bottom <= card.bottom)
         compose.onNodeWithTag("level_card_1").assert(SemanticsMatcher.expectValue(
-            SemanticsProperties.StateDescription, "Получено 3 из 5 звёзд · порог открытия: 2. Достижения: 8 из 8"))
+            SemanticsProperties.StateDescription, "Получено 3 из 5 звёзд · для открытия нужно: 2. Достижения: 8 из 8"))
         checkLayout()
     }
 

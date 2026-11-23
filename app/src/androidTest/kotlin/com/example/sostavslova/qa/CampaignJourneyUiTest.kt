@@ -211,8 +211,8 @@ class CampaignJourneyUiTest {
             // поэтому диалог использует формулировку «нужно заданий: R из M».
             val previous = CampaignJson.decode(QaCampaign.json).levels.single { it.number == number - 1 }
             compose.onNodeWithText(
-                "Чтобы открыть этот уровень, на уровне ${number - 1} нужно заданий: " +
-                    "${previous.requiredStars} из ${previous.maxStars}.",
+                "Чтобы открыть этот уровень, на уровне ${number - 1} выполните " +
+                    "${previous.requiredStars} из ${previous.maxStars} заданий.",
                 substring = true,
             ).assertExists()
             compose.onNodeWithTag("game_screen").assertDoesNotExist()
