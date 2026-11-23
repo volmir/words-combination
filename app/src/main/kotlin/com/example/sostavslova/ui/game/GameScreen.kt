@@ -35,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -295,12 +296,13 @@ fun GameScreen(
 
 /** Вертикальные кнопки и прокрутка WordsDialog сохраняют доступность при большом шрифте. */
 @Composable
-private fun LevelCompleteDialog(summary: LevelCompleteSummary, onStay: () -> Unit, onNext: () -> Unit) {
+internal fun LevelCompleteDialog(summary: LevelCompleteSummary, onStay: () -> Unit, onNext: () -> Unit) {
     WordsDialog(stringResource(R.string.level_complete_title, summary.levelNumber), onStay,
         Modifier.testTag("level_complete_dialog"), titleTag = "level_complete_title") {
         Text(summary.word, style = MaterialTheme.typography.titleLarge)
         Text(stringResource(R.string.level_complete_stars, summary.stars, summary.maxStars),
             Modifier.testTag("level_complete_stars"), style = MaterialTheme.typography.bodyLarge)
+        LevelCompleteStars(summary.stars, summary.maxStars)
         if (summary.allStars) Text(stringResource(R.string.level_complete_all_stars), style = MaterialTheme.typography.bodyLarge)
         AchievementStrip(summary.achievements, summary.achievements, Modifier.fillMaxWidth(),
             iconTagPrefix = "level_complete_achievement", highlightedAchievements = summary.newAchievements)
@@ -479,10 +481,13 @@ private fun hintTaskLabel(task: HintPanelTask): String = when (task.label) {
 }
 
 @Composable
-private fun GameBanner(message: GameMessage, countMinLength: Int? = null) {
+internal fun GameBanner(message: GameMessage, countMinLength: Int? = null) {
     val text = (listOf(message) + message.additionalLines)
         .map { gameMessageLine(it, countMinLength) }.joinToString("\n")
-    AlertBanner(message.type, text)
+    key(message) {
+        AlertBanner(message.type, text, Modifier.rewardReveal(message.animateReward, durationMillis = 240)
+            .testTag("game_banner"))
+    }
 }
 
 @Composable

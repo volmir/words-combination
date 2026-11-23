@@ -14,28 +14,28 @@ class AwardMessageTest {
         type = AlertType.Success, argumentText = name)
 
     @Test fun onlyStars() {
-        assertEquals(star(2), awardMessage(2, false, emptyList()))
+        assertEquals(star(2).copy(animateReward = true), awardMessage(2, false, emptyList()))
     }
 
     @Test fun starsAndAchievement() {
-        assertEquals(star(1).copy(additionalLines = listOf(achievement(R.string.achievement_expert))),
+        assertEquals(star(1).copy(animateReward = true, additionalLines = listOf(achievement(R.string.achievement_expert))),
             awardMessage(1, false, listOf(LevelAchievement.EXPERT)))
     }
 
     @Test fun achievementWithoutStars() {
-        assertEquals(achievement(R.string.achievement_giant),
+        assertEquals(achievement(R.string.achievement_giant).copy(animateReward = true),
             awardMessage(0, false, listOf(LevelAchievement.GIANT)))
     }
 
     @Test fun openedLevelAndTwoAchievementsFollowDisplayOrder() {
-        assertEquals(GameMessage(R.string.game_next_opened, type = AlertType.Success,
+        assertEquals(GameMessage(R.string.game_next_opened, type = AlertType.Success, animateReward = true,
             additionalLines = listOf(achievement(R.string.achievement_no_hints),
                 achievement(R.string.achievement_expert))),
             awardMessage(0, true, listOf(LevelAchievement.EXPERT, LevelAchievement.NO_HINTS)))
     }
 
     @Test fun fiveAchievementsShowThreeAndOverflowCount() {
-        assertEquals(achievement(R.string.achievement_no_hints).copy(additionalLines = listOf(
+        assertEquals(achievement(R.string.achievement_no_hints).copy(animateReward = true, additionalLines = listOf(
             achievement(R.string.achievement_expert), achievement(R.string.achievement_collector),
             GameMessage(R.string.achievement_more, type = AlertType.Success,
                 pluralText = R.plurals.achievements_more, count = 2))),
@@ -44,7 +44,7 @@ class AwardMessageTest {
     }
 
     @Test fun openedLevelWithoutOtherAwards() {
-        assertEquals(GameMessage(R.string.game_next_opened, type = AlertType.Success),
+        assertEquals(GameMessage(R.string.game_next_opened, type = AlertType.Success, animateReward = true),
             awardMessage(0, true, emptyList()))
     }
 

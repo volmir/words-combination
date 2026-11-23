@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.R
 import com.example.sostavslova.core.Campaign
 import com.example.sostavslova.core.LevelCompleteSummary
+import com.example.sostavslova.core.rewardAnimation
 import com.example.sostavslova.core.LevelAchievement
 import com.example.sostavslova.core.CampaignSummary
 import com.example.sostavslova.core.CampaignTask
@@ -58,7 +59,8 @@ data class GameMessage(@param:StringRes val text: Int, val word: String? = null,
     @param:PluralsRes val pluralText: Int? = null,
     val count: Int = 0,
     @param:StringRes val argumentText: Int? = null,
-    val additionalLines: List<GameMessage> = emptyList())
+    val additionalLines: List<GameMessage> = emptyList(),
+    val animateReward: Boolean = false)
 
 /** Только представление наград: правила выдачи и порядок достижений задаёт core. */
 internal fun awardMessage(
@@ -78,7 +80,8 @@ internal fun awardMessage(
         if (ordered.size > 3) add(GameMessage(R.string.achievement_more, type = AlertType.Success,
             pluralText = R.plurals.achievements_more, count = ordered.size - 3))
     }
-    return lines.firstOrNull()?.copy(additionalLines = lines.drop(1))
+    return lines.firstOrNull()?.copy(additionalLines = lines.drop(1),
+        animateReward = rewardAnimation(stars, openedNextLevel, achievements))
 }
 
 /** Формулировка отказа сохраняет различие точного словаря и вероятного совпадения. */
