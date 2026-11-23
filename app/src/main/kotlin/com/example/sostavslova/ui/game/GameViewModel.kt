@@ -16,6 +16,7 @@ import com.example.sostavslova.core.TaskRules
 import com.example.sostavslova.core.TaskProgress
 import com.example.sostavslova.core.TaskType
 import com.example.sostavslova.core.HintStep
+import com.example.sostavslova.core.HintPanelModel
 import com.example.sostavslova.core.HintRules
 import com.example.sostavslova.core.HintStatus
 import com.example.sostavslova.core.CurrentCampaignLevel
@@ -138,6 +139,7 @@ data class GameUiState(
     val hintCost: Int? = null,
     val hintRemaining: Int = 0,
     val hintLoading: Boolean = false,
+    val hintPanel: HintPanelModel? = null,
     val returnLevels: Boolean = false,
     val nextLevelNumber: Int? = null,
     val navigatingNext: Boolean = false,
@@ -249,9 +251,11 @@ class GameViewModel(
 
     private suspend fun publishSession(game: GameState, current: CurrentCampaignLevel,
         finaleSummary: CampaignSummary? = null, nextLevelNumber: Int? = null) {
-        val (shownHints, cost) = withContext(computationDispatcher) {
+        val (shownHints, panel) = withContext(computationDispatcher) {
             val shown = current.takeIf { HintRules.currentStep(it) != null }?.hints?.ladder?.shown.orEmpty()
-            shown to HintRules.nextCost(current, campaign?.countMinLength ?: 4)
+            val countMinLength = campaign?.countMinLength ?: 4
+            shown to HintPanelModel.of(current, HintRules.nextCost(current, countMinLength),
+                HintRules.budget(current).remaining, countMinLength)
         }
         val (stats, tasks) = withContext(computationDispatcher) {
             game.statistics() to TaskRules.evaluate(current, campaign?.countMinLength ?: 4).progress
@@ -266,7 +270,7 @@ class GameViewModel(
             finaleSummary = finaleSummary,
             campaignLevel = current, campaignHint = shownHints.lastOrNull(), campaignHints = shownHints,
             countMinLength = campaign?.countMinLength ?: 4,
-            hintCost = cost, hintRemaining = HintRules.budget(current).remaining,
+            hintCost = panel.cost, hintRemaining = panel.remaining, hintPanel = panel,
             statistics = stats, taskProgress = tasks,
             riddles = it.riddles.mapValues { (id, items) -> items.mapIndexed { index, riddle ->
                 riddle.copy(solved = solved[id]?.getOrNull(index) == true)

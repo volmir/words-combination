@@ -220,10 +220,11 @@
     <string name="game_category_other">Другие общеупотребительные понятия</string>
     <string name="game_letter_one">буква</string>
     <string name="game_letter_few">буквы</string>
-    <string name="hint_stage">Подсказка · открыто %1$d из %2$d</string>
+    <string name="hint_caption">Слово из %1$d %2$s · открыто %3$d</string>
     <string name="hint_unopened">Подсказка ещё не открыта</string>
     <string name="hint_task_heading">Подсказка для задания: %1$s</string>
-    <string name="hint_task_choose">Для задания:</string>
+    <string name="hint_task_change">Сменить задание</string>
+    <string name="hint_task_change_description">Сменить задание для подсказки</string>
     <string name="hint_task_auto">Авто</string>
     <string name="hint_task_auto_description">Подсказка для задания, выбранного автоматически</string>
     <string name="hint_task_description">Подсказка для задания %1$s</string>
@@ -234,12 +235,6 @@
     <string name="hint_task_t5">Слова с окончанием «%1$s»</string>
     <string name="hint_task_t6">Слова по теме «%1$s»</string>
     <string name="hint_task_t7">Слова с буквой «%1$s»</string>
-    <plurals name="hint_word_length">
-        <item quantity="one">Слово из %1$d буквы</item>
-        <item quantity="few">Слово из %1$d букв</item>
-        <item quantity="many">Слово из %1$d букв</item>
-        <item quantity="other">Слово из %1$d букв</item>
-    </plurals>
     <string name="hint_remaining">Осталось подсказок: %1$d</string>
     <string name="hint_action_unavailable">Подсказка · недоступно</string>
     <string name="hint_action_free">Подсказка · бесплатно</string>

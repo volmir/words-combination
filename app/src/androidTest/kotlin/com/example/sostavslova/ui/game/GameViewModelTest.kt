@@ -520,6 +520,30 @@ class GameViewModelTest {
         }
     }
 
+    @Test fun hintPanelIsPublishedWithLevelAndReusedWhileTyping() = runTest {
+        val model = model()
+        val ready = model.ready()
+        val initial = requireNotNull(ready.hintPanel)
+        assertEquals(ready.hintCost, initial.cost)
+        assertEquals(ready.hintRemaining, initial.remaining)
+        withContext(Dispatchers.Main) { model.onInputChanged("к"); model.onInputChanged("кр") }
+        assertSame(initial, model.uiState.value.hintPanel)
+        withContext(Dispatchers.Main) { model.onHintTask("initial") }
+        val selected = model.await { !it.hintLoading && it.campaignLevel?.hints?.preferredTaskId == "initial" }
+        val panel = requireNotNull(selected.hintPanel)
+        assertNotSame(initial, panel)
+        assertEquals("initial", panel.selectedTaskId)
+        assertEquals("initial", panel.target.taskId)
+        withContext(Dispatchers.Main) { model.onHint() }
+        val hinted = model.await { !it.hintLoading && it.campaignHint != null }
+        val paid = requireNotNull(hinted.hintPanel)
+        assertTrue(paid.selectionLocked)
+        assertEquals(hinted.campaignHint?.text, paid.pattern)
+        assertEquals(hinted.hintRemaining, paid.remaining)
+        withContext(Dispatchers.Main) { model.onInputChanged("кро") }
+        assertSame(paid, model.uiState.value.hintPanel)
+    }
+
     @Test fun onHintTaskChangesTargetBeforePaidStepAndIgnoresAfter() = runTest {
         val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })

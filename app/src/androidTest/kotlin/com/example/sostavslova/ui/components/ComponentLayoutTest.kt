@@ -18,6 +18,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
@@ -31,6 +32,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.example.sostavslova.core.*
+import com.example.sostavslova.ui.game.HintTaskDialog
 import com.example.sostavslova.core.LengthStat
 import com.example.sostavslova.core.Statistics
 import com.example.sostavslova.nav.Destination
@@ -55,6 +58,11 @@ class ComponentLayoutTest(private val exampleName: String) {
             WordsTheme { example.Render() }
         }
         compose.waitForIdle()
+        if (example == ComponentExample.HINT_TASK_DIALOG) {
+            compose.onNodeWithTag("game_hint_task_dialog").assertExists()
+            compose.onNodeWithTag("game_hint_task_option_auto").assertIsSelected()
+            compose.onNodeWithTag("game_hint_task_option_count").assertExists()
+        }
         val texts = compose.onAllNodes(
             SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true,
         ).fetchSemanticsNodes()
@@ -94,11 +102,18 @@ class ComponentLayoutTest(private val exampleName: String) {
 
 /** Фикстуры принадлежат тестам и не включаются в приложение. */
 private enum class ComponentExample {
-    WELL, WORD_INPUT, LETTERS, STARS, FOUND_WORDS, ALERTS, STATISTICS, RIDDLE, TOP_BAR, DRAWER;
+    WELL, WORD_INPUT, LETTERS, STARS, FOUND_WORDS, ALERTS, STATISTICS, RIDDLE, TOP_BAR, DRAWER, HINT_TASK_DIALOG;
+
+    private val hintPanel get() = CurrentCampaignLevel(
+        CampaignLevel(1, "картотека", 1, 1, listOf(CampaignTask.T1("count", 3),
+            CampaignTask.T4("riddle", listOf("крот")))),
+        GameState.start("картотека", WordIndex(listOf("крот"))))
+        .let { HintPanelModel.of(it, 0, 5, 4) }
 
     @Composable
     fun Render() {
         when (this) {
+            HINT_TASK_DIALOG -> HintTaskDialog(hintPanel, enabled = true, onDismiss = {}, onSelect = {})
             TOP_BAR -> WordsTopBar {}
             DRAWER -> WordsDrawer(Destination.Levels.route) {}
             else -> Surface {

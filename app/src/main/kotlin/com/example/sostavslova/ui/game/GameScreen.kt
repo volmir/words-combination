@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Button
@@ -25,6 +27,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -64,8 +69,9 @@ import com.example.sostavslova.R
 import com.example.sostavslova.di.appContainer
 import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.CampaignTask
-import com.example.sostavslova.core.HintLadder
-import com.example.sostavslova.core.HintRules
+import com.example.sostavslova.core.HintPanelLabel
+import com.example.sostavslova.core.HintPanelModel
+import com.example.sostavslova.core.HintPanelTask
 import com.example.sostavslova.core.LevelThresholdKind
 import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.ui.components.AlertBanner
@@ -307,82 +313,68 @@ private fun LevelCompleteDialog(summary: LevelCompleteSummary, onStay: () -> Uni
     }
 }
 
-/** Read the current snapshot only: no local accumulation or cached target across restoration. */
+/** Композиция отображает снимок панели, подготовленный ViewModel. */
 @Composable
 private fun CampaignHint(state: GameUiState, onHint: () -> Unit, onHintTask: (String?) -> Unit) {
-    val current = state.campaignLevel?.let { HintRules.restore(it) } ?: return
-    val ladder = current.hints.ladder.takeUnless { it.target?.word in current.game.found } ?: HintLadder()
-    val step = HintRules.currentStep(current)
-    val pattern = step?.text?.takeIf { it.isNotEmpty() }
-    val total = ladder.target?.word?.length ?: pattern?.length ?: 0
-    val opened = pattern?.count { it != '_' } ?: 0
-    val complete = pattern != null && ladder.steps.isNotEmpty() && ladder.shown.size == ladder.steps.size
-    val cost = state.hintCost
-    val target = ladder.target
-    val targetTask = target?.taskId?.let { id -> current.level.tasks.firstOrNull { it.id == id } }
-    val options = HintRules.taskOptions(current, state.countMinLength)
-    // Выполненное или недостижимое предпочтение показываем как «Авто»: так его сбросит next().
-    val preferred = current.hints.preferredTaskId?.takeIf { id -> options.any { it.id == id } }
-    // Найденная цель больше не текущая: выбор снова доступен.
-    val locked = ladder.paidSteps > 0
+    val panel = state.hintPanel ?: return
+    val cost = panel.cost
+    var choosingTask by rememberSaveable(state.game?.word) { mutableStateOf(false) }
+    val changeEnabled = !panel.selectionLocked && !state.hintLoading
     Well(Modifier.testTag("game_hint").semantics { liveRegion = LiveRegionMode.Polite }) {
-        if (targetTask != null) {
-            Text(stringResource(R.string.hint_task_heading,
-                hintTaskLabel(targetTask, state.countMinLength, riddleNumber(targetTask, target?.word))),
-                Modifier.testTag("game_hint_task"), style = MaterialTheme.typography.titleSmall)
-        }
-        // На уровне с единственным заданием выбирать не из чего: это первый уровень с T1.
-        if (current.level.tasks.size > 1 && options.isNotEmpty()) {
-            Text(stringResource(R.string.hint_task_choose), Modifier.testTag("game_hint_task_choose"),
-                style = MaterialTheme.typography.bodyMedium)
-            FlowRow(Modifier.fillMaxWidth().testTag("game_hint_task_options"),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                HintTaskChip(stringResource(R.string.hint_task_auto),
-                    description = stringResource(R.string.hint_task_auto_description),
-                    selected = preferred == null, enabled = !locked && !state.hintLoading,
-                    onClick = { onHintTask(null) }, tag = "game_hint_task_auto")
-                options.forEach { task ->
-                    val label = hintTaskLabel(task, state.countMinLength,
-                        if (target?.taskId == task.id) riddleNumber(task, target?.word) else null)
-                    HintTaskChip(label, description = stringResource(R.string.hint_task_description, label),
-                        selected = preferred == task.id, enabled = !locked && !state.hintLoading,
-                        onClick = { onHintTask(task.id) }, tag = "game_hint_task_${task.id}")
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val heading: @Composable () -> Unit = {
+                Text(stringResource(R.string.hint_task_heading, hintTaskLabel(panel.target)),
+                    Modifier.testTag("game_hint_task").semantics { heading() },
+                    style = MaterialTheme.typography.titleSmall)
+            }
+            val change: @Composable () -> Unit = {
+                if (panel.options.isNotEmpty()) {
+                    val description = stringResource(R.string.hint_task_change_description)
+                    TextButton(onClick = { choosingTask = true }, enabled = changeEnabled,
+                        modifier = Modifier.heightIn(min = 48.dp).widthIn(min = 48.dp)
+                            .testTag("game_hint_task_change").semantics { contentDescription = description }) {
+                        Text(stringResource(R.string.hint_task_change))
+                    }
                 }
             }
-            if (locked) {
-                Text(stringResource(R.string.hint_task_locked), Modifier.testTag("game_hint_task_locked"),
-                    style = MaterialTheme.typography.bodyMedium)
+            // На узком экране и при крупном шрифте кнопка переносится под заголовок.
+            if (maxWidth >= 480.dp * LocalDensity.current.fontScale) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) { heading() }
+                    change()
+                }
+            } else {
+                Column { heading(); change() }
             }
         }
-        Text(if (pattern == null) stringResource(R.string.hint_unopened)
-            else stringResource(R.string.hint_stage, opened, total),
-            Modifier.testTag("game_hint_stage").semantics { heading() },
-            style = MaterialTheme.typography.titleMedium)
-        if (pattern != null) {
-            Text(pluralStringResource(R.plurals.hint_word_length, pattern.length, pattern.length),
-                Modifier.testTag("game_hint_length"), style = MaterialTheme.typography.bodyLarge)
-            LetterSlots(pattern, Modifier.testTag("game_hint_pattern"))
+        if (panel.selectionLocked) {
+            Text(stringResource(R.string.hint_task_locked), Modifier.testTag("game_hint_task_locked"),
+                style = MaterialTheme.typography.bodyMedium)
         }
+        Text(if (panel.pattern == null) stringResource(R.string.hint_unopened)
+            else stringResource(R.string.hint_caption, panel.wordLength, letterForm(panel.wordLength), panel.openedLetters),
+            Modifier.testTag("game_hint_caption"), style = MaterialTheme.typography.bodyLarge)
+        panel.pattern?.let { LetterSlots(it, Modifier.testTag("game_hint_pattern")) }
         if (state.hintLoading) Text(stringResource(R.string.hint_loading), style = MaterialTheme.typography.bodyMedium)
         val explanation = when {
-            complete -> R.string.hint_ladder_complete
+            panel.ladderComplete -> R.string.hint_ladder_complete
             cost == null -> R.string.hint_all_found
-            cost > state.hintRemaining -> R.string.hint_budget_exhausted
+            cost > panel.remaining -> R.string.hint_budget_exhausted
             else -> null
         }
         explanation?.let { Text(stringResource(it), Modifier.testTag("game_hint_budget"),
             style = MaterialTheme.typography.bodyMedium) }
-        Text(stringResource(R.string.hint_remaining, state.hintRemaining),
+        Text(stringResource(R.string.hint_remaining, panel.remaining),
             Modifier.testTag("game_hint_remaining"), style = MaterialTheme.typography.bodyMedium)
         val action = when {
             cost == null -> stringResource(R.string.hint_action_unavailable)
             cost == 0 -> stringResource(R.string.hint_action_free)
-            else -> stringResource(R.string.hint_action_paid, cost, state.hintRemaining)
+            else -> stringResource(R.string.hint_action_paid, cost, (panel.remaining - cost).coerceAtLeast(0))
         }
         OutlinedButton(
             onClick = onHint,
-            enabled = state.canPlay && !complete && cost != null && cost <= state.hintRemaining,
+            enabled = state.canPlay && !panel.ladderComplete && cost != null && cost <= panel.remaining,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("game_hint_button"),
             shape = WordsControlShape,
             border = BorderStroke(1.dp, LocalWordsPalette.current.defaultButtonBorder),
@@ -394,10 +386,35 @@ private fun CampaignHint(state: GameUiState, onHint: () -> Unit, onHintTask: (St
             Text(action, style = MaterialTheme.typography.bodyLarge)
         }
     }
+    if (choosingTask && panel.options.isNotEmpty() && !panel.selectionLocked) {
+        HintTaskDialog(panel, enabled = changeEnabled, onDismiss = { choosingTask = false }) { taskId ->
+            onHintTask(taskId)
+            choosingTask = false
+        }
+    }
 }
 
-/** Фон, текст и граница чипа подсказки зависят от состояния и активной палитры. */
-internal fun hintTaskChipColors(
+@Composable
+internal fun HintTaskDialog(panel: HintPanelModel, enabled: Boolean, onDismiss: () -> Unit,
+    onSelect: (String?) -> Unit) {
+    WordsDialog(title = stringResource(R.string.hint_task_change), onDismiss = onDismiss,
+        modifier = Modifier.testTag("game_hint_task_dialog")) {
+        Column(Modifier.fillMaxWidth().selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            panel.options.forEach { option ->
+                val label = hintTaskLabel(option)
+                HintTaskOption(label,
+                    description = if (option.taskId == null) stringResource(R.string.hint_task_auto_description)
+                        else stringResource(R.string.hint_task_description, label),
+                    selected = option.taskId == panel.selectedTaskId, enabled = enabled,
+                    onClick = { onSelect(option.taskId) },
+                    tag = "game_hint_task_option_${option.taskId ?: "auto"}")
+            }
+        }
+    }
+}
+
+/** Цвета строки выбора зависят от состояния и активной палитры. */
+internal fun hintTaskOptionColors(
     palette: WordsPalette,
     selected: Boolean,
     enabled: Boolean,
@@ -420,7 +437,7 @@ internal fun hintTaskChipColors(
 )
 
 @Composable
-private fun HintTaskChip(
+private fun HintTaskOption(
     label: String,
     description: String,
     selected: Boolean,
@@ -428,34 +445,33 @@ private fun HintTaskChip(
     onClick: () -> Unit,
     tag: String,
 ) {
-    val (container, content, borderColor) = hintTaskChipColors(LocalWordsPalette.current, selected, enabled)
-    Box(Modifier.heightIn(min = 48.dp).widthIn(min = 48.dp)
+    val (container, content, borderColor) = hintTaskOptionColors(LocalWordsPalette.current, selected, enabled)
+    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
         .clip(WordsControlShape).background(container).border(1.dp, borderColor, WordsControlShape)
-        .selectable(selected = selected, enabled = enabled, role = Role.Button, onClick = onClick)
+        .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
         .testTag(tag).semantics { contentDescription = description }
         .padding(horizontal = 12.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center) {
-        Text(label, color = content, style = MaterialTheme.typography.bodyLarge)
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        RadioButton(selected = selected, onClick = null, enabled = enabled,
+            colors = RadioButtonDefaults.colors(selectedColor = content, unselectedColor = content,
+                disabledSelectedColor = content, disabledUnselectedColor = content))
+        Text(label, Modifier.weight(1f), color = content, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
-/** Короткая подпись задания для заголовка и чипов; для T4 — номер конкретной загадки. */
+/** Только локализация готового ключа и параметров из core. */
 @Composable
-private fun hintTaskLabel(task: CampaignTask, countMinLength: Int, riddleNumber: Int? = null): String = when (task) {
-    is CampaignTask.T1 -> stringResource(R.string.hint_task_min_length, countMinLength, letterForm(countMinLength))
-    is CampaignTask.T2 -> stringResource(R.string.hint_task_t2, task.letter.uppercaseChar().toString())
-    is CampaignTask.T3 -> stringResource(R.string.hint_task_min_length, task.minLength, letterForm(task.minLength))
-    is CampaignTask.T4 -> riddleNumber?.let { stringResource(R.string.game_riddle_number, it) }
-        ?: stringResource(R.string.hint_task_t4)
-    is CampaignTask.T5 -> stringResource(R.string.hint_task_t5, task.ending)
-    is CampaignTask.T6 -> stringResource(R.string.hint_task_t6, categoryName(task.category))
-    is CampaignTask.T7 -> stringResource(R.string.hint_task_t7, task.letter.uppercaseChar().toString())
+private fun hintTaskLabel(task: HintPanelTask): String = when (task.label) {
+    HintPanelLabel.AUTO -> stringResource(R.string.hint_task_auto)
+    HintPanelLabel.MIN_LENGTH -> stringResource(R.string.hint_task_min_length, task.number, letterForm(task.number))
+    HintPanelLabel.START_LETTER -> stringResource(R.string.hint_task_t2, task.argument)
+    HintPanelLabel.RIDDLES -> stringResource(R.string.hint_task_t4)
+    HintPanelLabel.RIDDLE_NUMBER -> stringResource(R.string.game_riddle_number, task.number)
+    HintPanelLabel.ENDING -> stringResource(R.string.hint_task_t5, task.argument)
+    HintPanelLabel.CATEGORY -> stringResource(R.string.hint_task_t6, categoryName(task.argument))
+    HintPanelLabel.CONTAINS_LETTER -> stringResource(R.string.hint_task_t7, task.argument)
 }
-
-private fun riddleNumber(task: CampaignTask, word: String?): Int? =
-    if (task is CampaignTask.T4 && word != null) {
-        task.targets.indexOf(word).takeIf { it >= 0 }?.plus(1)
-    } else null
 
 @Composable
 private fun GameBanner(message: GameMessage) {

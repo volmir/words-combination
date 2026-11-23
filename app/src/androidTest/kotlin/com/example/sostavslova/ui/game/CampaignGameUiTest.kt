@@ -49,11 +49,15 @@ class CampaignGameUiTest {
         campaignLevel = CurrentCampaignLevel(CampaignLevel(30, pendingGame.word, 6, 4, tasks), pendingGame),
         totalLevels = 30, statistics = pendingGame.statistics())
 
+    private fun GameUiState.withHintPanel() = copy(hintPanel = campaignLevel?.let {
+        HintPanelModel.of(it, hintCost, hintRemaining, countMinLength)
+    })
+
     @Test fun allSevenTasksRiddlesGroupsAndLengthTotalsAtNativeSize() {
         val state = mutableStateOf(initial)
         compose.setContent {
             WordsTheme {
-                GameScreen(state.value, {}, {}, {}, {})
+                GameScreen(state.value.withHintPanel(), {}, {}, {}, {})
             }
         }
         compose.onNodeWithTag("level_header").assertTextEquals("Эксперт · уровень 30 из 30")
@@ -118,7 +122,7 @@ class CampaignGameUiTest {
         var transitions = 0
         var hints = 0
         compose.setContent {
-            WordsTheme { GameScreen(state.value, {}, {}, { hints++ }, {},
+            WordsTheme { GameScreen(state.value.withHintPanel(), {}, {}, { hints++ }, {},
                 onNextLevel = { transitions++ }) }
         }
         compose.onNodeWithTag("game_next_level_button").assertDoesNotExist()
@@ -133,8 +137,7 @@ class CampaignGameUiTest {
             .assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp).performClick()
         assertEquals(1, transitions)
         compose.onNodeWithTag("game_hint").performScrollTo().assertHasNoClickAction()
-        compose.onNodeWithTag("game_hint_stage").assertTextEquals("Подсказка ещё не открыта")
-        compose.onNodeWithTag("game_hint_length").assertDoesNotExist()
+        compose.onNodeWithTag("game_hint_caption").assertTextEquals("Подсказка ещё не открыта")
         compose.onNodeWithTag("game_hint_pattern").assertDoesNotExist()
         compose.onNodeWithTag("game_hint_remaining").assertTextEquals("Осталось подсказок: 0")
         compose.onNodeWithTag("game_hint_button").performScrollTo()
@@ -159,7 +162,7 @@ class CampaignGameUiTest {
                 taskProgress = evaluated.progress, totalLevels = campaign.levels.size)
         }
         val state = mutableStateOf(ui(campaign.levels.first()))
-        compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, {}, {}) } }
+        compose.setContent { WordsTheme { GameScreen(state.value.withHintPanel(), {}, {}, {}, {}) } }
         for (level in campaign.levels) {
             compose.runOnIdle { state.value = ui(level) }
             compose.onNodeWithTag("game_tasks_summary").assertTextEquals("Задания · 0 из ${level.tasks.size}")
@@ -182,11 +185,10 @@ class CampaignGameUiTest {
                 target = HintTarget("крот"), steps = steps, letterLadderVersion = 1))),
             hintCost = 0, hintRemaining = 0))
         var clicks = 0
-        compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, { clicks++ }, {}) } }
+        compose.setContent { WordsTheme { GameScreen(state.value.withHintPanel(), {}, {}, { clicks++ }, {}) } }
         compose.onNodeWithTag("game_hint")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
-        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка ещё не открыта")
-        compose.onNodeWithTag("game_hint_length").assertDoesNotExist()
+        compose.onNodeWithTag("game_hint_caption").performScrollTo().assertTextEquals("Подсказка ещё не открыта")
         compose.onNodeWithTag("game_hint_pattern").assertDoesNotExist()
         compose.onNodeWithTag("game_hint_part_1").assertDoesNotExist()
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled()
@@ -195,8 +197,7 @@ class CampaignGameUiTest {
         compose.runOnIdle { state.value = state.value.copy(hintCost = 1,
             campaignLevel = state.value.campaignLevel?.let { current -> current.copy(hints = current.hints.copy(
                 ladder = current.hints.ladder.copy(nextStepIndex = 1, revealedPositions = setOf(0)))) }) }
-        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 1 из 4")
-        compose.onNodeWithTag("game_hint_length").assertTextEquals("Слово из 4 букв")
+        compose.onNodeWithTag("game_hint_caption").performScrollTo().assertTextEquals("Слово из 4 букв · открыто 1")
         compose.onNodeWithTag("game_hint_pattern")
             .assertContentDescriptionEquals("Слово из 4 букв. Открыто: 1-я К.")
         compose.onNodeWithTag("game_hint_part_1").assertDoesNotExist()
@@ -228,9 +229,8 @@ class CampaignGameUiTest {
             campaignLevel = evaluated.state.copy(hints = HintState(ladder = HintLadder(
                 target = HintTarget("билет"), steps = steps, nextStepIndex = 1, letterLadderVersion = 1))),
             hintCost = 1, hintRemaining = 2))
-        compose.setContent { WordsTheme { GameScreen(state.value, {}, {}, {}, {}) } }
-        compose.onNodeWithTag("game_hint_stage").performScrollTo().assertTextEquals("Подсказка · открыто 3 из 5")
-        compose.onNodeWithTag("game_hint_length").assertTextEquals("Слово из 5 букв")
+        compose.setContent { WordsTheme { GameScreen(state.value.withHintPanel(), {}, {}, {}, {}) } }
+        compose.onNodeWithTag("game_hint_caption").performScrollTo().assertTextEquals("Слово из 5 букв · открыто 3")
         compose.onNodeWithTag("game_hint_pattern")
             .assertContentDescriptionEquals("Слово из 5 букв. Открыто: 1-я Б, 4-я Е, 5-я Т.")
         assertSlot(1, 'Б')
@@ -255,22 +255,20 @@ class CampaignGameUiTest {
         val restoration = androidx.compose.ui.test.junit4.StateRestorationTester(compose)
         restoration.setContent {
             WordsTheme {
-                GameScreen(state.value, {}, {}, { clicks++ }, {})
+                GameScreen(state.value.withHintPanel(), {}, {}, { clicks++ }, {})
             }
         }
         for (open in listOf(0, 1, 3, 4)) {
             compose.runOnIdle { state.value = snapshot(open) }
             repeat(2) { pass ->
                 if (pass == 1) restoration.emulateSavedInstanceStateRestore()
-                compose.onNodeWithTag("game_hint_stage").performScrollTo()
+                compose.onNodeWithTag("game_hint_caption").performScrollTo()
                     .assertTextEquals(if (open == 0) "Подсказка ещё не открыта"
-                        else "Подсказка · открыто $open из 4")
+                        else "Слово из 4 букв · открыто $open")
                 if (open == 0) {
-                    compose.onNodeWithTag("game_hint_length").assertDoesNotExist()
                     compose.onNodeWithTag("game_hint_pattern").assertDoesNotExist()
                 } else {
                     val pattern = requireNotNull(steps[open - 1].text)
-                    compose.onNodeWithTag("game_hint_length").assertTextEquals("Слово из 4 букв")
                     compose.onNodeWithTag("game_hint_pattern").assertExists()
                     repeat(4) { index ->
                         compose.onNodeWithTag("game_hint_slot_${index + 1}", useUnmergedTree = true).assertExists()
@@ -294,7 +292,7 @@ class CampaignGameUiTest {
                     compose.onNodeWithText("Слово показано целиком. Введите его, чтобы получить новую подсказку.")
                         .assertExists()
                 } else {
-                    button.assertIsEnabled().assertTextContains("Подсказка (−1, останется 2)")
+                    button.assertIsEnabled().assertTextContains("Подсказка (−1, останется 1)")
                 }
                 compose.onAllNodesWithText("Викисловарь", substring = true).assertCountEquals(0)
                 assertTextFits()
@@ -310,15 +308,14 @@ class CampaignGameUiTest {
             campaignLevel = evaluated.state.copy(hints = HintState(ladder = HintLadder(
                 target = HintTarget("карта"), steps = kartaSteps, nextStepIndex = 1, letterLadderVersion = 1))),
             campaignHints = steps, hintCost = 1, hintRemaining = 2) }
-        compose.onNodeWithTag("game_hint_stage").assertTextEquals("Подсказка · открыто 1 из 5")
-        compose.onNodeWithTag("game_hint_length").assertTextEquals("Слово из 5 букв")
+        compose.onNodeWithTag("game_hint_caption").assertTextEquals("Слово из 5 букв · открыто 1")
         assertSlot(1, 'К')
         assertSlot(2, null)
         compose.onAllNodesWithText("кр__", useUnmergedTree = true).assertCountEquals(0)
         compose.onAllNodesWithTag("game_hint_part_2").assertCountEquals(0)
         compose.runOnIdle { state.value = snapshot(3, target = "кот") }
         // Once the target has been found, its old pattern is no longer visible.
-        compose.onNodeWithTag("game_hint_stage").assertTextEquals("Подсказка ещё не открыта")
+        compose.onNodeWithTag("game_hint_caption").assertTextEquals("Подсказка ещё не открыта")
         compose.onNodeWithTag("game_hint_pattern").assertDoesNotExist()
         compose.onNodeWithTag("game_hint_part_1").assertDoesNotExist()
         compose.onAllNodesWithText("кр__", useUnmergedTree = true).assertCountEquals(0)
@@ -327,13 +324,12 @@ class CampaignGameUiTest {
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsNotEnabled()
             .assertTextContains("Подсказка · недоступно")
         compose.runOnIdle { state.value = initial.copy(hintCost = 0, hintRemaining = 0) }
-        compose.onNodeWithTag("game_hint_stage").assertTextEquals("Подсказка ещё не открыта")
+        compose.onNodeWithTag("game_hint_caption").assertTextEquals("Подсказка ещё не открыта")
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled()
             .assertTextContains("Подсказка · бесплатно").performClick()
         assertEquals(1, clicks)
         compose.runOnIdle { state.value = snapshot(1).copy(hintCost = 1, hintRemaining = 0) }
-        compose.onNodeWithTag("game_hint_stage").assertTextEquals("Подсказка · открыто 1 из 4")
-        compose.onNodeWithTag("game_hint_length").assertTextEquals("Слово из 4 букв")
+        compose.onNodeWithTag("game_hint_caption").assertTextEquals("Слово из 4 букв · открыто 1")
         assertSlot(1, 'К')
         compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsNotEnabled()
             .assertTextContains("Подсказка (−1, останется 0)")
@@ -354,7 +350,7 @@ class CampaignGameUiTest {
         val state = mutableStateOf(initial)
         compose.setContent {
             WordsTheme {
-                GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {},
+                GameScreen(state.value.withHintPanel(), { state.value = state.value.copy(input = it) }, {}, {}, {},
                     onToggleInputMode = { state.value = state.value.copy(inputMode = com.example.sostavslova.data.InputMode.KEYBOARD) })
             }
         }
@@ -381,7 +377,7 @@ class CampaignGameUiTest {
         val state = mutableStateOf(initial)
         compose.setContent {
             WordsTheme {
-                GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {},
+                GameScreen(state.value.withHintPanel(), { state.value = state.value.copy(input = it) }, {}, {}, {},
                     onToggleInputMode = { state.value = state.value.copy(inputMode = com.example.sostavslova.data.InputMode.KEYBOARD) })
             }
         }
@@ -402,7 +398,7 @@ class CampaignGameUiTest {
         val state = mutableStateOf(initial.copy(riddles = mapOf("riddles" to riddles)))
         compose.setContent {
             WordsTheme {
-                GameScreen(state.value, {}, {}, {}, {})
+                GameScreen(state.value.withHintPanel(), {}, {}, {}, {})
             }
         }
         compose.onNodeWithTag("game_riddle_preview").assertDoesNotExist()
@@ -452,7 +448,7 @@ class CampaignGameUiTest {
         val restoration = androidx.compose.ui.test.junit4.StateRestorationTester(compose)
         restoration.setContent {
             WordsTheme {
-                GameScreen(state.value, {}, {}, {}, {}, onCloseFinale = { toLevels ->
+                GameScreen(state.value.withHintPanel(), {}, {}, {}, {}, onCloseFinale = { toLevels ->
                     actions.add(toLevels)
                     state.value = state.value.copy(finaleSummary = null)
                 })
@@ -478,6 +474,14 @@ class CampaignGameUiTest {
         compose.onNodeWithTag("level_finale_dialog").assertDoesNotExist()
     }
 
+    @Test fun paidActionShowsBalanceAfterPurchase() {
+        val state = pending.copy(hintCost = 1, hintRemaining = 4).withHintPanel()
+        compose.setContent { WordsTheme { GameScreen(state, {}, {}, {}, {}) } }
+        compose.onNodeWithTag("game_hint_remaining").performScrollTo().assertTextEquals("Осталось подсказок: 4")
+        compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled()
+            .assertTextContains("Подсказка (−1, останется 3)")
+    }
+
     @Test fun hintTaskHeadingSelectedChoiceAndLockedExplanation() {
         val ladder = HintLadder(target = HintTarget("крот", "initial", TaskType.T2, 'к'))
         val hintState = HintState(ladder, preferredTaskId = "initial")
@@ -486,28 +490,35 @@ class CampaignGameUiTest {
         var selected: String? = "unchanged"
         compose.setContent {
             WordsTheme {
-                GameScreen(state.value, {}, {}, {}, {}, onHintTask = { selected = it })
+                GameScreen(state.value.withHintPanel(), {}, {}, {}, {}, onHintTask = { selected = it })
             }
         }
-        compose.onNodeWithTag("game_hint").performScrollTo()
+        val change = compose.onNodeWithTag("game_hint_task_change")
+        change.performScrollTo().assertContentDescriptionEquals("Сменить задание для подсказки")
         compose.onNodeWithTag("game_hint_task")
             .assertTextEquals("Подсказка для задания: Слова на букву К")
-        compose.onNodeWithTag("game_hint_task_initial")
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
+        compose.onNodeWithTag("game_hint_task_dialog").assertDoesNotExist()
+        change.performClick()
+        compose.onNodeWithTag("game_hint_task_dialog").assertExists()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Сменить задание"))
+        compose.onNodeWithTag("game_hint_task_option_initial").performScrollTo()
+            .assertIsSelected()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, androidx.compose.ui.semantics.Role.RadioButton))
             .assertContentDescriptionEquals("Подсказка для задания Слова на букву К")
-        compose.onNodeWithTag("game_hint_task_auto")
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false))
+        compose.onNodeWithTag("game_hint_task_option_auto").performScrollTo().assertIsNotSelected()
             .assertContentDescriptionEquals("Подсказка для задания, выбранного автоматически")
-        compose.onNodeWithTag("game_hint_task_initial").performClick()
+        compose.onNodeWithTag("game_hint_task_option_initial").performScrollTo().performClick()
         assertEquals("initial", selected)
-        compose.onNodeWithTag("game_hint_task_auto").performClick()
+        compose.onNodeWithTag("game_hint_task_dialog").assertDoesNotExist()
+        change.performScrollTo().performClick()
+        compose.onNodeWithTag("game_hint_task_option_auto").performScrollTo().performClick()
         assertNull(selected)
+        compose.onNodeWithTag("game_hint_task_dialog").assertDoesNotExist()
         compose.runOnIdle {
             state.value = state.value.copy(campaignLevel = state.value.campaignLevel?.copy(
                 hints = hintState.copy(ladder = ladder.copy(paidSteps = 1))))
         }
-        compose.onNodeWithTag("game_hint_task_auto").assertIsNotEnabled()
-        compose.onNodeWithTag("game_hint_task_initial").assertIsNotEnabled()
+        change.assertIsNotEnabled()
         compose.onNodeWithTag("game_hint_task_locked").assertTextEquals(
             "Задание фиксируется после покупки подсказки. Найдите слово, чтобы выбрать другое.")
         compose.onNodeWithTag("game_hint_task")
@@ -518,20 +529,22 @@ class CampaignGameUiTest {
             state.value = pending.copy(game = foundGame, campaignLevel = CurrentCampaignLevel(
                 level.level, foundGame, hints = hintState.copy(ladder = ladder.copy(paidSteps = 1))))
         }
-        compose.onNodeWithTag("game_hint_task").assertDoesNotExist()
+        compose.onNodeWithTag("game_hint_task").assertTextEquals("Подсказка для задания: Авто")
         compose.onNodeWithTag("game_hint_task_locked").assertDoesNotExist()
-        compose.onNodeWithTag("game_hint_task_count").assertIsEnabled()
-        compose.onNodeWithTag("game_hint_task_auto").assertIsEnabled()
+        change.performScrollTo().assertIsEnabled().performClick()
+        compose.onNodeWithTag("game_hint_task_option_count").performScrollTo().assertIsEnabled()
+        compose.onNodeWithTag("game_hint_task_option_auto").performScrollTo().assertIsEnabled().assertIsSelected()
     }
 
-    @Test fun hintTargetWithoutTaskHasNoHeadingButKeepsTheChooser() {
+    @Test fun hintTargetWithoutTaskUsesAutoHeadingAndKeepsTheChooser() {
         val level = checkNotNull(pending.campaignLevel)
         val state = pending.copy(campaignLevel = level.copy(hints = HintState(
             HintLadder(target = HintTarget("чемпион")))))
-        compose.setContent { WordsTheme { GameScreen(state, {}, {}, {}, {}) } }
+        compose.setContent { WordsTheme { GameScreen(state.withHintPanel(), {}, {}, {}, {}) } }
         compose.onNodeWithTag("game_hint").performScrollTo()
-        compose.onNodeWithTag("game_hint_task").assertDoesNotExist()
-        compose.onNodeWithTag("game_hint_task_auto").assertExists()
+        compose.onNodeWithTag("game_hint_task").assertTextEquals("Подсказка для задания: Авто")
+        compose.onNodeWithTag("game_hint_task_change").performScrollTo().performClick()
+        compose.onNodeWithTag("game_hint_task_option_auto").assertIsSelected()
     }
 
     @Test fun levelWithOnlyOneTaskHasNoHintTaskChoice() {
@@ -541,11 +554,20 @@ class CampaignGameUiTest {
         val state = GameUiState(loading = false, game = game,
             campaignLevel = CurrentCampaignLevel(level, game), totalLevels = 15,
             statistics = game.statistics())
-        compose.setContent { WordsTheme { GameScreen(state, {}, {}, {}, {}) } }
+        compose.setContent { WordsTheme { GameScreen(state.withHintPanel(), {}, {}, {}, {}) } }
         compose.onNodeWithTag("game_hint").performScrollTo()
-        compose.onNodeWithTag("game_hint_task").assertDoesNotExist()
-        compose.onNodeWithTag("game_hint_task_auto").assertDoesNotExist()
-        compose.onNodeWithTag("game_hint_task_choose").assertDoesNotExist()
+        compose.onNodeWithTag("game_hint_task").assertTextEquals("Подсказка для задания: Авто")
+        compose.onNodeWithTag("game_hint_task_change").assertDoesNotExist()
+        compose.onNodeWithTag("game_hint_task_dialog").assertDoesNotExist()
+    }
+
+    @Test fun levelWithoutEligibleTasksHasNoHintTaskChoice() {
+        val found = pendingGame.copy(found = pendingGame.allWords)
+        val state = pending.copy(game = found,
+            campaignLevel = checkNotNull(pending.campaignLevel).copy(game = found))
+        compose.setContent { WordsTheme { GameScreen(state.withHintPanel(), {}, {}, {}, {}) } }
+        compose.onNodeWithTag("game_hint").performScrollTo()
+        compose.onNodeWithTag("game_hint_task_change").assertDoesNotExist()
     }
 
     @Test fun hintTaskChoicesWrapAt320To411DpAndBothFontScales() {
@@ -560,48 +582,47 @@ class CampaignGameUiTest {
             CompositionLocalProvider(LocalDensity provides Density(base.density, current.value.second)) {
                 WordsTheme {
                     Box(Modifier.width(current.value.first.dp).background(Color.White)) {
-                        GameScreen(layoutState, {}, {}, {}, {})
+                        GameScreen(layoutState.withHintPanel(), {}, {}, {}, {})
                     }
                 }
             }
         }
-        val tags = listOf("game_hint_task", "game_hint_task_auto", "game_hint_task_count",
-            "game_hint_task_initial", "game_hint_task_long", "game_hint_task_riddles",
-            "game_hint_task_ending", "game_hint_task_theme", "game_hint_task_contains")
         for (case in cases) {
             compose.runOnIdle { current.value = case }
             compose.waitForIdle()
-            compose.onNodeWithTag("game_hint_task_auto").performScrollTo()
+            val change = compose.onNodeWithTag("game_hint_task_change").performScrollTo()
             val context = "${case.first}dp, fontScale=${case.second}"
-            assertTrue("$context: горизонтальная прокрутка подсказки",
+            assertTrue("$context: прокрутка внутри панели",
                 compose.onAllNodes(hasScrollAction() and hasAnyAncestor(hasTestTag("game_hint")),
                     useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
-            for (tag in tags) {
-                val chip = compose.onNodeWithTag(tag, useUnmergedTree = true)
-                chip.performScrollTo()
-                compose.waitForIdle()
-                val bounds = chip.fetchSemanticsNode().boundsInRoot
+            for (tag in listOf("game_hint_task", "game_hint_task_change", "game_hint_caption")) {
+                val element = compose.onNodeWithTag(tag).performScrollTo()
+                val bounds = element.fetchSemanticsNode().boundsInRoot
                 val well = compose.onNodeWithTag("game_hint").fetchSemanticsNode().boundsInRoot
-                assertTrue("$context: $tag выходит слева: $bounds vs $well",
-                    bounds.left >= well.left - 1f)
-                assertTrue("$context: $tag выходит справа: $bounds vs $well",
-                    bounds.right <= well.right + 1f)
+                assertTrue("$context: $tag выходит слева", bounds.left >= well.left - 1f)
+                assertTrue("$context: $tag выходит справа", bounds.right <= well.right + 1f)
             }
             for (node in compose.onAllNodes(hasClickAction() and hasAnyAncestor(hasTestTag("game_hint")),
                 useUnmergedTree = true).fetchSemanticsNodes()) {
                 val minimum = 48f * compose.density.density - 1f
-                assertTrue("$context: узкая цель ${node.size}",
+                assertTrue("$context: малая цель ${node.size}",
                     node.size.width >= minimum && node.size.height >= minimum)
             }
-            for (node in compose.onAllNodes(
-                SemanticsMatcher.keyIsDefined(SemanticsProperties.Text) and
-                    hasAnyAncestor(hasTestTag("game_hint")),
-                useUnmergedTree = true,
-            ).fetchSemanticsNodes()) {
-                val layouts = mutableListOf<TextLayoutResult>()
-                node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
-                layouts.forEach { assertTextLayoutFits(it, context) }
+            assertTextFits()
+            change.performScrollTo().performClick()
+            for (id in listOf("auto", "count", "initial", "long", "riddles", "ending", "theme", "contains")) {
+                val option = compose.onNodeWithTag("game_hint_task_option_$id").performScrollTo()
+                val node = option.fetchSemanticsNode()
+                val bounds = node.boundsInRoot
+                val dialog = compose.onNodeWithTag("game_hint_task_dialog").fetchSemanticsNode().boundsInRoot
+                assertTrue("$context: $id выходит слева", bounds.left >= dialog.left - 1f)
+                assertTrue("$context: $id выходит справа", bounds.right <= dialog.right + 1f)
+                val minimum = 48f * compose.density.density - 1f
+                assertTrue("$context: малая цель $id", node.size.width >= minimum && node.size.height >= minimum)
+                assertTextFits()
             }
+            compose.onNodeWithTag("game_hint_task_option_auto").performScrollTo().performClick()
+            compose.onNodeWithTag("game_hint_task_dialog").assertDoesNotExist()
         }
     }
 
@@ -625,7 +646,7 @@ class CampaignGameUiTest {
             countMinLength = 5,
             explanations = listOf(TaskType.T1, TaskType.T2),
         )
-        compose.setContent { WordsTheme { GameScreen(state, {}, {}, {}, {}) } }
+        compose.setContent { WordsTheme { GameScreen(state.withHintPanel(), {}, {}, {}, {}) } }
         compose.onNodeWithText("Набирайте слова от 5 букв. Каждое задание даёт одну звезду; для прохождения подходят любые задания до порога.")
             .assertIsDisplayed()
         compose.onNodeWithText("В задании «на букву» учитываются слова от 5 букв с заданной первой буквой.")

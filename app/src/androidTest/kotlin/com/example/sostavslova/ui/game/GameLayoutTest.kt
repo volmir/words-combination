@@ -36,6 +36,54 @@ class GameLayoutTest {
 
     private data class SlotsCase(val width: Int, val fontScale: Float, val pattern: String)
 
+    @Test fun compactHintCaptionAndControlsFitNarrowScreensAtDoubleFontScale() {
+        data class Case(val width: Int, val scale: Float, val open: Int)
+        val cases = listOf(320, 360, 411).flatMap { width ->
+            listOf(1f, 2f).flatMap { scale -> listOf(0, 1, 2, 4).map { Case(width, scale, it) } }
+        }
+        fun snapshot(case: Case): GameUiState {
+            val game = GameState.start("картотека", WordIndex(listOf("крот", "торт")))
+            var current = CurrentCampaignLevel(CampaignLevel(1, game.word, 1, 1,
+                listOf(CampaignTask.T1("count", 2), CampaignTask.T4("riddle", listOf("крот")))), game)
+            repeat(case.open) { current = HintRules.next(current, random = kotlin.random.Random(17)).state }
+            val panel = HintPanelModel.of(current, HintRules.nextCost(current), HintRules.budget(current).remaining, 4)
+            return GameUiState(loading = false, game = game, campaignLevel = current, hintPanel = panel)
+        }
+        val current = mutableStateOf(cases.first() to snapshot(cases.first()))
+        compose.setContent {
+            val (case, state) = current.value
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, case.scale)) {
+                WordsTheme {
+                    Box(Modifier.width(case.width.dp)) { GameScreen(state, {}, {}, {}, {}) }
+                }
+            }
+        }
+        for (case in cases) {
+            compose.runOnIdle { current.value = case to snapshot(case) }
+            compose.onNodeWithTag("game_hint_caption").performScrollTo()
+                .assertTextEquals(if (case.open == 0) "Подсказка ещё не открыта"
+                    else "Слово из 4 букв · открыто ${case.open}")
+            val change = compose.onNodeWithTag("game_hint_task_change").performScrollTo()
+            if (case.open >= 2) change.assertIsNotEnabled() else change.assertIsEnabled()
+            val changeNode = change.fetchSemanticsNode()
+            val heading = compose.onNodeWithTag("game_hint_task").fetchSemanticsNode()
+            assertTrue("$case: кнопка должна быть под заголовком",
+                changeNode.positionInRoot.y >= heading.positionInRoot.y + heading.size.height - 1f)
+            compose.onNodeWithTag("game_hint_button").performScrollTo()
+            checkLayout()
+            assertTrue("$case: прокрутка внутри панели",
+                compose.onAllNodes(hasScrollAction() and hasAnyAncestor(hasTestTag("game_hint")),
+                    useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
+            val panel = compose.onNodeWithTag("game_hint").fetchSemanticsNode().boundsInRoot
+            compose.onAllNodes(hasAnyAncestor(hasTestTag("game_hint")), useUnmergedTree = true)
+                .fetchSemanticsNodes().forEach { node ->
+                    assertTrue("$case: элемент обрезан по горизонтали", node.positionInRoot.x >= panel.left - 1f &&
+                        node.positionInRoot.x + node.size.width <= panel.right + 1f)
+                }
+        }
+    }
+
     @Test fun inputControlsAndTilesFitAllWidthsAndFontScalesInBothModes() {
         data class Case(val width: Int, val scale: Float, val word: String,
             val mode: com.example.sostavslova.data.InputMode)
@@ -85,7 +133,8 @@ class GameLayoutTest {
         assertTrue("Stress fixture must contain at least 600 words", game.foundCount >= 600)
         val snapshot = GameUiState(loading = false, game = game, statistics = game.statistics(),
             countMinLength = campaign.countMinLength,
-            totalLevels = campaign.levels.size, campaignLevel = CurrentCampaignLevel(level, game))
+            totalLevels = campaign.levels.size, campaignLevel = CurrentCampaignLevel(level, game),
+            hintPanel = HintPanelModel.of(CurrentCampaignLevel(level, game), null, 0, campaign.countMinLength))
         compose.setContent {
             val base = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(base.density, 2f)) {

@@ -4,7 +4,7 @@ import com.example.sostavslova.ui.components.AlertType
 import com.example.sostavslova.ui.components.alertColors
 import com.example.sostavslova.ui.components.starTint
 import com.example.sostavslova.ui.components.thresholdMarkerColor
-import com.example.sostavslova.ui.game.hintTaskChipColors
+import com.example.sostavslova.ui.game.hintTaskOptionColors
 import com.example.sostavslova.ui.levels.levelCardBackground
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -43,19 +43,19 @@ class PaletteApplicationTest {
     }
 
     @Test
-    fun hintTaskChipColors_distinguishSelectedDisabledAndNormalStatesInBothThemes() {
+    fun hintTaskOptionColors_distinguishSelectedDisabledAndNormalStatesInBothThemes() {
         for ((theme, palette) in palettes()) {
-            val selected = hintTaskChipColors(palette, selected = true, enabled = true)
+            val selected = hintTaskOptionColors(palette, selected = true, enabled = true)
             assertEquals("$theme selected container", palette.primary, selected.first)
             assertEquals("$theme selected content", palette.background, selected.second)
             assertEquals("$theme selected border", palette.primary, selected.third)
 
-            val disabled = hintTaskChipColors(palette, selected = false, enabled = false)
+            val disabled = hintTaskOptionColors(palette, selected = false, enabled = false)
             assertEquals("$theme disabled container", palette.levelLockedBackground, disabled.first)
             assertEquals("$theme disabled content", palette.defaultButtonText, disabled.second)
             assertEquals("$theme disabled border", palette.wellBorder, disabled.third)
 
-            val normal = hintTaskChipColors(palette, selected = false, enabled = true)
+            val normal = hintTaskOptionColors(palette, selected = false, enabled = true)
             assertEquals("$theme normal container", palette.background, normal.first)
             assertEquals("$theme normal content", palette.text, normal.second)
             assertEquals("$theme normal border", palette.defaultButtonBorder, normal.third)

@@ -163,6 +163,12 @@ class MainScenariosUiTest {
         compose.waitUntil(10_000) {
             compose.onAllNodesWithTag("game_hint_pattern").fetchSemanticsNodes().isNotEmpty()
         }
+        val hints = container.progressRepository.observeCampaignProgress().first().levels.getValue(source).hints
+        val pattern = requireNotNull(hints.ladder.shown.last().text)
+        compose.onNodeWithTag("game_hint_caption")
+            .assertTextEquals("Слово из ${pattern.length} ${com.example.sostavslova.core.RussianPlural.form(pattern.length, "буквы", "букв", "букв")} · открыто ${pattern.count { it != '_' }}")
+        compose.onNodeWithTag("game_hint_task_change").assertDoesNotExist() // На первом уровне одно задание.
+        compose.onNodeWithTag("game_hint_task_dialog").assertDoesNotExist()
         val hintNode = compose.onNodeWithTag("game_hint").performScrollTo()
         hintNode.assertIsDisplayed()
 
