@@ -13,6 +13,10 @@ object WordsColors {
     val defaultButton = Color(0xFFFFFFFF)
     val defaultButtonBorder = Color(0xFFCCCCCC)
     val defaultButtonText = Color(0xFF333333)
+    /** Рамка пустой ячейки подсказки: контраст на белом 3,95:1 (порог 3:1). */
+    val slotEmptyBorder = Color(0xFF808080)
+    /** Буква открытой ячейки: контраст на 12% primary подложке 5,27:1 (порог 4,5:1). */
+    val slotOpenText = Color(0xFF286090)
     val dangerButton = Color(0xFFD9534F)
     val successButton = Color(0xFF5CB85C)
     val levelAvailableBackground = Color(0xFFFFFFFF)
@@ -60,6 +64,8 @@ data class WordsPalette(
     val defaultButton: Color,
     val defaultButtonBorder: Color,
     val defaultButtonText: Color,
+    val slotEmptyBorder: Color,
+    val slotOpenText: Color,
     val dangerButton: Color,
     val successButton: Color,
     val levelAvailableBackground: Color,
@@ -103,6 +109,8 @@ val LightWordsPalette = WordsPalette(
     defaultButton = WordsColors.defaultButton,
     defaultButtonBorder = WordsColors.defaultButtonBorder,
     defaultButtonText = WordsColors.defaultButtonText,
+    slotEmptyBorder = WordsColors.slotEmptyBorder,
+    slotOpenText = WordsColors.slotOpenText,
     dangerButton = WordsColors.dangerButton,
     successButton = WordsColors.successButton,
     levelAvailableBackground = WordsColors.levelAvailableBackground,
@@ -146,6 +154,10 @@ val DarkWordsPalette = WordsPalette(
     defaultButton = Color(0xFF2C2C2C),
     defaultButtonBorder = Color(0xFF757575),
     defaultButtonText = Color(0xFFE0E0E0),
+    /** Контраст на #121212: 4,07:1 (порог 3:1). */
+    slotEmptyBorder = Color(0xFF757575),
+    /** Контраст на подложке открытой ячейки: 5,91:1 (порог 4,5:1). */
+    slotOpenText = Color(0xFF8AB4F8),
     dangerButton = Color(0xFFEF6A65),
     successButton = Color(0xFF81C784),
     levelAvailableBackground = Color(0xFF2C2C2C),

@@ -53,6 +53,8 @@ class WordsThemePaletteTest {
         assertEquals(WordsColors.defaultButton, LightWordsPalette.defaultButton)
         assertEquals(WordsColors.defaultButtonBorder, LightWordsPalette.defaultButtonBorder)
         assertEquals(WordsColors.defaultButtonText, LightWordsPalette.defaultButtonText)
+        assertEquals(WordsColors.slotEmptyBorder, LightWordsPalette.slotEmptyBorder)
+        assertEquals(WordsColors.slotOpenText, LightWordsPalette.slotOpenText)
         assertEquals(WordsColors.dangerButton, LightWordsPalette.dangerButton)
         assertEquals(WordsColors.successButton, LightWordsPalette.successButton)
         assertEquals(WordsColors.levelAvailableBackground, LightWordsPalette.levelAvailableBackground)

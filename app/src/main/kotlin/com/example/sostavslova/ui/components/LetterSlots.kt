@@ -58,6 +58,7 @@ fun LetterSlots(
 ) {
     if (pattern.isEmpty()) return
     val description = HintText.slotsDescription(pattern)
+    val palette = LocalWordsPalette.current
     BoxWithConstraints(
         modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = description },
     ) {
@@ -81,10 +82,10 @@ fun LetterSlots(
                         Box(
                             Modifier.size(cell)
                                 .background(
-                                    if (open) LocalWordsPalette.current.primary.copy(alpha = 0.12f) else LocalWordsPalette.current.background,
+                                    if (open) palette.primary.copy(alpha = 0.12f) else palette.background,
                                     corner,
                                 )
-                                .border(2.dp, if (open) LocalWordsPalette.current.primary else LocalWordsPalette.current.defaultButtonBorder, corner)
+                                .border(2.dp, if (open) palette.primary else palette.slotEmptyBorder, corner)
                                 .testTag("${slotTagPrefix}_${cellIndex + 1}"),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -92,7 +93,7 @@ fun LetterSlots(
                                 Text(
                                     letter,
                                     modifier = Modifier.fillMaxWidth(),
-                                    color = LocalWordsPalette.current.primary,
+                                    color = palette.slotOpenText,
                                     fontSize = fontSize,
                                     lineHeight = fontSize,
                                     fontWeight = FontWeight.Bold,
