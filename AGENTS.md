@@ -35,7 +35,7 @@ CC0-1.0. Все 39 авторских текстов и документы пр�
 
 ```
 core/   Alphabet (нормализация, ё→е), WordIndex (поиск по мультимножеству букв), GameState,
-        Levels, RussianPlural; тесты и TestData (данные тесты берут из ../data)
+        Campaign, Levels (совместимость v1), RussianPlural; тесты и TestData (данные тесты берут из ../data)
 app/    data/    WordRepository, LevelsRepository, ProgressRepository (DataStore),
                  RiddlesRepository, JsonRiddlesRepository
         di/      AppContainer
@@ -93,6 +93,11 @@ legal/  лицензии и инвентарь библиотек (копиру�
   библиотек независимы от CC0 загадок. Все notices и обязательства сохраняются.
 * Runtime не имеет справочного словаря толкований. T6 использует список слов
   задания из campaign; буквенные подсказки и их цены задаёт `:core`.
+
+В `HintWordData` остаются `familiar`, `knownPositions` и используемые аудитами
+`definition`, `forms`, `related`. Старые `HintStage` нужны декодированию сохранений.
+Основания сохранения инструментов определений и удаления неиспользуемого кода —
+[аудит CLEAN-21](docs/CLEAN_21_REPORT.md).
 
 ## 6. Тесты и качество
 

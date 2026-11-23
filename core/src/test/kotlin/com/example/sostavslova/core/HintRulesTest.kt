@@ -111,7 +111,6 @@ class HintRulesTest {
     private val words = listOf("кот", "крот", "торт", "рост", "рот", "ток", "нота", "елка", "колея", "станция")
     private val index = WordIndex(words)
     private val content = mapOf("станция" to HintWordData(
-        category = HintCategory("transport", "Транспорт"),
         definition = "Место остановки поездов для посадки пассажиров",
         familiar = true,
     ))
@@ -224,7 +223,7 @@ class HintRulesTest {
         val current = start(CampaignTask.T4("riddle", listOf("станция")))
         val empty = next(current, emptyMap())
         for (data in listOf(content, mapOf("станция" to HintWordData(
-            category = HintCategory("transport", "Станция"), definition = "станция")))) {
+            definition = "станция")))) {
             assertEquals(empty.state.hints, next(current, data).state.hints)
         }
     }
@@ -331,8 +330,8 @@ class HintRulesTest {
         assertEquals("count", target.taskId)
     }
 
-    @Test fun fallbackUsesBuildableUnfoundWordsAndFamiliarityBeforeLengthWithoutLabels() {
-        val data = mapOf("кот" to HintWordData(familiar = true, undesirableLabels = setOf("obsolete")),
+    @Test fun fallbackUsesBuildableUnfoundWordsAndFamiliarityBeforeLength() {
+        val data = mapOf("кот" to HintWordData(familiar = true),
             "крот" to HintWordData(familiar = true), "торт" to HintWordData(familiar = false))
         val current = start(answers = listOf("кот", "крот", "торт", "молоко", source))
         val result = next(current, data)
@@ -453,9 +452,8 @@ class HintRulesTest {
         assertEquals("ст_____", pattern.step?.text)
     }
 
-    @Test fun relatedCategoryAndUnusableDefinitionAreSkippedWithoutCost() {
-        val data = mapOf("кот" to HintWordData(category = HintCategory("animals", "Кошачьи"),
-            definition = "То же, что кот", related = setOf("кошка")))
+    @Test fun relatedWordsAndUnusableDefinitionAreSkippedWithoutCost() {
+        val data = mapOf("кот" to HintWordData(definition = "То же, что кот", related = setOf("кошка")))
         val result = next(start(CampaignTask.T4("riddle", listOf("кот"))), data)
         assertEquals(HintStage.FIRST_LETTER, result.step?.stage)
         assertEquals(1, result.state.hints.shownSteps)

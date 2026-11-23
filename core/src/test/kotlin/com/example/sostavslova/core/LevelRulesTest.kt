@@ -2,7 +2,6 @@ package com.example.sostavslova.core
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class LevelRulesTest {
@@ -46,18 +45,6 @@ class LevelRulesTest {
         assertEquals(LevelProgress(completed = true, wordsTask = false, lettersTask = true), p1)
         val merged = p1 merge LevelRules.evaluate(l, emptyList())
         assertEquals(2, merged.stars)
-        assertEquals(0, LevelRules.remainingToComplete(l, listOf("тор", "тот")))
-        assertEquals(1, LevelRules.remainingToComplete(l, listOf("тор")))
     }
 
-    @Test
-    fun unlockSequentially() {
-        val p = mutableMapOf<String, LevelProgress>()
-        assertTrue(LevelRules.isUnlocked(levels, p, 0))
-        assertFalse(LevelRules.isUnlocked(levels, p, 1))
-        p[levels[0].word] = LevelProgress(completed = true)
-        assertTrue(LevelRules.isUnlocked(levels, p, 1))
-        assertFalse(LevelRules.isUnlocked(levels, p, 2))
-        assertFalse(LevelRules.isUnlocked(levels, p, 999))
-    }
 }

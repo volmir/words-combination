@@ -45,17 +45,4 @@ object LevelRules {
         lettersTask = lettersCount(level, found) >= level.letterCount,
     )
 
-    /** Сколько слов осталось до прохождения уровня (0, если пройден). */
-    fun remainingToComplete(level: Level, found: List<String>): Int =
-        (level.answers - found.size).coerceAtLeast(0)
-
-    /**
-     * Первый уровень доступен всегда; каждый следующий - после прохождения (первая звезда) предыдущего.
-     * [progress] - ключ: слово уровня.
-     */
-    fun isUnlocked(levels: List<Level>, progress: Map<String, LevelProgress>, position: Int): Boolean {
-        if (position <= 0) return true
-        if (position >= levels.size) return false
-        return progress[levels[position - 1].word]?.completed == true
-    }
 }

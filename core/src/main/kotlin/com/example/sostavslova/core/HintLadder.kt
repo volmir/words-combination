@@ -4,17 +4,12 @@ import kotlin.random.Random
 
 enum class HintStage { THEME, DEFINITION, LENGTH, FIRST_LETTER, PATTERN, ANSWER }
 
-/** Ключ темы отделён от проверяемого текста: ключ не показывается игроку. */
-data class HintCategory(val key: String, val text: String)
-
 /** Необязательные локальные метаданные; ключи карты слов уже нормализованы. */
 data class HintWordData(
-    val category: HintCategory? = null,
     val definition: String? = null,
     val forms: Set<String> = emptySet(),
     val related: Set<String> = emptySet(),
     val familiar: Boolean = false,
-    val undesirableLabels: Set<String> = emptySet(),
     val knownPositions: Set<Int> = emptySet(),
 )
 
