@@ -74,6 +74,8 @@ import com.example.sostavslova.ui.components.LetterTiles
 import com.example.sostavslova.ui.components.Well
 import com.example.sostavslova.ui.components.starTint
 import com.example.sostavslova.ui.components.FoundWords
+import com.example.sostavslova.ui.components.AchievementStrip
+import com.example.sostavslova.core.LevelCompleteSummary
 import com.example.sostavslova.ui.components.WordsDialog
 import com.example.sostavslova.ui.theme.LocalWordsPalette
 import com.example.sostavslova.ui.theme.WordsControlShape
@@ -113,7 +115,7 @@ fun GameRoute(onOpenLevel: (Int) -> Unit, onReturnLevels: (Int) -> Unit) {
     GameScreen(state, model::onInputChanged, model::onSubmit, model::onHint,
         model::onRetry, notice, model::onDismissExplanations,
         model::onCloseFinale, model::onNextLevel, model::onHintTask,
-        model::onTileTap, model::onBackspace, model::onClearInput, model::onShuffle, model::onToggleInputMode)
+        model::onTileTap, model::onBackspace, model::onClearInput, model::onShuffle, model::onToggleInputMode, model::onCloseLevelComplete)
 }
 
 @Composable
@@ -133,6 +135,7 @@ fun GameScreen(
     onClearInput: () -> Unit = {},
     onShuffle: () -> Unit = {},
     onToggleInputMode: () -> Unit = {},
+    onCloseLevelComplete: (Boolean) -> Unit = {},
 ) {
     Column(
         Modifier.fillMaxSize().testTag("game_screen")
@@ -250,12 +253,16 @@ fun GameScreen(
             }
         }
     }
+    state.levelComplete?.takeIf { state.finaleSummary == null }?.let { event ->
+        LevelCompleteDialog(event.summary, { onCloseLevelComplete(false) }, { onCloseLevelComplete(true) })
+    }
     state.finaleSummary?.let { summary ->
         WordsDialog(stringResource(R.string.game_finale_title), { onCloseFinale(false) }) {
             Column(Modifier.testTag("level_finale_dialog"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.game_finale_stars, summary.stars, summary.maxStars), style = MaterialTheme.typography.bodyLarge)
                 Text(stringResource(R.string.game_finale_words, summary.foundWords, RussianPlural.words(summary.foundWords)), style = MaterialTheme.typography.bodyLarge)
                 Text(stringResource(R.string.game_finale_hints, summary.shownHintSteps), style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.game_finale_achievements, state.finaleAchievements), style = MaterialTheme.typography.bodyLarge)
                 TextButton({ onCloseFinale(false) }, enabled = !state.finaleClosing) {
                     Text(stringResource(R.string.game_finale_continue))
                 }
@@ -267,10 +274,35 @@ fun GameScreen(
             }
         }
     }
-    if (state.explanations.isNotEmpty() && !state.loading && state.finaleSummary == null) {
+    if (state.explanations.isNotEmpty() && !state.loading && state.finaleSummary == null && state.levelComplete == null) {
         WordsDialog(stringResource(R.string.game_explanations), onDismissExplanations) {
             state.explanations.forEach { Text(explanationText(it, state.countMinLength), style = MaterialTheme.typography.bodyLarge) }
             CloseDialogButton(onDismissExplanations)
+        }
+    }
+}
+
+/** Вертикальные кнопки и прокрутка WordsDialog сохраняют доступность при большом шрифте. */
+@Composable
+private fun LevelCompleteDialog(summary: LevelCompleteSummary, onStay: () -> Unit, onNext: () -> Unit) {
+    WordsDialog(stringResource(R.string.level_complete_title, summary.levelNumber), onStay,
+        Modifier.testTag("level_complete_dialog"), titleTag = "level_complete_title") {
+        Text(summary.word, style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.level_complete_stars, summary.stars, summary.maxStars),
+            Modifier.testTag("level_complete_stars"), style = MaterialTheme.typography.bodyLarge)
+        if (summary.allStars) Text(stringResource(R.string.level_complete_all_stars), style = MaterialTheme.typography.bodyLarge)
+        AchievementStrip(summary.achievements, summary.achievements, Modifier.fillMaxWidth(),
+            iconTagPrefix = "level_complete_achievement", highlightedAchievements = summary.newAchievements)
+        Text(stringResource(R.string.level_complete_achievements, summary.achievements.size, summary.availableAchievements.size),
+            Modifier.testTag("level_complete_achievements"), style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.level_complete_words, summary.foundWords, summary.totalWords), style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.level_complete_hints, summary.hintsUsed), style = MaterialTheme.typography.bodyLarge)
+        if (summary.hasNextLevel) TextButton(onNext,
+            Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("level_complete_next")) {
+            Text(stringResource(R.string.level_complete_next))
+        }
+        TextButton(onStay, Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("level_complete_stay")) {
+            Text(stringResource(R.string.level_complete_stay))
         }
     }
 }

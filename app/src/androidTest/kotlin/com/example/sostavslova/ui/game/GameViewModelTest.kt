@@ -86,6 +86,41 @@ class GameViewModelTest {
         assertEquals(awardMessage(count, nextLevel, achievements), message)
     }
 
+    @Test fun levelCompleteIsRetainedUntilDismissedAndDoesNotRepeatOrDuplicateBanner() = runTest {
+        val owner = object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
+        val model = model(retainedOwner = owner)
+        model.ready()
+        val completed = model.answer("карта")
+        val event = requireNotNull(completed.levelComplete)
+        assertEquals(1, event.summary.levelNumber)
+        assertEquals(2, event.summary.stars)
+        assertTrue(LevelAchievement.NO_HINTS in event.summary.newAchievements)
+        assertFalse(completed.canPlay)
+        assertNull(completed.message)
+        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
+        // Тот же ViewModelStore, как при повороте Activity.
+        assertSame(model, model(retainedOwner = owner))
+        withContext(Dispatchers.Main) { repeat(3) { model.onGameOpened() } }
+        assertEquals(event, model.uiState.value.levelComplete)
+        withContext(Dispatchers.Main) { model.onCloseLevelComplete(false) }
+        assertTrue(model.ready().canPlay)
+        assertNull(model.uiState.value.levelComplete)
+        assertNull(model.answer("КАРТА").levelComplete)
+        assertNull(model.answer("крот").levelComplete)
+        assertNull(model().ready().levelComplete)
+    }
+
+    @Test fun levelCompleteNextNavigatesToCommittedNextLevelOnlyOnce() = runTest {
+        val model = model()
+        model.ready()
+        assertNotNull(model.answer("карта").levelComplete)
+        withContext(Dispatchers.Main) { repeat(3) { model.onCloseLevelComplete(true) } }
+        val state = model.await { it.nextLevelNavigation != null }
+        assertEquals(2, state.nextLevelNavigation)
+        assertNull(state.levelComplete)
+        assertEquals(2, model(SavedStateHandle(mapOf("index" to "2"))).ready().campaignLevel?.level?.number)
+    }
+
     @Test fun tileTapsUseAvailableLettersAndBackspaceAndLongPressReleaseThem() = runTest {
         val model = model()
         val ready = model.ready()
@@ -157,6 +192,7 @@ class GameViewModelTest {
         assertEquals(2, opened.nextLevelNumber)
         assertEquals(2, opened.campaignLevel?.completedTaskIds?.size)
         assertTrue(requireNotNull(opened.campaignLevel).completedTaskIds.size < requireNotNull(opened.campaignLevel).level.maxStars)
+        withContext(Dispatchers.Main) { model.onCloseLevelComplete(false) }
         val extra = model.answer("крот")
         assertEquals(3, extra.campaignLevel?.completedTaskIds?.size)
         val saved = progress.observeCampaignProgress().first()
@@ -214,7 +250,9 @@ class GameViewModelTest {
             val committed = model.await { !it.busy && it.nextLevelNumber == 2 }
             assertEquals(listOf("карта"), committed.game?.found)
             assertEquals(2, progress.observeCampaignProgress().first().highestUnlockedLevel)
-            assertTrue(committed.canPlay)
+            assertNotNull(committed.levelComplete)
+            withContext(Dispatchers.Main) { model.onCloseLevelComplete(false) }
+            assertTrue(model.uiState.value.canPlay)
         } finally { release.complete(Unit) }
     }
 
@@ -232,6 +270,7 @@ class GameViewModelTest {
         val model = model(repository = ProgressRepository(wrapped), wordRepository = campaignWords,
             levelRepository = campaignLevels)
         model.ready(); model.answer("карта")
+        withContext(Dispatchers.Main) { model.onCloseLevelComplete(false) }
         val saved = progress.observeCampaignProgress().first()
         fail.set(true)
         withContext(Dispatchers.Main) { model.onInputChanged("Черновик"); model.onNextLevel() }
@@ -345,7 +384,9 @@ class GameViewModelTest {
             assertEquals(before, progress.observeCampaignProgress().first().levels)
         }
         // Пробелы по краям допустимы: корректное слово проверяется как обычно.
-        assertEquals(R.string.correct_answer, model.answer(" карта ").message?.text)
+        val accepted = model.answer(" карта ")
+        assertNull(accepted.message)
+        assertEquals(2, requireNotNull(accepted.levelComplete).summary.stars)
         assertEquals(listOf("карта"), progress.observeCampaignProgress().first().levels.getValue("картотека").found)
     }
 
@@ -397,14 +438,17 @@ class GameViewModelTest {
         assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
     }
 
-    @Test fun campaignAnswerWithStarAndOpenedLevelEmitsOneCombinedNotice() = runTest {
+    @Test fun campaignAnswerWithStarAndOpenedLevelShowsDialogInsteadOfNotice() = runTest {
         val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
         val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
         val model = model(wordRepository = campaignWords, levelRepository = campaignLevels)
         model.ready()
         val answered = model.answer("карта")
         assertEquals(setOf("initial", "long"), answered.campaignLevel?.completedTaskIds)
-        assertStarEvent(model.event(), 2, nextLevel = true, achievements = listOf(LevelAchievement.NO_HINTS))
+        assertEquals(2, requireNotNull(answered.levelComplete).summary.stars)
+        assertTrue(LevelAchievement.NO_HINTS in requireNotNull(answered.levelComplete).summary.newAchievements)
+        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
+        withContext(Dispatchers.Main) { model.onCloseLevelComplete(false) }
         assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
     }
 
@@ -424,6 +468,8 @@ class GameViewModelTest {
         assertEquals(R.string.all_words_found, model.event().text)
         assertTrue(checkNotNull(model.uiState.value.game).isFinished)
         assertNotNull(model.uiState.value.finaleSummary)
+        assertNull(model.uiState.value.levelComplete)
+        assertEquals(4, model.uiState.value.finaleAchievements)
         assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
     }
 
@@ -515,7 +561,10 @@ class GameViewModelTest {
         val found = model.await { !it.busy && target.word in it.game?.found.orEmpty() }
         assertTrue(checkNotNull(found.campaignLevel).hints.ladder.paidSteps > 0)
 
-        withContext(Dispatchers.Main) { model.onHintTask("count") }
+        withContext(Dispatchers.Main) {
+            model.onCloseLevelComplete(false)
+            model.onHintTask("count")
+        }
         val changed = model.await { !it.hintLoading && it.campaignLevel?.hints?.preferredTaskId == "count" }
         assertNull(changed.campaignLevel?.hints?.ladder?.target)
         assertEquals(paidUnits, checkNotNull(changed.campaignLevel).hints.paidUnits)
@@ -637,7 +686,10 @@ class GameViewModelTest {
         val handle = SavedStateHandle(mapOf("index" to "1"))
         val model = model(handle, wordRepository = campaignWords, levelRepository = campaignLevels)
         assertEquals("картотека", model.ready().game?.word)
-        assertEquals(R.string.correct_answer, model.answer("карта").message?.text)
+        val completed = model.answer("карта")
+        assertEquals(2, requireNotNull(completed.levelComplete).summary.stars)
+        assertNull(completed.message)
+        withContext(Dispatchers.Main) { model.onCloseLevelComplete(false) }
         val snapshot = progress.observeCampaignProgress().first()
         assertEquals(listOf("карта"), snapshot.levels.getValue("картотека").found)
         assertEquals(setOf("initial", "long"), snapshot.levels.getValue("картотека").completedTaskIds)
@@ -1001,7 +1053,7 @@ class GameViewModelTest {
         assertTrue(restored.riddles.getValue("riddle").single().solved)
     }
 
-    @Test fun oneCampaignAnswerWritesOnceAndEmitsOneCombinedStarAndUnlockNotice() = runTest {
+    @Test fun oneCampaignAnswerWritesOnceAndShowsOneCompleteDialog() = runTest {
         val writes = AtomicInteger()
         val counted = object : DataStore<Preferences> {
             override val data = store.data
@@ -1018,7 +1070,10 @@ class GameViewModelTest {
         val answered = model.answer("карта")
         assertEquals(1, writes.get())
         assertEquals(2, answered.campaignLevel?.completedTaskIds?.size)
-        assertStarEvent(model.event(), 2, nextLevel = true, achievements = listOf(LevelAchievement.NO_HINTS))
+        assertEquals(2, requireNotNull(answered.levelComplete).summary.stars)
+        assertTrue(LevelAchievement.NO_HINTS in requireNotNull(answered.levelComplete).summary.newAchievements)
+        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
+        withContext(Dispatchers.Main) { model.onCloseLevelComplete(false) }
         assertEquals(2, progress.observeCampaignProgress().first().highestUnlockedLevel)
         model.answer("КАРТА")
         withContext(Dispatchers.Main) { repeat(3) { model.onGameOpened() } }

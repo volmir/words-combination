@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sostavslova.R
 import com.example.sostavslova.core.Campaign
+import com.example.sostavslova.core.LevelCompleteSummary
 import com.example.sostavslova.core.LevelAchievement
 import com.example.sostavslova.core.CampaignSummary
 import com.example.sostavslova.core.CampaignTask
@@ -109,6 +110,8 @@ internal fun submissionClearsInput(result: AnswerResult): Boolean = when (result
 // Только безопасный текст и открытая часть слова; полного ответа в UI-модели загадки нет.
 data class RiddleUiState(val text: String, val solved: Boolean = false)
 
+data class LevelComplete(val summary: LevelCompleteSummary)
+
 data class GameUiState(
     val loading: Boolean = true,
     val loadError: Boolean = false,
@@ -118,6 +121,8 @@ data class GameUiState(
     val totalLevels: Int = 0,
     val finaleSummary: CampaignSummary? = null,
     val finaleClosing: Boolean = false,
+    val finaleAchievements: Int = 0,
+    val levelComplete: LevelComplete? = null,
     val taskProgress: List<TaskProgress> = emptyList(),
     val riddles: Map<String, List<RiddleUiState>> = emptyMap(),
     val explanations: List<TaskType> = emptyList(),
@@ -139,7 +144,7 @@ data class GameUiState(
     val nextLevelNavigation: Int? = null,
     @param:StringRes val levelsMessage: Int = 0,
 ) {
-    val canPlay: Boolean get() = game != null && !loading && !loadError && !busy && !hintLoading && !returnLevels && !navigatingNext && finaleSummary == null
+    val canPlay: Boolean get() = game != null && !loading && !loadError && !busy && !hintLoading && !returnLevels && !navigatingNext && finaleSummary == null && levelComplete == null
 }
 
 class GameViewModel(
@@ -223,6 +228,9 @@ class GameViewModel(
                                 completedTaskIds = snapshot.completedTaskIds.intersect(current.level.tasks.map { it.id }.toSet()),
                                 hints = snapshot.hints).let { HintRules.restore(it) }
                         }
+                        mutableState.update { it.copy(finaleAchievements = loadedCampaign.levels.sumOf { level ->
+                            savedCampaign.levels[level.word]?.achievements?.size ?: 0
+                        }) }
                         publishSession(restored.game, restored,
                             if (savedCampaign.finaleReached && !savedCampaign.finaleShown) {
                                 CampaignRules.summary(loadedCampaign, savedCampaign)
@@ -267,6 +275,13 @@ class GameViewModel(
 
     // Черновик живёт только пока открыт экран, даже если ViewModel пережила Activity.
     fun onScreenClosed() { mutableState.update { it.copy(input = "") } }
+
+    fun onCloseLevelComplete(openNext: Boolean) {
+        val event = uiState.value.levelComplete ?: return
+        if (uiState.value.busy) return
+        mutableState.update { it.copy(levelComplete = null) }
+        if (openNext && event.summary.hasNextLevel) onNextLevel()
+    }
 
     fun onNextLevel() {
         val before = uiState.value
@@ -388,8 +403,14 @@ class GameViewModel(
                 if (uiState.value.input == raw && submissionClearsInput(submission.result)) {
                     mutableState.update { it.copy(input = "") }
                 }
-                mutableState.update { it.copy(message = message) }
-                awardMessage(
+                val complete = withContext(computationDispatcher) {
+                    LevelCompleteSummary.build(submitted.submission.evaluation.state,
+                        submitted.levelProgress, activeCampaign.levels.size, submitted.levelPassedNow,
+                        submitted.newAchievements.map { it.second }.toSet())
+                }
+                mutableState.update { it.copy(message = if (complete == null) message else null,
+                    levelComplete = complete?.let(::LevelComplete)) }
+                if (complete == null) awardMessage(
                     stars = submitted.submission.evaluation.newlyCompletedTaskIds.size,
                     openedNextLevel = submitted.openedNextLevel,
                     achievements = submitted.newAchievements.map { it.second },

@@ -131,8 +131,14 @@ class CampaignJourneyUiTest {
             }
         }
         compose.waitUntil(10_000) {
-            runCatching { compose.gameKeyboardInput().assertTextEquals("").assertIsEnabled() }.isSuccess
+            compose.onAllNodesWithTag("level_complete_dialog").fetchSemanticsNodes().isNotEmpty() ||
+                runCatching { compose.gameKeyboardInput().assertTextEquals("").assertIsEnabled() }.isSuccess
         }
+        if (compose.onAllNodesWithTag("level_complete_dialog").fetchSemanticsNodes().isNotEmpty()) {
+            compose.onNodeWithTag("level_complete_stay").performScrollTo().performClick()
+            compose.onNodeWithTag("level_complete_dialog").assertDoesNotExist()
+        }
+        compose.gameKeyboardInput().assertTextEquals("").assertIsEnabled()
     }
     private fun enter(word: String) {
         val input = compose.gameKeyboardInput().performScrollTo()

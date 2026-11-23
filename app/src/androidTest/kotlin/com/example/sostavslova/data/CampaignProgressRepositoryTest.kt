@@ -625,20 +625,24 @@ class CampaignProgressRepositoryTest {
         assertEquals(before + 1, store.calls.get())
         assertEquals(2, first.submission.evaluation.newlyCompletedTaskIds.size)
         assertTrue(first.openedNextLevel)
+        assertTrue(first.levelPassedNow)
         assertFalse(first.reachedFinale)
         val repeated = repository.submitCampaignAnswerWithTransitions(campaign, 1, "КРОТ", index)
         assertTrue(repeated.submission.evaluation.newlyCompletedTaskIds.isEmpty())
         assertFalse(repeated.openedNextLevel)
+        assertFalse(repeated.levelPassedNow)
         assertFalse(repeated.reachedFinale)
         val last = repository.submitCampaignAnswerWithTransitions(campaign, 2, "крот", index)
         assertFalse(last.openedNextLevel)
         assertTrue(last.reachedFinale)
+        assertTrue(last.levelPassedNow)
         assertFalse(repository.submitCampaignAnswerWithTransitions(campaign, 2, "КРОТ", index).reachedFinale)
         // Например, доступ сохранён миграцией, а новые задания ещё не выполнены.
         store.edit { it[key] = """{"version":2,"highestUnlockedLevel":2}""" }
         val alreadyOpen = repository.submitCampaignAnswerWithTransitions(campaign, 1, "крот", index)
         assertEquals(2, alreadyOpen.submission.evaluation.newlyCompletedTaskIds.size)
         assertFalse(alreadyOpen.openedNextLevel)
+        assertTrue(alreadyOpen.levelPassedNow)
         assertFalse(alreadyOpen.reachedFinale)
     }
 

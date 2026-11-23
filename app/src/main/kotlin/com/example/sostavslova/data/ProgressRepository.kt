@@ -68,6 +68,8 @@ data class CampaignAnswerUpdate(
     val submission: TaskSubmission,
     val openedNextLevel: Boolean,
     val reachedFinale: Boolean,
+    val levelPassedNow: Boolean,
+    val levelProgress: CampaignLevelProgress,
     /** Только что выданные достижения в порядке показа: номер уровня и вид. */
     val newAchievements: List<Pair<Int, LevelAchievement>> = emptyList(),
 )
@@ -323,6 +325,9 @@ class ProgressRepository(
         finalState to CampaignAnswerUpdate(submitted,
             openedNextLevel = next.highestUnlockedLevel > saved.highestUnlockedLevel,
             reachedFinale = next.finaleReached && !saved.finaleReached,
+            levelPassedNow = submitted.result == AnswerResult.CORRECT &&
+                !CampaignRules.isPassed(current.level, saved) && CampaignRules.isPassed(current.level, finalState),
+            levelProgress = finalState.levels[current.level.word] ?: CampaignLevelProgress(),
             newAchievements = newAchievements)
     }
 

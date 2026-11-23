@@ -21,6 +21,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
@@ -38,6 +39,7 @@ fun WordsDialog(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     titleText: AnnotatedString? = null,
+    titleTag: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val density = LocalDensity.current
@@ -54,7 +56,7 @@ fun WordsDialog(
                     contentColor = LocalWordsPalette.current.text,
                 ) {
                     Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text(titleText ?: AnnotatedString(title), modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
+                        Text(titleText ?: AnnotatedString(title), modifier = Modifier.then(if (titleTag != null) Modifier.testTag(titleTag) else Modifier).semantics { heading() }, style = MaterialTheme.typography.titleLarge)
                         content()
                     }
                 }

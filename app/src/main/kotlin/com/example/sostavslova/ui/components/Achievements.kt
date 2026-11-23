@@ -1,5 +1,7 @@
 package com.example.sostavslova.ui.components
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +34,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -115,11 +118,16 @@ fun AchievementStrip(
     availableAchievements: Set<LevelAchievement>,
     modifier: Modifier = Modifier,
     iconTagPrefix: String = "achievement_icon",
+    highlightedAchievements: Set<LevelAchievement> = emptySet(),
 ) {
     FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
         LevelAchievement.entries.filter { it in availableAchievements }.forEach { achievement ->
+            val fresh = achievement in highlightedAchievements
+            val freshDescription = stringResource(R.string.achievement_new)
             AchievementIcon(achievement, achievement in achievements,
+                modifier = if (fresh) Modifier.border(2.dp, LocalWordsPalette.current.primary, RoundedCornerShape(8.dp))
+                    .semantics { stateDescription = freshDescription } else Modifier,
                 testTag = "${iconTagPrefix}_${achievement.name.lowercase(Locale.ROOT)}")
         }
     }

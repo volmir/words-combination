@@ -119,9 +119,10 @@ class CampaignJourneyStateTest {
         assertEquals("Opening traversed dictionary on Main", 0, probe.mainReads.get())
         probe.reads.set(0)
         withContext(Dispatchers.Main) { vm.onInputChanged("крот"); vm.onSubmit() }
-        val answered = vm.await { !it.busy && it.message != null }
+        val answered = vm.await { !it.busy && it.levelComplete != null }
         val finished = SystemClock.elapsedRealtimeNanos()
-        assertEquals(R.string.correct_answer, answered.message?.text)
+        assertNull(answered.message)
+        assertEquals(1, requireNotNull(answered.levelComplete).summary.levelNumber)
         assertEquals(listOf("крот"), answered.game?.found)
         assertEquals("Answer traversed dictionary on Main", 0, probe.mainReads.get())
         Log.i("QA-01", "open_ms=${(opened - started) / 1_000_000.0}, " +
