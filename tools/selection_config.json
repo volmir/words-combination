@@ -137,6 +137,10 @@
       "селитроварня": "owner-preferred-source; requires-task-reachability; docs/CAMPAIGN.md"
     }
   },
+  "familiarity": {
+    "frequent_max_rank": 5000,
+    "ordinary_max_rank": 30000
+  },
   "target_size": 25000,
   "target_min_size": 20000,
   "min_len": 3,

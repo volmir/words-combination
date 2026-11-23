@@ -18,6 +18,7 @@
 | `GOLD_03A_REPORT.md` | история (удаление контрольного списка GOLD-03A) | `SPEC.md` |
 | `DATA_03_REPORT.md` | история (чистка словаря DATA-03) | `SPEC.md` |
 | `DICT_03B_REPORT.md`, `DICT_03B_REPORT.json` | история (шесть самостоятельных слов DICT-03B) | `SPEC.md` |
+| `FAM_14_REPORT.md` | действует (генерация данных узнаваемости FAM-14) | — |
 | `DIMINUTIVE_CANDIDATES.md`, `DIMINUTIVE_CANDIDATES.json` | действует (кандидаты, к словарю не применяются) | — |
 | `CAMPAIGN.md` | история | `SPEC.md` (заметка в начале файла) |
 | `OWN_HINTS_TOOLCHAIN.md` | действует | — |

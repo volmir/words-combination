@@ -155,7 +155,7 @@ def audit(root, apk, profile, runtime_inputs):
     minimal = verify(data)
     candidate, index, metadata, manifest = inputs(data)
     expected = {name: (data / name).read_bytes() for name in
-                ('words.txt', 'word_sources.jsonl.gz', 'levels.json', 'campaign.json', 'owned_riddles.json')}
+                ('words.txt', 'word_familiarity.txt', 'word_sources.jsonl.gz', 'levels.json', 'campaign.json', 'owned_riddles.json')}
     for name in ('THIRD_PARTY_NOTICES.txt', 'Apache-2.0.txt', 'CC-BY-SA-4.0.txt',
                  'LIBRARY_NOTICES.txt', 'RUNTIME_LIBRARIES.json'):
         expected[name] = (root / 'legal' / name).read_bytes()

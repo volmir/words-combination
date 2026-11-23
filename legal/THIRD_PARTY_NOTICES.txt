@@ -25,6 +25,11 @@ https://github.com/hermitdave/FrequencyWords
 https://creativecommons.org/licenses/by-sa/3.0/
 Изменения: нормализация, суммирование по формам и использование при отборе.
 Точные версии входов и параметры отбора: data/manifest.json, блок selection.
+Файл word_familiarity.txt — производный сигнал узнаваемости тех же данных
+FrequencyWords/OpenSubtitles 2018 под CC-BY-SA-3.0. Изменения: нормализация
+регистра и ё→е, преобразование первого ранга словоформы в оценку 0–3,
+выравнивание по строкам words.txt. Пороги и SHA — блок word_familiarity
+в data/manifest.json; исходные частоты и субтитры в APK не включаются.
 
 Загадки T4: 11 собственных текстов в owned_riddles.json, дословный поднабор
 39 утверждённых описаний из docs/owned_hints.json.

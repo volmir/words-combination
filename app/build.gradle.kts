@@ -113,12 +113,13 @@ tasks.matching { it.name in setOf("preReleaseBuild", "assembleRelease", "bundleR
 }
 
 val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
-    description = "Проверяет происхождение и хэши словаря, уровней, кампании и JSON-загадок."
+    description = "Проверяет происхождение и хэши словаря, узнаваемости, уровней, кампании и JSON-загадок."
     group = "verification"
     dependsOn("verifyOwnedHints", "verifyRuntimeNotices", "verifyGraphics")
     inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("word_sources.jsonl.gz"), dictionaryData.file("levels.json"))
     inputs.files(dictionaryData.file("campaign.json"))
     inputs.files(dictionaryData.file("owned_riddles.json"))
+    inputs.files(dictionaryData.file("word_familiarity.txt"), rootProject.file("tools/selection_config.json"))
     doLast {
         val manifest = JsonSlurper().parse(dictionaryData.file("manifest.json").asFile) as Map<*, *>
         val source = manifest["source"] as? Map<*, *>
@@ -128,6 +129,31 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
         check(sha256(dictionaryData.file("words.txt").asFile) == manifest["sha256_words_txt"] &&
             sha256(dictionaryData.file("word_sources.jsonl.gz").asFile) == manifest["sha256_word_sources"]) {
             "Словарь или файл происхождения изменены после генерации."
+        }
+        val familiarityFile = dictionaryData.file("word_familiarity.txt").asFile
+        val familiarity = manifest["word_familiarity"] as? Map<*, *>
+        val wordCount = dictionaryData.file("words.txt").asFile.readLines().size
+        check(familiarityFile.isFile && familiarity?.get("sha256") == sha256(familiarityFile) &&
+            familiarity?.get("words_sha256") == manifest["sha256_words_txt"] &&
+            (familiarity?.get("word_count") as? Number)?.toInt() == wordCount &&
+            (manifest["words"] as? Number)?.toInt() == wordCount) {
+            "Узнаваемость отсутствует или не совпадает со словарём/manifest: запустите tools/build_word_familiarity.py."
+        }
+        val familiarityBytes = familiarityFile.readBytes()
+        check(familiarityBytes.size == wordCount * 2 && familiarityBytes.indices.all { index ->
+            if (index % 2 == 0) familiarityBytes[index].toInt() in 48..51
+            else familiarityBytes[index].toInt() == 10
+        }) { "word_familiarity.txt должен содержать ровно одну цифру 0–3 и LF на каждое слово." }
+        val frequencySource = (manifest["selection"] as? Map<*, *>)?.get("frequency_source") as? Map<*, *>
+        val familiarityConfig = rootProject.file("tools/selection_config.json")
+        val thresholds = (JsonSlurper().parse(familiarityConfig) as Map<*, *>)["familiarity"] as? Map<*, *>
+        val frequentRank = (thresholds?.get("frequent_max_rank") as? Number)?.toInt() ?: 0
+        val ordinaryRank = (thresholds?.get("ordinary_max_rank") as? Number)?.toInt() ?: 0
+        check(familiarity?.get("frequency_source") == frequencySource &&
+            frequencySource?.get("license") == "CC-BY-SA-3.0" && familiarity?.get("license") == "CC-BY-SA-3.0" &&
+            familiarity?.get("thresholds") == thresholds && frequentRank > 0 && ordinaryRank > frequentRank &&
+            familiarity?.get("config_file_sha256") == sha256(familiarityConfig)) {
+            "Источник, лицензия или пороги узнаваемости не совпадают с конфигом/manifest."
         }
         check(sha256(dictionaryData.file("levels.json").asFile) == manifest["sha256_levels_json"] &&
             (manifest["levels_source"] as? Map<*, *>)?.get("license") == "MIT") {
@@ -316,7 +342,7 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
     dependsOn(verifyDictionaryLicenses)
     from(dictionaryData) {
         include("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz")
-        include("owned_riddles.json")
+        include("owned_riddles.json", "word_familiarity.txt")
     }
     from(rootProject.layout.projectDirectory.dir("legal")) {
         include("THIRD_PARTY_NOTICES.txt", "Apache-2.0.txt", "CC-BY-SA-4.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
@@ -326,13 +352,13 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
     }
     into(layout.projectDirectory.dir("src/main/assets"))
     preserve {
-        exclude("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz", "owned_riddles.json", "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
+        exclude("words.txt", "word_familiarity.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz", "owned_riddles.json", "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
     }
     doLast {
         val manifest = JsonSlurper().parse(dictionaryData.file("manifest.json").asFile) as Map<*, *>
         val riddles = manifest["owned_riddles"] as? Map<*, *>
         val assets = layout.projectDirectory.dir("src/main/assets").asFile
-        val expectedAssets = setOf("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz",
+        val expectedAssets = setOf("words.txt", "word_familiarity.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz",
             "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt",
             "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json", "owned_riddles.json")
         val actualAssets = assets.walkTopDown().filter { it.isFile }
@@ -346,6 +372,10 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
         check(sha256(File(assets, "words.txt")) == manifest["sha256_words_txt"] &&
             sha256(File(assets, "owned_riddles.json")) == riddles?.get("sha256")) {
             "Скопированные словарь или загадки не совпадают с manifest."
+        }
+        check(sha256(File(assets, "word_familiarity.txt")) ==
+            (manifest["word_familiarity"] as? Map<*, *>)?.get("sha256")) {
+            "Скопированная узнаваемость не совпадает с manifest."
         }
     }
 }
