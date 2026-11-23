@@ -28,10 +28,20 @@
   },
   "model_sets": {
     "opencode": {
-      "free": {
+      "beam-free": {
         "light": "opencode/beam-free",
         "standard": "opencode/beam-free#high",
         "heavy": "opencode/beam-free#high"
+      },
+      "big-pickle": {
+        "light": "opencode/big-pickle",
+        "standard": "opencode/big-pickle",
+        "heavy": "opencode/big-pickle"
+      },
+      "deepseek-v4.1-flash-free": {
+        "light": "opencode/deepseek-v4.1-flash-free",
+        "standard": "opencode/deepseek-v4.1-flash-free#high",
+        "heavy": "opencode/deepseek-v4.1-flash-free#high"
       }
     }
   },

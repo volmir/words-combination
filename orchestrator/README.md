@@ -123,10 +123,20 @@ bash orchestrator/run.sh --config orchestrator/opencode.config.json
 ```json
 "model_sets": {
   "opencode": {
-    "free": {
-      "light": "opencode/glm-5.3-flash-free",
-      "standard": "opencode/glm-5.3-flash-free#max",
-      "heavy": "opencode/beam-free#max"
+    "beam-free": {
+      "light": "opencode/beam-free",
+      "standard": "opencode/beam-free#high",
+      "heavy": "opencode/beam-free#high"
+    },
+    "big-pickle": {
+      "light": "opencode/big-pickle",
+      "standard": "opencode/big-pickle",
+      "heavy": "opencode/big-pickle"
+    },
+    "deepseek-v4.1-flash-free": {
+      "light": "opencode/deepseek-v4.1-flash-free",
+      "standard": "opencode/deepseek-v4.1-flash-free#high",
+      "heavy": "opencode/deepseek-v4.1-flash-free#high"
     }
   }
 }
@@ -429,8 +439,8 @@ gate: bash orchestrator/run.sh --check core && bash orchestrator/run.sh --check 
 модуля: Codex — `gpt-5.6-luna` для `light`, `gpt-6.1-sol` для `standard` и
 `heavy`; OpenCode — бесплатные `opencode/glm-5.3-flash-free` и `opencode/beam-free`. Текущий `config.json`
 переопределяет OpenCode на `opencode/muse-ember-1.0#medium` (`light`) и
-`opencode/deepseek-v4.1-flash#max` (`standard` и `heavy`); набор `free`
-содержит отдельные бесплатные модели.
+`opencode/deepseek-v4.1-flash#max` (`standard` и `heavy`); наборы `beam-free`,
+`big-pickle` и `deepseek-v4.1-flash-free` содержат отдельные бесплатные модели.
 
 ## Новая пачка задач: очистить и заполнить заново
 
