@@ -15,6 +15,7 @@
 | `SPEC.md` | действует | — |
 | `INDEX.md` | действует | — |
 | `PROJECT_STATUS.md` | действует | — |
+| `GOLD_03A_REPORT.md` | история (удаление контрольного списка GOLD-03A) | `SPEC.md` |
 | `DATA_03_REPORT.md` | история (чистка словаря DATA-03) | `SPEC.md` |
 | `CAMPAIGN.md` | история | `SPEC.md` (заметка в начале файла) |
 | `OWN_HINTS_TOOLCHAIN.md` | действует | — |

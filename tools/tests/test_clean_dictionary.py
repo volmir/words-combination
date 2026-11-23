@@ -257,7 +257,7 @@ class CleanupTest(unittest.TestCase):
         self.assertEqual("exclude", decision["roles"]["answer"]["decision"])
         self.assertEqual("keep", decision["roles"]["source"]["decision"])
 
-    def test_audit_only_reports_roles_funnel_golden_and_never_builds_package(self):
+    def test_audit_only_reports_roles_funnel_and_never_builds_package(self):
         self.records(article("рыбка", "уменьшительное от рыба"), article("котик", "уменьшительное от кот"),
                      article("праймериз"), article("реввоенсовет"))
         manifest = self.root / "manifest.json"
@@ -265,11 +265,9 @@ class CleanupTest(unittest.TestCase):
             "sha256_input": dictionary.sha256_file(self.dump)}}))
         corpus = self.root / "freq.txt"
         corpus.write_text("рыбка 1000\nкотик 1000\nпраймериз 100\n")
-        golden = self.root / "golden.txt"
-        golden.write_text("рыбка\nкотик\nнетслова\n")
         args = argparse.Namespace(dump=self.dump, manifest=manifest, source_words=None,
             frequency_list=corpus, config=clean.TOOLS / "selection_config.json", cache=self.root / "cache",
-            reports=self.root / "reports", out=self.root / "out", golden=golden, prepare_only=False, audit_only=True)
+            reports=self.root / "reports", out=self.root / "out", prepare_only=False, audit_only=True)
         with patch.object(clean, "publish", side_effect=AssertionError("audit must not publish")), \
              patch.object(clean, "prepare_levels", side_effect=AssertionError("audit must not build levels")):
             result = clean.run(args)
@@ -280,12 +278,10 @@ class CleanupTest(unittest.TestCase):
         self.assertEqual("audited", result["status"])
         self.assertFalse(args.out.exists())
         self.assertFalse((args.cache / "builds").exists())
-        self.assertEqual({"котик": ["diminutive"], "нетслова": ["outside_input"]}, result["reference_checks"]["golden_excluded"])
         self.assertEqual({}, result["reference_checks"]["level_exceptions"])
         self.assertEqual(4, json.loads((args.reports / "funnel.json").read_text())["input"])
         self.assertIn('"frequency": 1000', (args.reports / "rejection_examples.json").read_text())
         self.assertIn("owner-confirmed-lexicalization", (args.reports / "role_exceptions.csv").read_text())
-        self.assertEqual("рыбка\nкотик\nнетслова\n", golden.read_text())
 
     def test_replacements_preserve_numbers_and_unapproved_unreachable_levels_fail(self):
         selected = {"рот", "тор", "торт", "трот"}
@@ -311,13 +307,11 @@ class CleanupTest(unittest.TestCase):
         config["target_size"] = config["llm_candidates"] = 1
         config_path = self.root / "config.json"
         config_path.write_text(json.dumps(config))
-        golden = self.root / "golden.txt"
-        golden.write_text("котик\nрот\n")
         source = self.root / "source.txt"
         source.write_text("котик\nрот\nтор\nторт\n")
         args = argparse.Namespace(dump=self.dump, manifest=manifest, source_words=source,
             frequency_list=corpus, config=config_path, cache=self.root / "cache", reports=self.root / "reports",
-            out=self.root / "out", golden=golden, prepare_only=False)
+            out=self.root / "out", prepare_only=False)
         with patch.object(dictionary, "LEVELS", [("торт", 1, 2, "т", 1)]):
             result = clean.run(args)
             before = {p.name: p.read_bytes() for p in args.out.iterdir()}
@@ -329,7 +323,6 @@ class CleanupTest(unittest.TestCase):
         self.assertFalse((args.out / "lexical_data.json").exists())
         metadata = json.loads((args.out / "manifest.json").read_text())["selection"]
         self.assertEqual("game-cleanup-v1", metadata["mode"])
-        self.assertIn("котик", metadata["reference_checks"]["golden_excluded"])
         self.assertFalse(metadata["audit"]["passed"])
         self.assertNotIn("license", metadata["frequency_source"])
         with patch.object(dictionary, "LEVELS", [("торт", 100, 100, "т", 1)]):

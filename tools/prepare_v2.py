@@ -983,7 +983,7 @@ def prepare(args):
         shutil.copyfile(LEGACY, workspace / 'previous_levels.json')
         cleaned = clean.run(NS(dump=args.dump, frequency_list=args.frequency_list, source_words=universe,
             manifest=input_manifest, config=TOOLS / 'selection_config.json', cache=args.cache / 'cleanup',
-            reports=workspace / 'cleanup', out=args.installed, golden=ROOT / 'core/src/test/resources/frequent_nouns_golden.txt',
+            reports=workspace / 'cleanup', out=args.installed,
             prepare_only=True, audit_only=False, campaign_v2=True))
         base_directory = Path(cleaned['candidate'])
         base_manifest = read_json(base_directory / 'manifest.json')

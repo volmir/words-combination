@@ -802,7 +802,8 @@ def run(args):
     taxonomy = json.loads(args.categories.read_text(encoding="utf-8"))
     if not isinstance(taxonomy, dict) or not taxonomy:
         raise ValueError("Нужна непустая таксономия категорий")
-    protected = set(dictionary.read_list(args.golden)) | {level[0] for level in dictionary.LEVELS}
+    # Only historical level sources retain their compatibility exceptions.
+    protected = {level[0] for level in dictionary.LEVELS}
     source_words = args.source_words or args.manifest.parent / "words.txt"
     universe_path = args.cache / "source_vocabulary" / (json_digest([input_sha, dictionary.sha256_file(source_words) if args.source_words else None]) + ".json")
     if universe_path.exists():
@@ -1047,7 +1048,6 @@ def main():
     parser.add_argument("--manifest", type=Path, default=ROOT / "data/manifest.json")
     parser.add_argument("--config", type=Path, default=TOOLS / "selection_config.json")
     parser.add_argument("--categories", type=Path, default=TOOLS / "categories.json")
-    parser.add_argument("--golden", type=Path, default=ROOT / "core/src/test/resources/frequent_nouns_golden.txt")
     parser.add_argument("--prompt", type=Path, default=TOOLS / "prompts/definition_v1.txt")
     parser.add_argument("--overrides", type=Path, default=TOOLS / "overrides")
     parser.add_argument("--cache", type=Path, default=TOOLS / "cache")

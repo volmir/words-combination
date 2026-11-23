@@ -35,13 +35,11 @@ class PipelineTest(unittest.TestCase):
         self.config.update(target_size=5, target_min_size=1, llm_candidates=10)
         self.config_path = self.root / "config.json"
         self.config_path.write_text(json.dumps(self.config))
-        self.golden = self.root / "golden.txt"
-        self.golden.write_text("кот\n")
         self.overrides = self.root / "overrides"
         self.overrides.mkdir()
         self.args = argparse.Namespace(check_release=False, verify_audit=None, reviewer="", dump=self.dump, source_words=None,
             corpus=None, manifest=self.root / "source-manifest.json", config=self.config_path,
-            categories=game.TOOLS / "categories.json", golden=self.golden,
+            categories=game.TOOLS / "categories.json",
             prompt=game.TOOLS / "prompts/definition_v1.txt", provider="file", model="synthetic-v1", allow_network=False,
             cache=self.root / "cache", reports=self.root / "reports", out=self.root / "data", overrides=self.overrides,
             with_wiktionary_glosses=False, generation_date="2026-11-06")
@@ -169,7 +167,7 @@ class PipelineTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             game.require_release_audit(self.args.out)
 
-    def test_dump_mode_keeps_collected_database_but_does_not_publish_broken_levels_or_missing_golden(self):
+    def test_dump_mode_keeps_collected_database_but_does_not_publish_missing_level_sources(self):
         self.complete()
         before = self.snapshot()
         self.args.definitions_source = "dump"
@@ -180,7 +178,7 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(before, self.snapshot())
         report = json.loads((self.args.reports / "funnel.json").read_text())
         self.assertEqual("blocked_protected_words_or_levels", report["status"])
-        self.assertEqual(["кот", "портал"], report["missing_protected_words"])
+        self.assertEqual(["портал"], report["missing_protected_words"])
         self.assertEqual(3,len({r['word'] for r in lexical_json.read(report['database'])['definitions']}))
         self.assertTrue((self.args.reports / "unreachable_levels.json").exists())
 
@@ -211,15 +209,19 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(before, self.snapshot())
         self.assertTrue((self.args.reports / "unreachable_levels.json").exists())
 
-    def test_protected_words_survive_ai_reject_and_complaint_conflict_is_reported(self):
+    def test_only_level_sources_survive_ai_reject_and_complaint_conflict_is_reported(self):
         game.run(self.args)
-        self.fill("definition", lambda item: self.answer(item["word"], familiarity=1, reject=["rare"]) if item["word"] == "кот" else self.answer(item["word"]))
+        self.fill("definition", lambda item: self.answer(item["word"], familiarity=1, reject=["rare"])
+                  if item["word"] in {"кот", "портал"} else self.answer(item["word"]))
         game.run(self.args)
         self.fill("guess")
         game.run(self.args)
-        self.assertIn("кот", dictionary.read_list(self.args.out / "words.txt"))
+        words = dictionary.read_list(self.args.out / "words.txt")
+        self.assertIn("портал", words)
+        self.assertNotIn("кот", words)
+        self.assertIn("портал,", (self.args.reports / "protected_words.csv").read_text())
         self.assertIn("rare", (self.args.reports / "protected_words.csv").read_text())
-        (self.overrides / "remove.txt").write_text("кот\n")
+        (self.overrides / "remove.txt").write_text("портал\n")
         with self.assertRaisesRegex(ValueError, "защищёнными"):
             game.run(self.args)
 

@@ -339,7 +339,7 @@ def frequency_provenance(path, digest):
     return source
 
 
-def reports(directory, decisions, records, golden, original_levels, seed):
+def reports(directory, decisions, records, original_levels, seed):
     rows = []
     fields = ["word", "decision", "frequency", "freq_rank", "reasons", "level_exception", "would_reject",
               "sense_count", "usable_sense_count"]
@@ -385,9 +385,7 @@ def reports(directory, decisions, records, golden, original_levels, seed):
     atomic_json(directory / "funnel.json", {"input": len(records), "noun_records": len(noun),
         "usable_sense": len(usable), "observed_usage": sum(decisions[w]["frequency"] > 0 for w in usable),
         "roles": roles, "legacy_v1_exceptions": sum(d["level_exception"] for d in decisions.values())})
-    return {"golden_excluded": {word: decisions[word]["reasons"] if word in decisions else ["outside_input"]
-                                for word in sorted(golden) if word not in decisions or decisions[word]["decision"] != "keep"},
-            "level_exceptions": {word: value["would_reject"] for word, value in decisions.items() if value["level_exception"]},
+    return {"level_exceptions": {word: value["would_reject"] for word, value in decisions.items() if value["level_exception"]},
             "role_exceptions": exceptions,
             "original_levels_excluded": [level[0] for level in original_levels if decisions.get(level[0], {}).get("decision") != "keep"]}
 
@@ -451,7 +449,7 @@ def run(args):
         raise ValueError("Слова уровней отсутствуют в исходном наборе: " + ", ".join(sorted(protected - universe)))
     decisions = decide(records, frequency["words"], config, protected)
     selected = {word for word, value in decisions.items() if value["decision"] == "keep"}
-    references = reports(args.reports, decisions, records, set(dictionary.read_list(args.golden)), original, config["sample_seed"])
+    references = reports(args.reports, decisions, records, original, config["sample_seed"])
     if audit_only:
         summary = {"status": "audited", "policy_version": config["policy_version"], "input_words": len(universe),
                    "selected": len(selected), "counts": dict(sorted(Counter(d["decision"] for d in decisions.values()).items())),
@@ -472,7 +470,7 @@ def run(args):
     summary = {"input_words": len(universe), "selected": len(selected), "excluded": counts["exclude"], "review": counts["review"],
                "A_modern_noun_candidates": sum(value["usable_sense_count"] > 0 for value in decisions.values()),
                "words_with_observed_forms": sum(value["frequency"] > 0 for value in frequency["words"].values()),
-               "level_exceptions": len(references["level_exceptions"]), "golden_excluded": references["golden_excluded"],
+               "level_exceptions": len(references["level_exceptions"]),
                "rejected_by_reason": dict(Counter(reason for value in decisions.values() for reason in value["reasons"])),
                "candidate": str(candidate), "published": False, "ai_used": False, "manual_audit_passed": False,
                "definitions_used_for_selection": False, "frequency_sha256": frequency_sha, "input_words_sha256": base_sha}
@@ -518,7 +516,6 @@ def main():
     parser.add_argument("--cache", type=Path, default=TOOLS / "cache/cleanup")
     parser.add_argument("--reports", type=Path, default=ROOT / "build/reports/dictionary_cleanup")
     parser.add_argument("--out", type=Path, default=ROOT / "data")
-    parser.add_argument("--golden", type=Path, default=ROOT / "core/src/test/resources/frequent_nouns_golden.txt")
     parser.add_argument("--audit-only", action="store_true", help="Проверить широкий словарь и роли v2; только отчёты, без сборки пакета и исключений v1")
     parser.add_argument("--prepare-only", action="store_true", help="Собрать и проверить в кэше, сохранив рабочие данные")
     parser.add_argument("--campaign-v2", action="store_true", help="Без принудительного сохранения исходников и проверки порогов v1")

@@ -10,7 +10,7 @@ import java.net.URI
 import org.json.JSONObject
 
 class DictionaryIntegrityTest {
-    private val words = TestData.index.words
+    private val words = TestData.wordsText.lineSequence().filter { it.isNotBlank() }.toList()
 
     @Test
     fun countMatchesManifest() {
@@ -24,6 +24,7 @@ class DictionaryIntegrityTest {
         for (w in words) {
             assertTrue(w.length in Alphabet.MIN_WORD_LENGTH..Alphabet.MAX_WORD_LENGTH, w)
             assertTrue(w.all { Alphabet.indexOf(it) >= 0 }, w)
+            assertEquals(w, Alphabet.normalize(w), w)
         }
     }
 
@@ -79,20 +80,8 @@ class DictionaryIntegrityTest {
     }
 
     @Test
-    fun frequentNounsGoldenHaveWordsOrRecordedRejections() {
-        val resource = checkNotNull(javaClass.classLoader.getResourceAsStream("frequent_nouns_golden.txt"))
-        val golden = resource.bufferedReader(Charsets.UTF_8).use { it.readLines() }.filter { it.isNotBlank() }
-        val missing = golden.filterNot { TestData.index.contains(it) }
-        val excluded = TestData.manifest.getJSONObject("selection").getJSONObject("reference_checks")
-            .getJSONObject("golden_excluded")
-        for (word in missing) {
-            assertTrue(excluded.has(word) && excluded.getJSONArray(word).length() > 0,
-                "Отказ контрольного слова не объяснён: $word")
-        }
-    }
-
-    @Test
     fun containsAllLevelWords() {
+        assertEquals(15, TestData.currentSourceWords.size)
         val missing = TestData.currentSourceWords.filterNot { TestData.index.contains(it) }
         assertTrue(missing.isEmpty(), "В словаре отсутствуют слова уровней: ${missing.joinToString(", ")}")
     }
