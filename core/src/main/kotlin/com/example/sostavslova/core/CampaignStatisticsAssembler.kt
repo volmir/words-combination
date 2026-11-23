@@ -11,6 +11,9 @@ data class LevelStatsRow(
     val total: Int,
     val hintsShown: Int,
     val byLength: List<LengthStat>,
+    /** Уже полученные и достижимые на текущем словаре достижения этого уровня. */
+    val achievements: Set<LevelAchievement> = emptySet(),
+    val achievementsAvailable: Set<LevelAchievement> = emptySet(),
 ) {
     val passed: Boolean get() = stars >= requiredStars
 
@@ -36,6 +39,8 @@ data class CampaignStatistics(
     val hintsShown: Int,
     val stages: List<StageStatsRows>,
     val levels: List<LevelStatsRow>,
+    val achievementsEarned: Int = 0,
+    val achievementsTotal: Int = 0,
 )
 
 /** Слова уровня, найденные один раз при открытии экрана: поиск по словарю не повторяется. */
@@ -94,6 +99,8 @@ object CampaignStatisticsAssembler {
                 total = statistics.totalWords,
                 hintsShown = saved.hints.shownSteps,
                 byLength = statistics.rows,
+                achievements = saved.achievements,
+                achievementsAvailable = AchievementRules.available(game, level.requiredStars, level.maxStars),
             )
         }
         val summary = CampaignRules.summary(campaign, progress)
@@ -111,6 +118,8 @@ object CampaignStatisticsAssembler {
             hintsShown = summary.shownHintSteps,
             stages = stages,
             levels = rows,
+            achievementsEarned = rows.sumOf { it.achievements.size },
+            achievementsTotal = rows.sumOf { it.achievementsAvailable.size },
         )
     }
 

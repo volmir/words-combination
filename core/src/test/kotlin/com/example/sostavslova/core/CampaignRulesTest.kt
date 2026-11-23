@@ -358,4 +358,50 @@ class CampaignRulesTest {
             assertEquals(expected, CampaignRules.thresholdKind(level, total), "Level ${level.number}")
         }
     }
+
+    @Test fun shownHintStepSetsPersistentFlagEvenAfterGoalIsFoundAndBudgetRefills() {
+        val level = CampaignLevel(1, "картотека", 1, 1, listOf(
+            CampaignTask.T4("riddle", listOf("кот")), CampaignTask.T1("count", 4)))
+        val campaign = Campaign(listOf(Stage(1, 1, 1)), listOf(level))
+        val dictionary = WordIndex(listOf("кот", "торт", "крот", "карта"))
+        val initial = CampaignRules.openLevel(campaign, CampaignProgress(), 1, dictionary)
+        assertNotNull(initial)
+        val shown = HintRules.next(initial)
+        assertEquals(HintStatus.SHOWN, shown.status)
+        val recorded = CampaignRules.recordLevel(campaign, CampaignProgress(), shown.state)
+        val saved = recorded.levels.getValue(level.word)
+        assertTrue(saved.hintsUsed)
+        assertEquals(1, saved.hints.shownSteps)
+
+        val reopened = assertNotNull(CampaignRules.openLevel(campaign, recorded, 1, dictionary))
+        val goalFound = TaskRules.submit(reopened, "кот", campaign.countMinLength).evaluation.state
+        val afterGoal = CampaignRules.recordLevel(campaign, recorded, goalFound)
+        assertTrue(afterGoal.levels.getValue(level.word).hintsUsed)
+
+        val switched = HintRules.selectTask(goalFound, "count")
+        assertEquals(HintLadder(), switched.hints.ladder)
+        var current = switched
+        for (word in listOf("торт", "крот", "карта")) {
+            current = TaskRules.submit(current, word, campaign.countMinLength).evaluation.state
+        }
+        assertEquals(1, HintRules.budget(current).earned)
+        val afterRefill = CampaignRules.recordLevel(campaign, afterGoal, current)
+        assertTrue(afterRefill.levels.getValue(level.word).hintsUsed)
+    }
+
+    @Test fun freeFirstT4StepIsRecordedAsUsedHintWithoutSpendingBudget() {
+        val level = CampaignLevel(1, "крот", 1, 1, listOf(CampaignTask.T4("riddle", listOf("кот"))))
+        val campaign = Campaign(listOf(Stage(1, 1, 1)), listOf(level))
+        val initial = assertNotNull(CampaignRules.openLevel(campaign, CampaignProgress(), 1, index))
+        val free = HintRules.next(initial)
+        assertEquals(HintStatus.SHOWN, free.status)
+        assertEquals(0, free.state.hints.paidUnits)
+        assertEquals(0, HintRules.budget(free.state).spent)
+        val saved = CampaignRules.recordLevel(campaign, CampaignProgress(), free.state)
+            .levels.getValue(level.word)
+        assertTrue(saved.hintsUsed)
+        assertFalse(LevelAchievement.NO_HINTS in AchievementRules.evaluate(
+            level, free.state.game, saved.completedTaskIds, saved.hints,
+            emptySet(), hintsUsed = saved.hintsUsed))
+    }
 }

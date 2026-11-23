@@ -15,6 +15,7 @@ import com.example.sostavslova.core.CampaignLevel
 import com.example.sostavslova.core.CampaignProgress
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.InstallEvidence
+import com.example.sostavslova.core.LevelAchievement
 import com.example.sostavslova.core.Stage
 import com.example.sostavslova.core.WelcomeState
 import com.example.sostavslova.core.WordIndex
@@ -160,6 +161,8 @@ class ProgressRepositoryTest {
             com.example.sostavslova.core.WordIndex(listOf("река", "пир")))
         assertEquals(listOf("река", "пир"), migrated.levels.getValue(source).found)
         assertEquals(setOf("count"), migrated.levels.getValue(source).completedTaskIds)
+        assertEquals(setOf(LevelAchievement.NO_HINTS, LevelAchievement.EXPERT,
+            LevelAchievement.COLLECTOR, LevelAchievement.EXPLORER), migrated.levels.getValue(source).achievements)
         assertNull(store.data.first()[stringPreferencesKey("levelSessionV1")])
     }
 
@@ -220,6 +223,27 @@ class ProgressRepositoryTest {
         // В отличие от resetCampaignProgress, clearAll имитирует полную очистку данных и удаляет welcomeState.
         reopened.clearAll()
         assertNull(store.data.first()[stringPreferencesKey("welcomeStateV1")])
+    }
+
+    @Test
+    fun achievementsAreGrantedWithAnswerAndClearedOnlyByExplicitRestart() = runTest {
+        val campaign = Campaign(listOf(Stage(1, 1, 1)), listOf(
+            CampaignLevel(1, "картотека", 1, 1, listOf(CampaignTask.T1("count", 1)))))
+        val index = WordIndex(listOf("крот"))
+        val result = repository.submitCampaignAnswerWithTransitions(campaign, 1, "крот", index)
+        assertEquals(listOf(1 to LevelAchievement.NO_HINTS, 1 to LevelAchievement.EXPERT,
+            1 to LevelAchievement.COLLECTOR, 1 to LevelAchievement.EXPLORER), result.newAchievements)
+        val saved = repository.observeCampaignProgress().first().levels.getValue("картотека")
+        assertEquals(setOf(LevelAchievement.NO_HINTS, LevelAchievement.EXPERT,
+            LevelAchievement.COLLECTOR, LevelAchievement.EXPLORER), saved.achievements)
+        assertFalse(saved.hintsUsed)
+
+        val repeated = repository.submitCampaignAnswerWithTransitions(campaign, 1, "крот", index)
+        assertTrue(repeated.newAchievements.isEmpty())
+        assertEquals(saved, repository.observeCampaignProgress().first().levels.getValue("картотека"))
+
+        repository.resetCampaignProgress()
+        assertTrue(repository.observeCampaignProgress().first().levels.isEmpty())
     }
 
 }

@@ -10,6 +10,7 @@ enum class ReconciliationChangeKind {
     TASK_COMPLETED_FROM_FOUND,
     TASK_SEMANTICS_CHANGED,
     HINT_LADDER_RESET,
+    ACHIEVEMENTS_GRANTED,
     FRONTIER_RAISED,
     LEVEL_RESET_WORD_CHANGED,
     LEVEL_RESET_NUMBER_WITHOUT_HISTORY,
@@ -62,7 +63,7 @@ object CampaignProgressReconciler {
             changes += ReconciliationChange(null, ReconciliationChangeKind.CAMPAIGN_ID_UPDATED, saved.campaignId)
         }
 
-        val addressed = addressSavedLevels(saved.levels, newByWord, historicalLevelWords, changes, resets)
+        val addressed = addressSavedLevels(saved.levels, newByWord, historicalLevelWords, previousCampaign, changes, resets)
         if (addressed.isEmpty()) {
             if (saved.levels.isNotEmpty()) {
                 return CampaignReconciliationResult(
@@ -94,7 +95,7 @@ object CampaignProgressReconciler {
                 previousCampaign?.levels?.firstOrNull { Alphabet.normalize(it.word) == Alphabet.normalize(level.word) },
                 changes,
             )
-        }.toMap()
+        }.toMap() + addressed.filterKeys { it !in newByWord }
         val provisional = CampaignProgress(levels = reconciled, campaignId = targetId)
         val frontier = CampaignRules.frontier(campaign, provisional)
         val preservedFrontier = saved.highestUnlockedLevel.coerceIn(1, campaign.levels.size)
@@ -124,11 +125,17 @@ object CampaignProgressReconciler {
         levels: Map<String, CampaignLevelProgress>,
         newByWord: Map<String, CampaignLevel>,
         historicalLevelWords: Map<Int, String>,
+        previousCampaign: Campaign?,
         changes: MutableList<ReconciliationChange>,
         resets: MutableList<CampaignLevelReset>,
     ): Map<String, CampaignLevelProgress> {
         val result = mutableMapOf<String, CampaignLevelProgress>()
+        val retired = mutableListOf<Pair<String, CampaignLevelProgress>>()
         for ((rawKey, progress) in levels) {
+            // Запись только достижений уже согласована; повторный архив не нужен.
+            val achievementsOnly = progress.achievements.isNotEmpty() && progress.found.isEmpty() &&
+                progress.completedTaskIds.isEmpty() && progress.solvedRiddleTargets.isEmpty() &&
+                progress.hints == HintState()
             val number = rawKey.trim().toIntOrNull()
             val word = if (number != null) {
                 historicalLevelWords[number]?.let(Alphabet::normalize)
@@ -136,13 +143,19 @@ object CampaignProgressReconciler {
                 Alphabet.normalize(rawKey)
             }
             if (number != null && word == null) {
-                resets += CampaignLevelReset(rawKey, "number-addressed-level-without-history")
-                changes += ReconciliationChange(rawKey, ReconciliationChangeKind.LEVEL_RESET_NUMBER_WITHOUT_HISTORY)
+                if (!achievementsOnly) {
+                    resets += CampaignLevelReset(rawKey, "number-addressed-level-without-history")
+                    changes += ReconciliationChange(rawKey, ReconciliationChangeKind.LEVEL_RESET_NUMBER_WITHOUT_HISTORY)
+                }
+                retired += rawKey to progress
                 continue
             }
             if (word == null || word !in newByWord) {
-                resets += CampaignLevelReset(rawKey, "level-word-changed")
-                changes += ReconciliationChange(rawKey, ReconciliationChangeKind.LEVEL_RESET_WORD_CHANGED)
+                if (!achievementsOnly) {
+                    resets += CampaignLevelReset(rawKey, "level-word-changed")
+                    changes += ReconciliationChange(rawKey, ReconciliationChangeKind.LEVEL_RESET_WORD_CHANGED)
+                }
+                retired += rawKey to progress
                 continue
             }
             val previous = result[word]
@@ -150,9 +163,28 @@ object CampaignProgressReconciler {
                 // Два старых ключа сходятся к одному слову: адресное соответствие неоднозначно.
                 resets += CampaignLevelReset(rawKey, "ambiguous-level-word")
                 changes += ReconciliationChange(rawKey, ReconciliationChangeKind.LEVEL_RESET_WORD_CHANGED, "ambiguous")
+                retired += rawKey to progress
                 continue
             }
             result[word] = progress
+        }
+        // Смена слова сбрасывает ответы и звёзды, но не ранее выданные достижения.
+        // Сначала переносим все совпавшие слова, чтобы замена не затронула другой уровень.
+        for ((rawKey, progress) in retired) {
+            if (progress.achievements.isEmpty()) continue
+            val word = Alphabet.normalize(rawKey)
+            val number = progress.achievementLevelNumber
+                ?: previousCampaign?.levels?.firstOrNull { Alphabet.normalize(it.word) == word }?.number
+                ?: historicalLevelWords.entries.firstOrNull { Alphabet.normalize(it.value) == word }?.key
+            val replacement = newByWord.values.firstOrNull { it.number == number && it.word !in result }
+            val key = replacement?.word ?: word
+            // Неизвестное соответствие или удалённый уровень: достижение остаётся
+            // в сохранении под прежним ключом, без приписывания чужому уровню.
+            if (key !in result) result[key] = CampaignLevelProgress(
+                achievements = progress.achievements,
+                hintsUsed = progress.hintsUsed || progress.hints.shownSteps > 0 || progress.hints.paidUnits > 0,
+                achievementLevelNumber = number,
+            )
         }
         return result
     }
@@ -212,11 +244,30 @@ object CampaignProgressReconciler {
         }
         val riddleTargets = level.tasks.filterIsInstance<CampaignTask.T4>()
             .flatMap { it.targets }.filter { it in evaluated.game.found }.toSet()
+        // Старые сохранения не различают потраченный бюджет и сброшенную лестницу,
+        // поэтому признак подсказки выводится из любого ненулевого счётчика.
+        val hintsUsed = old.hintsUsed || old.hints.shownSteps > 0 || old.hints.paidUnits > 0
+        val achievements = AchievementRules.evaluate(
+            level = level,
+            game = evaluated.game,
+            completedTaskIds = evaluated.completedTaskIds,
+            hints = evaluated.hints,
+            alreadyEarned = old.achievements,
+            hintsUsed = hintsUsed,
+        )
+        val newAchievements = achievements - old.achievements
+        if (newAchievements.isNotEmpty()) {
+            changes += ReconciliationChange(level.word, ReconciliationChangeKind.ACHIEVEMENTS_GRANTED,
+                newAchievements.joinToString(",") { it.name })
+        }
         return CampaignLevelProgress(
             found = evaluated.game.found,
             completedTaskIds = evaluated.completedTaskIds,
             hints = evaluated.hints,
             solvedRiddleTargets = riddleTargets,
+            achievements = achievements,
+            hintsUsed = hintsUsed,
+            achievementLevelNumber = level.number.takeIf { achievements.isNotEmpty() },
         )
     }
 

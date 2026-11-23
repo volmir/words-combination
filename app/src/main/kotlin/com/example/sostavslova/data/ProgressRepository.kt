@@ -5,6 +5,7 @@ import com.example.sostavslova.data.jsonstore.MutablePreferences
 import com.example.sostavslova.data.jsonstore.Preferences
 import com.example.sostavslova.data.jsonstore.edit
 import com.example.sostavslova.data.jsonstore.stringPreferencesKey
+import com.example.sostavslova.core.AchievementRules
 import com.example.sostavslova.core.Alphabet
 import com.example.sostavslova.core.AnswerResult
 import com.example.sostavslova.core.Campaign
@@ -22,6 +23,7 @@ import com.example.sostavslova.core.HintWordData
 import com.example.sostavslova.core.InstallEvidence
 import com.example.sostavslova.core.KnownWords
 import com.example.sostavslova.core.Level
+import com.example.sostavslova.core.LevelAchievement
 import com.example.sostavslova.core.LevelProgress
 import com.example.sostavslova.core.LevelRules
 import com.example.sostavslova.core.ReconciliationChangeKind
@@ -66,6 +68,8 @@ data class CampaignAnswerUpdate(
     val submission: TaskSubmission,
     val openedNextLevel: Boolean,
     val reachedFinale: Boolean,
+    /** Только что выданные достижения в порядке показа: номер уровня и вид. */
+    val newAchievements: List<Pair<Int, LevelAchievement>> = emptyList(),
 )
 
 class ProgressRepository(
@@ -240,7 +244,8 @@ class ProgressRepository(
                     // completed/номера не открывают уровни и не дают финал.
                     highestUnlockedLevel = CampaignRules.frontier(campaign, migratedState),
                 )
-                preferences[campaignProgressKey] = json.encodeToString(CampaignProgressDto.fromCore(saved))
+                val reconciled = CampaignProgressReconciler.reconcile(saved, campaign, index).state
+                preferences[campaignProgressKey] = json.encodeToString(CampaignProgressDto.fromCore(reconciled))
                 preferences.remove(legacyLevelsKey)
                 preferences.remove(currentGameKey)
                 preferences.remove(levelProgressKey)
@@ -282,9 +287,33 @@ class ProgressRepository(
         val next = if (submitted.result == AnswerResult.CORRECT) {
             CampaignRules.recordLevel(campaign, saved, submitted.evaluation.state)
         } else saved
-        next to CampaignAnswerUpdate(submitted,
+        // Достижения считаются после пересчёта звёзд в той же транзакции ответа.
+        // Повторно выданных нет: уже полученное множество переносится без изменений.
+        var finalState = next
+        var newAchievements = emptyList<Pair<Int, LevelAchievement>>()
+        if (submitted.result == AnswerResult.CORRECT) {
+            val level = campaign.levels[levelNumber - 1]
+            val before = saved.levels[level.word] ?: CampaignLevelProgress()
+            val after = next.levels.getValue(level.word)
+            val earned = AchievementRules.evaluate(
+                level = level,
+                game = submitted.evaluation.state.game,
+                completedTaskIds = after.completedTaskIds,
+                hints = after.hints,
+                hintsUsed = after.hintsUsed,
+                alreadyEarned = before.achievements,
+            )
+            val fresh = earned - before.achievements
+            if (fresh.isNotEmpty()) {
+                finalState = next.copy(levels = next.levels + (level.word to after.copy(
+                    achievements = earned, achievementLevelNumber = level.number)))
+                newAchievements = LevelAchievement.entries.filter { it in fresh }.map { level.number to it }
+            }
+        }
+        finalState to CampaignAnswerUpdate(submitted,
             openedNextLevel = next.highestUnlockedLevel > saved.highestUnlockedLevel,
-            reachedFinale = next.finaleReached && !saved.finaleReached)
+            reachedFinale = next.finaleReached && !saved.finaleReached,
+            newAchievements = newAchievements)
     }
 
     /**

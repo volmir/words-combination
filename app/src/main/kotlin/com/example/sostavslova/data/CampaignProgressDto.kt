@@ -7,6 +7,7 @@ import com.example.sostavslova.core.HintStage
 import com.example.sostavslova.core.HintState
 import com.example.sostavslova.core.HintStep
 import com.example.sostavslova.core.HintTarget
+import com.example.sostavslova.core.LevelAchievement
 import com.example.sostavslova.core.TaskType
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -58,12 +59,36 @@ internal data class CampaignLevelProgressDto(
     val completedTaskIds: Set<String> = emptySet(),
     val solvedRiddleTargets: Set<String> = emptySet(),
     val hints: HintStateDto = HintStateDto(),
+    /** Имена достижений: неизвестные будущие значения молча игнорируются. */
+    val achievements: Set<String> = emptySet(),
+    /** null — старое сохранение без поля; признак выводится из счётчиков подсказок. */
+    val hintsUsed: Boolean? = null,
+    val achievementLevelNumber: Int? = null,
 ) {
-    fun toCore() = CampaignLevelProgress(found, completedTaskIds, hints.toCore(), solvedRiddleTargets)
+    fun toCore(): CampaignLevelProgress {
+        val restoredHints = hints.toCore()
+        return CampaignLevelProgress(
+            found = found,
+            completedTaskIds = completedTaskIds,
+            hints = restoredHints,
+            solvedRiddleTargets = solvedRiddleTargets,
+            achievements = achievements.mapNotNull { name ->
+                enumValues<LevelAchievement>().firstOrNull { it.name == name }
+            }.toSet(),
+            hintsUsed = hintsUsed ?: (restoredHints.shownSteps > 0 || restoredHints.paidUnits > 0),
+            achievementLevelNumber = achievementLevelNumber,
+        )
+    }
 
     companion object {
         fun fromCore(state: CampaignLevelProgress) = CampaignLevelProgressDto(
-            state.found, state.completedTaskIds, state.solvedRiddleTargets, HintStateDto.fromCore(state.hints),
+            found = state.found,
+            completedTaskIds = state.completedTaskIds,
+            solvedRiddleTargets = state.solvedRiddleTargets,
+            hints = HintStateDto.fromCore(state.hints),
+            achievements = state.achievements.map { it.name }.toSet(),
+            hintsUsed = state.hintsUsed,
+            achievementLevelNumber = state.achievementLevelNumber,
         )
     }
 }

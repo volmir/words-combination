@@ -6,6 +6,12 @@ data class CampaignLevelProgress(
     val completedTaskIds: Set<String> = emptySet(),
     val hints: HintState = HintState(),
     val solvedRiddleTargets: Set<String> = emptySet(),
+    /** Достижения уровня не отнимаются; новые поля совместимы со старыми сохранениями. */
+    val achievements: Set<LevelAchievement> = emptySet(),
+    /** Устойчивый признак: хотя бы одна ступень подсказки уже была показана. */
+    val hintsUsed: Boolean = false,
+    /** Номер для переноса только достижений при замене слова; ответы адресуются словом. */
+    val achievementLevelNumber: Int? = null,
 )
 
 /**
@@ -120,6 +126,12 @@ object CampaignRules {
                             evaluated.hints.preferredTaskId != saved.hints.preferredTaskId ||
                             evaluated.hints.ladder.paidSteps != saved.hints.ladder.paidSteps))
                 ) evaluated.hints else saved.hints,
+                // Признак выставляется в той же записи, что и первый показанный шаг,
+                // и не сбрасывается при смене лестницы, находке цели или пополнении запаса.
+                hintsUsed = saved.hintsUsed || saved.hints.shownSteps > 0 || saved.hints.paidUnits > 0 ||
+                    evaluated.hints.shownSteps > 0 || evaluated.hints.paidUnits > 0,
+                achievements = saved.achievements,
+                achievementLevelNumber = level.number.takeIf { saved.achievements.isNotEmpty() },
             )),
             highestUnlockedLevel = frontier,
             finaleReached = progress.finaleReached || (last && passed),

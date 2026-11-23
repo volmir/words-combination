@@ -116,4 +116,21 @@ class CampaignStatisticsAssemblerTest {
         assertEquals(1, played.levels.first().found)
         assertEquals(empty.levels.first().total, played.levels.first().total)
     }
+
+    @Test fun statisticsShowEarnedAndAvailableAchievementsPerLevel() {
+        val earned = setOf(LevelAchievement.EXPERT, LevelAchievement.LONG_WORD)
+        val result = assemble(progress(1 to CampaignLevelProgress(
+            found = listOf("рот"), completedTaskIds = setOf("a", "b"), achievements = earned)))
+        val row = result.levels.first()
+        assertEquals(earned, row.achievements)
+        assertEquals(setOf(LevelAchievement.NO_HINTS, LevelAchievement.EXPERT, LevelAchievement.COLLECTOR,
+            LevelAchievement.EXPLORER, LevelAchievement.STRAIGHT_A), row.achievementsAvailable)
+        assertEquals(2, result.achievementsEarned)
+        assertEquals(14, result.achievementsTotal)
+        assertEquals(emptySet<LevelAchievement>(), result.levels[1].achievements)
+
+        val withoutWords = CampaignStatisticsAssembler.assemble(campaign, CampaignProgress(), WordIndex(emptyList()))
+        assertEquals(2, withoutWords.achievementsTotal) // Два уровня с R < M: «Отличник».
+        assertEquals(0, withoutWords.achievementsEarned)
+    }
 }

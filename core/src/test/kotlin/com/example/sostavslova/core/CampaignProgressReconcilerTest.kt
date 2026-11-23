@@ -251,6 +251,149 @@ class CampaignProgressReconcilerTest {
         assertTrue(result.changes.any { it.kind == ReconciliationChangeKind.FOUND_WORDS_FILTERED })
     }
 
+    @Test fun retroactiveAchievementsAreGrantedByFoundWordsAndStarsDuringReconciliation() {
+        val source = "абвгдежзий"
+        val richWords = listOf("абвгд", "бвгд", "абвгдеж", "бвгдежзи", "вгдежзий", "абвгдежзи")
+        val richIndex = WordIndex(richWords)
+        val campaignWithOptionalTasks = Campaign(
+            listOf(Stage(1, 1, 1)),
+            listOf(CampaignLevel(1, source, 1, 1, listOf(
+                CampaignTask.T1("l1-t1", 1), CampaignTask.T1("l1-t2", 1)))),
+        )
+        val saved = CampaignProgress(
+            levels = mapOf(source to levelProgress(richWords, setOf("l1-t1", "l1-t2"))),
+            campaignId = "old",
+        )
+        val result = CampaignProgressReconciler.reconcile(saved, campaignWithOptionalTasks, richIndex)
+        val savedLevel = result.state.levels.getValue(source)
+        assertTrue(savedLevel.achievements.containsAll(LevelAchievement.entries))
+        assertTrue(result.changes.any {
+            it.kind == ReconciliationChangeKind.ACHIEVEMENTS_GRANTED && it.levelWord == source &&
+                it.detail?.contains(LevelAchievement.GIANT.name) == true
+        })
+        // Решение Дано: достижение не меняет звёзды, границу и счётчики подсказок.
+        assertEquals(2, CampaignRules.stars(campaignWithOptionalTasks.levels.first(), result.state))
+        assertEquals(1, result.state.highestUnlockedLevel)
+        assertEquals(0, savedLevel.hints.shownSteps)
+    }
+
+    @Test fun retroactiveGrantIsIdempotentAndSilentOnRepeat() {
+        val source = "рекуперация"
+        val campaign = Campaign(
+            listOf(Stage(1, 1, 1)),
+            listOf(CampaignLevel(1, source, 1, 1, listOf(CampaignTask.T1("l1-t1", 1)))),
+        )
+        val saved = CampaignProgress(levels = mapOf(source to levelProgress(
+            listOf("каре", "река"), setOf("l1-t1"))), campaignId = "old")
+        val first = CampaignProgressReconciler.reconcile(saved, campaign, index)
+        assertTrue(first.changes.any { it.kind == ReconciliationChangeKind.ACHIEVEMENTS_GRANTED })
+        val second = CampaignProgressReconciler.reconcile(first.state, campaign, index)
+        assertEquals(first.state, second.state)
+        assertFalse(second.changes.any { it.kind == ReconciliationChangeKind.ACHIEVEMENTS_GRANTED })
+    }
+
+    @Test fun earnedAchievementsSurviveThresholdDictionaryAndOtherLevelWordChanges() {
+        val firstWord = "рекуперация"
+        val secondWord = "опровержение"
+        val old = campaign(firstWord, secondWord)
+        val new = Campaign(
+            listOf(Stage(1, 1, 2)),
+            listOf(
+                CampaignLevel(1, firstWord, 1, 1, listOf(CampaignTask.T1("l1-t1", 4))),
+                CampaignLevel(2, "хлопкопункт", 1, 1, listOf(CampaignTask.T1("l2-t1", 1))),
+            ),
+        )
+        val saved = CampaignProgress(levels = mapOf(
+            firstWord to levelProgress(listOf("каре"), setOf("l1-t1")).copy(
+                achievements = setOf(LevelAchievement.EXPERT, LevelAchievement.GIANT, LevelAchievement.NO_HINTS),
+                hintsUsed = true,
+            ),
+            secondWord to levelProgress(listOf("перо"), setOf("l2-t1")).copy(
+                achievements = setOf(LevelAchievement.COLLECTOR),
+            ),
+        ), highestUnlockedLevel = 2, campaignId = CampaignIdentity.of(old))
+        val result = CampaignProgressReconciler.reconcile(saved, new, index, previousCampaign = old)
+        val firstLevel = result.state.levels.getValue(firstWord)
+        assertEquals(setOf(LevelAchievement.EXPERT, LevelAchievement.GIANT, LevelAchievement.NO_HINTS),
+            firstLevel.achievements)
+        assertTrue(firstLevel.hintsUsed)
+        assertFalse(result.changes.any {
+            it.kind == ReconciliationChangeKind.ACHIEVEMENTS_GRANTED && it.levelWord == firstWord
+        })
+        // Смена исходного слова другого уровня архивирует только его прогресс.
+        assertEquals(listOf(secondWord), result.resetLevels.map { it.word })
+        assertNull(result.state.levels[secondWord])
+        assertEquals(setOf(LevelAchievement.COLLECTOR), result.state.levels.getValue("хлопкопункт").achievements)
+    }
+
+    @Test fun hintsUsedIsDerivedForOldSavesWithoutTheField() {
+        val source = "рекуперация"
+        val campaign = campaign(source)
+        fun reconciled(hints: HintState) = CampaignProgressReconciler.reconcile(
+            CampaignProgress(levels = mapOf(source to levelProgress(listOf("каре"), emptySet(), hints))),
+            campaign, index,
+        )
+        assertTrue(reconciled(HintState(shownSteps = 2)).state.levels.getValue(source).hintsUsed)
+        assertTrue(reconciled(HintState(paidUnits = 1)).state.levels.getValue(source).hintsUsed)
+        assertFalse(reconciled(HintState()).state.levels.getValue(source).hintsUsed)
+    }
+
+    @Test fun achievementsSurviveSourceReplacementAndRestartWithNoPreviousCampaign() {
+        val old = campaign("рекуперация", "опровержение")
+        val earned = setOf(LevelAchievement.EXPERT, LevelAchievement.GIANT)
+        val seed = CampaignProgress(levels = mapOf(
+            "рекуперация" to CampaignLevelProgress(achievements = earned, hintsUsed = true),
+            "опровержение" to CampaignLevelProgress(achievements = setOf(LevelAchievement.COLLECTOR)),
+        ), highestUnlockedLevel = 2)
+        val saved = CampaignProgressReconciler.reconcile(seed, old, index).state
+        val changed = campaign("хлопкопункт", "опровержение")
+        val first = CampaignProgressReconciler.reconcile(saved, changed, index)
+        assertTrue(first.isCompatible)
+        val replacement = first.state.levels.getValue("хлопкопункт")
+        assertEquals(earned, replacement.achievements)
+        assertTrue(replacement.hintsUsed)
+        assertTrue(replacement.found.isEmpty())
+        assertTrue(replacement.completedTaskIds.isEmpty())
+        assertEquals(saved.levels.getValue("опровержение"), first.state.levels.getValue("опровержение"))
+        assertFalse(first.changes.any { it.kind == ReconciliationChangeKind.ACHIEVEMENTS_GRANTED })
+        assertEquals(first.state, CampaignProgressReconciler.reconcile(first.state, changed, index).state)
+
+        // Даже полная замена слов не отнимает достижения и не восстанавливает звёзды.
+        val replacedAll = campaign("хлопкопункт", "селитроварня")
+        val fullReplacement = CampaignProgressReconciler.reconcile(saved, replacedAll, index)
+        assertTrue(fullReplacement.isCompatible)
+        assertEquals(earned, fullReplacement.state.levels.getValue("хлопкопункт").achievements)
+        assertEquals(setOf(LevelAchievement.COLLECTOR),
+            fullReplacement.state.levels.getValue("селитроварня").achievements)
+    }
+
+    @Test fun sourceReplacementWithKnownHistoryRetainsAchievementsButNotAnswers() {
+        val old = campaign("рекуперация")
+        val saved = CampaignProgress(levels = mapOf("рекуперация" to levelProgress(
+            listOf("каре"), setOf("l1-t1")).copy(achievements = setOf(LevelAchievement.EXPERT))))
+        val result = CampaignProgressReconciler.reconcile(saved, campaign("хлопкопункт"), index,
+            previousCampaign = old)
+        assertTrue(result.isCompatible)
+        val replacement = result.state.levels.getValue("хлопкопункт")
+        assertEquals(setOf(LevelAchievement.EXPERT), replacement.achievements)
+        assertTrue(replacement.found.isEmpty())
+        assertTrue(replacement.completedTaskIds.isEmpty())
+    }
+
+    @Test fun unaddressableAchievementsRemainStoredWithoutAffectingOtherLevels() {
+        val target = campaign("рекуперация")
+        val orphan = CampaignLevelProgress(achievements = setOf(LevelAchievement.GIANT), hintsUsed = true)
+        val result = CampaignProgressReconciler.reconcile(
+            CampaignProgress(levels = mapOf("прежнее" to orphan.copy(found = listOf("кот")))), target, index)
+        assertEquals(listOf("прежнее"), result.resetLevels.map { it.word })
+        assertEquals(orphan, result.state.levels.getValue("прежнее"))
+        assertNull(result.state.levels["рекуперация"])
+        assertEquals(0, CampaignRules.summary(target, result.state).stars)
+        val again = CampaignProgressReconciler.reconcile(result.state, target, index)
+        assertEquals(result.state, again.state)
+        assertTrue(again.resetLevels.isEmpty())
+    }
+
     @Test fun numberAddressedLevelWithoutHistoryIsArchivedNotGuessed() {
         val campaign = campaign("рекуперация")
         val saved = CampaignProgress(

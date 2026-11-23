@@ -11,6 +11,7 @@ import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.HintRules
 import com.example.sostavslova.core.HintStage
+import com.example.sostavslova.core.LevelAchievement
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -58,8 +59,23 @@ class CampaignJsonUpgradeTest {
             var repository = ProgressRepository(store)
             val before = repository.observeCampaignProgress().first()
             val upgraded = repository.migrateCampaign(campaign, words)
-            assertEquals(before, upgraded)
+            assertTrue(before.levels.values.all { it.achievements.isEmpty() })
+            // Старые инварианты сохраняются; миграция добавляет только достижения.
+            assertEquals(before.levels.mapValues { it.value.found }, upgraded.levels.mapValues { it.value.found })
+            assertEquals(before.levels.mapValues { it.value.completedTaskIds }, upgraded.levels.mapValues { it.value.completedTaskIds })
+            assertEquals(before.levels.mapValues { it.value.hints }, upgraded.levels.mapValues { it.value.hints })
+            assertEquals(before.campaignId, upgraded.campaignId)
+            assertEquals(before.highestUnlockedLevel, upgraded.highestUnlockedLevel)
             assertNull(upgraded.resetReason)
+            val expectedAchievements = campaign.levels.filter { it.word in before.levels }.associate { level ->
+                level.word to when {
+                    level.word == target.word -> emptySet()
+                    level.requiredStars < level.maxStars ->
+                        setOf(LevelAchievement.NO_HINTS, LevelAchievement.STRAIGHT_A)
+                    else -> setOf(LevelAchievement.NO_HINTS)
+                }
+            }
+            assertEquals(expectedAchievements, upgraded.levels.mapValues { it.value.achievements })
             assertEquals(12, CampaignRules.frontier(campaign, upgraded))
             val current = requireNotNull(CampaignRules.openLevel(campaign, upgraded,12,words))
             assertEquals(listOf("билет"), current.game.found)
@@ -67,7 +83,18 @@ class CampaignJsonUpgradeTest {
             assertEquals(2,current.hints.paidUnits)
             assertEquals(1,HintRules.nextCost(current))
             repeat(2) { assertEquals(current, CampaignRules.openLevel(campaign, upgraded,12,words)) }
-            assertEquals(seed,store.data.first()[key])
+            val persisted = requireNotNull(store.data.first()[key])
+            assertNotEquals(seed, persisted)
+            val storedAchievements = JSONObject(persisted).getJSONObject("levels").let { storedLevels ->
+                campaign.levels.filter { it.word in before.levels }.associate { level ->
+                    val array = storedLevels.getJSONObject(level.word).getJSONArray("achievements")
+                    level.word to (0 until array.length()).map { array.getString(it) }.toSet()
+                }
+            }
+            assertEquals(
+                expectedAchievements.mapValues { (_, achievements) -> achievements.map { it.name }.toSet() },
+                storedAchievements,
+            )
             scope.cancel();scope.coroutineContext.job.join()
             scope=CoroutineScope(SupervisorJob()+Dispatchers.IO)
             store=PreferenceDataStoreFactory.create(scope=scope) { file }

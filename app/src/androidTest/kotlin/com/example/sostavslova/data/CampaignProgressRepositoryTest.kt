@@ -16,6 +16,7 @@ import com.example.sostavslova.core.CampaignTask
 import com.example.sostavslova.core.GameState
 import com.example.sostavslova.core.HintRules
 import com.example.sostavslova.core.HintStatus
+import com.example.sostavslova.core.LevelAchievement
 import com.example.sostavslova.core.Level
 import com.example.sostavslova.core.Stage
 import com.example.sostavslova.core.TaskType
@@ -182,6 +183,116 @@ class CampaignProgressRepositoryTest {
         val next = checkNotNull(repository.requestCampaignHint(campaign, 1, 8, index))
         assertEquals(3, next.step?.revealedPositions?.size)
         assertEquals(4, next.state.hints.paidUnits)
+    }
+
+    @Test fun achievementsAreGrantedInAnswerTransactionAndNeverRepeated() = runTest {
+        val first = repository.submitCampaignAnswerWithTransitions(campaign, 1, "крот", index)
+        assertEquals(AnswerResult.CORRECT, first.submission.result)
+        assertEquals(listOf(1 to LevelAchievement.NO_HINTS), first.newAchievements)
+        assertEquals(1, store.calls.get())
+
+        val second = repository.submitCampaignAnswerWithTransitions(campaign, 1, "карта", index)
+        assertEquals(listOf(1 to LevelAchievement.EXPERT), second.newAchievements)
+        val third = repository.submitCampaignAnswerWithTransitions(campaign, 1, "река", index)
+        assertEquals(listOf(1 to LevelAchievement.COLLECTOR), third.newAchievements)
+        val saved = snapshot().levels.getValue("картотека")
+        assertEquals(setOf(LevelAchievement.NO_HINTS, LevelAchievement.EXPERT, LevelAchievement.COLLECTOR),
+            saved.achievements)
+        assertEquals(listOf("крот", "карта", "река"), saved.found)
+        // Выдача только читает звёзды, доступ и бюджет подсказок.
+        val after = snapshot()
+        assertEquals(2, CampaignRules.summary(campaign, after).stars)
+        assertEquals(2, after.highestUnlockedLevel)
+        val open = checkNotNull(CampaignRules.openLevel(campaign, after, 1, index))
+        assertEquals(5, HintRules.budget(open).remaining)
+
+        val repeated = repository.submitCampaignAnswerWithTransitions(campaign, 1, "карта", index)
+        assertEquals(AnswerResult.ALREADY_FOUND, repeated.submission.result)
+        assertTrue(repeated.newAchievements.isEmpty())
+        assertEquals(saved, snapshot().levels.getValue("картотека"))
+
+        val otherLevel = repository.submitCampaignAnswerWithTransitions(campaign, 2, "крот", index)
+        assertEquals(listOf(2 to LevelAchievement.NO_HINTS), otherLevel.newAchievements)
+        assertEquals(saved, snapshot().levels.getValue("картотека"))
+        assertEquals(setOf(LevelAchievement.NO_HINTS), snapshot().levels.getValue("электрокарта").achievements)
+    }
+
+    @Test fun firstHintStepSetsPersistentFlagInTheSameWrite() = runTest {
+        val hint = checkNotNull(repository.requestCampaignHint(campaign, 1, 0, index))
+        assertEquals(HintStatus.SHOWN, hint.status)
+        val saved = snapshot().levels.getValue("картотека")
+        assertTrue(saved.hintsUsed)
+        assertEquals(1, saved.hints.shownSteps)
+        repository.submitCampaignAnswerWithTransitions(campaign, 1, "карта", index)
+        assertTrue(snapshot().levels.getValue("картотека").hintsUsed)
+        restart()
+        assertTrue(snapshot().levels.getValue("картотека").hintsUsed)
+    }
+
+    @Test fun achievementsSurviveFileReopenAndSourceReplacementIndependentlyPerLevel() = runTest {
+        val words = WordIndex(listOf("абв", "абвгдеж"))
+        val original = Campaign(listOf(Stage(1, 1, 2)), listOf("абвгдежзий", "абвгдежзийк").mapIndexed { i, word ->
+            CampaignLevel(i + 1, word, 1, 1, listOf(CampaignTask.T1("count", 1)))
+        })
+        val expected = setOf(LevelAchievement.NO_HINTS, LevelAchievement.EXPERT,
+            LevelAchievement.COLLECTOR, LevelAchievement.LONG_WORD)
+        for (number in 1..2) {
+            val update = repository.submitCampaignAnswerWithTransitions(original, number, "абвгдеж", words)
+            assertEquals(expected.map { number to it }, update.newAchievements)
+        }
+        val before = snapshot()
+        restart()
+        assertEquals(before, snapshot())
+        val replacement = original.copy(levels = original.levels.map {
+            if (it.number == 1) it.copy(word = "хлопкопункт") else it
+        })
+        val migrated = repository.migrateCampaign(replacement, words)
+        assertEquals(expected, migrated.levels.getValue("хлопкопункт").achievements)
+        assertTrue(migrated.levels.getValue("хлопкопункт").found.isEmpty())
+        assertTrue(migrated.levels.getValue("хлопкопункт").completedTaskIds.isEmpty())
+        assertEquals(before.levels.getValue("абвгдежзийк"), migrated.levels.getValue("абвгдежзийк"))
+        restart()
+        assertEquals(migrated, repository.migrateCampaign(replacement, words))
+        val repeat = repository.submitCampaignAnswerWithTransitions(replacement, 2, "абв", words)
+        assertEquals(listOf(2 to LevelAchievement.EXPLORER), repeat.newAchievements)
+        assertEquals(expected, snapshot().levels.getValue("хлопкопункт").achievements)
+    }
+
+    @Test fun freeT4HintUsageSurvivesSolvedTargetTaskSwitchRefillAndReset() = runTest {
+        repository.selectCampaignHintTask(campaign, 1, "riddle", index)
+        val hint = checkNotNull(repository.requestCampaignHint(campaign, 1, 0, index))
+        assertEquals(HintStatus.SHOWN, hint.status)
+        assertEquals(0, hint.state.hints.paidUnits)
+        assertTrue(snapshot().levels.getValue("картотека").hintsUsed)
+        val target = checkNotNull(hint.state.hints.ladder.target).word
+        val remaining = listOf("кот", "торт", "крот", "карта").filter { it != target }
+        for (word in listOf(target) + remaining) {
+            val update = repository.submitCampaignAnswerWithTransitions(campaign, 1, word, index)
+            assertFalse(update.newAchievements.any { it.second == LevelAchievement.NO_HINTS })
+            assertTrue(snapshot().levels.getValue("картотека").hintsUsed)
+        }
+        val open = checkNotNull(CampaignRules.openLevel(campaign, snapshot(), 1, index))
+        assertEquals(1, HintRules.budget(open).earned)
+        repository.selectCampaignHintTask(campaign, 1, "initial", index)
+        restart()
+        assertTrue(snapshot().levels.getValue("картотека").hintsUsed)
+        repository.resetCampaignProgress()
+        assertTrue(snapshot().levels.isEmpty())
+        repository.submitCampaignAnswerWithTransitions(campaign, 1, "крот", index)
+        val fresh = snapshot().levels.getValue("картотека")
+        assertFalse(fresh.hintsUsed)
+        assertEquals(setOf(LevelAchievement.NO_HINTS), fresh.achievements)
+    }
+
+    @Test fun repeatedMigrationOfUnaddressableAchievementsDoesNotCreateMoreArchives() = runTest {
+        store.edit { it[key] = """{"version":2,"levels":{"прежнее":{
+            "found":["кот"],"achievements":["GIANT"],"hintsUsed":true}}}""" }
+        val migrated = repository.migrateCampaign(campaign, index)
+        assertEquals(setOf(LevelAchievement.GIANT), migrated.levels.getValue("прежнее").achievements)
+        val persisted = store.data.first()
+        restart()
+        assertEquals(migrated, repository.migrateCampaign(campaign, index))
+        assertEquals(persisted, store.data.first())
     }
 
     @Test fun oneAnswerPersistsSeveralStarsAndUnlockInOneTransactionAndOneSnapshot() = runTest {
