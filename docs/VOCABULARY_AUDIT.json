@@ -153,7 +153,7 @@
       "would_break": false
     },
     {
-      "count": 451,
+      "count": 452,
       "hits": [
         "педераст",
         "перед"
@@ -167,15 +167,15 @@
         ]
       },
       "level": 11,
-      "margin": 432,
-      "margin_after_removal": 430,
+      "margin": 433,
+      "margin_after_removal": 431,
       "needed": 19,
       "task_id": "l11-t1",
       "type": "T1",
       "would_break": false
     },
     {
-      "count": 105,
+      "count": 106,
       "hits": [
         "педераст",
         "перед"
@@ -189,8 +189,8 @@
         ]
       },
       "level": 11,
-      "margin": 99,
-      "margin_after_removal": 97,
+      "margin": 100,
+      "margin_after_removal": 98,
       "needed": 6,
       "task_id": "l11-t2",
       "type": "T2",
@@ -215,7 +215,7 @@
       "would_break": false
     },
     {
-      "count": 442,
+      "count": 443,
       "hits": [
         "клитор"
       ],
@@ -225,8 +225,8 @@
         ]
       },
       "level": 12,
-      "margin": 422,
-      "margin_after_removal": 421,
+      "margin": 423,
+      "margin_after_removal": 422,
       "needed": 20,
       "task_id": "l12-t1",
       "type": "T1",
@@ -3090,7 +3090,7 @@
     },
     "words": {
       "path": "data/words.txt",
-      "sha256": "52830763a161476c0d43f23f74e3c3014bddcd49fb2721eb08dae03a2bc7cd01"
+      "sha256": "a8964442ca99334cf3c1ae198fc5a61e476c52ac250992abd3002d75f4f960f5"
     }
   },
   "known_narrow_tasks": [
@@ -3463,29 +3463,29 @@
       "word": "пуэрториканец"
     },
     {
-      "answers_count": 526,
+      "answers_count": 527,
       "number": 11,
       "required_stars": 4,
       "stage": 5,
       "tasks": [
         {
-          "count": 451,
+          "count": 452,
           "exact_target": false,
           "id": "l11-t1",
-          "margin": 432,
+          "margin": 433,
           "needed": 19,
           "parameter": "n=19",
-          "threshold_share": 0.042129,
+          "threshold_share": 0.042035,
           "type": "T1"
         },
         {
-          "count": 105,
+          "count": 106,
           "exact_target": false,
           "id": "l11-t2",
-          "margin": 99,
+          "margin": 100,
           "needed": 6,
           "parameter": "n=6, letter=п",
-          "threshold_share": 0.057143,
+          "threshold_share": 0.056604,
           "type": "T2"
         },
         {
@@ -3522,19 +3522,19 @@
       "word": "подстрекатель"
     },
     {
-      "answers_count": 543,
+      "answers_count": 544,
       "number": 12,
       "required_stars": 4,
       "stage": 5,
       "tasks": [
         {
-          "count": 442,
+          "count": 443,
           "exact_target": false,
           "id": "l12-t1",
-          "margin": 422,
+          "margin": 423,
           "needed": 20,
           "parameter": "n=20",
-          "threshold_share": 0.045249,
+          "threshold_share": 0.045147,
           "type": "T1"
         },
         {
@@ -3568,13 +3568,13 @@
           "type": "T4"
         },
         {
-          "count": 56,
+          "count": 57,
           "exact_target": false,
           "id": "l12-t5",
-          "margin": 55,
+          "margin": 56,
           "needed": 1,
           "parameter": "ending=ка, minLength=5",
-          "threshold_share": 0.017857,
+          "threshold_share": 0.017544,
           "type": "T5"
         }
       ],
@@ -3916,7 +3916,7 @@
         "title": "Продуктивные уменьшительные"
       }
     ],
-    "dictionary_words": 20097,
+    "dictionary_words": 20103,
     "levels": 15,
     "narrow_levels": [
       11,

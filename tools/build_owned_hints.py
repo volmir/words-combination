@@ -37,15 +37,26 @@ def coverage(candidate, campaign):
 
 
 def dictionary_matches_index(index_sha, words, manifest):
-    """Keep the approved index immutable across a deletion-only dictionary update.
+    """Keep the approved index immutable across exact owner-approved deltas.
 
     Reconstruct the exact original dictionary bytes and verify their approved
-    hash. An added word, undeclared deletion or changed provenance still fails.
+    hash. Only the six DICT-03B additions are reversible here; any other addition,
+    undeclared deletion or changed provenance still fails.
     Target presence is checked separately for every indexed and assigned word.
     """
     current = hashlib.sha256(("\n".join(sorted(words)) + "\n").encode('utf-8')).hexdigest()
     if current == index_sha:
         return True
+    delta = manifest.get('selection', {}).get('independent_words')
+    if delta is not None:
+        # This fixed list is the owner's DICT-03B decision, not arbitrary manifest input.
+        approved = {'дедушка', 'грядка', 'книжка', 'дочка', 'полка', 'головка'}
+        added = delta.get('added') if isinstance(delta, dict) else None
+        if (not isinstance(added, list) or any(not isinstance(w, str) for w in added)
+                or len(added) != len(approved) or set(added) != approved or not approved <= words
+                or delta.get('task') != 'DICT-03B' or delta.get('reason') != 'owner-confirmed-independent'):
+            return False
+        words = words - approved
     removed = manifest.get('selection', {}).get('word_cleanup', {}).get('excluded', [])
     if (not isinstance(removed, list) or not removed or
             any(not isinstance(w, str) or not re.fullmatch(r'[а-я]{3,30}', w) for w in removed) or

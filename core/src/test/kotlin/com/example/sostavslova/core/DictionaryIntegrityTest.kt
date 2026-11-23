@@ -14,6 +14,7 @@ class DictionaryIntegrityTest {
 
     @Test
     fun countMatchesManifest() {
+        assertEquals(20103, words.size)
         assertEquals(TestData.manifest.getInt("words"), words.size)
     }
 
@@ -37,7 +38,7 @@ class DictionaryIntegrityTest {
 
     @Test
     fun cleanupExcludesMarkedFormsAndKeepsIndependentMeanings() {
-        for (word in listOf("ножик", "кровотеченье", "тать",
+        for (word in listOf("ножик", "кровотеченье", "тать", "корзинка",
             "цветик", "лапонька", "мальчишка", "девчонка", "печенька", "звездочка",
             "улочка", "пупочка", "лапочка", "четверочка", "тапочка", "дяденька",
             "батенька", "тятенька", "мишка", "малышка", "ледышка",
@@ -45,7 +46,8 @@ class DictionaryIntegrityTest {
             assertFalse(TestData.index.contains(word), "Форма не должна входить в очищенную базу: $word")
         }
         for (word in listOf("механик", "ручка", "дерево", "каша", "зарплата", "профсоюз",
-            "они", "оно", "она", "под", "перед", "мол", "тут")) {
+            "они", "оно", "она", "под", "перед", "мол", "тут",
+            "дедушка", "грядка", "книжка", "дочка", "полка", "головка")) {
             assertTrue(TestData.index.contains(word), "Утрачено самостоятельное современное слово: $word")
         }
     }

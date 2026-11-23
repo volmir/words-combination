@@ -1,4 +1,4 @@
-"""Deletion-only updates remain cryptographically bound to the approved index."""
+"""Exact owner-approved deltas remain bound to the immutable approved index."""
 import hashlib
 import unittest
 from tools.build_owned_hints import dictionary_matches_index
@@ -26,3 +26,16 @@ class DictionaryDeltaTest(unittest.TestCase):
         for removed in (None, [], ['лапочка'], ['лапочка', 'печенька', 'печенька'],
                         ['лапочка', 'печенька', 'кот'], ['лапочка', 'печенька', 'чужое']):
             self.assertFalse(dictionary_matches_index(self.sha, {'кот'}, self.manifest(removed)))
+
+    def test_exact_dict03b_additions_reconstruct_original_index(self):
+        added = ['головка', 'грядка', 'дедушка', 'дочка', 'книжка', 'полка']
+        manifest = self.manifest(['лапочка', 'печенька'])
+        manifest['selection']['independent_words'] = {'task': 'DICT-03B', 'added': added,
+                                                     'reason': 'owner-confirmed-independent'}
+        self.assertTrue(dictionary_matches_index(self.sha, {'кот'} | set(added), manifest))
+        for changed in (added[:-1], added + ['корзинка'], added + [added[0]], None):
+            manifest['selection']['independent_words']['added'] = changed
+            self.assertFalse(dictionary_matches_index(self.sha, {'кот'} | set(added), manifest))
+        manifest['selection']['independent_words']['added'] = added
+        self.assertFalse(dictionary_matches_index(self.sha, {'кот', 'река'} | set(added), manifest))
+        self.assertFalse(dictionary_matches_index(self.sha, {'кот'} | (set(added) - {'полка'}), manifest))

@@ -33,6 +33,30 @@
     "restricted_labels": ["истор", "религ", "церк", "библ", "женск", "субстантивир", "субстант", "советск"],
     "productive_compound_prefixes": ["авиа", "агит", "воен", "гос", "глав", "парт", "полит", "пром", "проф", "рай", "рев", "сель", "сов", "соц", "спец", "тех"],
     "lexicalized_diminutives": {
+      "дедушка": {
+        "base": "дед",
+        "reason": "owner-confirmed-independent"
+      },
+      "грядка": {
+        "base": "гряда",
+        "reason": "owner-confirmed-independent"
+      },
+      "книжка": {
+        "base": "книга",
+        "reason": "owner-confirmed-independent"
+      },
+      "дочка": {
+        "base": "дочь",
+        "reason": "owner-confirmed-independent"
+      },
+      "полка": {
+        "base": "пола",
+        "reason": "owner-confirmed-independent"
+      },
+      "головка": {
+        "base": "голова",
+        "reason": "owner-confirmed-independent"
+      },
       "ручка": {
         "base": "рука",
         "reason": "owner-confirmed-lexicalization; docs/CAMPAIGN.md"

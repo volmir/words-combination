@@ -141,6 +141,23 @@ class CleanupTest(unittest.TestCase):
         self.assertEqual(1, self.decide(records)["замочек"]["usable_sense_count"])
         self.assertEqual(["ambiguous_diminutive_usage"], self.decide(records)["замочек"]["reasons"])
 
+    def test_dict03b_only_the_owner_list_overrides_diminutive_rejection(self):
+        pairs = (("дедушка", "дед"), ("грядка", "гряда"), ("книжка", "книга"),
+                 ("дочка", "дочь"), ("полка", "пола"), ("головка", "голова"))
+        records = self.records(*(article(word, "уменьшительное от " + base) for word, base in pairs),
+                               article("корзинка", "уменьшительное от корзина"),
+                               article("предметик", "уменьшительное от предмет"))
+        decisions = self.decide(records)
+        for word, _ in pairs:
+            self.assertEqual("keep", decisions[word]["decision"], word)
+            self.assertIn("owner-confirmed-independent", decisions[word]["roles"]["answer"]["exception"])
+        for word in ("корзинка", "предметик"):
+            self.assertEqual("exclude", decisions[word]["decision"], word)
+            self.assertEqual(["diminutive"], decisions[word]["reasons"])
+        for word, base in pairs:
+            bad = self.records(article(word, "диал. уменьшительное от " + base))
+            self.assertNotEqual("keep", self.decide(bad)[word]["decision"], word)
+
     def test_owner_lexicalization_requires_source_and_does_not_override_bad_labels(self):
         records = self.records(*(article(w, "уменьшительное от " + base) for w, base in
             (("ручка", "рука"), ("ножка", "нога"), ("рыбка", "рыба"),

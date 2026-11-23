@@ -56,6 +56,36 @@ class GameStateTest {
     }
 
     @Test
+    fun ownerApprovedIndependentWordsAreAcceptedUsingInstalledDictionary() {
+        val accepted = listOf("дедушка", "грядка", "книжка", "дочка", "полка", "головка")
+        val rejected = listOf("корзинка", "печенька", "мишка", "тапочка")
+        // Максимум кратности каждой буквы: все десять слов составимы из одного исходника.
+        val source = (accepted + rejected).flatMap { it.toList() }.distinct().sorted()
+            .joinToString("") { letter ->
+                letter.toString().repeat((accepted + rejected).maxOf { word -> word.count { it == letter } })
+            }
+        assertTrue(source.length <= Alphabet.MAX_WORD_LENGTH)
+        var state = GameState.start(source, TestData.index)
+        for (word in accepted + rejected) {
+            for (letter in word.toSet()) {
+                assertTrue(word.count { it == letter } <= source.count { it == letter }, word)
+            }
+            val before = state.found
+            val submission = state.submit(word, TestData.index)
+            if (word in accepted) {
+                assertEquals(AnswerResult.CORRECT, submission.result, word)
+                assertEquals(before + word, submission.state.found, word)
+            } else {
+                assertEquals(AnswerResult.NOT_FOUND, submission.result, word)
+                assertEquals(before, submission.state.found, word)
+                assertFalse(word in submission.state.found, word)
+            }
+            println("DICT-03B: $word ${submission.result} found=${before.size}->${submission.state.found.size}")
+            state = submission.state
+        }
+    }
+
+    @Test
     fun finishesWhenAllFound() {
         var s = start()
         for (w in listOf("рот", "тор", "тот")) s = s.submit(w).state
