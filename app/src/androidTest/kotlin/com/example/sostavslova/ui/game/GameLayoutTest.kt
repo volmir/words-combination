@@ -36,6 +36,44 @@ class GameLayoutTest {
 
     private data class SlotsCase(val width: Int, val fontScale: Float, val pattern: String)
 
+    @Test fun inputControlsAndTilesFitAllWidthsAndFontScalesInBothModes() {
+        data class Case(val width: Int, val scale: Float, val word: String,
+            val mode: com.example.sostavslova.data.InputMode)
+        val cases = listOf(320, 360, 411).flatMap { width ->
+            listOf(1f, 2f).flatMap { scale ->
+                listOf("картотек", "чемпионство", "благодарность").flatMap { word ->
+                    com.example.sostavslova.data.InputMode.entries.map { Case(width, scale, word, it) }
+                }
+            }
+        }
+        val current = mutableStateOf(cases.first())
+        compose.setContent {
+            val case = current.value
+            val base = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(base.density, case.scale)) {
+                WordsTheme {
+                    Box(Modifier.width(case.width.dp)) {
+                        GameScreen(GameUiState(loading = false, game = GameState(case.word, listOf("кот")),
+                            input = "кот", inputMode = case.mode), {}, {}, {}, {})
+                    }
+                }
+            }
+        }
+        for (case in cases) {
+            compose.runOnIdle { current.value = case }
+            compose.onNodeWithTag("game_shuffle").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithTag("game_backspace").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithTag("game_input_mode_toggle").performScrollTo().assertIsDisplayed()
+            checkLayout()
+            val tiles = case.word.indices.map { index ->
+                compose.onNodeWithTag("source_word_tile_${index + 1}", useUnmergedTree = true).fetchSemanticsNode()
+            }
+            val rows = tiles.groupBy { it.positionInRoot.y.roundToInt() }.values.map { it.size }
+            assertTrue("$case: больше трёх строк $rows", rows.size <= 3)
+            assertTrue("$case: неровные строки $rows", rows.max() - rows.min() <= 1)
+        }
+    }
+
     @Test fun largestInstalledLevelFitsNarrowScreenAtDoubleFontScale() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val campaign = CampaignJson.decode(

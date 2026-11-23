@@ -62,11 +62,11 @@ class GameViewModelTest {
     private suspend fun model(handle: SavedStateHandle = SavedStateHandle(mapOf("index" to route)),
         repository: ProgressRepository = progress, meanings: RiddlesRepository = noDefinitions,
         wordRepository: WordRepository = words, levelRepository: LevelsRepository = levels,
-        retainedOwner: ViewModelStoreOwner? = null): GameViewModel = withContext(Dispatchers.Main) {
+        retainedOwner: ViewModelStoreOwner? = null, shuffleSeed: () -> Long = { 17L }): GameViewModel = withContext(Dispatchers.Main) {
         val owner = retainedOwner ?: object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
         if (owner !in owners) owners.add(owner)
         ViewModelProvider(owner, viewModelFactory { initializer {
-            GameViewModel(handle, wordRepository, levelRepository, repository, meanings)
+            GameViewModel(handle, wordRepository, levelRepository, repository, meanings, shuffleSeed = shuffleSeed)
         } })[GameViewModel::class.java]
     }
 
@@ -84,6 +84,66 @@ class GameViewModelTest {
         achievements: List<LevelAchievement> = emptyList()) {
         // UX-08: отдельные баннеры наград заменены одним сообщением со всеми строками.
         assertEquals(awardMessage(count, nextLevel, achievements), message)
+    }
+
+    @Test fun tileTapsUseAvailableLettersAndBackspaceAndLongPressReleaseThem() = runTest {
+        val model = model()
+        val ready = model.ready()
+        assertEquals(InputMode.TOUCH, ready.inputMode)
+        assertEquals(com.example.sostavslova.core.LetterOrder.natural("картотека"), ready.tileOrder)
+        withContext(Dispatchers.Main) {
+            model.onTileTap('к'); model.onTileTap('к'); model.onTileTap('к')
+            model.onTileTap('я')
+        }
+        assertEquals("кк", model.uiState.value.input)
+        assertEquals(2, com.example.sostavslova.core.TileUsage.usedMask("картотека",
+            ready.tileOrder, model.uiState.value.input).count { it })
+        withContext(Dispatchers.Main) { model.onBackspace(); model.onTileTap('о') }
+        assertEquals("ко", model.uiState.value.input)
+        withContext(Dispatchers.Main) { model.onClearInput(); model.onBackspace() }
+        assertEquals("", model.uiState.value.input)
+        withContext(Dispatchers.Main) { "картотека".forEach(model::onTileTap); model.onTileTap('к') }
+        assertEquals("картотека", model.uiState.value.input)
+        assertFalse(com.example.sostavslova.core.TileUsage.canTake("картотека",
+            ready.tileOrder, model.uiState.value.input))
+    }
+
+    @Test fun shuffleUsesInjectedSeedPreservesInputAndSurvivesProgressUpdates() = runTest {
+        val seeds = ArrayDeque(listOf(31L, 47L))
+        val model = model(shuffleSeed = { seeds.removeFirst() })
+        val ready = model.ready()
+        withContext(Dispatchers.Main) { "кот".forEach(model::onTileTap); model.onShuffle() }
+        val first = com.example.sostavslova.core.LetterOrder.shuffled("картотека", 31L, ready.tileOrder)
+        assertEquals("кот", model.uiState.value.input)
+        assertEquals(first, model.uiState.value.tileOrder)
+        withContext(Dispatchers.Main) { model.onShuffle() }
+        val second = com.example.sostavslova.core.LetterOrder.shuffled("картотека", 47L, first)
+        assertEquals(second, model.uiState.value.tileOrder)
+        assertEquals("кот", model.uiState.value.input)
+        val correct = model.answer("карта")
+        assertEquals("", correct.input)
+        assertEquals(second, correct.tileOrder)
+        val next = model(SavedStateHandle(mapOf("index" to "2"))).ready()
+        assertEquals(com.example.sostavslova.core.LetterOrder.natural(requireNotNull(next.game).word), next.tileOrder)
+    }
+
+    @Test fun inputModeIsRememberedAcrossModelsAndCampaignResetWithoutChangingDraftOrCampaign() = runTest {
+        val model = model()
+        model.ready()
+        val before = progress.observeCampaignProgress().first()
+        withContext(Dispatchers.Main) { model.onInputChanged("Кот"); model.onToggleInputMode() }
+        model.await { it.inputMode == InputMode.KEYBOARD && !it.inputModeSaving }
+        assertEquals("Кот", model.uiState.value.input)
+        assertEquals(before, progress.observeCampaignProgress().first())
+        assertEquals(InputMode.KEYBOARD, model().ready().inputMode)
+        // Плитки работают также при редактируемом вводе, с той же нормализацией.
+        withContext(Dispatchers.Main) { model.onTileTap('к'); model.onTileTap('к') }
+        assertEquals("Котк", model.uiState.value.input)
+        progress.resetCampaignProgress()
+        assertEquals(InputMode.KEYBOARD, progress.observeInputMode().first())
+        withContext(Dispatchers.Main) { model.onToggleInputMode() }
+        model.await { it.inputMode == InputMode.TOUCH && !it.inputModeSaving }
+        assertEquals(InputMode.TOUCH, model().ready().inputMode)
     }
 
     @Test fun nextLevelUsesCommittedUnlockAllowsMoreStarsAndWaitsForSaveBarrier() = runTest {

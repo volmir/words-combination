@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.stats
 
+import com.example.sostavslova.ui.gameKeyboardInput
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -60,7 +61,7 @@ class StatsNavigationTest {
         if (compose.onAllNodesWithText("Новые задания этапа").fetchSemanticsNodes().isNotEmpty()) {
             compose.onNodeWithText("Закрыть").performClick()
         }
-        compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("черновик")
+        compose.gameKeyboardInput().performScrollTo().performTextReplacement("черновик")
         openStats()
         val progress = container.progressRepository.observeCampaignProgress().first()
         // Recomposition, scrolling and recreation on the stats route never change progress.
@@ -76,7 +77,7 @@ class StatsNavigationTest {
         compose.onNodeWithTag("levels_screen").assertIsDisplayed()
         compose.onNodeWithTag("level_card_1").performClick()
         awaitTag("game_tasks_summary")
-        compose.onNode(hasSetTextAction()).assertTextEquals("")
+        compose.gameKeyboardInput().assertTextEquals("")
         compose.onNodeWithTag("game_found_summary").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("game_word_statistics").assertDoesNotExist()
         compose.onNodeWithTag("game_back").performClick()

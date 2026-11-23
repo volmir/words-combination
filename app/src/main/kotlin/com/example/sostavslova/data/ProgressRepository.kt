@@ -131,6 +131,16 @@ class ProgressRepository(
     private val campaignProgressKey = stringPreferencesKey("campaignProgressV2")
     private val campaignProgressArchiveKey = stringPreferencesKey("campaignProgressV2Archive")
     private val welcomeStateKey = stringPreferencesKey("welcomeStateV1")
+    private val inputModeKey = stringPreferencesKey("inputModeV1")
+
+    fun observeInputMode(): Flow<InputMode> = dataStore.data.map { preferences ->
+        InputMode.entries.firstOrNull { it.name == preferences[inputModeKey] } ?: InputMode.TOUCH
+    }.distinctUntilChanged().flowOn(computationDispatcher)
+
+    suspend fun setInputMode(mode: InputMode) = committedWrite {
+        dataStore.edit { it[inputModeKey] = mode.name }
+        Unit
+    }
     // Один неизменяемый снимок, строго по полному JSON, включая внешние записи/сброс.
     // Кэш не является квитанцией commit: чтение всё равно начинается с DataStore.
     @Volatile private var decodedCampaign: Pair<String, CampaignProgress>? = null
@@ -517,7 +527,10 @@ class ProgressRepository(
             preferences.remove(levelAnswersKey)
             preferences.remove(legacyLevelsKey)
             preferences.remove(campaignProgressKey)
-            if (!preserveWelcome) preferences.remove(welcomeStateKey)
+            if (!preserveWelcome) {
+                preferences.remove(welcomeStateKey)
+                preferences.remove(inputModeKey)
+            }
             preferences.asMap().keys
                 .filter { it.name == campaignProgressArchiveKey.name || it.name.startsWith("${campaignProgressArchiveKey.name}.") }
                 .forEach { preferences.remove(it) }

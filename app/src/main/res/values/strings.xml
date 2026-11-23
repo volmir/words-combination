@@ -306,4 +306,16 @@
     <string name="achievement_count_length_tile">%1$d×%2$d+</string>
     <string name="level_achievements">Достижения: %1$d из %2$d</string>
     <string name="level_progress_description">%1$s. %2$s</string>
+    <string name="game_keyboard">Клавиатура</string>
+    <string name="game_touch">Касание</string>
+    <string name="game_keyboard_description">Открыть клавиатуру</string>
+    <string name="game_touch_description">Ввод касанием</string>
+    <string name="game_input_entered">Введено: %1$s</string>
+    <string name="game_tile_add">Буква %1$s, добавить</string>
+    <string name="game_tile_used">Буква %1$s, уже использована</string>
+    <string name="game_backspace">Стереть</string>
+    <string name="game_backspace_description">Стереть последнюю букву</string>
+    <string name="game_clear_description">Очистить всё</string>
+    <string name="game_shuffle">Перемешать</string>
+    <string name="game_shuffle_description">Перемешать буквы</string>
 </resources>

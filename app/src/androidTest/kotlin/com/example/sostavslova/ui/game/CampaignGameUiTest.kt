@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.game
 
+import com.example.sostavslova.ui.gameKeyboardInput
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
@@ -353,16 +354,17 @@ class CampaignGameUiTest {
         val state = mutableStateOf(initial)
         compose.setContent {
             WordsTheme {
-                GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {})
+                GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {},
+                    onToggleInputMode = { state.value = state.value.copy(inputMode = com.example.sostavslova.data.InputMode.KEYBOARD) })
             }
         }
-        compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("кот")
+        compose.gameKeyboardInput().performScrollTo().performTextReplacement("кот")
         compose.onNodeWithTag("level_task_t4").performScrollTo().assertExists()
-        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("кот")
+        compose.gameKeyboardInput().performScrollTo().assertTextEquals("кот")
         compose.runOnIdle { state.value = state.value.copy(message = GameMessage(com.example.sostavslova.R.string.correct_answer)) }
         compose.onNodeWithTag("level_task_t6").performScrollTo().assertExists()
         compose.onNodeWithTag("level_task_t7").performScrollTo().assertExists()
-        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("кот")
+        compose.gameKeyboardInput().performScrollTo().assertTextEquals("кот")
         compose.runOnIdle {
             state.value = state.value.copy(
                 campaignLevel = evaluated.state.copy(level = evaluated.state.level.copy(number = 8,
@@ -372,17 +374,18 @@ class CampaignGameUiTest {
         compose.onNodeWithTag("level_task_t1").performScrollTo().assertExists()
         compose.onNodeWithTag("level_task_t4").assertDoesNotExist()
         compose.onNodeWithTag("game_riddle_preview").assertDoesNotExist()
-        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("кот")
+        compose.gameKeyboardInput().performScrollTo().assertTextEquals("кот")
     }
 
     @Test fun longInputIsNotTruncatedAndKeepsAccessibleLabel() {
         val state = mutableStateOf(initial)
         compose.setContent {
             WordsTheme {
-                GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {})
+                GameScreen(state.value, { state.value = state.value.copy(input = it) }, {}, {}, {},
+                    onToggleInputMode = { state.value = state.value.copy(inputMode = com.example.sostavslova.data.InputMode.KEYBOARD) })
             }
         }
-        val input = compose.onNode(hasSetTextAction())
+        val input = compose.gameKeyboardInput()
         val long = "а".repeat(31)
         input.performScrollTo().performTextInput(long)
         input.assertTextEquals(long)

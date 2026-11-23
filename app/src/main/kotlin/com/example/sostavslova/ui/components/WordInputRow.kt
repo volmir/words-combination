@@ -48,6 +48,8 @@ fun WordInputRow(
     maxLength: Int? = Alphabet.MAX_WORD_LENGTH,
     onLengthExceeded: ((String) -> Unit)? = null,
     focusRequester: FocusRequester? = null,
+    inputModifier: Modifier = Modifier,
+    submitModifier: Modifier = Modifier,
 ) {
     val submit = { if (enabled) onSubmit() }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -65,7 +67,7 @@ fun WordInputRow(
                             onValueChange(it)
                         }
                     },
-                    modifier = fieldModifier.then(if (focusRequester == null) Modifier else Modifier.focusRequester(focusRequester))
+                    modifier = fieldModifier.then(inputModifier).then(if (focusRequester == null) Modifier else Modifier.focusRequester(focusRequester))
                         .semantics { contentDescription = label },
                     enabled = inputEnabled,
                     singleLine = true,
@@ -92,12 +94,12 @@ fun WordInputRow(
             if (stacked) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     field(Modifier.fillMaxWidth())
-                    InputButton(buttonText, enabled, submit, Modifier.fillMaxWidth())
+                    InputButton(buttonText, enabled, submit, Modifier.fillMaxWidth().then(submitModifier))
                 }
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     field(Modifier.weight(1f))
-                    InputButton(buttonText, enabled, submit)
+                    InputButton(buttonText, enabled, submit, submitModifier)
                 }
             }
         }

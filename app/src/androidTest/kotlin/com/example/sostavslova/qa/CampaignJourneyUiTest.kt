@@ -1,5 +1,6 @@
 package com.example.sostavslova.qa
 
+import com.example.sostavslova.ui.gameKeyboardInput
 import android.app.Activity
 import android.net.Uri
 import androidx.activity.OnBackPressedDispatcher
@@ -112,7 +113,7 @@ class CampaignJourneyUiTest {
             null -> Unit
         }
         dismissExplanation()
-        compose.onNode(hasSetTextAction()).performScrollTo().assertIsEnabled()
+        compose.gameKeyboardInput().performScrollTo().assertIsEnabled()
     }
     private fun toMap() {
         compose.runOnUiThread { back.onBackPressed() }
@@ -130,11 +131,11 @@ class CampaignJourneyUiTest {
             }
         }
         compose.waitUntil(10_000) {
-            runCatching { compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsEnabled() }.isSuccess
+            runCatching { compose.gameKeyboardInput().assertTextEquals("").assertIsEnabled() }.isSuccess
         }
     }
     private fun enter(word: String) {
-        val input = compose.onNode(hasSetTextAction()).performScrollTo()
+        val input = compose.gameKeyboardInput().performScrollTo()
         input.performTextReplacement(word)
         input.performImeAction()
     }
@@ -164,7 +165,7 @@ class CampaignJourneyUiTest {
         val first = saved().levels.getValue("картотека")
         assertEquals(2, first.completedTaskIds.size)
         assertTrue(first.completedTaskIds.size < 3)
-        compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("Неотправленный черновик")
+        compose.gameKeyboardInput().performScrollTo().performTextReplacement("Неотправленный черновик")
         val next = compose.onNodeWithTag("game_next_level_button").performScrollTo()
         val click = requireNotNull(next.fetchSemanticsNode().config[
             androidx.compose.ui.semantics.SemanticsActions.OnClick].action)
@@ -173,11 +174,11 @@ class CampaignJourneyUiTest {
         awaitTag("level_header"); dismissExplanation()
         assertEquals("levels", nav.previousBackStackEntry?.destination?.route)
         compose.onNodeWithTag("level_header").assertTextContains("уровень 2 из 3", substring = true)
-        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("")
+        compose.gameKeyboardInput().performScrollTo().assertTextEquals("")
         assertEquals(first, saved().levels.getValue("картотека"))
         toMap(); open(1, explanationExpected = false)
         compose.onNodeWithTag("game_next_level_button").performScrollTo().assertIsEnabled()
-        compose.onNode(hasSetTextAction()).performScrollTo().assertTextEquals("")
+        compose.gameKeyboardInput().performScrollTo().assertTextEquals("")
         assertEquals(first, saved().levels.getValue("картотека"))
         compose.onNodeWithTag("game_hint_pattern").performScrollTo().assertExists()
         toMap(); open(2)

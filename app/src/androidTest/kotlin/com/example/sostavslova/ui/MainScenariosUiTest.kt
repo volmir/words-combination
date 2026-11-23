@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui
 
+import com.example.sostavslova.ui.gameKeyboardInput
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -53,7 +54,7 @@ class MainScenariosUiTest {
     private fun startLevel() {
         compose.onNodeWithTag("level_card_1").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_screen").fetchSemanticsNodes().isNotEmpty() &&
-            compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
+            compose.onAllNodesWithTag("game_submit").fetchSemanticsNodes().isNotEmpty() }
         compose.waitForIdle()
         if (compose.onAllNodesWithText("Новые задания этапа").fetchSemanticsNodes().isNotEmpty()) {
             compose.onNodeWithText("Закрыть").performClick()
@@ -73,8 +74,8 @@ class MainScenariosUiTest {
         container.progressRepository.observeCampaignProgress().first().levels[source]?.found.orEmpty()
 
     private fun answerWord(word: String) {
-        compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement(word)
-        compose.onNode(hasSetTextAction()).performImeAction()
+        compose.gameKeyboardInput().performScrollTo().performTextReplacement(word)
+        compose.gameKeyboardInput().performImeAction()
     }
 
     /**
@@ -103,7 +104,7 @@ class MainScenariosUiTest {
         answerWord(answer)
         awaitString(R.string.correct_three_letter_answer)
         awaitText("Найденные слова · 1 из", substring = true)
-        compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsEnabled()
+        compose.gameKeyboardInput().assertTextEquals("").assertIsEnabled()
         assertEquals(listOf(answer), foundAnswers(source))
         val saved = container.progressRepository.observeCampaignProgress().first()
         assertTrue(saved.levels.getValue(source).completedTaskIds.isEmpty())
@@ -111,7 +112,7 @@ class MainScenariosUiTest {
         answerWord(answer.uppercase())
         awaitText("Вы уже нашли слово $answer")
         awaitText("Найденные слова · 1 из", substring = true)
-        compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsEnabled()
+        compose.gameKeyboardInput().assertTextEquals("").assertIsEnabled()
         assertEquals(saved, container.progressRepository.observeCampaignProgress().first())
         compose.onNodeWithTag("game_back").performClick()
         startLevel()
@@ -138,7 +139,7 @@ class MainScenariosUiTest {
         answerWord(valid)
         awaitText("Вы уже нашли слово $valid")
         awaitText("Найденные слова · 1 из", substring = true)
-        compose.onNode(hasSetTextAction()).assertTextEquals("").assertIsEnabled()
+        compose.gameKeyboardInput().assertTextEquals("").assertIsEnabled()
         assertEquals(listOf(valid), foundAnswers(source))
     }
 

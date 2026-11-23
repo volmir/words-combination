@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.game
 
+import com.example.sostavslova.ui.gameKeyboardInput
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,20 +60,21 @@ class GameSubmissionUiTest {
             compose.setContent {
                 val state by model.uiState.collectAsState()
                 WordsTheme {
-                    GameScreen(state, model::onInputChanged, model::onSubmit, {}, {})
+                    GameScreen(state, model::onInputChanged, model::onSubmit, {}, {},
+                        onToggleInputMode = model::onToggleInputMode)
                 }
             }
             val expected = "Слово «бык» есть в словаре, но его нельзя составить из букв этого уровня. Не хватает буквы «Б»: есть 0, нужно 1"
             repeat(2) {
-                compose.onNode(hasSetTextAction()).performScrollTo().performTextReplacement("бык")
-                compose.onNode(hasSetTextAction()).performImeAction()
+                compose.gameKeyboardInput().performScrollTo().performTextReplacement("бык")
+                compose.gameKeyboardInput().performImeAction()
                 compose.waitUntil(10_000) { !model.uiState.value.busy && model.uiState.value.message != null }
                 compose.onNodeWithText(expected).performScrollTo().assertIsDisplayed()
                 compose.onNodeWithText(expected).assert(hasAnyAncestor(hasTestTag("game_feedback")))
                 compose.onNode(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
                     and (hasText(expected) or hasAnyDescendant(hasText(expected)))).assertExists()
                 // Отказ не стирает набранное слово: его можно исправить без повторного набора.
-                compose.onNode(hasSetTextAction()).assertIsEnabled().assertTextEquals("бык")
+                compose.gameKeyboardInput().assertIsEnabled().assertTextEquals("бык")
                 assertTrue(model.uiState.value.canPlay)
                 assertEquals(before, repository.observeCampaignProgress().first())
             }

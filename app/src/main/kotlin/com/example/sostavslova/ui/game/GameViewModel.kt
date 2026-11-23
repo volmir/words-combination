@@ -21,6 +21,9 @@ import com.example.sostavslova.core.CurrentCampaignLevel
 import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.data.LevelRouteRules
 import com.example.sostavslova.core.Alphabet
+import com.example.sostavslova.core.LetterOrder
+import com.example.sostavslova.core.TileUsage
+import com.example.sostavslova.data.InputMode
 import com.example.sostavslova.core.AnswerResult
 import com.example.sostavslova.core.Submission
 import com.example.sostavslova.core.GameState
@@ -45,6 +48,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.random.Random
 
 data class GameMessage(@param:StringRes val text: Int, val word: String? = null,
     val missingLetter: com.example.sostavslova.core.MissingLetter? = null,
@@ -119,6 +123,9 @@ data class GameUiState(
     val explanations: List<TaskType> = emptyList(),
     val statistics: Statistics = Statistics(emptyList()),
     val input: String = "",
+    val inputMode: InputMode = InputMode.TOUCH,
+    val tileOrder: List<Int> = game?.word?.let(LetterOrder::natural).orEmpty(),
+    val inputModeSaving: Boolean = false,
     val busy: Boolean = false,
     val message: GameMessage? = null,
     val campaignHint: HintStep? = null,
@@ -142,6 +149,7 @@ class GameViewModel(
     private val progress: ProgressRepository,
     private val riddles: RiddlesRepository,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val shuffleSeed: () -> Long = { Random.nextLong() },
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(GameUiState())
     val uiState = mutableState.asStateFlow()
@@ -201,8 +209,9 @@ class GameViewModel(
                 }
                 val explanations = introduced.filter { progress.markCampaignExplanationSeen(it) }
                 val riddles = loadRiddles(current)
+                val inputMode = progress.observeInputMode().first()
                 mutableState.update { it.copy(totalLevels = loadedCampaign.levels.size,
-                    riddles = riddles, explanations = explanations) }
+                    riddles = riddles, explanations = explanations, inputMode = inputMode) }
                 currentCoroutineContext().ensureActive()
                 // Поток — единственный источник игрового снимка. Результат записи не
                 // публикуется отдельно: он мог уже уступить место более свежей транзакции.
@@ -244,6 +253,7 @@ class GameViewModel(
         }
         currentCoroutineContext().ensureActive()
         mutableState.update { it.copy(loading = false, loadError = false, game = game,
+            tileOrder = if (it.game?.word == game.word) it.tileOrder else LetterOrder.natural(game.word),
             nextLevelNumber = nextLevelNumber,
             finaleSummary = finaleSummary,
             campaignLevel = current, campaignHint = shownHints.lastOrNull(), campaignHints = shownHints,
@@ -286,6 +296,55 @@ class GameViewModel(
         // Правильный ответ не длиннее исходника (≤ MAX_WORD_LENGTH), поэтому
         // произвольный ввод не обрезаем: скрытая потеря последних символов недопустима.
         mutableState.update { it.copy(input = raw, message = null) }
+    }
+
+    fun onTileTap(char: Char) {
+        mutableState.update { state ->
+            val game = state.game
+            if (!state.canPlay || game == null) return@update state
+            val used = TileUsage.usedMask(game.word, state.tileOrder, state.input)
+            val letter = Alphabet.normalize(char.toString())
+            val available = state.tileOrder.indices.any { position ->
+                !used[position] && Alphabet.normalize(game.word[state.tileOrder[position]].toString()) == letter
+            }
+            if (available) state.copy(input = state.input + char, message = null) else state
+        }
+    }
+
+    fun onBackspace() {
+        if (uiState.value.canPlay) onInputChanged(uiState.value.input.dropLast(1))
+    }
+
+    fun onClearInput() {
+        if (uiState.value.canPlay) onInputChanged("")
+    }
+
+    fun onShuffle() {
+        val before = uiState.value
+        val word = before.game?.word ?: return
+        if (!before.canPlay) return
+        val order = LetterOrder.shuffled(word, shuffleSeed(), before.tileOrder)
+        mutableState.update { it.copy(tileOrder = order) }
+    }
+
+    fun onToggleInputMode() {
+        val before = uiState.value
+        if (!before.canPlay || before.inputModeSaving) return
+        val mode = if (before.inputMode == InputMode.TOUCH) InputMode.KEYBOARD else InputMode.TOUCH
+        mutableState.update { it.copy(inputModeSaving = true) }
+        val job = viewModelScope.launch {
+            try {
+                progress.setInputMode(mode)
+                mutableState.update { it.copy(inputMode = mode) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                mutableState.update { it.copy(message = GameMessage(R.string.game_save_error, type = AlertType.Danger)) }
+            } finally {
+                mutableState.update { it.copy(inputModeSaving = false) }
+            }
+        }
+        progress.trackOperation(job)
     }
 
     fun onSubmit() {

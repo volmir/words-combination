@@ -72,6 +72,29 @@ class ProgressRepositoryTest {
     }
 
     @Test
+    fun inputModeDefaultsToTouchAndSurvivesReopenReconciliationAndCampaignReset() = runTest {
+        assertEquals(InputMode.TOUCH, repository.observeInputMode().first())
+        store.edit { it[stringPreferencesKey("inputModeV1")] = "FUTURE_MODE" }
+        assertEquals(InputMode.TOUCH, repository.observeInputMode().first())
+        repository.setInputMode(InputMode.KEYBOARD)
+        scope.cancel()
+        scope.coroutineContext.job.join()
+        openStore()
+        assertEquals(InputMode.KEYBOARD, repository.observeInputMode().first())
+        val campaign = Campaign(stages = listOf(Stage(1, 1, 1)), levels = listOf(
+            CampaignLevel(1, "картотека", 1, 1, listOf(CampaignTask.T1("count", 1)))))
+        repository.migrateCampaign(campaign, WordIndex(listOf("карта", "крот")))
+        repository.migrateCampaign(campaign.copy(levels = campaign.levels.map {
+            it.copy(word = "картотекар")
+        }), WordIndex(listOf("карта", "крот")))
+        assertEquals(InputMode.KEYBOARD, repository.observeInputMode().first())
+        repository.resetCampaignProgress()
+        assertEquals(InputMode.KEYBOARD, repository.observeInputMode().first())
+        repository.clearAll()
+        assertEquals(InputMode.TOUCH, repository.observeInputMode().first())
+    }
+
+    @Test
     fun emptyStoreHasNoCurrentGameOrLevelProgress() = runTest {
         assertNull(store.data.first()[stringPreferencesKey("currentGame")])
         assertEquals(emptyMap<String, LevelProgress>(), repository.observeLevelProgress().first())

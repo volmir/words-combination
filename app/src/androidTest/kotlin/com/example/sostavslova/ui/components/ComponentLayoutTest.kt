@@ -146,8 +146,8 @@ class LetterTilesLayoutTest {
 
     @Test
     fun sourceWordTilesWrapEvenlyWithoutClipping() {
-        val words = listOf("чемпионство", "журналистика", "благодарность")
-        assertEquals("Длины слов фикстуры", listOf(11, 12, 13), words.map { it.length })
+        val words = listOf("картотек", "чемпионство", "журналистика", "благодарность")
+        assertEquals("Длины слов фикстуры", listOf(8, 11, 12, 13), words.map { it.length })
         val cases = listOf(320, 360, 411).flatMap { width ->
             listOf(1f, 1.3f, 2f).flatMap { fontScale ->
                 words.map { word -> WordCase(width, fontScale, word) }
@@ -179,7 +179,7 @@ class LetterTilesLayoutTest {
         }
         assertEquals("$context: потеряны плитки", case.word.length, tiles.size)
         val density = compose.density.density
-        val expected = if (case.word.length > 20) 40f else 45f
+        val expected = 48f
         val minimum = expected * density - 1f
         val maximum = expected * density + 1f
         tiles.forEachIndexed { index, node ->
@@ -197,6 +197,10 @@ class LetterTilesLayoutTest {
         val narrowest = rows.minOrNull() ?: 0
         assertTrue("$context: неровные строки $rows", widest - narrowest <= 1)
         assertEquals("$context: потеряны буквы в строках", case.word.length, rows.sum())
+        assertTrue("$context: больше трёх строк $rows", rows.size <= 3)
+        tiles.forEach { node ->
+            assertTrue("$context: плитка должна быть кнопкой", node.config.contains(SemanticsActions.OnClick))
+        }
         assertEquals("$context: описание исходного слова", "Исходное слово: ${case.word}",
             container.config[SemanticsProperties.ContentDescription].joinToString(""))
         assertTrue("$context: не должно быть горизонтальной прокрутки",

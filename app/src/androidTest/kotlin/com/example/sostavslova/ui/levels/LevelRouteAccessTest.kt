@@ -54,7 +54,7 @@ class LevelRouteAccessTest {
         compose.onNodeWithTag("level_card_2").assertIsEnabled()
             .assert(hasContentDescription("Уровень недоступен"))
         compose.runOnIdle { nav.navigate(Uri.parse("sostavslova://level/1")) }
-        compose.waitUntil(10_000) { compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_submit").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("game_screen").assertIsDisplayed()
     }
 
@@ -62,7 +62,7 @@ class LevelRouteAccessTest {
         compose.runOnIdle {
             nav.navigate(Uri.parse("sostavslova://level/1"))
         }
-        compose.waitUntil(10_000) { compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() &&
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_submit").fetchSemanticsNodes().isNotEmpty() &&
             compose.onAllNodesWithTag("game_screen").fetchSemanticsNodes().isNotEmpty() }
         compose.runOnIdle { back.onBackPressed() }
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("levels_screen").fetchSemanticsNodes().isNotEmpty() }

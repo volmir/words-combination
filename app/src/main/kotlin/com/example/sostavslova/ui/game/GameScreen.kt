@@ -39,9 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -75,7 +73,6 @@ import com.example.sostavslova.ui.components.LetterSlots
 import com.example.sostavslova.ui.components.LetterTiles
 import com.example.sostavslova.ui.components.Well
 import com.example.sostavslova.ui.components.starTint
-import com.example.sostavslova.ui.components.WordInputRow
 import com.example.sostavslova.ui.components.FoundWords
 import com.example.sostavslova.ui.components.WordsDialog
 import com.example.sostavslova.ui.theme.LocalWordsPalette
@@ -115,7 +112,8 @@ fun GameRoute(onOpenLevel: (Int) -> Unit, onReturnLevels: (Int) -> Unit) {
     LaunchedEffect(state.nextLevelNavigation) { state.nextLevelNavigation?.let(onOpenLevel) }
     GameScreen(state, model::onInputChanged, model::onSubmit, model::onHint,
         model::onRetry, notice, model::onDismissExplanations,
-        model::onCloseFinale, model::onNextLevel, model::onHintTask)
+        model::onCloseFinale, model::onNextLevel, model::onHintTask,
+        model::onTileTap, model::onBackspace, model::onClearInput, model::onShuffle, model::onToggleInputMode)
 }
 
 @Composable
@@ -130,9 +128,12 @@ fun GameScreen(
     onCloseFinale: (Boolean) -> Unit = {},
     onNextLevel: () -> Unit = {},
     onHintTask: (String?) -> Unit = {},
+    onTileTap: (Char) -> Unit = {},
+    onBackspace: () -> Unit = {},
+    onClearInput: () -> Unit = {},
+    onShuffle: () -> Unit = {},
+    onToggleInputMode: () -> Unit = {},
 ) {
-    val focus = remember { FocusRequester() }
-    val keyboard = LocalSoftwareKeyboardController.current
     Column(
         Modifier.fillMaxSize().testTag("game_screen")
             .imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -152,7 +153,8 @@ fun GameScreen(
                         current.level.number, state.totalLevels), Modifier.testTag("level_header"),
                         style = MaterialTheme.typography.titleLarge)
                 }
-                LetterTiles(game.word)
+                LetterTiles(game.word, order = state.tileOrder, input = state.input,
+                    enabled = state.canPlay, onTileTap = onTileTap)
                 if (current != null) {
                     val starsDescription = pluralStringResource(R.plurals.level_stars_progress,
                         current.level.maxStars, current.completedTaskIds.size, current.level.maxStars)
@@ -169,13 +171,8 @@ fun GameScreen(
                         style = MaterialTheme.typography.bodyMedium)
                 }
                 Well {
-                    WordInputRow(stringResource(R.string.your_answer), state.input, onInputChanged,
-                        stringResource(R.string.check_answer), {
-                            onSubmit()
-                            focus.requestFocus()
-                            keyboard?.show()
-                        }, enabled = state.canPlay, inputEnabled = !state.loading && !state.returnLevels && !state.navigatingNext,
-                        maxLength = null, focusRequester = focus)
+                    GameInput(state, onInputChanged, onSubmit, onToggleInputMode,
+                        onBackspace, onClearInput, onShuffle)
                     if (state.busy) GameLoading(stringResource(R.string.game_saving))
                 }
                 // Feedback stays in flow directly under the input: heightIn reserves
