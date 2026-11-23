@@ -14,19 +14,35 @@ class HintTextTest {
     } ?: emptyList()
 
     @Test
-    fun slotsDescriptionNamesLengthAndOpenedPositions() {
-        assertEquals("Слово из 9 букв. Открыто: 1-я П, 4-я О.",
-            HintText.slotsDescription("п__о_____"))
-        assertEquals("Слово из 7 букв. Открыто: 1-я П, 4-я О, 7-я Я.",
-            HintText.slotsDescription("п__о__я"))
-        assertEquals("Слово из 9 букв. Открытых букв пока нет",
-            HintText.slotsDescription("_________"))
+    fun slotsInfoForEmptyPattern() {
+        assertEquals(HintText.SlotsInfo(0, emptyList()), HintText.slotsInfo(""))
     }
 
     @Test
-    fun slotsDescriptionUsesGenitiveAndUppercase() {
-        assertEquals("Слово из 3 букв. Открыто: 2-я Б.", HintText.slotsDescription("_б_"))
-        assertEquals("Слово из 21 буквы. Открыто: 21-я Я.", HintText.slotsDescription("_".repeat(20) + "я"))
+    fun slotsInfoWithoutOpenedLetters() {
+        assertEquals(HintText.SlotsInfo(9, emptyList()), HintText.slotsInfo("_________"))
+    }
+
+    @Test
+    fun slotsInfoWithOneOpenedLetterUsesOneBasedPositionAndUppercase() {
+        assertEquals(HintText.SlotsInfo(3, listOf(HintText.OpenSlot(2, 'Б'))), HintText.slotsInfo("_б_"))
+        assertEquals(HintText.SlotsInfo(21, listOf(HintText.OpenSlot(21, 'Я'))),
+            HintText.slotsInfo("_".repeat(20) + "я"))
+    }
+
+    @Test
+    fun slotsInfoWithSeveralOpenedLettersPreservesOrder() {
+        assertEquals(HintText.SlotsInfo(9, listOf(HintText.OpenSlot(1, 'П'), HintText.OpenSlot(4, 'О'))),
+            HintText.slotsInfo("п__о_____"))
+        assertEquals(HintText.SlotsInfo(7, listOf(
+            HintText.OpenSlot(1, 'П'), HintText.OpenSlot(4, 'О'), HintText.OpenSlot(7, 'Я'),
+        )), HintText.slotsInfo("п__о__я"))
+    }
+
+    @Test
+    fun slotsInfoIncludesReadyT5Ending() {
+        assertEquals(HintText.SlotsInfo(7, listOf(HintText.OpenSlot(6, 'К'), HintText.OpenSlot(7, 'А'))),
+            HintText.slotsInfo("_____ка"))
     }
 
     @Test

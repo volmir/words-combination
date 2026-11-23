@@ -69,6 +69,15 @@
         <item quantity="many">Ещё достижений: %1$d</item>
         <item quantity="other">Ещё достижений: %1$d</item>
     </plurals>
+    <plurals name="hint_word_length">
+        <item quantity="one">Слово из %1$d буквы.</item>
+        <item quantity="few">Слово из %1$d букв.</item>
+        <item quantity="many">Слово из %1$d букв.</item>
+        <item quantity="other">Слово из %1$d букв.</item>
+    </plurals>
+    <string name="hint_slots_opened_list">Открыто: %1$s.</string>
+    <string name="hint_slots_none">Открытых букв пока нет</string>
+    <string name="hint_slot_open">%1$d-я %2$s</string>
     <string name="hint_all_found">Все слова уже найдены</string>
     <string name="hint_letter_genitive_one">буквы</string>
     <string name="hint_letter_genitive_many">букв</string>

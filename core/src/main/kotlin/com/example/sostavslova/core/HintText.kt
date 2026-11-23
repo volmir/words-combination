@@ -8,20 +8,16 @@ object HintText {
     const val VERSION = "hint-text-v1"
     const val MAX_LENGTH = 140
 
-    /**
-     * Описание ряда слотов: длина слова и открытые буквы с номерами позиций.
-     * Для T5 позиции окончания уже присутствуют в шаблоне и попадают сюда как открытые.
-     */
-    fun slotsDescription(pattern: String): String {
-        if (pattern.isEmpty()) return ""
-        val length = pattern.length
-        val prefix = "Слово из $length ${RussianPlural.form(length, "буквы", "букв", "букв")}."
-        val opened = pattern.mapIndexedNotNull { index, char ->
-            if (char == '_') null else "${index + 1}-я ${char.uppercaseChar()}"
-        }
-        return if (opened.isEmpty()) "$prefix Открытых букв пока нет"
-        else "$prefix Открыто: ${opened.joinToString(", ")}."
-    }
+    data class OpenSlot(val position: Int, val letter: Char)
+    data class SlotsInfo(val length: Int, val opened: List<OpenSlot>)
+
+    /** Для T5 готовое окончание уже присутствует в шаблоне как открытые позиции. */
+    fun slotsInfo(pattern: String): SlotsInfo = SlotsInfo(
+        length = pattern.length,
+        opened = pattern.mapIndexedNotNull { index, char ->
+            if (char == '_') null else OpenSlot(index + 1, char.uppercaseChar())
+        },
+    )
 
     private val link = Regex("(?:https?://|www\\.)\\S+", RegexOption.IGNORE_CASE)
     private val latinParentheses = Regex("\\([^()]*[A-Za-z][^()]*\\)")

@@ -16,12 +16,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.sostavslova.R
 import com.example.sostavslova.core.HintText
 import com.example.sostavslova.core.balancedRows
 import com.example.sostavslova.ui.theme.LocalWordsPalette
@@ -57,7 +60,17 @@ fun LetterSlots(
     slotTagPrefix: String = "game_hint_slot",
 ) {
     if (pattern.isEmpty()) return
-    val description = HintText.slotsDescription(pattern)
+    val info = HintText.slotsInfo(pattern)
+    val lengthDescription = pluralStringResource(R.plurals.hint_word_length, info.length, info.length)
+    val openedDescription = if (info.opened.isEmpty()) {
+        stringResource(R.string.hint_slots_none)
+    } else {
+        val positions = info.opened.map { slot ->
+            stringResource(R.string.hint_slot_open, slot.position, slot.letter.toString())
+        }
+        stringResource(R.string.hint_slots_opened_list, positions.joinToString(", "))
+    }
+    val description = "$lengthDescription $openedDescription"
     val palette = LocalWordsPalette.current
     BoxWithConstraints(
         modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = description },

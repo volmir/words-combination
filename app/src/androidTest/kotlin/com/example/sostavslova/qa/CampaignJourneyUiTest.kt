@@ -23,7 +23,6 @@ import com.example.sostavslova.core.CampaignProgress
 import com.example.sostavslova.core.CampaignRules
 import com.example.sostavslova.core.HintRules
 import com.example.sostavslova.core.HintStage
-import com.example.sostavslova.core.HintText
 import com.example.sostavslova.core.TaskType
 import com.example.sostavslova.data.CampaignJson
 import com.example.sostavslova.di.AppContainer
@@ -242,7 +241,10 @@ class CampaignJourneyUiTest {
                 .assertTextEquals("Слово из 3 букв · открыто ${step + 1}")
             val pattern = requireNotNull(hints.ladder.shown.last().text)
             compose.onNodeWithTag("game_hint_pattern")
-                .assertContentDescriptionEquals(HintText.slotsDescription(pattern))
+                .assertContentDescriptionEquals("Слово из 3 букв. Открыто: " +
+                    pattern.mapIndexedNotNull { index, char ->
+                        if (char == '_') null else "${index + 1}-я ${char.uppercaseChar()}"
+                    }.joinToString(", ") + ".")
             for (index in pattern.indices) {
                 val slot = compose.onNodeWithTag("game_hint_slot_${index + 1}", useUnmergedTree = true)
                 slot.assertExists()

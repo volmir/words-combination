@@ -18,6 +18,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.text.TextLayoutResult
@@ -231,6 +232,34 @@ class LetterTilesLayoutTest {
             val layouts = mutableListOf<TextLayoutResult>()
             node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
             for (layout in layouts) assertTextLayoutFits(layout, context)
+        }
+    }
+}
+
+/** Проверяет смысл описания независимо от реализации сборки из ресурсов. */
+class LetterSlotsAccessibilityTest {
+    @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun descriptionsNameLengthAndEveryOpenedPosition() {
+        val cases = listOf(
+            "" to null,
+            "_________" to "Слово из 9 букв. Открытых букв пока нет",
+            "_б_" to "Слово из 3 букв. Открыто: 2-я Б.",
+            "п__о_____" to "Слово из 9 букв. Открыто: 1-я П, 4-я О.",
+            "п__о__я" to "Слово из 7 букв. Открыто: 1-я П, 4-я О, 7-я Я.",
+            "_____ка" to "Слово из 7 букв. Открыто: 6-я К, 7-я А.",
+            "_".repeat(20) + "я" to "Слово из 21 буквы. Открыто: 21-я Я.",
+        )
+        val pattern = mutableStateOf(cases.first().first)
+        compose.setContent {
+            WordsTheme { LetterSlots(pattern.value, Modifier.testTag("game_hint_pattern")) }
+        }
+        for ((value, description) in cases) {
+            compose.runOnIdle { pattern.value = value }
+            val slots = compose.onNodeWithTag("game_hint_pattern")
+            if (description == null) slots.assertDoesNotExist()
+            else slots.assertContentDescriptionEquals(description)
         }
     }
 }

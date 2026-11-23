@@ -237,7 +237,10 @@ class GameLayoutTest {
             11 -> assertEquals("$context: строки 6+5", listOf(6, 5), rows)
             13 -> assertEquals("$context: строки 7+6", listOf(7, 6), rows)
         }
-        assertEquals("$context: описание ряда", HintText.slotsDescription(case.pattern),
+        assertEquals("$context: описание ряда", "Слово из ${case.pattern.length} ${RussianPlural.form(case.pattern.length, "буквы", "букв", "букв")}. Открыто: " +
+            case.pattern.mapIndexedNotNull { index, char ->
+                if (char == '_') null else "${index + 1}-я ${char.uppercaseChar()}"
+            }.joinToString(", ") + ".",
             patternNode.config[SemanticsProperties.ContentDescription].joinToString(""))
         for (node in compose.onAllNodes(
             SemanticsMatcher.keyIsDefined(SemanticsProperties.Text) and
