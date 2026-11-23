@@ -18,6 +18,9 @@
 | `GOLD_03A_REPORT.md` | история (удаление контрольного списка GOLD-03A) | `SPEC.md` |
 | `DATA_03_REPORT.md` | история (чистка словаря DATA-03) | `SPEC.md` |
 | `DICT_03B_REPORT.md`, `DICT_03B_REPORT.json` | история (шесть самостоятельных слов DICT-03B) | `SPEC.md` |
+| `UX_12_REPORT.md` | история (компактная панель подсказки) | `SPEC.md` §4 |
+| `SAVE_16_REPORT.md` | действует (правила переноса прогресса) | — |
+| `CLEAN_21_REPORT.md` | действует (основания удаления кода и сохранения аудитов) | — |
 | `FAM_14_REPORT.md` | действует (генерация данных узнаваемости FAM-14) | — |
 | `DIMINUTIVE_CANDIDATES.md`, `DIMINUTIVE_CANDIDATES.json` | действует (кандидаты, к словарю не применяются) | — |
 | `CAMPAIGN.md` | история | `SPEC.md` (заметка в начале файла) |
@@ -26,7 +29,7 @@
 | `FDROID_REPRO_02.md` | действует | — |
 | `KNOWN_WORDS.md` | действует | — |
 | `CAMPAIGN_VALIDATION.md` | действует (gate GEN-04) | — |
-| `PLAY_TIME_QA.md` | действует (матрица TIME-05) | — |
+| `PLAY_TIME_QA.md` | история (учёт времени удалён) | `SPEC.md` §6 |
 | `QA_CHECKLIST.md` | действует | — |
 | `PRIVACY_POLICY.md` | юридический | — |
 | `PRIVACY_PUBLICATION_AUDIT.md` | юридический | — |
