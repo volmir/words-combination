@@ -13,7 +13,7 @@ class Lex1101CampaignTest {
 
     @Test
     fun adresokIsExcludedAndPostelIsTheT3Target() {
-        assertEquals(20119, TestData.index.size)
+        assertEquals(20097, TestData.index.size)
         assertFalse(TestData.index.contains("адресок"))
         assertTrue(TestData.index.contains("постель"))
         assertEquals("подстрекатель", level.word)

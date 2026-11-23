@@ -229,6 +229,28 @@ class CampaignProgressReconcilerTest {
         assertTrue(result.changes.any { it.kind == ReconciliationChangeKind.FOUND_WORDS_FILTERED })
     }
 
+    @Test fun excludedDictionaryWordsAreRemovedButStarsStay() {
+        // Both excluded words were formable and accepted in the previous dictionary.
+        val source = "печенькаибо"
+        val campaign = campaign(source)
+        val oldIndex = WordIndex(TestData.index.words + listOf("печенька", "ибо"))
+        var oldGame = GameState.start(source, oldIndex)
+        for (word in listOf("печенька", "ибо")) {
+            val submission = oldGame.submit(word, oldIndex)
+            assertEquals(AnswerResult.CORRECT, submission.result)
+            oldGame = submission.state
+        }
+        val saved = CampaignProgress(
+            levels = mapOf(source to levelProgress(oldGame.found, setOf("l1-t1"))),
+            campaignId = CampaignIdentity.of(campaign),
+        )
+        val result = CampaignProgressReconciler.reconcile(saved, campaign, TestData.index)
+        assertTrue(result.isCompatible)
+        assertEquals(emptyList(), result.state.levels.getValue(source).found)
+        assertEquals(setOf("l1-t1"), result.state.levels.getValue(source).completedTaskIds)
+        assertTrue(result.changes.any { it.kind == ReconciliationChangeKind.FOUND_WORDS_FILTERED })
+    }
+
     @Test fun numberAddressedLevelWithoutHistoryIsArchivedNotGuessed() {
         val campaign = campaign("рекуперация")
         val saved = CampaignProgress(

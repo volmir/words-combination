@@ -41,6 +41,21 @@ class GameStateTest {
     }
 
     @Test
+    fun excludedDiminutivesAndFunctionWordsAreNotAccepted() {
+        // DATA-03: этих слов больше нет в словаре, поэтому на синтетическом исходнике
+        // они не попадают в allWords и не засчитываются.
+        val source = "печенькамишкатапочка"
+        val index = TestData.index
+        val state = GameState.start(source, index)
+        for (word in listOf("печенька", "мишка", "тапочка")) {
+            val submission = state.submit(word, index)
+            assertEquals(AnswerResult.NOT_FOUND, submission.result, word)
+            assertEquals(emptyList(), submission.state.found, word)
+        }
+        assertEquals(state.found, state.submit("печенька", index).state.found)
+    }
+
+    @Test
     fun finishesWhenAllFound() {
         var s = start()
         for (w in listOf("рот", "тор", "тот")) s = s.submit(w).state

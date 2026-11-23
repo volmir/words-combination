@@ -561,8 +561,87 @@ def run(args):
     return candidate, report
 
 
+def validate_installed(args):
+    """Validate runtime data without the historical, removed definition database.
+
+    This checks legal answer reserves, not the historical recognizability audit.
+    The original GEN-04 mode and its semantic checks remain separate.
+    """
+    from audit_game_vocabulary import answers_for, task_accepted, task_needed
+    campaign = json.loads(args.campaign.read_text(encoding='utf-8'))
+    manifest = json.loads(args.manifest.read_text(encoding='utf-8'))
+    words = args.words.read_text(encoding='utf-8').splitlines()
+    profile = campaign_profiles.get(args.profile)
+    if (words != sorted(set(words)) or any(w != normalize(w) or not 3 <= len(w) <= 30 for w in words)
+            or len(words) != manifest['words'] or file_hash(args.words) != manifest['sha256_words_txt']
+            or file_hash(args.campaign) != manifest['campaign_source']['sha256']):
+        raise ValueError('Installed dictionary/campaign integrity mismatch')
+    riddles_path = args.manifest.parent / 'owned_riddles.json'
+    if file_hash(riddles_path) != manifest['owned_riddles']['sha256']:
+        raise ValueError('Owned riddles checksum mismatch')
+    riddles = json.loads(riddles_path.read_text(encoding='utf-8'))['riddles']
+    report = dict(schema='campaign-validation-v1', mode='installed-runtime', installable=True,
+                  jvm_checked=False, unreachable=[], balance_deviations=[], parity_deviations=[], levels=[])
+    hints = {w: dict(forms=[w], related=[], definitions=[text]) for w, text in riddles.items()}
+    for level in campaign['levels']:
+        answers = answers_for(level['word'], set(words))
+        row = dict(number=level['number'], answers=sorted(answers), tasks=[])
+        report['levels'].append(row)
+        for task in level['tasks']:
+            accepted = task_accepted(task, answers, campaign['countMinLength'])
+            needed = task_needed(task)
+            numerator, denominator = campaign_profiles.reserve_fraction(profile, level['number'], task['type'])
+            minimum = ((needed * numerator + denominator - 1) // denominator)
+            if task['type'] == 'T4':
+                # Runtime has fixed authored targets, not a pool of definitions.
+                minimum = needed
+                if not set(task['targets']) <= set(riddles):
+                    issue(report, 'unreachable', 'missing_riddle', 'T4 target lacks owned text', level['number'], task['id'])
+            elif task['type'] == 'T6':
+                minimum = campaign_profiles.t6_reserve(profile)
+                if not set(task['words']) <= answers:
+                    issue(report, 'unreachable', 't6_words', 'T6 contains unavailable words', level['number'], task['id'])
+            elif task['type'] == 'T3' and task['hintTarget'] not in accepted:
+                issue(report, 'unreachable', 'hint_target', 'T3 target is unavailable', level['number'], task['id'])
+            if len(accepted) < max(needed, minimum):
+                issue(report, 'unreachable', 'runtime_reserve', f'Pool={len(accepted)}, required={minimum}', level['number'], task['id'])
+            row['tasks'].append(dict(id=task['id'], accepted=sorted(accepted), needed=needed,
+                                     reserve=sorted(accepted), reserve_required=minimum))
+    with tempfile.TemporaryDirectory(prefix='installed-campaign-audit-') as temporary:
+        bundle, output = Path(temporary) / 'input.json', Path(temporary) / 'output.json'
+        bundle.write_text(json.dumps(dict(campaign=campaign, dictionary=words, production=True,
+                                         profile=profile, hintInputs=hints), ensure_ascii=False), encoding='utf-8')
+        command = ['bash', str(ROOT / 'gradlew'), '--offline', ':core:auditCampaign', '--console=plain',
+                   '--args=' + shlex.join([str(bundle), str(output)])]
+        result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+        if result.returncode or not output.exists():
+            issue(report, 'parity_deviations', 'jvm_execution', (result.stdout + result.stderr)[-4000:])
+        else:
+            jvm = json.loads(output.read_text(encoding='utf-8'))
+            report['jvm_checked'] = True
+            report['jvm'] = {key: jvm[key] for key in ('r_combinations_checked', 'all_answer_stars', 'finale_reached')}
+            for error in jvm['errors']:
+                issue(report, 'parity_deviations', 'jvm_error', error['reason'], error.get('level'), error.get('task'))
+            if len(jvm['levels']) != len(report['levels']):
+                issue(report, 'parity_deviations', 'level_count', 'JVM/Python level count differs')
+            for python_level, jvm_level in zip(report['levels'], jvm['levels']):
+                if (python_level['number'] != jvm_level['number']
+                        or python_level['answers'] != jvm_level['answers']
+                        or len(python_level['tasks']) != len(jvm_level['tasks'])):
+                    issue(report, 'parity_deviations', 'answers', 'JVM/Python answers differ', python_level['number'])
+                for python_task, jvm_task in zip(python_level['tasks'], jvm_level['tasks']):
+                    if (python_task['id'] != jvm_task['id'] or python_task['accepted'] != jvm_task['accepted']
+                            or python_task['needed'] != jvm_task['target']):
+                        issue(report, 'parity_deviations', 'task_answers', 'JVM/Python task differs', python_level['number'], python_task['id'])
+    report['inputs'] = dict(words=file_hash(args.words), candidate=file_hash(args.campaign),
+                            manifest=file_hash(args.manifest), riddles=file_hash(riddles_path))
+    return campaign, report
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--installed-data', action='store_true',
+                        help='Validate installed runtime pools and JVM parity without the historical definition DB; requires --profile')
     parser.add_argument('--campaign', type=Path, default=ROOT / 'build/reports/campaign/campaign.json')
     parser.add_argument('--profile', choices=campaign_profiles.names(),
                         help='Версионированный профиль кампании (например, short15-release-v1); '
@@ -581,7 +660,7 @@ def main():
     # Remove old success BEFORE parsing or starting JVM. A failed rerun is fail-closed.
     target.unlink(missing_ok=True)
     try:
-        candidate, report = run(args)
+        candidate, report = validate_installed(args) if args.installed_data else run(args)
     except (OSError, ValueError, KeyError, TypeError, IndexError) as error:
         candidate = None
         report = dict(schema='campaign-validation-v1', installable=False, jvm_checked=False,

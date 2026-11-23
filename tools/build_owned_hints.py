@@ -3,6 +3,7 @@
 import argparse
 from collections import Counter
 import json
+import hashlib
 import re
 from pathlib import Path
 import shutil
@@ -35,6 +36,25 @@ def coverage(candidate, campaign):
     return actual
 
 
+def dictionary_matches_index(index_sha, words, manifest):
+    """Keep the approved index immutable across a deletion-only dictionary update.
+
+    Reconstruct the exact original dictionary bytes and verify their approved
+    hash. An added word, undeclared deletion or changed provenance still fails.
+    Target presence is checked separately for every indexed and assigned word.
+    """
+    current = hashlib.sha256(("\n".join(sorted(words)) + "\n").encode('utf-8')).hexdigest()
+    if current == index_sha:
+        return True
+    removed = manifest.get('selection', {}).get('word_cleanup', {}).get('excluded', [])
+    if (not isinstance(removed, list) or not removed or
+            any(not isinstance(w, str) or not re.fullmatch(r'[а-я]{3,30}', w) for w in removed) or
+            len(removed) != len(set(removed)) or set(removed) & words):
+        return False
+    original = "\n".join(sorted(words | set(removed))) + "\n"
+    return hashlib.sha256(original.encode('utf-8')).hexdigest() == index_sha
+
+
 def inputs(data, candidate_path=None, index_path=None):
     candidate_path, index_path = candidate_path or CANDIDATE, index_path or INDEX
     candidate = read_json(candidate_path)
@@ -48,14 +68,15 @@ def inputs(data, candidate_path=None, index_path=None):
     if (manifest.get('sha256_words_txt') != sha(data / 'words.txt') or manifest.get('words') != len(words) or
             manifest.get('campaign_source', {}).get('sha256') != sha(data / 'campaign.json') or
             index['schema'] != 'owned-hint-category-index-v1' or index['license'] != 'CC-BY-SA-4.0' or
-            index['words_sha256'] != sha(data / 'words.txt') or
+            not dictionary_matches_index(index['words_sha256'], words, manifest) or
             index['source_dump_sha256'] != manifest['source']['sha256_input'] or
             index['candidate_sha256'] != sha(candidate_path) or index['screening']['suspicious_matches']):
         raise ValueError('Stale/invalid lexical index or candidate screening')
+    index_words = words | set(manifest.get('selection', {}).get('word_cleanup', {}).get('excluded', []))
     compact = index['word_metadata']
     taxonomy = json.loads((ROOT / 'tools/categories.json').read_text())
     for word, info in compact.items():
-        if (word not in words or set(info) != {'category', 'category_source', 'forms', 'related'} or
+        if (word not in index_words or set(info) != {'category', 'category_source', 'forms', 'related'} or
                 info['category'] not in taxonomy or
                 not re.fullmatch(r'(?:sense\.categories:[а-я]+|leading_label:[а-я]+|gloss_head:[a-z_]+|'
                                  r'unknown:[a-z_]+|ai:[a-z0-9_:/\.\-#]+|owner:SHORT15-05:2026-11-16)'

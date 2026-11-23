@@ -15,6 +15,7 @@
 | `SPEC.md` | действует | — |
 | `INDEX.md` | действует | — |
 | `PROJECT_STATUS.md` | действует | — |
+| `DATA_03_REPORT.md` | история (чистка словаря DATA-03) | `SPEC.md` |
 | `CAMPAIGN.md` | история | `SPEC.md` (заметка в начале файла) |
 | `OWN_HINTS_TOOLCHAIN.md` | действует | — |
 | `RELEASE_SIGNING.md` | действует | — |

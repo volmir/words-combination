@@ -13,7 +13,7 @@ class Lex1301CampaignTest {
 
     @Test
     fun rovesnikIsTheT3TargetAndVeronikaStaysAnOrdinaryAnswer() {
-        assertEquals(20119, TestData.index.size)
+        assertEquals(20097, TestData.index.size)
         assertTrue(TestData.index.contains("вероника"))
         assertTrue(TestData.index.contains("ровесник"))
         assertEquals("складирование", level.word)

@@ -388,35 +388,6 @@
         "T6_list": []
       },
       "buildable_levels": [
-        1,
-        4,
-        8,
-        10,
-        13,
-        15
-      ],
-      "category": "function_words",
-      "category_title": "Местоимения и служебные слова",
-      "note": "диалектная/устаревшая форма местоимения",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "оне"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [
         8,
         11
       ],
@@ -433,32 +404,6 @@
         "T7": []
       },
       "word": "под"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [
-        2,
-        5,
-        9
-      ],
-      "category": "function_words",
-      "category_title": "Местоимения и служебные слова",
-      "note": "междометие/частица",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "ага"
     },
     {
       "affected_task_ids": [],
@@ -489,79 +434,6 @@
         "T7": []
       },
       "word": "она"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "function_words",
-      "category_title": "Местоимения и служебные слова",
-      "note": "возвратное местоимение",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "себя"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [
-        3
-      ],
-      "category": "function_words",
-      "category_title": "Местоимения и служебные слова",
-      "note": "притяжательное местоимение",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "моя"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [
-        4,
-        5,
-        12,
-        14
-      ],
-      "category": "function_words",
-      "category_title": "Местоимения и служебные слова",
-      "note": "союз",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "ибо"
     },
     {
       "affected_task_ids": [
@@ -1703,380 +1575,6 @@
         "T7": []
       },
       "word": "гадина"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительное от «цветок»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "цветик"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительно-ласкательное от «лапа»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "лапонька"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительное/экспрессивное от «мальчик»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "мальчишка"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "экспрессивное уменьшительное от «девочка»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "девчонка"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительное от «печенье»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "печенька"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительное от «звезда»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "звездочка"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительное от «улица»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "улочка"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительное от «пупок»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "пупочка"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительно-ласкательное от «лапа»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "лапочка"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительное от «четвёрка»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "четверочка"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительное от «тапок»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "тапочка"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительно-ласкательное от «дядя»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "дяденька"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительно-ласкательное от «батя»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "батенька"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительно-ласкательное от «тятя»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "тятенька"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительное от «Миша»/«медведь»; игрушка лексикализована",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "мишка"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительное от «малый»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "малышка"
-    },
-    {
-      "affected_task_ids": [],
-      "assigned": {
-        "T3_target": [],
-        "T4_target": [],
-        "T6_list": []
-      },
-      "buildable_levels": [],
-      "category": "productive_diminutives",
-      "category_title": "Продуктивные уменьшительные",
-      "note": "уменьшительное от «лёд»",
-      "task_roles": {
-        "T1": [],
-        "T2": [],
-        "T3": [],
-        "T4": [],
-        "T5": [],
-        "T6": [],
-        "T7": []
-      },
-      "word": "ледышка"
     }
   ],
   "categories": [
@@ -2098,7 +1596,13 @@
           "word": "как"
         }
       ],
-      "absent_words": [],
+      "absent_words": [
+        "оне",
+        "ага",
+        "себя",
+        "моя",
+        "ибо"
+      ],
       "affected_task_count": 5,
       "configured_words": [
         "они",
@@ -2114,26 +1618,21 @@
         "мол",
         "тут"
       ],
-      "description": "Поверхностные формы местоимений, предлогов, частиц и междометий. В словаре есть «они», «оно», «оне», «под», «ага», но «что», «кто» и «как» отсутствуют, поэтому фильтр по части речи непоследователен.",
+      "description": "Поверхностные формы местоимений, предлогов, частиц и междометий. DATA-03 исключил «оне», «ага», «себя», «моя», «ибо»; осознанно оставлены «они», «оно», «она» (решение владельца) и омонимы-существительные «под», «перед», «мол», «тут». «Что», «кто» и «как» отсутствуют, поэтому фильтр по части речи непоследователен.",
       "examples": [
         "они",
         "оно",
-        "оне",
         "под",
-        "ага"
+        "она",
+        "перед"
       ],
       "id": "function_words",
       "lexicalized_exceptions": [],
       "present_words": [
         "они",
         "оно",
-        "оне",
         "под",
-        "ага",
         "она",
-        "себя",
-        "моя",
-        "ибо",
         "перед",
         "мол",
         "тут"
@@ -2207,33 +1706,6 @@
             "T6_list": []
           },
           "buildable_levels": [
-            1,
-            4,
-            8,
-            10,
-            13,
-            15
-          ],
-          "note": "диалектная/устаревшая форма местоимения",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "оне"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [
             8,
             11
           ],
@@ -2248,30 +1720,6 @@
             "T7": []
           },
           "word": "под"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [
-            2,
-            5,
-            9
-          ],
-          "note": "междометие/частица",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "ага"
         },
         {
           "affected_task_ids": [],
@@ -2300,73 +1748,6 @@
             "T7": []
           },
           "word": "она"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "возвратное местоимение",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "себя"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [
-            3
-          ],
-          "note": "притяжательное местоимение",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "моя"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [
-            4,
-            5,
-            12,
-            14
-          ],
-          "note": "союз",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "ибо"
         },
         {
           "affected_task_ids": [
@@ -3571,7 +2952,25 @@
           "word": "адресок"
         }
       ],
-      "absent_words": [],
+      "absent_words": [
+        "цветик",
+        "лапонька",
+        "мальчишка",
+        "девчонка",
+        "печенька",
+        "звездочка",
+        "улочка",
+        "пупочка",
+        "лапочка",
+        "четверочка",
+        "тапочка",
+        "дяденька",
+        "батенька",
+        "тятенька",
+        "мишка",
+        "малышка",
+        "ледышка"
+      ],
       "affected_task_count": 0,
       "configured_words": [
         "цветик",
@@ -3592,39 +2991,15 @@
         "малышка",
         "ледышка"
       ],
-      "description": "Слова с продуктивной уменьшительной моделью, оставшиеся после очистки. Правило кампании требует отсеивать продуктивные уменьшительные; «ручка», «ножка» и «рыбка» исключены из кандидатов как подтверждённые владельцем лексикализации.",
-      "examples": [
-        "цветик",
-        "лапонька",
-        "мальчишка",
-        "девчонка",
-        "печенька"
-      ],
+      "description": "Слова с продуктивной уменьшительной моделью. DATA-03 окончательно исключил перечисленные 17 слов из словаря; «ручка», «ножка» и «рыбка» остаются как подтверждённые владельцем лексикализации.",
+      "examples": [],
       "id": "productive_diminutives",
       "lexicalized_exceptions": [
         "ручка",
         "ножка",
         "рыбка"
       ],
-      "present_words": [
-        "цветик",
-        "лапонька",
-        "мальчишка",
-        "девчонка",
-        "печенька",
-        "звездочка",
-        "улочка",
-        "пупочка",
-        "лапочка",
-        "четверочка",
-        "тапочка",
-        "дяденька",
-        "батенька",
-        "тятенька",
-        "мишка",
-        "малышка",
-        "ледышка"
-      ],
+      "present_words": [],
       "role_counts": {
         "T3_target": 0,
         "T4_target": 0,
@@ -3633,348 +3008,7 @@
         "letter_tasks": 0
       },
       "title": "Продуктивные уменьшительные",
-      "words": [
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительное от «цветок»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "цветик"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительно-ласкательное от «лапа»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "лапонька"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительное/экспрессивное от «мальчик»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "мальчишка"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "экспрессивное уменьшительное от «девочка»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "девчонка"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительное от «печенье»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "печенька"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительное от «звезда»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "звездочка"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительное от «улица»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "улочка"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительное от «пупок»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "пупочка"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительно-ласкательное от «лапа»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "лапочка"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительное от «четвёрка»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "четверочка"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительное от «тапок»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "тапочка"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительно-ласкательное от «дядя»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "дяденька"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительно-ласкательное от «батя»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "батенька"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительно-ласкательное от «тятя»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "тятенька"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительное от «Миша»/«медведь»; игрушка лексикализована",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "мишка"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительное от «малый»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "малышка"
-        },
-        {
-          "affected_task_ids": [],
-          "assigned": {
-            "T3_target": [],
-            "T4_target": [],
-            "T6_list": []
-          },
-          "buildable_levels": [],
-          "note": "уменьшительное от «лёд»",
-          "task_roles": {
-            "T1": [],
-            "T2": [],
-            "T3": [],
-            "T4": [],
-            "T5": [],
-            "T6": [],
-            "T7": []
-          },
-          "word": "ледышка"
-        }
-      ]
+      "words": []
     }
   ],
   "exact_target_levels": [
@@ -4052,11 +3086,11 @@
     },
     "config": {
       "path": "tools/vocabulary_audit_config.json",
-      "sha256": "35c3a2fb556dc93922eac78c97ffea7256b8d29ad1ec6baa715af4db5ec965ac"
+      "sha256": "5347f19a21c8a244bcabd10a3f65e0216d0ce3beb03520dc4281f2104d8930d1"
     },
     "words": {
       "path": "data/words.txt",
-      "sha256": "0ca0904a47577bd8502dd465239e4d5885f22b4899fce2448f72745b42fb36aa"
+      "sha256": "52830763a161476c0d43f23f74e3c3014bddcd49fb2721eb08dae03a2bc7cd01"
     }
   },
   "known_narrow_tasks": [
@@ -4099,7 +3133,7 @@
   ],
   "levels": [
     {
-      "answers_count": 112,
+      "answers_count": 111,
       "number": 1,
       "required_stars": 1,
       "stage": 1,
@@ -4118,7 +3152,7 @@
       "word": "чемпионство"
     },
     {
-      "answers_count": 146,
+      "answers_count": 145,
       "number": 2,
       "required_stars": 1,
       "stage": 1,
@@ -4137,7 +3171,7 @@
       "word": "вегетарианец"
     },
     {
-      "answers_count": 151,
+      "answers_count": 150,
       "number": 3,
       "required_stars": 1,
       "stage": 1,
@@ -4156,7 +3190,7 @@
       "word": "аккумулятор"
     },
     {
-      "answers_count": 199,
+      "answers_count": 197,
       "number": 4,
       "required_stars": 2,
       "stage": 2,
@@ -4185,7 +3219,7 @@
       "word": "благословение"
     },
     {
-      "answers_count": 277,
+      "answers_count": 275,
       "number": 5,
       "required_stars": 2,
       "stage": 2,
@@ -4292,7 +3326,7 @@
       "word": "журналистика"
     },
     {
-      "answers_count": 335,
+      "answers_count": 334,
       "number": 8,
       "required_stars": 3,
       "stage": 3,
@@ -4331,7 +3365,7 @@
       "word": "поздравление"
     },
     {
-      "answers_count": 367,
+      "answers_count": 366,
       "number": 9,
       "required_stars": 3,
       "stage": 4,
@@ -4380,7 +3414,7 @@
       "word": "благодарность"
     },
     {
-      "answers_count": 445,
+      "answers_count": 444,
       "number": 10,
       "required_stars": 3,
       "stage": 4,
@@ -4488,7 +3522,7 @@
       "word": "подстрекатель"
     },
     {
-      "answers_count": 544,
+      "answers_count": 543,
       "number": 12,
       "required_stars": 4,
       "stage": 5,
@@ -4547,7 +3581,7 @@
       "word": "проблематика"
     },
     {
-      "answers_count": 558,
+      "answers_count": 557,
       "number": 13,
       "required_stars": 4,
       "stage": 5,
@@ -4606,7 +3640,7 @@
       "word": "складирование"
     },
     {
-      "answers_count": 527,
+      "answers_count": 526,
       "number": 14,
       "required_stars": 4,
       "stage": 6,
@@ -4665,7 +3699,7 @@
       "word": "контрабандист"
     },
     {
-      "answers_count": 632,
+      "answers_count": 631,
       "number": 15,
       "required_stars": 4,
       "stage": 6,
@@ -4797,21 +3831,21 @@
   "schema": "vocabulary-audit-v1",
   "summary": {
     "affected_tasks": 15,
-    "candidate_words": 71,
+    "candidate_words": 49,
     "categories": [
       {
-        "absent": 0,
+        "absent": 5,
         "affected_tasks": 5,
         "configured": 12,
         "examples": [
           "они",
           "оно",
-          "оне",
           "под",
-          "ага"
+          "она",
+          "перед"
         ],
         "id": "function_words",
-        "present": 12,
+        "present": 7,
         "role_counts": {
           "T3_target": 0,
           "T4_target": 0,
@@ -4866,18 +3900,12 @@
         "title": "Сексуальная и грубая лексика"
       },
       {
-        "absent": 0,
+        "absent": 17,
         "affected_tasks": 0,
         "configured": 17,
-        "examples": [
-          "цветик",
-          "лапонька",
-          "мальчишка",
-          "девчонка",
-          "печенька"
-        ],
+        "examples": [],
         "id": "productive_diminutives",
-        "present": 17,
+        "present": 0,
         "role_counts": {
           "T3_target": 0,
           "T4_target": 0,
@@ -4888,7 +3916,7 @@
         "title": "Продуктивные уменьшительные"
       }
     ],
-    "dictionary_words": 20119,
+    "dictionary_words": 20097,
     "levels": 15,
     "narrow_levels": [
       11,
