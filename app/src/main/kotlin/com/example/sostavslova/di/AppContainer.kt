@@ -31,7 +31,10 @@ class AppContainer(
 
     var random: kotlin.random.Random = kotlin.random.Random.Default
 
-    val wordRepository = words ?: WordRepository(readWords = { readAsset("words.txt") })
+    val wordRepository = words ?: WordRepository(
+        readWords = { readAsset("words.txt") },
+        readFamiliarity = { readAsset("word_familiarity.txt") },
+    )
     val levelsRepository = LevelsRepository(
         readCampaign = readCampaign ?: {
             // Check presence separately: an existing but unreadable/damaged v2 must never become v1.

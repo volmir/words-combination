@@ -148,7 +148,7 @@ object HintRules {
             val task = unfinished.firstOrNull { it.id == preferredId }
             if (task != null) {
                 val eligible = eligibleWords(task, candidates, countMinLength)
-                val word = selectWord(task, eligible, words, random, countMinLength)
+                val word = selectWord(task, eligible, words, random)
                 if (word != null) {
                     val letter = when (task) {
                         is CampaignTask.T2 -> task.letter
@@ -170,7 +170,7 @@ object HintRules {
         val ordered = t4s + sortedOthers
         for (task in ordered) {
             val eligible = eligibleWords(task, candidates, countMinLength)
-            val word = selectWord(task, eligible, words, random, countMinLength) ?: continue
+            val word = selectWord(task, eligible, words, random) ?: continue
             val letter = when (task) {
                 is CampaignTask.T2 -> task.letter
                 is CampaignTask.T7 -> task.letter
@@ -199,26 +199,29 @@ object HintRules {
         eligible: List<String>,
         words: Map<String, HintWordData>,
         random: Random,
-        countMinLength: Int,
     ): String? {
-        if (eligible.isEmpty()) return null
-        return if (task is CampaignTask.T3) {
-            val minLen = eligible.minOf { it.length }
-            val shortest = eligible.filter { it.length == minLen }
-            if (task.hintTarget in shortest) task.hintTarget else shortest.random(random)
-        } else {
-            choose(eligible, words, random)
-        }
+        if (task is CampaignTask.T4) return eligible.randomOrNull(random)
+        return choose(eligible, words, random, (task as? CampaignTask.T3)?.hintTarget)
     }
 
-    private fun choose(candidates: List<String>, words: Map<String, HintWordData>, random: Random): String? {
+    private fun choose(
+        candidates: List<String>,
+        words: Map<String, HintWordData>,
+        random: Random,
+        preferred: String? = null,
+    ): String? {
         if (candidates.isEmpty()) return null
-        fun quality(word: String): Int {
-            val data = words[word] ?: HintWordData()
-            return (if (data.undesirableLabels.isEmpty()) 2 else 0) + (if (data.familiar) 1 else 0)
-        }
-        val best = candidates.maxOf(::quality)
-        return candidates.filter { quality(it) == best }.random(random)
+        val quality = compareBy<String>(
+            { if (words[it]?.familiar != false) 0 else 1 },
+            { word ->
+                val nearest = word.length.coerceIn(HintEconomy.TARGET_MIN_LENGTH, HintEconomy.TARGET_MAX_LENGTH)
+                kotlin.math.abs(word.length - nearest)
+            },
+            { it.length },
+        )
+        val best = candidates.minWith(quality)
+        val equal = candidates.filter { quality.compare(it, best) == 0 }
+        return if (preferred in equal) preferred else equal.random(random)
     }
 
     private fun normalizedFound(current: CurrentCampaignLevel): Set<String> =

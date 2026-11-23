@@ -2,6 +2,8 @@ package com.example.sostavslova.core
 
 /** Единые параметры экономики подсказок v2. */
 object HintEconomy {
+    const val TARGET_MIN_LENGTH: Int = 6
+    const val TARGET_MAX_LENGTH: Int = 8
     const val earnEvery: Int = 4
     const val stepCost: Int = 1
     const val t4FirstStepFree: Boolean = true

@@ -63,6 +63,28 @@ class CampaignProgressRepositoryTest {
         ))
     })
 
+    @Test fun campaignHintReceivesLocalFamiliarityAndFallsBackWhenFileIsMissing() = runTest {
+        val readers: List<suspend () -> String?> = listOf({ "2\n1\n" }, { null }, { "invalid" })
+        for ((attempt, reader) in readers.withIndex()) {
+            repository.clearAll()
+            val words = WordRepository(readWords = { "колея\nстанция\n" }, readFamiliarity = reader)
+            val hintIndex = words.requireIndex()
+            val sourceWord = "колеястанция"
+            val fixture = Campaign(listOf(Stage(1, 1, 1)), listOf(
+                CampaignLevel(1, sourceWord, 1, 1, listOf(CampaignTask.T1("count", 1))),
+            ))
+            repository.migrateCampaign(fixture, hintIndex)
+            val current = checkNotNull(CampaignRules.openLevel(fixture, snapshot(), 1, hintIndex))
+            val metadata = words.hintWordData(current.game.allWords)
+            assertEquals(current.game.allWords.toSet(), metadata.keys)
+            val hint = checkNotNull(repository.requestCampaignHint(fixture, 1, 0, hintIndex, metadata))
+            assertEquals(if (attempt == 0) "колея" else "станция", hint.state.hints.ladder.target?.word)
+            assertEquals(1, hint.state.hints.paidUnits)
+            assertEquals(hint.state.hints, checkNotNull(snapshot().levels[sourceWord]).hints)
+            assertNull(repository.requestCampaignHint(fixture, 1, 0, hintIndex, metadata))
+        }
+    }
+
     @Test fun missingLettersKeepExactDetailsAndDoNotChangeSavedProgress() = runTest {
         val exactIndex = WordIndex(listOf("бык", "тир", "ветеран"))
         val fixture = Campaign(listOf(Stage(1, 1, 1)), listOf(

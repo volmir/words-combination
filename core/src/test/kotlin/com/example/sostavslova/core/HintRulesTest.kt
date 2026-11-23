@@ -9,6 +9,85 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class HintRulesTest {
+    private fun targetState(answers: List<String>, task: CampaignTask? = null): CurrentCampaignLevel {
+        val sourceWord = answers.joinToString("") + "я"
+        return CurrentCampaignLevel(CampaignLevel(1, sourceWord, 1, 1, listOfNotNull(task)),
+            GameState.start(sourceWord, WordIndex(answers)))
+    }
+
+    @Test fun ordinaryTasksPreferFamiliarThenDistanceThenShorterLength() {
+        val answers = listOf("аааа", "ааааа", "аааааа", "ааааааа", "ааааааааа")
+        val tasks = listOf(
+            CampaignTask.T1("t1", 2), CampaignTask.T2("t2", 'а', 2),
+            CampaignTask.T3("t3", 4, answers.first()), CampaignTask.T5("t5", "а", 4),
+            CampaignTask.T6("t6", "theme", 2, answers), CampaignTask.T7("t7", 'а', 2),
+        )
+        for (task in tasks) {
+            repeat(20) { seed ->
+                val current = targetState(answers, task)
+                assertEquals(answers[2], HintRules.next(current, random = Random(seed)).state.hints.ladder.target?.word)
+                val metadata = answers.associateWith { HintWordData(familiar = it == answers[1]) }
+                assertEquals(answers[1], HintRules.next(current, metadata, random = Random(seed)).state.hints.ladder.target?.word)
+            }
+        }
+    }
+
+    @Test fun unknownMetadataIsFamiliarAndDoesNotLoseToRareWord() {
+        val answers = listOf("аааааа", "ббббббб")
+        val result = next(targetState(answers), mapOf(answers.first() to HintWordData(familiar = false)))
+        assertEquals(answers.last(), result.state.hints.ladder.target?.word)
+    }
+
+    @Test fun missingIntervalUsesDistanceAndShorterTieBeforeRandom() {
+        for ((answers, expected) in listOf(
+            listOf("аааа", "ааааа", "ааааааааа") to "ааааа",
+            listOf("аааа", "ааааааааа") to "ааааааааа",
+        )) {
+            assertEquals(expected, next(targetState(answers), emptyMap()).state.hints.ladder.target?.word)
+        }
+        val tied = listOf("аааааа", "бббббб")
+        val current = targetState(tied)
+        val selected = (0..30).map { seed -> HintRules.next(current, random = Random(seed)).state.hints.ladder.target?.word }.toSet()
+        assertEquals(tied.toSet(), selected)
+    }
+
+    @Test fun t3MinimumAndHintTargetOnlyBreaksEqualQualityTies() {
+        val answers = listOf("ааааааа", "аааааааа", "бббббббб", "ааааааааа")
+        val current = targetState(answers, CampaignTask.T3("long", 8, answers.last()))
+        assertTrue(next(current, emptyMap()).state.hints.ladder.target?.word in setOf(answers[1], answers[2]))
+        val tied = current.copy(level = current.level.copy(tasks = listOf(CampaignTask.T3("long", 8, answers[2]))))
+        repeat(20) { seed ->
+            assertEquals(answers[2], HintRules.next(tied, random = Random(seed)).state.hints.ladder.target?.word)
+        }
+        val familiarTooShort = answers.associateWith { HintWordData(familiar = it == answers.first()) }
+        assertTrue(next(current, familiarTooShort).state.hints.ladder.target?.word in setOf(answers[1], answers[2]))
+        val familiarLong = answers.associateWith { HintWordData(familiar = it == answers.last()) }
+        assertEquals(answers.last(), next(current, familiarLong).state.hints.ladder.target?.word)
+    }
+
+    @Test fun t4IgnoresLengthAndFamiliarityAndStillPrecedesRarePools() {
+        val answers = listOf("аааа", "аааааа", "ббббббб")
+        val current = targetState(answers).let { it.copy(level = it.level.copy(tasks = listOf(
+            CampaignTask.T2("rare", 'б', 1), CampaignTask.T4("riddle", answers.take(2))))) }
+        val data = answers.associateWith { HintWordData(familiar = it != answers.first()) }
+        val targets = (0..30).map { seed ->
+            val result = HintRules.next(current, data, random = Random(seed))
+            assertEquals("riddle", result.state.hints.ladder.target?.taskId)
+            assertEquals(0, result.state.hints.paidUnits)
+            result.state.hints.ladder.target?.word
+        }.toSet()
+        assertEquals(answers.take(2).toSet(), targets)
+    }
+
+    @Test fun rarePoolOrderIsIndependentOfWordQuality() {
+        val answers = listOf("ббббб", "аааааа", "ааааааа")
+        val current = targetState(answers).let { it.copy(level = it.level.copy(tasks = listOf(
+            CampaignTask.T1("count", 3), CampaignTask.T2("rare", 'б', 1)))) }
+        val result = next(current, answers.associateWith { HintWordData(familiar = it != answers.first()) })
+        assertEquals("rare", result.state.hints.ladder.target?.taskId)
+        assertEquals(1, result.state.hints.paidUnits)
+    }
+
     @Test fun upgradeDropsImportedStepsWithoutChangingBudgetTargetOrLetterProgress() {
         val state = HintState(HintLadder(HintTarget("станция"), listOf(
             HintStep(HintStage.THEME, "Транспорт"),
@@ -209,11 +288,11 @@ class HintRulesTest {
         current = accept(current, "торт")
         assertTrue("long" in current.completedTaskIds)
         current = next(current, emptyMap()).state
-        assertEquals("крот", current.hints.ladder.target?.word)
+        assertEquals("станция", current.hints.ladder.target?.word)
         val shown = current.hints.shownSteps
-        current = accept(current, "крот")
+        current = accept(current, "станция")
         current = next(current, emptyMap()).state
-        assertFalse(current.hints.ladder.target?.word in listOf("крот", "торт"))
+        assertFalse(current.hints.ladder.target?.word in listOf("станция", "торт"))
         assertEquals(shown + 1, current.hints.shownSteps)
     }
 
@@ -230,12 +309,12 @@ class HintRulesTest {
 
     @Test fun firstEligibleUnfinishedTaskAndAllTaskFiltersAreUsed() {
         val tasks = listOf(
-            CampaignTask.T1("count", 5) to setOf("крот", "торт", "рост", "нота", "елка", "колея", "станция"),
-            CampaignTask.T2("initial", 'к', 2) to setOf("крот", "колея"),
-            CampaignTask.T3("long", 4, "торт") to setOf("торт"),
+            CampaignTask.T1("count", 5) to setOf("станция"),
+            CampaignTask.T2("initial", 'к', 2) to setOf("колея"),
+            CampaignTask.T3("long", 4, "торт") to setOf("станция"),
             CampaignTask.T5("ending", "от", 4) to setOf("крот"),
-            CampaignTask.T6("theme", "animals", 2, listOf("кот", "крот")) to setOf("кот", "крот"),
-            CampaignTask.T7("letter", 'л', 2) to setOf("елка", "колея"),
+            CampaignTask.T6("theme", "animals", 2, listOf("кот", "крот")) to setOf("крот"),
+            CampaignTask.T7("letter", 'л', 2) to setOf("колея"),
         )
         for ((task, expected) in tasks) {
             val result = next(start(CampaignTask.T2("impossible", 'ы', 1), task,
@@ -252,16 +331,16 @@ class HintRulesTest {
         assertEquals("count", target.taskId)
     }
 
-    @Test fun fallbackUsesBuildableUnfoundWordsAndPrefersFamiliarUnlabelledCandidates() {
+    @Test fun fallbackUsesBuildableUnfoundWordsAndFamiliarityBeforeLengthWithoutLabels() {
         val data = mapOf("кот" to HintWordData(familiar = true, undesirableLabels = setOf("obsolete")),
-            "крот" to HintWordData(familiar = true))
+            "крот" to HintWordData(familiar = true), "торт" to HintWordData(familiar = false))
         val current = start(answers = listOf("кот", "крот", "торт", "молоко", source))
         val result = next(current, data)
         val target = assertNotNull(result.state.hints.ladder.target)
         assertEquals("крот", target.word)
         assertNull(target.taskId)
         val guessed = accept(current, "крот")
-        assertEquals("торт", next(guessed, data).state.hints.ladder.target?.word)
+        assertEquals("кот", next(guessed, data).state.hints.ladder.target?.word)
         assertEquals(HintStatus.NO_TARGET, next(start(answers = listOf("молоко", source))).status)
     }
 

@@ -1,5 +1,7 @@
 package com.example.sostavslova.data
 
+import com.example.sostavslova.core.HintWordData
+import com.example.sostavslova.core.WordFamiliarity
 import com.example.sostavslova.core.GameState
 import com.example.sostavslova.core.SearchResult
 import com.example.sostavslova.core.WordIndex
@@ -28,8 +30,12 @@ class WordRepository(
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val indexFactory: (String) -> WordIndex = WordIndex::fromText,
+    private val readFamiliarity: suspend () -> String? = { null },
 ) {
     private val loadMutex = Mutex()
+    private val familiarityMutex = Mutex()
+    private var familiarityLoaded = false
+    private var familiarity: WordFamiliarity? = null
     private var index: WordIndex? = null
     private val mutableState = MutableStateFlow<LoadState>(LoadState.Loading)
     val state: StateFlow<LoadState> = mutableState.asStateFlow()
@@ -54,6 +60,30 @@ class WordRepository(
     suspend fun requireIndex(): WordIndex {
         ensureLoaded()
         return checkNotNull(index) { "Словарь не загружен: ${state.value}" }
+    }
+
+    /** Загружается только при запросе подсказки; карта строится только для ответов уровня. */
+    suspend fun hintWordData(levelWords: List<String>): Map<String, HintWordData> {
+        val loaded = requireIndex()
+        return withContext(ioDispatcher) {
+            val metadata = familiarityMutex.withLock {
+                if (!familiarityLoaded) {
+                    familiarity = try {
+                        readFamiliarity()?.let { WordFamiliarity.fromText(loaded.words, it) }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        null
+                    }
+                    familiarityLoaded = true
+                }
+                familiarity
+            }
+            levelWords.associateWith { word ->
+                val tier = metadata?.tier(word)
+                HintWordData(familiar = tier == null || tier >= 2)
+            }
+        }
     }
 
     suspend fun search(raw: String): SearchResult? {

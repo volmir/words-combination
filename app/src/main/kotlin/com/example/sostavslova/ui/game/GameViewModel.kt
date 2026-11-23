@@ -439,7 +439,7 @@ class GameViewModel(
         hintJob = viewModelScope.launch {
             try {
                 val result = progress.requestCampaignHint(activeCampaign, current.level.number,
-                    current.hints.shownSteps, words.requireIndex())
+                    current.hints.shownSteps, words.requireIndex(), words.hintWordData(current.game.allWords))
                 currentCoroutineContext().ensureActive()
                 if (result != null) {
                     uiState.first { (it.campaignLevel?.hints?.shownSteps ?: 0) >= result.state.hints.shownSteps }
