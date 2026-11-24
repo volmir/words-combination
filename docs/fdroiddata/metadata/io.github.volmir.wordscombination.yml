@@ -19,7 +19,8 @@ Builds:
     versionCode: 6
     commit: 517d9f74a8b09337c26c38e8e9aa078726973cbd
     subdir: app
-    java: 21
+    sudo: apt-get update -qq && apt-get install -y -qq openjdk-21-jdk
+    prebuild: export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 && export PATH=$JAVA_HOME/bin:$PATH
     gradle:
       - assembleRelease
     output: build/outputs/apk/release/app-release-unsigned.apk
