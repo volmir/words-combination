@@ -285,7 +285,7 @@ private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Uni
                     } else {
                         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             StarsRow(item.stars, item.maxStars, label = starsLabel, requiredStars = item.requiredStars)
-                            Text(compactAchievements, Modifier.align(Alignment.End)
+                            Text(compactAchievements, Modifier.fillMaxWidth()
                                     .testTag("level_achievements_${item.index}"),
                                 textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium)
                         }

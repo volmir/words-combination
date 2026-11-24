@@ -11,6 +11,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.R
+import com.example.sostavslova.ui.assertTextLayoutFits
 import com.example.sostavslova.core.Stage
 import com.example.sostavslova.core.LevelAchievement
 import androidx.compose.foundation.layout.Box
@@ -133,7 +134,7 @@ class LevelsLayoutTest {
             .assertTextEquals(context.getString(R.string.level_achievements_compact, 0, available.size))
             .fetchSemanticsNode().boundsInRoot
         assertTrue("Счётчик должен быть справа от шести звёзд", achievements.left >= stars.right)
-        assertEquals(stars.top, achievements.top, 1f)
+        assertEquals(stars.center.y, achievements.center.y, 1f)
     }
 
     private fun assertStars(label: String, description: String) {
@@ -168,14 +169,7 @@ class LevelsLayoutTest {
             val layouts = mutableListOf<TextLayoutResult>()
             node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
             for (layout in layouts) {
-                val text = layout.layoutInput.text.text
-                assertFalse(text, layout.multiParagraph.didExceedMaxLines)
-                for (line in 0 until layout.lineCount) {
-                    assertFalse(text, layout.isLineEllipsized(line))
-                    assertTrue(text, layout.getLineRight(line) <= layout.size.width + 1f)
-                    assertTrue(text, layout.getLineLeft(line) >= -1f)
-                    assertTrue(text, layout.getLineBottom(line) <= layout.size.height + 1f)
-                }
+                assertTextLayoutFits(layout)
             }
         }
         for (node in compose.onAllNodes(hasClickAction(), useUnmergedTree = true).fetchSemanticsNodes()) {

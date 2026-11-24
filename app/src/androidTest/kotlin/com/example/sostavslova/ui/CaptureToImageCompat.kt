@@ -17,6 +17,7 @@ import kotlin.math.roundToInt
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 /** Activity-window screenshots on API 24–25, where Compose's PixelCopy overload is absent. */
 fun SemanticsNodeInteraction.captureToImageCompat(): ImageBitmap {
@@ -26,10 +27,15 @@ fun SemanticsNodeInteraction.captureToImageCompat(): ImageBitmap {
     val screen = IntArray(2)
     val window = IntArray(2)
     val drawn = AtomicBoolean()
+    val remainingFrames = AtomicInteger(2)
     val frame = CountDownLatch(1)
     val drawListener = ViewTreeObserver.OnDrawListener { drawn.set(true) }
-    val frameListener = Window.OnFrameMetricsAvailableListener { _, _, _ ->
-        if (drawn.get()) frame.countDown()
+    val frameListener = Window.OnFrameMetricsAvailableListener { window, _, _ ->
+        if (drawn.compareAndSet(true, false)) {
+            val remaining = remainingFrames.decrementAndGet()
+            if (remaining == 0) frame.countDown()
+            else if (remaining > 0) window.decorView.postInvalidateOnAnimation()
+        }
     }
     lateinit var hostWindow: Window
     instrumentation.runOnMainSync {
@@ -44,7 +50,9 @@ fun SemanticsNodeInteraction.captureToImageCompat(): ImageBitmap {
     }
     try {
         // Compose's test clock may be paused. Wait for the real Android render frame,
-        // so UiAutomation sees the current pixels rather than the previous surface.
+        // A queued metrics callback can belong to the preceding surface. Request
+        // another draw before capturing, so that a completed fresh frame has
+        // reached the compositor. This does not advance Compose's paused clock.
         check(frame.await(10, TimeUnit.SECONDS)) { "Activity did not render a screenshot frame" }
     } finally {
         instrumentation.runOnMainSync {

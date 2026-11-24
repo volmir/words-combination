@@ -42,6 +42,7 @@ class MainScenariosUiTest {
         compose.waitUntil(10_000) {
             compose.onAllNodesWithText(text, substring = substring).fetchSemanticsNodes().isNotEmpty()
         }
+        compose.waitForIdle()
         compose.onNodeWithText(text, substring = substring).performScrollTo().assertIsDisplayed()
     }
 
