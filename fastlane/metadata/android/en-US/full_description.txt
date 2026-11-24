@@ -5,6 +5,13 @@ Features:
 - 49 challenges with different goals: word length, required letters, endings, riddles and more
 - Step-by-step letter hints purchased with earned in-game units, not real money
 - Local saving of words, level progress, stars, achievements and hints
+- Eight types of level achievements, depending on available words and challenges
+- Tap letter tiles, shuffle letters or switch to keyboard input
+- Level completion results and animated stars
+- Compact hints with task switching; familiar words and unseen targets take priority (repeats are possible once new targets run out)
+- Dark theme follows the system; Start Over resets progress
+- System phone-to-phone progress transfer on Android 12+, with no cloud backup; transfer is disabled on Android 7–11
+- No play-time tracking
 - No account, advertising, analytics or internet connection required
 
 The interface and dictionary are currently in Russian. You can play entirely offline.

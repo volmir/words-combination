@@ -1,0 +1,4 @@
+8 level awards: No Hints, Connoisseur, Collector, Explorer, Long Word, Long Word Master, Great Mind, Top Student.
+Tap tiles, shuffle letters; Level Complete screen, star animation; compact hints with task switching. Familiar hint words, no repeats until exhausted.
+Phone-to-phone progress transfer (Android 12+), dark theme, Start Over, dictionary cleanup; input, label and contrast fixes.
+Play-time tracking removed.
