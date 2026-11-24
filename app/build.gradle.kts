@@ -343,7 +343,7 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
     group = "build"
     dependsOn(verifyDictionaryLicenses)
     from(dictionaryData) {
-        include("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz")
+        include("words.txt", "levels.json", "campaign.json")
         include("owned_riddles.json", "word_familiarity.txt")
     }
     from(rootProject.layout.projectDirectory.dir("legal")) {
@@ -354,13 +354,13 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
     }
     into(layout.projectDirectory.dir("src/main/assets"))
     preserve {
-        exclude("words.txt", "word_familiarity.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz", "owned_riddles.json", "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
+        exclude("words.txt", "word_familiarity.txt", "levels.json", "campaign.json", "owned_riddles.json", "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
     }
     doLast {
         val manifest = JsonSlurper().parse(dictionaryData.file("manifest.json").asFile) as Map<*, *>
         val riddles = manifest["owned_riddles"] as? Map<*, *>
         val assets = layout.projectDirectory.dir("src/main/assets").asFile
-        val expectedAssets = setOf("words.txt", "word_familiarity.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz",
+        val expectedAssets = setOf("words.txt", "word_familiarity.txt", "levels.json", "campaign.json",
             "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt",
             "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json", "owned_riddles.json")
         val actualAssets = assets.walkTopDown().filter { it.isFile }
