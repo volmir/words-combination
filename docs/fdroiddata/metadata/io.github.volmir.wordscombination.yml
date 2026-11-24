@@ -27,7 +27,6 @@ Builds:
       - docs/qa/pre04-17/manual-witness.zip
       - docs/qa/pre04-17/remote-manual-witness.zip
       - docs/qa/pre04-17/verification-logs.zip
-      - data/word_sources.jsonl.gz
 
 # Keep auto-adding new builds disabled until the F-Droid buildserver has
 # independently verified the developer-signed 1.0.2 artifact.
