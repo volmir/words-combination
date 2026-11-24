@@ -15,6 +15,10 @@
 | `SPEC.md` | действует | — |
 | `INDEX.md` | действует | — |
 | `PROJECT_STATUS.md` | действует | — |
+| `RELEASE_PROCESS.md` | действует (подготовка, публикация, F-Droid MR) | — |
+| `FDROID_MAIN_INTEGRATION.md` | отчёт переноса проверенного процесса в main | — |
+| `fdroiddata/FDROID_RELEASE_111_REPORT.md`, `fdroiddata/RELEASE_111_EVIDENCE.json` | отчёт FDROID-RELEASE-111 | — |
+| `FDROID_FIX_110_REPORT.md` | история (диагностика 1.1.0) | `fdroiddata/FDROID_RELEASE_111_REPORT.md` |
 | `RELEASE_CHECKLIST_1_1.md` | действует (ручная приёмка релиза 1.1.0 на устройстве) | — |
 | `RELEASE_1_1_TEST_EVIDENCE.md` | действует (instrumented-проверки STAB-06 на API 24/36, история падений и внешний gate) | — |
 | `GOLD_03A_REPORT.md` | история (удаление контрольного списка GOLD-03A) | `SPEC.md` |
@@ -28,8 +32,7 @@
 | `CAMPAIGN.md` | история | `SPEC.md` (заметка в начале файла) |
 | `OWN_HINTS_TOOLCHAIN.md` | действует | — |
 | `RELEASE_SIGNING.md` | действует | — |
-| `FDROID_REPRO_02.md` | действует | — |
-| `FDROID_FIX_110_REPORT.md` | действует (диагностика !58000; BLOCKED на этапе 03) | — |
+| `FDROID_REPRO_02.md` | история (процесс 1.0.2) | `RELEASE_PROCESS.md` |
 | `KNOWN_WORDS.md` | действует | — |
 | `CAMPAIGN_VALIDATION.md` | действует (gate GEN-04) | — |
 | `PLAY_TIME_QA.md` | история (учёт времени удалён) | `SPEC.md` §6 |
@@ -78,7 +81,8 @@
 | `OWN_HINTS_OWNER_APPROVAL.template.json` | история | `OWN_HINTS_OWNER_APPROVAL.json` |
 | `decisions/2026-11-06-clean-game-vocabulary.md` | история | `SPEC.md` §8 |
 | `decisions/2026-11-06-provisional-definitions.md` | история | `SPEC.md` §8 |
-| `fdroiddata/FDROID-01-remove-updatecheckdata.patch`, `fdroiddata/metadata/io.github.volmir.wordscombination.yml` | история | заявка F-Droid !58000 |
+| `fdroiddata/FDROID-01-remove-updatecheckdata.patch` | история | заявка F-Droid !58000 |
+| `fdroiddata/metadata/io.github.volmir.wordscombination.yml` | действует (копия YAML существующего MR !58000) | источник: локальный fdroiddata |
 | `uiux/SHORT15_BASELINE.md`, `uiux/SHORT15_FINAL_REPORT.md`, `uiux/SHORT15_MANUAL_QA.md`, `uiux/SHORT15_REGRESSION.md` | история | `SPEC.md`, `QA_CHECKLIST.md` |
 | `qa/pre04-17/*` (артефакты прогона) | история | — (архив) |
 | `snapshots/data01/*` (снимки решений) | история | — (архив) |

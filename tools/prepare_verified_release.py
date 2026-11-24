@@ -2,8 +2,8 @@
 """Build and verify a developer-signed release from two clean Git clones.
 
 This command never creates tags, commits, pushes or publishes releases. The
-private signing key stays on the owner's machine; only the signed build receives
-signing variables. No artifacts are exported until verification succeeds.
+private signing key stays on the owner's machine; only the signing operation
+receives signing variables. No artifacts are exported until verification succeeds.
 """
 
 import argparse
@@ -14,6 +14,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import zipfile
 
 if __package__:
     from .verify_reproducible_release import find_apksigner, sha256_file, verify_release
@@ -81,6 +82,25 @@ def check_build_metadata(clone, tag, expected_code):
     return code
 
 
+def check_apk_revision(apk, commit):
+    with zipfile.ZipFile(apk) as archive:
+        vcs = archive.read('META-INF/version-control-info.textproto').decode('utf-8')
+    revisions = re.findall(r'revision: "([0-9a-f]{40})"', vcs)
+    if revisions != [commit]:
+        raise ValueError('APK Git revision does not match the release commit')
+
+
+def sign_verified_apk(unsigned, signed, variables, apksigner):
+    # Password values stay in the environment, never in command arguments/logs.
+    run([apksigner, 'sign', '--ks', variables[SIGNING_VARIABLES[0]],
+         '--ks-key-alias', variables[SIGNING_VARIABLES[2]],
+         '--ks-pass', 'env:' + SIGNING_VARIABLES[1],
+         '--key-pass', 'env:' + SIGNING_VARIABLES[3],
+         '--v1-signing-enabled', 'false', '--v2-signing-enabled', 'true',
+         '--v3-signing-enabled', 'false', '--v4-signing-enabled', 'false',
+         '--out', str(signed), str(unsigned)], env=variables)
+
+
 def prepare_release(repository, tag, output_dir, expected_code,
                     *, environ=None, apksigner=None, apksigcopier=None):
     repository = Path(repository).resolve(strict=True)
@@ -99,42 +119,39 @@ def prepare_release(repository, tag, output_dir, expected_code,
 
     with tempfile.TemporaryDirectory(prefix='words-repro-') as temporary:
         root = Path(temporary)
-        # AGP embeds Git's local_root_path in version-control-info.textproto.
-        # Independent clones in *different* paths therefore cannot reproduce.
-        # Recreate the full clone at exactly the same absolute path instead.
-        build_clone = root / 'source'
-        clone_tag(repository, build_clone, tag, commit)
-
         unsigned_env = dict(variables)
         for name in SIGNING_VARIABLES:
             unsigned_env.pop(name, None)
-        gradle_command = ['bash', './gradlew', ':app:assembleRelease',
-                          '--no-build-cache', '--no-daemon', '--console=plain']
-        run(gradle_command, cwd=build_clone, env=unsigned_env)
-        unsigned_apk = (build_clone /
-                        'app/build/outputs/apk/release/app-release-unsigned.apk')
-        if not unsigned_apk.is_file():
-            raise ValueError('Unsigned clone did not produce app-release-unsigned.apk')
-        unsigned_code = check_build_metadata(build_clone, tag, expected_code)
-        staged_unsigned = root / 'app-release-unsigned.apk'
-        shutil.copyfile(unsigned_apk, staged_unsigned)
+        jvm_script = root / 'release-jvm.gradle'
+        jvm_script.write_text(
+            'if (JavaVersion.current() != JavaVersion.VERSION_21) '
+            '{ throw new GradleException("Release requires JDK 21") }; '
+            'println("RELEASE_JVM=" + System.getProperty("java.version") + '
+            '" vendor=" + System.getProperty("java.vendor") + '
+            '" home=" + System.getProperty("java.home"))\n', encoding='utf-8')
+        gradle_command = ['bash', './gradlew', ':app:assembleRelease', '--offline',
+                          '--no-build-cache', '--no-daemon', '--console=plain',
+                          '--init-script', str(jvm_script)]
+        unsigned_apks = []
+        for name in ('source-a', 'independent/source-b'):
+            build_clone = root / name
+            clone_tag(repository, build_clone, tag, commit)
+            run(gradle_command, cwd=build_clone, env=unsigned_env)
+            unsigned = build_clone / 'app/build/outputs/apk/release/app-release-unsigned.apk'
+            if not unsigned.is_file():
+                raise ValueError('Unsigned clone did not produce app-release-unsigned.apk')
+            check_build_metadata(build_clone, tag, expected_code)
+            check_apk_revision(unsigned, commit)
+            unsigned_apks.append(unsigned)
+        unsigned_hashes = [sha256_file(apk) for apk in unsigned_apks]
+        if unsigned_hashes[0] != unsigned_hashes[1]:
+            raise ValueError('Independent unsigned APK SHA-256 values differ')
 
-        # Remove only the disposable clone within this newly created temp dir.
-        # The signed build starts from a second, entirely fresh full clone.
-        shutil.rmtree(build_clone)
-        clone_tag(repository, build_clone, tag, commit)
-
-        run(gradle_command, cwd=build_clone, env=variables)
-        signed_apk = build_clone / 'app/build/outputs/apk/release/app-release.apk'
-        if not signed_apk.is_file():
-            raise ValueError('Signed clone did not produce app-release.apk')
-        signed_code = check_build_metadata(build_clone, tag, expected_code)
-        if signed_code != unsigned_code:
-            raise ValueError('Signed and unsigned versionCode differ')
-
+        # Sign the already compared bytes; no third Gradle build can replace them.
         filename = f'WordsCombination-v{tag}.apk'
         staged_apk = root / filename
-        shutil.copyfile(signed_apk, staged_apk)
+        sign_verified_apk(unsigned_apks[0], staged_apk, variables, apksigner)
+        staged_unsigned = unsigned_apks[1]
         sums = root / 'SHA256SUMS.txt'
         sums.write_text(f'{sha256_file(staged_apk)}  {filename}\n', encoding='utf-8')
         result = verify_release(staged_apk, staged_unsigned, sums, apksigner, apksigcopier)
@@ -142,8 +159,10 @@ def prepare_release(repository, tag, output_dir, expected_code,
             'tag': tag,
             'commit': commit,
             'version_name': tag,
-            'version_code': signed_code,
-            'builds': 'two sequential independent full Git clones at the same absolute path',
+            'version_code': expected_code,
+            'unsigned_sha256s': unsigned_hashes,
+            'independent_paths': True,
+            'builds': 'two independent full Git clones at different absolute paths',
             'github_release_published': False,
         })
 
@@ -151,6 +170,8 @@ def prepare_release(repository, tag, output_dir, expected_code,
         output_dir.mkdir(parents=True, exist_ok=False)
         shutil.copyfile(staged_apk, output_dir / filename)
         shutil.copyfile(sums, output_dir / 'SHA256SUMS.txt')
+        for index, unsigned in enumerate(unsigned_apks, start=1):
+            shutil.copyfile(unsigned, output_dir / f'unsigned-{index}.apk')
         (output_dir / 'reproducibility-evidence.json').write_text(
             json.dumps(result, indent=2, ensure_ascii=False) + '\n', encoding='utf-8',
         )

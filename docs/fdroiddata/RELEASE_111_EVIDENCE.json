@@ -1,0 +1,221 @@
+{
+  "release_version": "1.1.1",
+  "release_code": 7,
+  "release_url": "https://github.com/volmir/words-combination/releases/tag/1.1.1",
+  "release_commit_url": "https://github.com/volmir/words-combination/commit/bfeec0e6d67a2972622416d75abb3cd066562318",
+  "preparation": {
+    "status": "LOCAL_SOURCE_TO_SIGNED_APK_VERIFIED",
+    "signed_apk": "WordsCombination-v1.1.1.apk",
+    "signed_sha256": "43fac7440386d0c8362e3c6e0b934451a2e453c1d89f1b9a8277d3c0c80af593",
+    "unsigned_apk": "app-release-unsigned.apk",
+    "unsigned_sha256": "91d8b2f812ba1a533ae8dc4f0b0d337b63845e5173af249a5abe093b472b7b15",
+    "signer_certificate_sha256": "a10cdd4ff4000673f14db9fe4a814f8bbd63b6e2007f5f38b1fe5cfb7310f353",
+    "method": "apksigcopier compare --unsigned",
+    "fdroid_buildserver_verified": false,
+    "tag": "1.1.1",
+    "commit": "bfeec0e6d67a2972622416d75abb3cd066562318",
+    "version_name": "1.1.1",
+    "version_code": 7,
+    "unsigned_sha256s": [
+      "91d8b2f812ba1a533ae8dc4f0b0d337b63845e5173af249a5abe093b472b7b15",
+      "91d8b2f812ba1a533ae8dc4f0b0d337b63845e5173af249a5abe093b472b7b15"
+    ],
+    "independent_paths": true,
+    "builds": "two independent full Git clones at different absolute paths",
+    "github_release_published": false
+  },
+  "publication": {
+    "status": "PUBLIC_DOWNLOAD_VERIFIED",
+    "signed_apk": "WordsCombination-v1.1.1.apk",
+    "signed_sha256": "43fac7440386d0c8362e3c6e0b934451a2e453c1d89f1b9a8277d3c0c80af593",
+    "unsigned_apk": "unsigned-2.apk",
+    "unsigned_sha256": "91d8b2f812ba1a533ae8dc4f0b0d337b63845e5173af249a5abe093b472b7b15",
+    "signer_certificate_sha256": "a10cdd4ff4000673f14db9fe4a814f8bbd63b6e2007f5f38b1fe5cfb7310f353",
+    "method": "apksigcopier compare --unsigned",
+    "fdroid_buildserver_verified": false,
+    "commit": "bfeec0e6d67a2972622416d75abb3cd066562318",
+    "tag": "1.1.1",
+    "public_url": "https://github.com/volmir/words-combination/releases/download/1.1.1/WordsCombination-v1.1.1.apk"
+  },
+  "local_fdroid": {
+    "status": "LOCAL_SOURCE_TO_SIGNED_APK_VERIFIED",
+    "signed_apk": "WordsCombination-v1.1.1.apk",
+    "signed_sha256": "43fac7440386d0c8362e3c6e0b934451a2e453c1d89f1b9a8277d3c0c80af593",
+    "unsigned_apk": "io.github.volmir.wordscombination_7.apk",
+    "unsigned_sha256": "91d8b2f812ba1a533ae8dc4f0b0d337b63845e5173af249a5abe093b472b7b15",
+    "signer_certificate_sha256": "a10cdd4ff4000673f14db9fe4a814f8bbd63b6e2007f5f38b1fe5cfb7310f353",
+    "method": "apksigcopier compare --unsigned",
+    "fdroid_buildserver_verified": false
+  },
+  "apk_audit": {
+    "signing_blocks": [
+      "0x7109871a",
+      "0x42726577"
+    ],
+    "dependency_info_block": false,
+    "permissions": [],
+    "provenance_bytes": 3791287,
+    "provenance_lines": 20103,
+    "provenance_gzip_sha256": "bbb9392fb53d7652da2ecfb1965e0ac4140d1e73b713ed1ca62320dca6206d0d",
+    "unchanged_assets": [
+      "assets/words.txt",
+      "assets/campaign.json",
+      "assets/levels.json",
+      "assets/word_sources.jsonl",
+      "assets/owned_riddles.json",
+      "assets/word_familiarity.txt",
+      "assets/RUNTIME_LIBRARIES.json",
+      "assets/LIBRARY_NOTICES.txt",
+      "assets/THIRD_PARTY_NOTICES.txt"
+    ],
+    "unchanged_native_libraries": [
+      "lib/arm64-v8a/libandroidx.graphics.path.so",
+      "lib/arm64-v8a/libdatastore_shared_counter.so",
+      "lib/armeabi-v7a/libandroidx.graphics.path.so",
+      "lib/armeabi-v7a/libdatastore_shared_counter.so",
+      "lib/x86/libandroidx.graphics.path.so",
+      "lib/x86/libdatastore_shared_counter.so",
+      "lib/x86_64/libandroidx.graphics.path.so",
+      "lib/x86_64/libdatastore_shared_counter.so"
+    ]
+  },
+  "upgrade": {
+    "status": "PASS",
+    "device": "disposable pf36 emulator, Android 16/API 36",
+    "from_version": "1.1.0 (6)",
+    "to_version": "1.1.1 (7)",
+    "install": "adb install -r: Success",
+    "start": "Status: ok",
+    "progress_bytes": 797,
+    "progress_sha256": "44ec17c7ccef2c0a1ad09bd6629e6fa3a6f2a55d542e05040078b891ab53e502",
+    "played_word": "мост",
+    "preserved_after_install_and_launch": true
+  },
+  "fdroiddata_commit": "ea02b33ff0989593613e4c97639f4a196c8e61a4",
+  "pipeline_url": "https://gitlab.com/volmir561/fdroiddata/-/pipelines/3110504171",
+  "ci_status": "PASS",
+  "ci": {
+    "pipeline_id": 3110504171,
+    "pipeline_sha": "ea02b33ff0989593613e4c97639f4a196c8e61a4",
+    "pipeline_status": "success",
+    "pipeline_url": "https://gitlab.com/volmir561/fdroiddata/-/pipelines/3110504171",
+    "jobs": [
+      {
+        "id": 18336242028,
+        "name": "check apk",
+        "status": "success",
+        "web_url": "https://gitlab.com/volmir561/fdroiddata/-/jobs/18336242028"
+      },
+      {
+        "id": 18336242027,
+        "name": "check source code",
+        "status": "success",
+        "web_url": "https://gitlab.com/volmir561/fdroiddata/-/jobs/18336242027"
+      },
+      {
+        "id": 18336242026,
+        "name": "schema validation",
+        "status": "success",
+        "web_url": "https://gitlab.com/volmir561/fdroiddata/-/jobs/18336242026"
+      },
+      {
+        "id": 18336242025,
+        "name": "tools check scripts",
+        "status": "success",
+        "web_url": "https://gitlab.com/volmir561/fdroiddata/-/jobs/18336242025"
+      },
+      {
+        "id": 18336242024,
+        "name": "fdroid rewritemeta",
+        "status": "success",
+        "web_url": "https://gitlab.com/volmir561/fdroiddata/-/jobs/18336242024"
+      },
+      {
+        "id": 18336242023,
+        "name": "fdroid lint",
+        "status": "success",
+        "web_url": "https://gitlab.com/volmir561/fdroiddata/-/jobs/18336242023"
+      },
+      {
+        "id": 18336242022,
+        "name": "git redirect",
+        "status": "success",
+        "web_url": "https://gitlab.com/volmir561/fdroiddata/-/jobs/18336242022"
+      },
+      {
+        "id": 18336242021,
+        "name": "checkupdates",
+        "status": "success",
+        "web_url": "https://gitlab.com/volmir561/fdroiddata/-/jobs/18336242021"
+      },
+      {
+        "id": 18336242020,
+        "name": "fdroid build",
+        "status": "success",
+        "web_url": "https://gitlab.com/volmir561/fdroiddata/-/jobs/18336242020"
+      }
+    ],
+    "reports": [
+      {
+        "job_id": 18336242022,
+        "entries": []
+      },
+      {
+        "job_id": 18336242027,
+        "entries": [
+          {
+            "check_name": "fastlane",
+            "severity": "info"
+          },
+          {
+            "check_name": "fastlane",
+            "severity": "info"
+          }
+        ]
+      },
+      {
+        "job_id": 18336242025,
+        "entries": []
+      },
+      {
+        "job_id": 18336242020,
+        "entries": [
+          {
+            "check_name": "built_apk",
+            "severity": "info"
+          }
+        ]
+      },
+      {
+        "job_id": 18336242028,
+        "entries": [
+          {
+            "check_name": "signing_key",
+            "severity": "info"
+          },
+          {
+            "check_name": "abi_size",
+            "severity": "info"
+          },
+          {
+            "check_name": "r8_marker",
+            "severity": "info"
+          }
+        ]
+      }
+    ],
+    "independent_signature_copy": "PASS",
+    "unsigned_sha256": "91d8b2f812ba1a533ae8dc4f0b0d337b63845e5173af249a5abe093b472b7b15",
+    "public_binary_sha256": "43fac7440386d0c8362e3c6e0b934451a2e453c1d89f1b9a8277d3c0c80af593",
+    "image": "registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie",
+    "central_catalogue_publication": "NOT_RUN"
+  },
+  "overall_status": "DONE",
+  "catalogue_status": "NOT_INCLUDED; existing MR remains opened; Inclusion Policy requires maintainer review",
+  "mr_checklist": {
+    "count": 28,
+    "completed_count": 27,
+    "inclusion_policy_checked": false,
+    "api_write_read_verified": true
+  }
+}

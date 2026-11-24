@@ -116,7 +116,7 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
     description = "Проверяет происхождение и хэши словаря, узнаваемости, уровней, кампании и JSON-загадок."
     group = "verification"
     dependsOn("verifyOwnedHints", "verifyRuntimeNotices", "verifyGraphics")
-    inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("levels.json"))
+    inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("word_sources.jsonl.gz"), dictionaryData.file("levels.json"))
     inputs.files(dictionaryData.file("campaign.json"))
     inputs.files(dictionaryData.file("owned_riddles.json"))
     inputs.files(dictionaryData.file("word_familiarity.txt"), rootProject.file("tools/selection_config.json"))
@@ -126,10 +126,8 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
         check(manifest["schema"] == "dictionary-provenance-v1" && source?.get("license") == "CC-BY-SA-4.0") {
             "Нет подтверждённого происхождения словаря: пересоберите tools/build_dictionary.py."
         }
-        val wordSourcesFile = dictionaryData.file("word_sources.jsonl.gz").asFile
-        if (!wordSourcesFile.isFile) return@doLast
         check(sha256(dictionaryData.file("words.txt").asFile) == manifest["sha256_words_txt"] &&
-            sha256(wordSourcesFile) == manifest["sha256_word_sources"]) {
+            sha256(dictionaryData.file("word_sources.jsonl.gz").asFile) == manifest["sha256_word_sources"]) {
             "Словарь или файл происхождения изменены после генерации."
         }
         val familiarityFile = dictionaryData.file("word_familiarity.txt").asFile
@@ -239,8 +237,8 @@ android {
         applicationId = "io.github.volmir.wordscombination"
         minSdk = 24
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.1.0"
+        versionCode = 7
+        versionName = "1.1.1"
         testInstrumentationRunner = "com.example.sostavslova.WordsTestRunner"
         buildConfigField("String", "CAMPAIGN_SHA256", "\"$campaignSha256\"")
         buildConfigField("String", "WORDS_SHA256", "\"$wordsSha256\"")
@@ -343,7 +341,7 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
     group = "build"
     dependsOn(verifyDictionaryLicenses)
     from(dictionaryData) {
-        include("words.txt", "levels.json", "campaign.json")
+        include("words.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz")
         include("owned_riddles.json", "word_familiarity.txt")
     }
     from(rootProject.layout.projectDirectory.dir("legal")) {
@@ -354,13 +352,13 @@ val syncDictionaryAssets = tasks.register<Sync>("syncDictionaryAssets") {
     }
     into(layout.projectDirectory.dir("src/main/assets"))
     preserve {
-        exclude("words.txt", "word_familiarity.txt", "levels.json", "campaign.json", "owned_riddles.json", "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
+        exclude("words.txt", "word_familiarity.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz", "owned_riddles.json", "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt", "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json")
     }
     doLast {
         val manifest = JsonSlurper().parse(dictionaryData.file("manifest.json").asFile) as Map<*, *>
         val riddles = manifest["owned_riddles"] as? Map<*, *>
         val assets = layout.projectDirectory.dir("src/main/assets").asFile
-        val expectedAssets = setOf("words.txt", "word_familiarity.txt", "levels.json", "campaign.json",
+        val expectedAssets = setOf("words.txt", "word_familiarity.txt", "levels.json", "campaign.json", "word_sources.jsonl.gz",
             "THIRD_PARTY_NOTICES.txt", "LICENSE", "CC-BY-SA-4.0.txt", "Apache-2.0.txt",
             "LIBRARY_NOTICES.txt", "RUNTIME_LIBRARIES.json", "owned_riddles.json")
         val actualAssets = assets.walkTopDown().filter { it.isFile }

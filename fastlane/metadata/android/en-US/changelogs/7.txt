@@ -1,0 +1,2 @@
+Technical update. Improved the reproducible build preparation
+and verification process. Gameplay remains unchanged.
