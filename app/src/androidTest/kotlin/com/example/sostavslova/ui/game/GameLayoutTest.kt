@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.game
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -7,8 +8,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
@@ -20,21 +24,38 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
+import com.example.sostavslova.R
 import com.example.sostavslova.core.*
 import com.example.sostavslova.data.CampaignJson
+import com.example.sostavslova.data.InputMode
 import com.example.sostavslova.ui.assertTextLayoutFits
+import com.example.sostavslova.ui.components.AlertType
 import com.example.sostavslova.ui.components.LetterSlots
 import com.example.sostavslova.ui.components.Well
+import com.example.sostavslova.ui.theme.DarkWordsPalette
+import com.example.sostavslova.ui.theme.LightWordsPalette
+import com.example.sostavslova.ui.theme.LocalWordsPalette
+import com.example.sostavslova.ui.theme.WordsPalette
 import com.example.sostavslova.ui.theme.WordsTheme
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 class GameLayoutTest {
     @get:Rule val compose = createComposeRule()
 
     private data class SlotsCase(val width: Int, val fontScale: Float, val pattern: String)
+
+    private data class InputGeometryCase(
+        val width: Int,
+        val fontScale: Float,
+        val mode: InputMode,
+        val dark: Boolean,
+    ) {
+        override fun toString() = "${width}dp, fontScale=$fontScale, $mode, ${if (dark) "dark" else "light"}"
+    }
 
     @Test fun compactHintCaptionAndControlsFitNarrowScreensAtDoubleFontScale() {
         data class Case(val width: Int, val scale: Float, val open: Int)
@@ -119,6 +140,157 @@ class GameLayoutTest {
             val rows = tiles.groupBy { it.positionInRoot.y.roundToInt() }.values.map { it.size }
             assertTrue("$case: больше трёх строк $rows", rows.size <= 3)
             assertTrue("$case: неровные строки $rows", rows.max() - rows.min() <= 1)
+        }
+    }
+
+    /**
+     * STAB-03: геометрия блока ввода после STAB-02 в реальной вложенности GameScreen + Well.
+     * Ширины, масштаб шрифта, режим ввода и тема покрыты по отдельности; не каждый фактор
+     * перемножается со всеми, но каждое значение встречается хотя бы один раз.
+     * Все координаты сняты одним снимком semantics после одной прокрутки блока, поэтому
+     * сдвиг видимой области прокрутки и IME не сравниваются между разными кадрами.
+     */
+    @Test fun inputBlockGeometryKeepsSubmitAndActionsOrderedAcrossModesWidthsScalesAndThemes() {
+        val cases = buildList {
+            for ((widthIndex, width) in listOf(320, 360, 411).withIndex()) {
+                for (mode in InputMode.entries) {
+                    for ((scaleIndex, scale) in listOf(1f, 2f).withIndex()) {
+                        add(InputGeometryCase(width, scale, mode, dark = (widthIndex + scaleIndex) % 2 == 1))
+                    }
+                }
+            }
+        }
+        val current = mutableStateOf(cases.first())
+        var palette: WordsPalette? = null
+        compose.setContent {
+            val case = current.value
+            val base = LocalDensity.current
+            val configuration = LocalConfiguration.current
+            val nightConfiguration = remember(configuration, case.dark) {
+                Configuration().apply {
+                    setTo(configuration)
+                    uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
+                        (if (case.dark) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO)
+                }
+            }
+            CompositionLocalProvider(
+                LocalDensity provides Density(base.density, case.fontScale),
+                LocalConfiguration provides nightConfiguration,
+            ) {
+                WordsTheme {
+                    palette = LocalWordsPalette.current
+                    Box(Modifier.width(case.width.dp)) {
+                        GameScreen(GameUiState(loading = false, game = GameState("картотека", listOf("кот")),
+                            input = "кот", inputMode = case.mode,
+                            message = GameMessage(R.string.answer_unknown, "кот", type = AlertType.Danger)),
+                            {}, {}, {}, {})
+                    }
+                }
+            }
+        }
+        for (case in cases) {
+            compose.runOnIdle { current.value = case }
+            compose.waitForIdle()
+            val context = case.toString()
+            assertEquals("$context: активная тема", if (case.dark) DarkWordsPalette else LightWordsPalette, palette)
+            val fieldTag = if (case.mode == InputMode.KEYBOARD) "game_input" else "game_input_display"
+            val otherFieldTag = if (case.mode == InputMode.KEYBOARD) "game_input_display" else "game_input"
+
+            // Прокручиваем блок один раз, затем снимаем все координаты одним снимком semantics.
+            compose.onNodeWithTag(fieldTag).performScrollTo()
+            compose.waitForIdle()
+            val nodes = compose.onAllNodes(SemanticsMatcher("любой узел") { true }, useUnmergedTree = true)
+                .fetchSemanticsNodes()
+            fun tagged(tag: String) = nodes.filter { it.config.getOrNull(SemanticsProperties.TestTag) == tag }
+
+            assertEquals("$context: ровно одно поле ввода", 1, tagged(fieldTag).size)
+            assertEquals("$context: поле другого режима не должно отображаться", 0, tagged(otherFieldTag).size)
+            assertEquals("$context: ровно одна кнопка проверки", 1, tagged("game_submit").size)
+            assertEquals("$context: блок обратной связи", 1, tagged("game_feedback").size)
+
+            val field = tagged(fieldTag).single().boundsInRoot
+            val submit = tagged("game_submit").single().boundsInRoot
+            val toggle = tagged("game_input_mode_toggle").single().boundsInRoot
+            val shuffle = tagged("game_shuffle").single().boundsInRoot
+            val backspace = tagged("game_backspace").single().boundsInRoot
+            val feedback = tagged("game_feedback").single().boundsInRoot
+            val banner = tagged("game_banner").single().boundsInRoot
+            val screen = tagged("game_screen").single().boundsInRoot
+
+            val px = compose.density.density
+            fun dp(value: Float) = value * px
+            val tolerance = dp(1f)
+            val rightTolerance = dp(2f)
+
+            // Поле и submit занимают всю доступную ширину Well: 16 dp экрана + 16 dp внутри Well.
+            assertEquals("$context: поле на всю доступную ширину", screen.width - dp(64f), field.width, tolerance)
+            assertTrue("$context: submit полностью ниже поля", submit.top >= field.bottom - tolerance)
+            assertEquals("$context: submit на всю доступную ширину", field.width, submit.width, tolerance)
+
+            for ((name, rect) in listOf("переключатель" to toggle, "перемешивание" to shuffle,
+                "стирание" to backspace)) {
+                assertTrue("$context: $name должен быть ниже submit", rect.top >= submit.bottom - tolerance)
+            }
+            // Строка определяется центром, а не фиксированной высотой: при 200% текст может расти.
+            val oneRow = abs(toggle.center.y - shuffle.center.y) <= tolerance &&
+                abs(shuffle.center.y - backspace.center.y) <= tolerance
+            if (case.fontScale <= 1f) {
+                assertTrue("$context: при 100% все действия в одной строке", oneRow)
+            }
+            if (oneRow) {
+                assertTrue("$context: порядок переключатель → перемешивание → стирание",
+                    toggle.left < shuffle.left && shuffle.left < backspace.left)
+                assertTrue("$context: переключатель прижат влево", toggle.left <= field.left + rightTolerance)
+                assertTrue("$context: стирание прижато вправо",
+                    abs(backspace.right - field.right) <= rightTolerance)
+            } else {
+                assertTrue("$context: переключатель и перемешивание в одной строке",
+                    abs(toggle.center.y - shuffle.center.y) <= tolerance)
+                assertTrue("$context: порядок переключатель → перемешивание", toggle.left < shuffle.left)
+                assertTrue("$context: стирание ниже верхней строки действий",
+                    backspace.top >= maxOf(toggle.bottom, shuffle.bottom) - tolerance)
+                assertTrue("$context: переключатель прижат влево", toggle.left <= field.left + rightTolerance)
+                assertTrue("$context: стирание прижато вправо и при переносе",
+                    abs(backspace.right - field.right) <= rightTolerance)
+            }
+
+            val inputRects = listOf("поле" to field, "submit" to submit, "переключатель" to toggle,
+                "перемешивание" to shuffle, "стирание" to backspace)
+            for (first in inputRects.indices) {
+                for (second in first + 1 until inputRects.size) {
+                    assertFalse("$context: ${inputRects[first].first} пересекает ${inputRects[second].first}",
+                        inputRects[first].second.intersects(inputRects[second].second, tolerance))
+                }
+            }
+            for ((name, rect) in inputRects) {
+                assertTrue("$context: $name обрезан слева", rect.left >= field.left - tolerance)
+                assertTrue("$context: $name обрезан справа", rect.right <= field.right + tolerance)
+                assertTrue("$context: $name выходит за экран",
+                    rect.left >= screen.left - tolerance && rect.right <= screen.right + tolerance)
+            }
+            val minimumTouch = dp(48f) - tolerance
+            for ((name, rect) in listOf("submit" to submit, "переключатель" to toggle,
+                "перемешивание" to shuffle, "стирание" to backspace)) {
+                assertTrue("$context: зона $name меньше 48×48 dp: ${rect.width}×${rect.height}",
+                    rect.width >= minimumTouch && rect.height >= minimumTouch)
+            }
+
+            val blockBottom = maxOf(field.bottom, submit.bottom, toggle.bottom, shuffle.bottom, backspace.bottom)
+            assertTrue("$context: feedback должен быть ниже блока ввода", feedback.top >= blockBottom - tolerance)
+            assertTrue("$context: сообщение должно быть ниже блока ввода", banner.top >= blockBottom - tolerance)
+            for ((name, rect) in inputRects) {
+                assertFalse("$context: feedback перекрывает $name", feedback.intersects(rect, tolerance))
+            }
+            assertTrue("$context: feedback выходит за экран",
+                feedback.left >= screen.left - tolerance && feedback.right <= screen.right + tolerance)
+            checkLayout()
+
+            // Видимая область прокрутки может обрезать блок: каждый элемент должен прокручиваться в неё.
+            for (tag in listOf(fieldTag, "game_submit", "game_input_mode_toggle", "game_shuffle",
+                "game_backspace", "game_feedback")) {
+                compose.onNodeWithTag(tag).performScrollTo()
+            }
+            compose.waitForIdle()
         }
     }
 
@@ -292,6 +464,13 @@ class GameLayoutTest {
             node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
             layouts.forEach { assertTextLayoutFits(it, context) }
         }
+    }
+
+    /** Пересечение с площадью больше допуска: касание границ наложением не считается. */
+    private fun Rect.intersects(other: Rect, tolerance: Float): Boolean {
+        val overlapWidth = minOf(right, other.right) - maxOf(left, other.left)
+        val overlapHeight = minOf(bottom, other.bottom) - maxOf(top, other.top)
+        return overlapWidth > tolerance && overlapHeight > tolerance
     }
 
     private fun checkLayout() {
