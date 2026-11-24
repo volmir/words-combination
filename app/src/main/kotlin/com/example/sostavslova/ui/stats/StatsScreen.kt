@@ -3,6 +3,8 @@ package com.example.sostavslova.ui.stats
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -31,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -38,6 +40,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -223,17 +226,52 @@ private fun StatsLevelRow(row: LevelStatsRow) {
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.stats_level_header, row.number, row.word.uppercase(Locale.ROOT)),
             Modifier.testTag("stats_level_${row.number}"), style = MaterialTheme.typography.titleMedium)
-        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatsMetric(stringResource(R.string.stats_metric_words_label),
-                stringResource(R.string.stats_pair, row.found, row.total), "stats_metric_words_${row.number}")
-            StatsMetric(stringResource(R.string.stats_metric_stars_label),
-                stringResource(R.string.stats_pair, row.stars, row.maxStars), "stats_metric_stars_${row.number}")
+        val wordsLabel = stringResource(R.string.stats_metric_words_label)
+        val wordsValue = stringResource(R.string.stats_pair, row.found, row.total)
+        val starsLabel = stringResource(R.string.stats_metric_stars_label)
+        val starsValue = stringResource(R.string.stats_pair, row.stars, row.maxStars)
+        val toggleLabels = listOf(stringResource(R.string.stats_details), stringResource(R.string.stats_collapse))
+        val measurer = rememberTextMeasurer()
+        val density = LocalDensity.current
+        val typography = MaterialTheme.typography
+        val buttonPadding = ButtonDefaults.TextButtonContentPadding
+        val toggle: @Composable () -> Unit = {
+            TextButton({ expanded = !expanded }, Modifier.heightIn(min = 48.dp)
+                .testTag("stats_toggle_${row.number}"), contentPadding = buttonPadding) {
+                Text(toggleLabel)
+            }
+        }
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            fun textWidth(text: String, style: androidx.compose.ui.text.TextStyle) =
+                with(density) { measurer.measure(text, style, softWrap = false).size.width.toDp() }
+            val wordsWidth = maxOf(textWidth(wordsLabel, typography.bodyMedium), textWidth(wordsValue, typography.bodyLarge))
+            val starsWidth = maxOf(textWidth(starsLabel, typography.bodyMedium), textWidth(starsValue, typography.bodyLarge))
+            val buttonWidth = maxOf(ButtonDefaults.MinWidth,
+                toggleLabels.maxOf { textWidth(it, typography.labelLarge) } +
+                    buttonPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr) +
+                    buttonPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr))
+            if (wordsWidth + starsWidth + buttonWidth + 16.dp <= maxWidth) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically) {
+                    StatsMetric(wordsLabel, wordsValue, "stats_metric_words_${row.number}")
+                    StatsMetric(starsLabel, starsValue, "stats_metric_stars_${row.number}")
+                    toggle()
+                }
+            } else {
+                Column(Modifier.fillMaxWidth()) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        StatsMetric(wordsLabel, wordsValue, "stats_metric_words_${row.number}", Modifier.weight(1f))
+                        StatsMetric(starsLabel, starsValue, "stats_metric_stars_${row.number}", Modifier.weight(1f))
+                    }
+                    Row(Modifier.align(Alignment.End)) { toggle() }
+                }
+            }
         }
         Column(Modifier.fillMaxWidth().testTag("stats_achievements_${row.number}")) {
             Text(stringResource(R.string.stats_achievements_label), style = MaterialTheme.typography.bodyMedium)
             AchievementStrip(row.achievements, row.achievementsAvailable, Modifier.fillMaxWidth(),
-                iconTagPrefix = "stats_achievement_${row.number}")
+                iconTagPrefix = "stats_achievement_${row.number}", compact = true)
         }
         if (expanded) {
             Text(stringResource(R.string.stats_percent_value, row.percent),
@@ -251,17 +289,13 @@ private fun StatsLevelRow(row: LevelStatsRow) {
                     Modifier.testTag("stats_not_passed_${row.number}"), style = MaterialTheme.typography.bodyMedium)
             }
         }
-        TextButton({ expanded = !expanded }, Modifier.heightIn(min = 48.dp)
-            .testTag("stats_toggle_${row.number}")) {
-            Text(toggleLabel)
-        }
     }
     HorizontalDivider()
 }
 
 @Composable
-private fun StatsMetric(label: String, value: String, tag: String) {
-    Column(Modifier.widthIn(min = 120.dp).testTag(tag),
+private fun StatsMetric(label: String, value: String, tag: String, modifier: Modifier = Modifier) {
+    Column(modifier.testTag(tag),
         verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label, style = MaterialTheme.typography.bodyMedium)
         Text(value, style = MaterialTheme.typography.bodyLarge)

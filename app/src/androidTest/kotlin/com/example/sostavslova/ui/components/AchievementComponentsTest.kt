@@ -2,6 +2,7 @@ package com.example.sostavslova.ui.components
 
 import com.example.sostavslova.ui.captureToImageCompat
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +68,41 @@ class AchievementComponentsTest {
             "Достижение «Коллекционер»: не получено. Условие: Найти половину слов уровня")
     }
 
+    @Test fun compactStripPacksOneToEightAvailableTargetsWithoutEmptyCells() {
+        val available = mutableStateOf(emptySet<LevelAchievement>())
+        val width = mutableStateOf(288)
+        compose.setContent { WordsTheme { Surface {
+            Box(Modifier.requiredWidth(width.value.dp)) {
+                AchievementStrip(setOf(LevelAchievement.EXPERT, LevelAchievement.GIANT),
+                    available.value, compact = true)
+            }
+        } } }
+        for (innerWidth in listOf(288, 328, 379, 384)) {
+            for (count in 1..8) {
+                // Обратный порядок и разреженное подмножество выявляют пустые ячейки и нарушение порядка.
+                val selected = LevelAchievement.entries.reversed().take(count).toSet()
+                compose.runOnIdle { width.value = innerWidth; available.value = selected }
+                val bounds = LevelAchievement.entries.filter { it in selected }.map { achievement ->
+                    icon(achievement).assertHasClickAction().assertWidthIsEqualTo(48.dp)
+                        .assertHeightIsEqualTo(48.dp).getUnclippedBoundsInRoot()
+                }
+                LevelAchievement.entries.filter { it !in selected }.forEach { icon(it).assertDoesNotExist() }
+                val columns = innerWidth / 48
+                assertEquals((count + columns - 1) / columns, bounds.map { it.top }.distinct().size)
+                bounds.forEachIndexed { index, rect ->
+                    assertEquals(bounds.first().left.value + (index % columns) * 48, rect.left.value, 1f)
+                    assertEquals(bounds.first().top.value + (index / columns) * 48, rect.top.value, 1f)
+                    assertTrue(rect.right <= bounds.first().left + innerWidth.dp)
+                }
+                if (LevelAchievement.EXPERT in selected) {
+                    icon(LevelAchievement.EXPERT).assertContentDescriptionEquals("Достижение «Знаток»: получено")
+                }
+                icon(LevelAchievement.STRAIGHT_A).assertContentDescriptionEquals(
+                    "Достижение «Отличник»: не получено. Условие: Получить все звёзды уровня")
+            }
+        }
+    }
+
     @Test fun stripHidesUnavailableEvenIfPreviouslyEarnedAndHandlesEmptySet() {
         val available = mutableStateOf(AchievementRules.available(GameState("слово", listOf("лов")), 1, 1))
         compose.setContent { WordsTheme { AchievementStrip(LevelAchievement.entries.toSet(), available.value) } }
@@ -83,7 +119,7 @@ class AchievementComponentsTest {
     @Test fun everyIconOpensNamedDialogWithConditionStateAndCloses() {
         val current = mutableStateOf(LevelAchievement.NO_HINTS)
         val earned = mutableStateOf(false)
-        compose.setContent { WordsTheme { AchievementIcon(current.value, earned.value, size = 28.dp) } }
+        compose.setContent { WordsTheme { AchievementIcon(current.value, earned.value, size = 24.dp, compact = true) } }
         val titles = listOf("Без подсказок", "Знаток", "Коллекционер", "Исследователь", "Длинное слово",
             "Мастер длинных слов", "Гигант мысли", "Отличник")
         val conditions = listOf("Пройти уровень без подсказок", "Найти треть слов уровня",

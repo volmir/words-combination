@@ -157,7 +157,7 @@ class StatsScreenTest {
         }
     }
 
-    @Test fun cardAndBottomLinkToggleButAchievementTouchOnlyOpensDialog() {
+    @Test fun cardAndMetricLinkToggleButAchievementTouchOnlyOpensDialog() {
         show()
         compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_7")
         for (expanded in listOf(false, true)) {
@@ -204,6 +204,27 @@ class StatsScreenTest {
         compose.onNodeWithTag("stats_row_7").assert(
             SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "развёрнуто"))
         compose.onNodeWithTag("stats_table_7", useUnmergedTree = true).assertExists()
+    }
+
+    @Test fun togglingOneCardKeepsNeighborExpansionAcrossScrolling() {
+        show()
+        fun scroll(level: Int) {
+            compose.onNodeWithTag("stats_screen").performScrollToKey("stats_level_$level")
+        }
+        fun assertState(level: Int, description: String) {
+            scroll(level)
+            compose.onNodeWithTag("stats_row_$level").assert(
+                SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, description))
+            compose.onAllNodesWithTag("stats_toggle_$level").assertCountEquals(1)
+        }
+        scroll(1)
+        compose.onNodeWithTag("stats_toggle_1").performScrollTo().performTouchInput { click() }
+        assertState(2, "свёрнуто")
+        compose.onNodeWithTag("stats_toggle_2").performScrollTo().performTouchInput { click() }
+        assertState(1, "развёрнуто")
+        compose.onNodeWithTag("stats_toggle_1").performScrollTo().performTouchInput { click() }
+        assertState(2, "развёрнуто")
+        assertState(1, "свёрнуто")
     }
 
     @Test fun snapshotUpdatesWithoutRefresh() {

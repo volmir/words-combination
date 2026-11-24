@@ -79,7 +79,7 @@ internal fun achievementCondition(achievement: LevelAchievement): String = when 
     LevelAchievement.STRAIGHT_A -> stringResource(R.string.achievement_straight_a_condition)
 }
 
-/** Рисунок занимает 28–40 dp; в интерактивном режиме цель нажатия — минимум 48 dp. */
+/** Рисунок занимает 28–40 dp (24–40 dp в компактном интерактивном варианте); в интерактивном режиме цель нажатия — минимум 48 dp. */
 @Composable
 fun AchievementIcon(
     achievement: LevelAchievement,
@@ -88,6 +88,7 @@ fun AchievementIcon(
     modifier: Modifier = Modifier,
     testTag: String = "achievement_icon_${achievement.name.lowercase(Locale.ROOT)}",
     interactive: Boolean = true,
+    compact: Boolean = false,
 ) {
     if (!interactive) {
         Box(modifier.testTag(testTag), contentAlignment = Alignment.Center) {
@@ -106,7 +107,7 @@ fun AchievementIcon(
         .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
         .clickable(role = Role.Button) { expanded = true }
         .semantics { contentDescription = description }, contentAlignment = Alignment.Center) {
-        AchievementGlyph(achievement, earned, size.coerceIn(28.dp, 40.dp))
+        AchievementGlyph(achievement, earned, size.coerceIn(if (compact) 24.dp else 28.dp, 40.dp))
     }
     if (expanded) AchievementDialog(achievement, earned) { expanded = false }
 }
@@ -119,13 +120,15 @@ fun AchievementStrip(
     modifier: Modifier = Modifier,
     iconTagPrefix: String = "achievement_icon",
     highlightedAchievements: Set<LevelAchievement> = emptySet(),
+    compact: Boolean = false,
 ) {
-    FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(if (compact) 0.dp else 8.dp),
+        verticalArrangement = Arrangement.spacedBy(if (compact) 0.dp else 8.dp)) {
         LevelAchievement.entries.filter { it in availableAchievements }.forEach { achievement ->
             val fresh = achievement in highlightedAchievements
             val freshDescription = stringResource(R.string.achievement_new)
             AchievementIcon(achievement, achievement in achievements,
+                size = if (compact) 24.dp else 32.dp, compact = compact,
                 modifier = if (fresh) Modifier.border(2.dp, LocalWordsPalette.current.primary, RoundedCornerShape(8.dp))
                     .semantics { stateDescription = freshDescription } else Modifier,
                 testTag = "${iconTagPrefix}_${achievement.name.lowercase(Locale.ROOT)}")
