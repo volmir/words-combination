@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Rule
@@ -122,12 +123,16 @@ class CampaignJourneyUiTest {
         enter(word)
         // Завершаем обработку IME в Compose до ожидания DataStore вне UI test clock.
         compose.waitForIdle()
-        withContext(Dispatchers.Default) {
-            withTimeout(10_000) {
-                container.progressRepository.observeCampaignProgress().first {
-                    it.levels.values.sumOf { level -> level.found.size } == count
+        try {
+            withContext(Dispatchers.Default) {
+                withTimeout(10_000) {
+                    container.progressRepository.observeCampaignProgress().first {
+                        it.levels.values.sumOf { level -> level.found.size } == count
+                    }
                 }
             }
+        } catch (failure: TimeoutCancellationException) {
+            throw AssertionError("Answer $word was not saved (expected total $count): ${saved()}", failure)
         }
         compose.waitUntil(10_000) {
             compose.onAllNodesWithTag("level_complete_dialog").fetchSemanticsNodes().isNotEmpty() ||
@@ -225,12 +230,22 @@ class CampaignJourneyUiTest {
         val paidUnits = listOf(0, 1, 2)
         compose.onNodeWithText("кот").assertDoesNotExist()
         stages.forEachIndexed { step, stage ->
-            compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
-            withContext(Dispatchers.Default) { withTimeout(10_000) {
-                container.progressRepository.observeCampaignProgress().first {
-                    it.levels["картотека"]?.hints?.shownSteps == step + 1
-                }
-            } }
+            // A saved hint can precede the UI collector clearing hintLoading.
+            // Wait for the next action to become available before clicking it.
+            compose.waitUntil(10_000) {
+                runCatching { compose.onNodeWithTag("game_hint_button").assertIsEnabled() }.isSuccess
+            }
+            compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled().performClick()
+            compose.waitForIdle()
+            try {
+                withContext(Dispatchers.Default) { withTimeout(10_000) {
+                    container.progressRepository.observeCampaignProgress().first {
+                        it.levels["картотека"]?.hints?.shownSteps == step + 1
+                    }
+                } }
+            } catch (failure: TimeoutCancellationException) {
+                throw AssertionError("Hint step ${step + 1} was not saved: ${saved()}", failure)
+            }
             compose.waitForIdle()
             val hints = saved().levels.getValue("картотека").hints
             assertEquals(stages, hints.ladder.steps.map { it.stage })

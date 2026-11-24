@@ -10,6 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.sostavslova.MainActivity
 import com.example.sostavslova.R
+import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.ui.dismissWelcomeIfShown
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -62,11 +63,25 @@ class GameNavigationTest {
         if (InstrumentationRegistry.getArguments().getString("g12Trace") == "true") {
             diagnostics.capture("before-feedback")
         }
-        val message = if (answer.length == 3) R.string.correct_three_letter_answer else R.string.correct_answer
-        awaitText(InstrumentationRegistry.getInstrumentation().targetContext.getString(message))
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val message = if (answer.length == 3) {
+            val minimum = requireNotNull(container.levelsRepository.getCampaign()).countMinLength
+            val letterForm = RussianPlural.form(minimum,
+                context.getString(R.string.hint_letter_genitive_one),
+                context.getString(R.string.hint_letter_genitive_many),
+                context.getString(R.string.hint_letter_genitive_many))
+            context.getString(R.string.correct_three_letter_answer, minimum, letterForm)
+        } else context.getString(R.string.correct_answer)
+        awaitText(message)
     }
     private suspend fun awaitOpenedHint() {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("game_hint_pattern").fetchSemanticsNodes().isNotEmpty() }
+    }
+    private suspend fun openHint() {
+        // Feedback can render before the submission coroutine clears busy.
+        compose.waitUntil(10_000) { compose.onNodeWithTag("game_hint_button").isEnabled() }
+        compose.onNodeWithTag("game_hint_button").performScrollTo().assertIsEnabled().performClick()
+        awaitOpenedHint()
     }
     private fun back() = compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
 
@@ -120,8 +135,7 @@ class GameNavigationTest {
         val source = source()
         val valid = validAnswer(source)
         start(); answer(valid); awaitCorrectAnswer(valid)
-        compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
-        awaitOpenedHint()
+        openHint()
         compose.onNodeWithTag("game_hint").performScrollTo().assertIsDisplayed()
         back()
         compose.onNodeWithTag("levels_screen").assertExists()
@@ -132,8 +146,7 @@ class GameNavigationTest {
         val source = source()
         val valid = validAnswer(source)
         start(); answer(valid); awaitCorrectAnswer(valid)
-        compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
-        awaitOpenedHint()
+        openHint()
         val saved = container.progressRepository.observeCampaignProgress().first()
         compose.gameKeyboardInput().performScrollTo().performTextReplacement("ЧеРнОвИк")
         compose.activityRule.scenario.recreate()
@@ -207,8 +220,7 @@ class GameNavigationTest {
         val source = source()
         val valid = validAnswer(source)
         start(); answer(valid); awaitCorrectAnswer(valid)
-        compose.onNodeWithTag("game_hint_button").performScrollTo().performClick()
-        awaitOpenedHint()
+        openHint()
         fun hintText() = compose.onAllNodes(hasAnyAncestor(hasTestTag("game_hint")), useUnmergedTree = true)
             .fetchSemanticsNodes().flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }
         val hint = hintText()

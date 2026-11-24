@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.levels
 
+import com.example.sostavslova.ui.captureToImageCompat
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
@@ -51,7 +52,7 @@ class CampaignMapUiTest {
             compose.onNodeWithTag("level_card_$number").fetchSemanticsNode().size.height)
 
         fun background(card: SemanticsNodeInteraction): Color {
-            val pixels = card.captureToImage().toPixelMap()
+            val pixels = card.captureToImageCompat().toPixelMap()
             return pixels[(6 * compose.density.density).toInt(), pixels.height / 2]
         }
         val available = background(open)
@@ -144,7 +145,7 @@ class CampaignMapUiTest {
             }
         }
         fun background(card: SemanticsNodeInteraction): Color {
-            val pixels = card.captureToImage().toPixelMap()
+            val pixels = card.captureToImageCompat().toPixelMap()
             return pixels[(6 * compose.density.density).toInt(), pixels.height / 2]
         }
         val available = background(compose.onNodeWithTag("level_card_1"))

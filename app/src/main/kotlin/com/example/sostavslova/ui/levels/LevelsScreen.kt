@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -60,6 +62,7 @@ import com.example.sostavslova.ui.theme.WordsCardShape
 import com.example.sostavslova.ui.theme.LocalWordsPalette
 import com.example.sostavslova.ui.theme.WordsPalette
 import java.util.Locale
+import androidx.core.view.doOnPreDraw
 
 /** Фон карточки уровня: закрытый, все звёзды, порог пройден, доступный. */
 internal fun levelCardBackground(
@@ -106,6 +109,14 @@ fun LevelsScreen(
 ) {
     val scroll = rememberLazyGridState()
     var positioned by rememberSaveable { mutableStateOf(false) }
+    val view = LocalView.current
+    var viewportReady by remember(view) { mutableStateOf(false) }
+    DisposableEffect(view) {
+        // The first host layout applies system insets. Measuring a restored grid before
+        // that pass clamps its saved bottom position to the temporarily taller viewport.
+        val listener = view.doOnPreDraw { viewportReady = true }
+        onDispose { listener.removeListener() }
+    }
     // Only the first loaded snapshot positions the map. Progress emissions keep the user's scroll.
     LaunchedEffect(state.loading) {
         if (!state.loading && !state.loadError && state.levels.isNotEmpty() && !positioned) {
@@ -154,7 +165,7 @@ fun LevelsScreen(
     BoxWithConstraints(Modifier.fillMaxSize().testTag("levels_screen"), contentAlignment = Alignment.TopCenter) {
         // До загрузки данных показываем нейтральный фон без ложных карточек и измерения пустой сетки:
         // она сбросила бы восстановленную позицию прокрутки. Приветствие тоже ждёт настоящей карты.
-        if (state.loading && state.levels.isEmpty()) return@BoxWithConstraints
+        if (!viewportReady || (state.loading && state.levels.isEmpty())) return@BoxWithConstraints
         val columns = if (maxWidth < 600.dp) GridCells.Fixed(1) else GridCells.Adaptive(220.dp)
         LazyVerticalGrid(columns, Modifier.widthIn(max = 600.dp).fillMaxSize().testTag("levels_grid"),
             state = scroll, contentPadding = PaddingValues(16.dp),

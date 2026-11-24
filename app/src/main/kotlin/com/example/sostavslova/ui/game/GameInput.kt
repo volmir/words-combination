@@ -19,10 +19,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -57,11 +61,16 @@ internal fun GameInput(
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
     val keyboardMode = state.inputMode == InputMode.KEYBOARD
+    var inputLaidOut by remember(keyboardMode) { mutableStateOf(false) }
     val entered = stringResource(R.string.game_input_entered, state.input)
-    LaunchedEffect(keyboardMode) {
+    LaunchedEffect(keyboardMode, inputLaidOut) {
         if (keyboardMode) {
-            focus.requestFocus()
-            keyboard?.show()
+            // WordInputRow subcomposes the field during layout; its focus target
+            // must be attached before requesting focus, including after recreation.
+            if (inputLaidOut) {
+                focus.requestFocus()
+                keyboard?.show()
+            }
         } else {
             focusManager.clearFocus(force = true)
             keyboard?.hide()
@@ -88,7 +97,7 @@ internal fun GameInput(
                 }, enabled = state.canPlay,
                 inputEnabled = !state.loading && !state.returnLevels && !state.navigatingNext,
                 maxLength = null, focusRequester = focus,
-                inputModifier = Modifier.testTag("game_input").semantics {
+                inputModifier = Modifier.testTag("game_input").onGloballyPositioned { inputLaidOut = true }.semantics {
                     liveRegion = LiveRegionMode.Polite
                     stateDescription = entered
                 }, submitModifier = Modifier.testTag("game_submit"), forceStacked = true)

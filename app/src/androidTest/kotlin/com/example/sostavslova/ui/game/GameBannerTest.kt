@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.game
 
+import com.example.sostavslova.ui.captureToImageCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +12,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
@@ -43,7 +43,7 @@ class GameBannerTest {
     }
 
     private fun center(tag: String): Color {
-        val pixels = compose.onNodeWithTag(tag).captureToImage().toPixelMap()
+        val pixels = compose.onNodeWithTag(tag).captureToImageCompat().toPixelMap()
         return pixels[pixels.width / 2, pixels.height / 2]
     }
 

@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.game
 
+import com.example.sostavslova.ui.captureToImageCompat
 import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Bitmap
@@ -114,7 +115,7 @@ class OwnedRiddlesUiTest {
             }
             compose.onAllNodes(hasText("Слово из", substring=true)).assertCountEquals(0)
             if (level.number==12) {
-                val bitmap=compose.onRoot().captureToImage().asAndroidBitmap()
+                val bitmap=compose.onRoot().captureToImageCompat().asAndroidBitmap()
                 File(context.cacheDir,"json-riddles-level12.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
             }
             compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }

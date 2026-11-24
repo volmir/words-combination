@@ -1,5 +1,6 @@
 package com.example.sostavslova.ui.components
 
+import com.example.sostavslova.ui.captureToImageCompat
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Surface
@@ -126,7 +127,7 @@ class AchievementComponentsTest {
             for (achievement in LevelAchievement.entries) {
                 val areas = listOf(false, true).map { isEarned ->
                     compose.runOnIdle { palette.value = theme; current.value = achievement; earned.value = isEarned }
-                    val pixels = icon(achievement).captureToImage().toPixelMap()
+                    val pixels = icon(achievement).captureToImageCompat().toPixelMap()
                     val color = achievementShapeColor(theme, achievement, isEarned)
                     var area = 0
                     for (y in 0 until pixels.height) for (x in 0 until pixels.width) {

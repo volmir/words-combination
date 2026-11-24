@@ -16,6 +16,7 @@
 | `INDEX.md` | действует | — |
 | `PROJECT_STATUS.md` | действует | — |
 | `RELEASE_CHECKLIST_1_1.md` | действует (ручная приёмка релиза 1.1.0 на устройстве) | — |
+| `RELEASE_1_1_TEST_EVIDENCE.md` | действует (instrumented-проверки STAB-06 на API 24/36, история падений и внешний gate) | — |
 | `GOLD_03A_REPORT.md` | история (удаление контрольного списка GOLD-03A) | `SPEC.md` |
 | `DATA_03_REPORT.md` | история (чистка словаря DATA-03) | `SPEC.md` |
 | `DICT_03B_REPORT.md`, `DICT_03B_REPORT.json` | история (шесть самостоятельных слов DICT-03B) | `SPEC.md` |

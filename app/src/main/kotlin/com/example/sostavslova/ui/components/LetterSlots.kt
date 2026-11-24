@@ -16,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -26,6 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.sostavslova.R
 import com.example.sostavslova.core.HintText
+import com.example.sostavslova.core.RussianPlural
 import com.example.sostavslova.core.balancedRows
 import com.example.sostavslova.ui.theme.LocalWordsPalette
 
@@ -61,7 +61,11 @@ fun LetterSlots(
 ) {
     if (pattern.isEmpty()) return
     val info = HintText.slotsInfo(pattern)
-    val lengthDescription = pluralStringResource(R.plurals.hint_word_length, info.length, info.length)
+    val letterForm = RussianPlural.form(info.length,
+        stringResource(R.string.hint_letter_genitive_one),
+        stringResource(R.string.hint_letter_genitive_many),
+        stringResource(R.string.hint_letter_genitive_many))
+    val lengthDescription = stringResource(R.string.hint_word_length, info.length, letterForm)
     val openedDescription = if (info.opened.isEmpty()) {
         stringResource(R.string.hint_slots_none)
     } else {

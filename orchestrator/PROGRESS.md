@@ -101,3 +101,6 @@
 
 - [STAB-05] ✓ 2026-11-24T13:19:20+00:00 — Актуализировать документы приёмки и контрольные суммы — ИТОГ: STAB-05 выполнено. Обновлены `docs/RELEASE_CHECKLIST_1_1.md` и `docs/PRIVACY_PUBLICATION_AUDIT.md`; исторические SHA PRIV-17 сохранены, добавлены актуальные SHA после REL-23. Защищённые пути и Git-история не изменялись.
 <!-- orchestrator:v1 {"id": "STAB-05", "fingerprint": "3ee6b16ac72e8c13f05636b464bf31c0eba71f674dddd92a2d86a40f643964e1", "date": "2026-11-24T13:19:20+00:00", "gate": "passed", "manual": false, "summary": "ИТОГ: STAB-05 выполнено. Обновлены `docs/RELEASE_CHECKLIST_1_1.md` и `docs/PRIVACY_PUBLICATION_AUDIT.md`; исторические SHA PRIV-17 сохранены, добавлены актуальные SHA после REL-23. Защищённые пути и Git-история не изменялись.", "model": "gpt-5.6-luna", "effort": "medium"} -->
+
+- [STAB-06] ✓ 2026-11-24T14:18:29+00:00 — Выполнить реальные Android instrumented-тесты — Выполнено вручную; проверка запущена оркестратором.
+<!-- orchestrator:v1 {"id": "STAB-06", "fingerprint": "99c329d9a7ccf2f2759ead893c594bf19969802fc5e74ca21417f590047483af", "date": "2026-11-24T14:18:29+00:00", "gate": "passed", "manual": true, "summary": "Выполнено вручную; проверка запущена оркестратором.", "model": "opencode/deepseek-v4.1-flash#max", "effort": "medium"} -->

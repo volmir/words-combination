@@ -647,10 +647,10 @@ class CampaignGameUiTest {
             explanations = listOf(TaskType.T1, TaskType.T2),
         )
         compose.setContent { WordsTheme { GameScreen(state.withHintPanel(), {}, {}, {}, {}) } }
-        compose.onNodeWithText("Набирайте слова от 5 букв. Каждое задание даёт одну звезду; для прохождения подходят любые задания до порога.")
-            .assertIsDisplayed()
+        compose.onNodeWithText("Набирайте слова от 5 букв. За каждое выполненное задание даётся звезда; сколько заданий нужно для следующего уровня, указано на экране уровня.")
+            .performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("В задании «на букву» учитываются слова от 5 букв с заданной первой буквой.")
-            .assertIsDisplayed()
+            .performScrollTo().assertIsDisplayed()
         assertTextFits()
     }
 
