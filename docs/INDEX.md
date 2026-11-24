@@ -29,6 +29,7 @@
 | `OWN_HINTS_TOOLCHAIN.md` | действует | — |
 | `RELEASE_SIGNING.md` | действует | — |
 | `FDROID_REPRO_02.md` | действует | — |
+| `FDROID_FIX_110_REPORT.md` | действует (диагностика !58000; BLOCKED на этапе 03) | — |
 | `KNOWN_WORDS.md` | действует | — |
 | `CAMPAIGN_VALIDATION.md` | действует (gate GEN-04) | — |
 | `PLAY_TIME_QA.md` | история (учёт времени удалён) | `SPEC.md` §6 |
