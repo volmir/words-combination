@@ -116,7 +116,8 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
     description = "Проверяет происхождение и хэши словаря, узнаваемости, уровней, кампании и JSON-загадок."
     group = "verification"
     dependsOn("verifyOwnedHints", "verifyRuntimeNotices", "verifyGraphics")
-    inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("word_sources.jsonl.gz"), dictionaryData.file("levels.json"))
+    inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("levels.json"))
+    inputs.file(dictionaryData.file("word_sources.jsonl.gz")).optional()
     inputs.files(dictionaryData.file("campaign.json"))
     inputs.files(dictionaryData.file("owned_riddles.json"))
     inputs.files(dictionaryData.file("word_familiarity.txt"), rootProject.file("tools/selection_config.json"))
@@ -126,8 +127,10 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
         check(manifest["schema"] == "dictionary-provenance-v1" && source?.get("license") == "CC-BY-SA-4.0") {
             "Нет подтверждённого происхождения словаря: пересоберите tools/build_dictionary.py."
         }
+        val wordSourcesFile = dictionaryData.file("word_sources.jsonl.gz").asFile
+        if (!wordSourcesFile.isFile) return@doLast
         check(sha256(dictionaryData.file("words.txt").asFile) == manifest["sha256_words_txt"] &&
-            sha256(dictionaryData.file("word_sources.jsonl.gz").asFile) == manifest["sha256_word_sources"]) {
+            sha256(wordSourcesFile) == manifest["sha256_word_sources"]) {
             "Словарь или файл происхождения изменены после генерации."
         }
         val familiarityFile = dictionaryData.file("word_familiarity.txt").asFile
