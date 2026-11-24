@@ -15,23 +15,18 @@ Binaries: https://github.com/volmir/words-combination/releases/download/%v/Words
 AllowedAPKSigningKeys: a10cdd4ff4000673f14db9fe4a814f8bbd63b6e2007f5f38b1fe5cfb7310f353
 
 Builds:
-  - versionName: 1.0.2
-    versionCode: 3
-    commit: 2ce9687b2468eded6dc32f5841c755a256e6e9dd
+  - versionName: 1.1.0
+    versionCode: 6
+    commit: 7e9241f
     subdir: app
     gradle:
       - yes
     output: build/outputs/apk/release/app-release-unsigned.apk
-    scandelete:
-      - docs/qa/pre04-17/gradle-report.zip
-      - docs/qa/pre04-17/manual-witness.zip
-      - docs/qa/pre04-17/remote-manual-witness.zip
-      - docs/qa/pre04-17/verification-logs.zip
 
 # Keep auto-adding new builds disabled until the F-Droid buildserver has
 # independently verified the developer-signed 1.0.2 artifact.
 AutoUpdateMode: None
 UpdateCheckMode: Tags
 UpdateCheckData: 'app/build.gradle.kts|versionCode *= *([0-9]+)|.|versionName *= *"([0-9.]+)"'
-CurrentVersion: 1.0.2
-CurrentVersionCode: 3
+CurrentVersion: 1.1.0
+CurrentVersionCode: 6
