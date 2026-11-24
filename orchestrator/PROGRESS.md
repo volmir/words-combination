@@ -104,3 +104,6 @@
 
 - [STAB-06] ✓ 2026-11-24T14:18:29+00:00 — Выполнить реальные Android instrumented-тесты — Выполнено вручную; проверка запущена оркестратором.
 <!-- orchestrator:v1 {"id": "STAB-06", "fingerprint": "99c329d9a7ccf2f2759ead893c594bf19969802fc5e74ca21417f590047483af", "date": "2026-11-24T14:18:29+00:00", "gate": "passed", "manual": true, "summary": "Выполнено вручную; проверка запущена оркестратором.", "model": "opencode/deepseek-v4.1-flash#max", "effort": "medium"} -->
+
+- [STAB-07] ✓ 2026-11-24T14:57:06+00:00 — Финальная сборка и доказательства готовности кандидата — Выполнено вручную; проверка запущена оркестратором.
+<!-- orchestrator:v1 {"id": "STAB-07", "fingerprint": "95e2d5f4dcd01ac82565daab827737e6188e19c111ccd2fb7ab596d7d4cfd5a2", "date": "2026-11-24T14:57:06+00:00", "gate": "passed", "manual": true, "summary": "Выполнено вручную; проверка запущена оркестратором.", "model": "gpt-6.1-sol", "effort": "medium"} -->
