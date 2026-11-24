@@ -22,7 +22,7 @@ Builds:
     sudo: apt-get update -qq && apt-get install -y -qq openjdk-21-jdk
     prebuild: export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 && export PATH=$JAVA_HOME/bin:$PATH
     gradle:
-      - assembleRelease
+      - yes
     output: build/outputs/apk/release/app-release-unsigned.apk
     scandelete:
       - data/word_sources.jsonl.gz
