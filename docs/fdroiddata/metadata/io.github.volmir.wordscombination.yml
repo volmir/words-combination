@@ -17,7 +17,7 @@ AllowedAPKSigningKeys: a10cdd4ff4000673f14db9fe4a814f8bbd63b6e2007f5f38b1fe5cfb7
 Builds:
   - versionName: 1.1.0
     versionCode: 6
-    commit: 7e9241f
+    commit: a2e63e3e132e102bcc072fc11bc51a29d5a9ea2f
     subdir: app
     gradle:
       - yes
