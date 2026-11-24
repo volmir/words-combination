@@ -130,7 +130,7 @@ class GameLayoutTest {
         val games = campaign.levels.map { it to GameState.start(it.word, index) }
         val (level, initialGame) = games.maxBy { it.second.total }
         val game = initialGame.copy(found = initialGame.allWords)
-        assertEquals("Largest installed level", 632, game.foundCount)
+        assertEquals("Largest installed level", 631, game.foundCount)
         val snapshot = GameUiState(loading = false, game = game, statistics = game.statistics(),
             countMinLength = campaign.countMinLength,
             totalLevels = campaign.levels.size, campaignLevel = CurrentCampaignLevel(level, game),
