@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+import zipfile
 from unittest.mock import patch
 
 from tools import prepare_verified_release as release
@@ -49,10 +50,15 @@ class VerifiedReleasePreparationTest(unittest.TestCase):
             else:
                 marker.write_text('first clone', encoding='utf-8')
             filename = 'app-release.apk' if signed else 'app-release-unsigned.apk'
-            (target / filename).write_bytes(b'synthetic apk')
+            commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=cwd, text=True).strip()
+            with zipfile.ZipFile(target / filename, 'w') as archive:
+                info = zipfile.ZipInfo('META-INF/version-control-info.textproto', (2026, 1, 1, 0, 0, 0))
+                archive.writestr(info, f'revision: "{commit}"')
             (target / 'output-metadata.json').write_text(json.dumps({
                 'elements': [{'versionName': version, 'versionCode': code}],
             }))
+        elif command[:2] == ['apksigner', 'sign']:
+            Path(command[command.index('--out') + 1]).write_bytes(Path(command[-1]).read_bytes())
         else:
             subprocess.run(command, cwd=cwd, env=env, check=True)
 
@@ -78,11 +84,12 @@ class VerifiedReleasePreparationTest(unittest.TestCase):
         self.assertEqual('1.0.2', result['tag'])
         self.assertEqual(3, result['version_code'])
         self.assertEqual(2, len(environment_seen))
-        self.assertEqual(build_paths[0], build_paths[1])
+        self.assertNotEqual(build_paths[0], build_paths[1])
         self.assertNotIn(release.SIGNING_VARIABLES[0], environment_seen[0])
-        self.assertEqual(str(self.key), environment_seen[1][release.SIGNING_VARIABLES[0]])
+        self.assertNotIn(release.SIGNING_VARIABLES[0], environment_seen[1])
         self.assertTrue(verifier.called)
-        self.assertEqual(b'synthetic apk', (self.output / 'WordsCombination-v1.0.2.apk').read_bytes())
+        self.assertEqual((self.output / 'unsigned-1.apk').read_bytes(),
+                         (self.output / 'WordsCombination-v1.0.2.apk').read_bytes())
         self.assertIn('WordsCombination-v1.0.2.apk',
                       (self.output / 'SHA256SUMS.txt').read_text())
         self.assertEqual('LOCAL_SOURCE_TO_SIGNED_APK_VERIFIED', json.loads(
@@ -132,6 +139,27 @@ class VerifiedReleasePreparationTest(unittest.TestCase):
                     self.repo, '1.0.2', self.output, expected_code=3,
                     environ=self.environment, apksigner='apksigner', apksigcopier='apksigcopier',
                 )
+        self.assertFalse(self.output.exists())
+
+    def test_bad_clone_commit_blocks_build(self):
+        with self.assertRaisesRegex(ValueError, 'release commit'):
+            release.clone_tag(self.repo, self.root / 'bad-clone', '1.0.2', '0' * 40)
+
+    def test_unequal_unsigned_apks_block_signing_and_export(self):
+        calls = []
+        def build(command, **kwargs):
+            self.fake_build(command, **kwargs)
+            if command[:2] == ['bash', './gradlew']:
+                calls.append(kwargs['cwd'])
+                if len(calls) == 2:
+                    with zipfile.ZipFile(Path(kwargs['cwd']) / 'app/build/outputs/apk/release/app-release-unsigned.apk', 'a') as archive:
+                        archive.writestr('different', 'changed')
+            self.assertNotEqual(['apksigner', 'sign'], command[:2])
+        with patch.object(release, 'run', side_effect=build):
+            with self.assertRaisesRegex(ValueError, 'SHA-256 values differ'):
+                release.prepare_release(self.repo, '1.0.2', self.output, 3,
+                                        environ=self.environment, apksigner='apksigner',
+                                        apksigcopier='apksigcopier')
         self.assertFalse(self.output.exists())
 
     def test_refuses_overwriting_previous_candidate(self):
