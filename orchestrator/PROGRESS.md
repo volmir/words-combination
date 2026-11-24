@@ -95,3 +95,6 @@
 
 - [STAB-03] ✓ 2026-11-24T12:22:50+00:00 — Автоматически проверить геометрию блока ввода — ИТОГ: В `app/src/androidTest/kotlin/com/example/sostavslova/ui/game/GameLayoutTest.kt` добавлен отдельный тест `inputBlockGeometryKeepsSubmitAndActionsOrderedAcrossModesWidthsScalesAndThemes`. Он рендерит реальную вложенность `GameScreen` → `Well` на ширинах 320/360/411 dp, в режимах TOUCH и KEYBOAR
 <!-- orchestrator:v1 {"id": "STAB-03", "fingerprint": "d72bf8fa832d74df2afb1c2ce81e62851936a4b98b83b12cc1223384ca104a67", "date": "2026-11-24T12:22:50+00:00", "gate": "passed", "manual": false, "summary": "ИТОГ: В `app/src/androidTest/kotlin/com/example/sostavslova/ui/game/GameLayoutTest.kt` добавлен отдельный тест `inputBlockGeometryKeepsSubmitAndActionsOrderedAcrossModesWidthsScalesAndThemes`. Он рендерит реальную вложенность `GameScreen` → `Well` на ширинах 320/360/411 dp, в режимах TOUCH и KEYBOAR", "model": "opencode/deepseek-v4.1-flash-free#high", "effort": "medium"} -->
+
+- [STAB-04] ✓ 2026-11-24T12:48:53+00:00 — Регрессии ввода, достижений и сохранения прогресса — ## ИТОГ
+<!-- orchestrator:v1 {"id": "STAB-04", "fingerprint": "c3fcf7a48d427784c0869cffd85cdedb47b6d613d9193ce8b3ac7bb3f976854f", "date": "2026-11-24T12:48:53+00:00", "gate": "passed", "manual": false, "summary": "## ИТОГ", "model": "opencode/deepseek-v4.1-flash-free#high", "effort": "medium"} -->

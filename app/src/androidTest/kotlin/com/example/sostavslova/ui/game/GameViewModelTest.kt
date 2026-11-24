@@ -473,6 +473,67 @@ class GameViewModelTest {
         assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
     }
 
+    @Test fun fifteenthLevelShowsOnlyFinaleWithoutCompletionDialogOrDuplicateAwards() = runTest {
+        val campaignLevels = LevelsRepository(readCampaign = { firstAppearanceCampaignJson() })
+        val campaign = requireNotNull(campaignLevels.getCampaign())
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val seeded = org.json.JSONObject().put("version", 2).put("highestUnlockedLevel", 15)
+        val savedLevels = org.json.JSONObject()
+        campaign.levels.take(14).forEach { level ->
+            savedLevels.put(level.word, org.json.JSONObject().put("completedTaskIds",
+                org.json.JSONArray(level.tasks.map { it.id })))
+        }
+        seeded.put("levels", savedLevels)
+        store.edit { it[com.example.sostavslova.data.jsonstore.stringPreferencesKey("campaignProgressV2")] = seeded.toString() }
+
+        val owner = object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
+        val model = model(SavedStateHandle(mapOf("index" to "15")), retainedOwner = owner,
+            wordRepository = campaignWords, levelRepository = campaignLevels)
+        val ready = model.ready()
+        assertEquals(15, ready.totalLevels)
+        assertEquals(15, ready.campaignLevel?.level?.number)
+        withContext(Dispatchers.Main) { model.onDismissExplanations() }
+        withContext(Dispatchers.Main) { model.onInputChanged("карта"); model.onSubmit() }
+        val answered = model.await { !it.busy && it.finaleSummary != null }
+        assertEquals(listOf("карта"), answered.game?.found)
+        assertEquals(2, answered.campaignLevel?.completedTaskIds?.size)
+        // Последний уровень не показывает обычный диалог прохождения.
+        assertNull(answered.levelComplete)
+        val finale = requireNotNull(answered.finaleSummary)
+        assertEquals(15, finale.totalLevels)
+        assertStarEvent(model.event(), 2, achievements = listOf(
+            LevelAchievement.NO_HINTS, LevelAchievement.STRAIGHT_A))
+        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
+
+        // Поворот и повторный onGameOpened не открывают второй диалог и не выдают награды снова.
+        assertSame(model, model(SavedStateHandle(mapOf("index" to "15")), retainedOwner = owner,
+            wordRepository = campaignWords, levelRepository = campaignLevels))
+        withContext(Dispatchers.Main) { repeat(3) { model.onGameOpened() } }
+        assertEquals(finale, model.uiState.value.finaleSummary)
+        assertNull(model.uiState.value.levelComplete)
+        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { model.events.first() } })
+
+        // Повторное открытие уровня до подтверждения восстанавливает только финальный диалог.
+        val restored = model(SavedStateHandle(mapOf("index" to "15")),
+            wordRepository = campaignWords, levelRepository = campaignLevels)
+        val restoredState = restored.await { it.finaleSummary != null }
+        assertEquals(finale, restoredState.finaleSummary)
+        assertNull(restoredState.levelComplete)
+        assertEquals(answered.finaleAchievements, restoredState.finaleAchievements)
+        assertNull(withContext(Dispatchers.Default) { withTimeoutOrNull(200) { restored.events.first() } })
+
+        // После подтверждения на уровне 15 нет ни финала, ни обычного диалога прохождения.
+        withContext(Dispatchers.Main) { restored.onCloseFinale(false) }
+        restored.await { it.finaleSummary == null }
+        assertNull(restored.uiState.value.levelComplete)
+        val reopened = model(SavedStateHandle(mapOf("index" to "15")),
+            wordRepository = campaignWords, levelRepository = campaignLevels)
+        val reopenedState = reopened.ready()
+        assertNull(reopenedState.finaleSummary)
+        assertNull(reopenedState.levelComplete)
+        assertEquals(2, reopenedState.campaignLevel?.completedTaskIds?.size)
+    }
+
     @Test fun installedMinimalAssetSuppliesEveryMandatoryRiddleToGameUi() = runTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         suspend fun asset(name: String) = withContext(Dispatchers.IO) {
@@ -878,6 +939,51 @@ class GameViewModelTest {
         fail = false
         model.answer("карта")
         assertEquals(listOf("карта"), progress.observeCampaignProgress().first().levels.getValue("картотека").found)
+    }
+
+    @Test fun repeatedSubmitAndHintDuringBusyAwardOnceAndSpendNothing() = runTest {
+        val writes = AtomicInteger()
+        val counted = object : DataStore<Preferences> {
+            override val data = store.data
+            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                writes.incrementAndGet()
+                return store.updateData(transform)
+            }
+        }
+        val campaignLevels = LevelsRepository(readCampaign = { miniCampaignJson })
+        val campaignWords = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+        val repository = ProgressRepository(counted)
+        val model = model(repository = repository, wordRepository = campaignWords, levelRepository = campaignLevels)
+        model.ready()
+        writes.set(0)
+        withContext(Dispatchers.Main) {
+            model.onInputChanged("карта")
+            repeat(4) { model.onSubmit() }
+            repeat(4) { model.onHint() }
+        }
+        val state = model.await { !it.busy }
+        // Повторные нажатия во время busy не создают вторую транзакцию ответа.
+        assertEquals(1, writes.get())
+        assertEquals(2, state.campaignLevel?.completedTaskIds?.size)
+        assertEquals(2, requireNotNull(state.levelComplete).summary.stars)
+        assertEquals(listOf(LevelAchievement.NO_HINTS),
+            requireNotNull(state.levelComplete).summary.newAchievements.toList())
+        // Подсказка во время busy не расходует бюджет и не открывает ступень.
+        assertEquals(0, state.campaignLevel?.hints?.shownSteps)
+        assertEquals(0, state.campaignLevel?.hints?.paidUnits)
+        assertNull(state.campaignHint)
+        val saved = repository.observeCampaignProgress().first().levels.getValue("картотека")
+        assertEquals(listOf("карта"), saved.found)
+        assertEquals(2, saved.completedTaskIds.size)
+        assertEquals(setOf(LevelAchievement.NO_HINTS), saved.achievements)
+
+        withContext(Dispatchers.Main) { model.onCloseLevelComplete(false) }
+        val before = repository.observeCampaignProgress().first()
+        val repeated = model.answer("КАРТА")
+        assertEquals(R.string.answer_already_found, repeated.message?.text)
+        assertEquals(before, repository.observeCampaignProgress().first())
+        assertEquals(2, repeated.campaignLevel?.completedTaskIds?.size)
+        assertNull(repeated.levelComplete)
     }
 
     @Test fun invalidAndClosedRouteReturnToMapWithoutWritingGame() = runTest {

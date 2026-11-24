@@ -1,5 +1,7 @@
 package com.example.sostavslova.ui.game
 
+import androidx.datastore.core.DataStore
+import com.example.sostavslova.data.jsonstore.Preferences
 import com.example.sostavslova.ui.gameKeyboardInput
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -79,6 +81,75 @@ class GameSubmissionUiTest {
                 assertEquals(before, repository.observeCampaignProgress().first())
             }
         } finally {
+            withContext(Dispatchers.Main) { owner.viewModelStore.clear() }
+            scope.cancel()
+            scope.coroutineContext.job.join()
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test fun keyboardSubmitButtonKeepsDraftTypedWhileBusyAgainstLateResult() = runTest {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val directory = File(context.cacheDir, "submit-busy-${UUID.randomUUID()}").apply { mkdirs() }
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val owner = object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val pause = java.util.concurrent.atomic.AtomicBoolean(false)
+        try {
+            val store = PreferenceDataStoreFactory.create(scope = scope) {
+                File(directory, "progress.json")
+            }
+            val wrapped = object : DataStore<Preferences> {
+                override val data = store.data
+                override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                    val result = store.updateData(transform)
+                    if (pause.compareAndSet(true, false)) {
+                        entered.complete(Unit)
+                        release.await()
+                    }
+                    return result
+                }
+            }
+            val repository = ProgressRepository(wrapped)
+            val words = WordRepository({ "карта\nкрот\nкот\nторт\nрот" })
+            val levels = LevelsRepository(readCampaign = { miniCampaignJson })
+            val model = withContext(Dispatchers.Main) {
+                ViewModelProvider(owner, viewModelFactory { initializer {
+                    GameViewModel(SavedStateHandle(mapOf("index" to "1")), words, levels, repository,
+                        RiddlesRepository { "Синтетическая загадка" })
+                } })[GameViewModel::class.java]
+            }
+            withContext(Dispatchers.Default) { withTimeout(10_000) { model.uiState.first { it.canPlay } } }
+            withContext(Dispatchers.Main) { model.onDismissExplanations() }
+            compose.setContent {
+                val state by model.uiState.collectAsState()
+                WordsTheme {
+                    GameScreen(state, model::onInputChanged, model::onSubmit, {}, {},
+                        onToggleInputMode = model::onToggleInputMode)
+                }
+            }
+            compose.gameKeyboardInput().performScrollTo().performTextReplacement("карта")
+            pause.set(true)
+            // Отправка именно кнопкой в режиме KEYBOARD, не IME.
+            compose.onNodeWithTag("game_submit").performScrollTo().performClick()
+            compose.waitUntil(10_000) { model.uiState.value.busy }
+            withContext(Dispatchers.Default) { withTimeout(10_000) { entered.await() } }
+            // Во время busy поле намеренно редактируемое: новый черновик не блокируется.
+            compose.onNodeWithTag("game_input").assertIsEnabled().performTextReplacement("крот")
+            assertEquals("крот", model.uiState.value.input)
+            release.complete(Unit)
+            compose.waitUntil(10_000) {
+                !model.uiState.value.busy && model.uiState.value.game?.found == listOf("карта")
+            }
+            // Поздний результат старой отправки не очищает уже набранный новый черновик.
+            assertEquals("крот", model.uiState.value.input)
+            assertEquals(listOf("карта"), model.uiState.value.game?.found)
+            assertEquals(2, requireNotNull(model.uiState.value.levelComplete).summary.stars)
+            compose.onNodeWithTag("level_complete_stay").performScrollTo().performClick()
+            compose.onNodeWithTag("game_input").performScrollTo().assertTextEquals("крот")
+        } finally {
+            release.complete(Unit)
             withContext(Dispatchers.Main) { owner.viewModelStore.clear() }
             scope.cancel()
             scope.coroutineContext.job.join()
