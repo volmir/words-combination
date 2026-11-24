@@ -115,11 +115,11 @@ class CampaignMapUiTest {
             compose.onNodeWithTag("level_achievements_$number", useUnmergedTree = true).assertTextEquals(expected)
         }
         scroll(1)
-        count(1, "Достижения: 8 из 8")
+        count(1, "Достижения: 8/8")
         compose.onNodeWithTag("level_card_1").assert(SemanticsMatcher.expectValue(
             SemanticsProperties.StateDescription, "Получено 0 из 5 звёзд · для открытия нужно: 2. Достижения: 8 из 8"))
         scroll(2)
-        count(2, "Достижения: 1 из 4") // Сохранённый GIANT сейчас недоступен и не входит в числитель.
+        count(2, "Достижения: 1/4") // Сохранённый GIANT сейчас недоступен и не входит в числитель.
         scroll(3)
         compose.onNodeWithTag("level_achievements_3", useUnmergedTree = true).assertDoesNotExist()
         scroll(4)
@@ -127,7 +127,7 @@ class CampaignMapUiTest {
         compose.runOnIdle { state.value = state.value.copy(levels = state.value.levels.map {
             if (it.index == 4) it.copy(unlocked = true, achievements = emptySet()) else it
         }) }
-        count(4, "Достижения: 0 из 8")
+        count(4, "Достижения: 0/8")
         for (achievement in LevelAchievement.entries) {
             compose.onNodeWithTag("achievement_icon_${achievement.name.lowercase(java.util.Locale.ROOT)}").assertDoesNotExist()
         }

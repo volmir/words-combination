@@ -304,6 +304,7 @@
     <string name="achievement_length_tile">%1$d+</string>
     <string name="achievement_count_length_tile">%1$d×%2$d+</string>
     <string name="level_achievements">Достижения: %1$d из %2$d</string>
+    <string name="level_achievements_compact">Достижения: %1$d/%2$d</string>
     <string name="level_progress_description">%1$s. %2$s</string>
     <string name="game_keyboard">Клавиатура</string>
     <string name="game_touch">Касание</string>

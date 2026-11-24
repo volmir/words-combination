@@ -91,7 +91,7 @@ class LevelsLayoutTest {
         checkLayout()
     }
 
-    @Test fun achievementLineFitsNarrowCardAtLargeFontBelowStars() {
+    @Test fun achievementCountMovesBelowStarsAtLargeFontOnNarrowCard() {
         val all = LevelAchievement.entries.toSet()
         val item = LevelUiState(1, "электростанция", 3, true, 5, 2,
             achievements = all, achievementsAvailable = all)
@@ -104,7 +104,7 @@ class LevelsLayoutTest {
             }
         } }
         val line = compose.onNodeWithTag("level_achievements_1", useUnmergedTree = true)
-            .assertIsDisplayed().assertTextEquals("Достижения: 8 из 8").fetchSemanticsNode().boundsInRoot
+            .assertIsDisplayed().assertTextEquals("Достижения: 8/8").fetchSemanticsNode().boundsInRoot
         val stars = compose.onNodeWithContentDescription("Звёзды").fetchSemanticsNode().boundsInRoot
         val card = compose.onNodeWithTag("level_card_1").assertHeightIsAtLeast(48.dp)
             .fetchSemanticsNode().boundsInRoot
@@ -113,6 +113,27 @@ class LevelsLayoutTest {
         compose.onNodeWithTag("level_card_1").assert(SemanticsMatcher.expectValue(
             SemanticsProperties.StateDescription, "Получено 3 из 5 звёзд · для открытия нужно: 2. Достижения: 8 из 8"))
         checkLayout()
+    }
+
+    @Test fun achievementCountStaysBesideSixStarsWhenCardHasRoom() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val available = LevelAchievement.entries.toSet()
+        val maxStars = 6
+        val requiredStars = 3
+        val item = LevelUiState(1, "электростанция", 0, true, maxStars, requiredStars,
+            achievements = emptySet(), achievementsAvailable = available)
+        compose.setContent { WordsTheme {
+            Box(Modifier.width(411.dp)) {
+                LevelsScreen(LevelsUiState(loading = false, levels = listOf(item)), {}, {})
+            }
+        } }
+        val stars = compose.onNodeWithContentDescription("Звёзды", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        val achievements = compose.onNodeWithTag("level_achievements_1", useUnmergedTree = true)
+            .assertTextEquals(context.getString(R.string.level_achievements_compact, 0, available.size))
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue("Счётчик должен быть справа от шести звёзд", achievements.left >= stars.right)
+        assertEquals(stars.top, achievements.top, 1f)
     }
 
     private fun assertStars(label: String, description: String) {

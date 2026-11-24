@@ -44,6 +44,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -253,10 +257,42 @@ private fun LevelButton(item: LevelUiState, enabled: Boolean, onClick: () -> Uni
                 if (item.crowned) Icon(painterResource(R.drawable.ic_crown), stringResource(R.string.level_crown), Modifier.size(24.dp))
             }
             val starsLabel = stringResource(R.string.level_stars_label)
-            StarsRow(item.stars, item.maxStars, label = starsLabel, requiredStars = item.requiredStars)
-            achievements?.let {
-                Text(it, Modifier.testTag("level_achievements_${item.index}"),
-                    style = MaterialTheme.typography.bodyMedium)
+            if (achievements != null) {
+                val compactAchievements = stringResource(R.string.level_achievements_compact,
+                    item.achievements.count { achievement -> achievement in item.achievementsAvailable },
+                    item.achievementsAvailable.size)
+                val textMeasurer = rememberTextMeasurer()
+                val density = LocalDensity.current
+                val textWidth = with(density) {
+                    textMeasurer.measure(
+                        AnnotatedString(compactAchievements),
+                        style = MaterialTheme.typography.bodyMedium,
+                        softWrap = false,
+                    ).size.width.toDp()
+                }
+                val markerWidth = if (item.requiredStars > 0 &&
+                    item.requiredStars < item.maxStars) 5.dp else 0.dp
+                val starsWidth = if (item.maxStars == 0) 0.dp else
+                    24.dp * item.maxStars + 4.dp * (item.maxStars - 1) + markerWidth
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    if (starsWidth + textWidth + 8.dp <= maxWidth) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically) {
+                            StarsRow(item.stars, item.maxStars, label = starsLabel, requiredStars = item.requiredStars)
+                            Text(compactAchievements, Modifier.testTag("level_achievements_${item.index}"),
+                                style = MaterialTheme.typography.bodyMedium)
+                        }
+                    } else {
+                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            StarsRow(item.stars, item.maxStars, label = starsLabel, requiredStars = item.requiredStars)
+                            Text(compactAchievements, Modifier.align(Alignment.End)
+                                    .testTag("level_achievements_${item.index}"),
+                                textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+            } else {
+                StarsRow(item.stars, item.maxStars, label = starsLabel, requiredStars = item.requiredStars)
             }
         }
     }
