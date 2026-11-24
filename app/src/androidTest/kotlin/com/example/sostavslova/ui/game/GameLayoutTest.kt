@@ -122,6 +122,44 @@ class GameLayoutTest {
         }
     }
 
+    @Test fun inputFieldSubmitAndActionsKeepVerticalOrderAndOneRowAtNativeScale() {
+        data class Case(val width: Int, val mode: com.example.sostavslova.data.InputMode)
+        val cases = listOf(320, 360, 411).flatMap { width ->
+            com.example.sostavslova.data.InputMode.entries.map { Case(width, it) }
+        }
+        val current = mutableStateOf(cases.first())
+        compose.setContent {
+            val case = current.value
+            WordsTheme {
+                Box(Modifier.width(case.width.dp)) {
+                    GameScreen(GameUiState(loading = false, game = GameState("картотека", listOf("кот")),
+                        input = "кот", inputMode = case.mode), {}, {}, {}, {})
+                }
+            }
+        }
+        for (case in cases) {
+            compose.runOnIdle { current.value = case }
+            compose.waitForIdle()
+            val fieldTag = if (case.mode == com.example.sostavslova.data.InputMode.KEYBOARD) "game_input"
+                else "game_input_display"
+            val field = compose.onNodeWithTag(fieldTag).performScrollTo().fetchSemanticsNode().boundsInRoot
+            val submit = compose.onNodeWithTag("game_submit").fetchSemanticsNode().boundsInRoot
+            val toggle = compose.onNodeWithTag("game_input_mode_toggle").fetchSemanticsNode().boundsInRoot
+            val shuffle = compose.onNodeWithTag("game_shuffle").fetchSemanticsNode().boundsInRoot
+            val backspace = compose.onNodeWithTag("game_backspace").fetchSemanticsNode().boundsInRoot
+            val context = "${case.width}dp, ${case.mode}"
+            assertTrue("$context: поле и кнопка должны идти сверху вниз", submit.top >= field.bottom - 1f)
+            assertEquals("$context: ширина кнопки", field.width, submit.width, 1f)
+            assertTrue("$context: действия должны быть ниже кнопки", toggle.top >= submit.bottom - 1f)
+            assertTrue("$context: действия должны быть в одной строке",
+                kotlin.math.abs(toggle.top - shuffle.top) <= 1f && kotlin.math.abs(shuffle.top - backspace.top) <= 1f)
+            assertTrue("$context: порядок переключатель, перемешивание, стирание",
+                toggle.left < shuffle.left && shuffle.left < backspace.left)
+            assertTrue("$context: переключатель должен быть слева", toggle.left <= field.left + 1f)
+            assertTrue("$context: стирание должно быть справа", backspace.right >= field.right - 1f)
+        }
+    }
+
     @Test fun largestInstalledLevelFitsNarrowScreenAtDoubleFontScale() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val campaign = CampaignJson.decode(

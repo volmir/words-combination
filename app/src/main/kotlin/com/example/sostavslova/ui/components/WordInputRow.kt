@@ -50,12 +50,13 @@ fun WordInputRow(
     focusRequester: FocusRequester? = null,
     inputModifier: Modifier = Modifier,
     submitModifier: Modifier = Modifier,
+    forceStacked: Boolean = false,
 ) {
     val submit = { if (enabled) onSubmit() }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(label, style = MaterialTheme.typography.bodyLarge)
         BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val stacked = maxWidth < 280.dp || LocalDensity.current.fontScale > 1.3f
+            val stacked = forceStacked || maxWidth < 280.dp || LocalDensity.current.fontScale > 1.3f
             val field: @Composable (Modifier) -> Unit = { fieldModifier ->
                 OutlinedTextField(
                     value = value,
