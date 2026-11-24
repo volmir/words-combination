@@ -19,8 +19,9 @@ Builds:
     versionCode: 6
     commit: 88df7805eb093795048e0907c6bd062e96587963
     subdir: app
+    java: 21
     gradle:
-      - yes
+      - assembleRelease
     output: build/outputs/apk/release/app-release-unsigned.apk
     scandelete:
       - data/word_sources.jsonl.gz
