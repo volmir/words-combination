@@ -2,7 +2,7 @@
 # Copy to fdroiddata/metadata/ only after independent fdroid build/scanner,
 # policy eligibility review and explicit owner approval.
 Categories:
-  - Games
+  - Word Game
 License: MIT
 WebSite: https://github.com/volmir/words-combination
 SourceCode: https://github.com/volmir/words-combination
