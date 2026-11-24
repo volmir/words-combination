@@ -117,7 +117,6 @@ val verifyDictionaryLicenses = tasks.register("verifyDictionaryLicenses") {
     group = "verification"
     dependsOn("verifyOwnedHints", "verifyRuntimeNotices", "verifyGraphics")
     inputs.files(dictionaryData.file("manifest.json"), dictionaryData.file("words.txt"), dictionaryData.file("levels.json"))
-    inputs.file(dictionaryData.file("word_sources.jsonl.gz")).optional()
     inputs.files(dictionaryData.file("campaign.json"))
     inputs.files(dictionaryData.file("owned_riddles.json"))
     inputs.files(dictionaryData.file("word_familiarity.txt"), rootProject.file("tools/selection_config.json"))
