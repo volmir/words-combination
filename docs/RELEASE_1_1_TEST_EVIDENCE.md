@@ -361,3 +361,195 @@ gate и очередь не менялись.
 Реальные телефоны, ручная приёмка владельцем, TalkBack, перенос между двумя
 телефонами и release APK этим debug-прогоном не проверены. Публикационный
 допуск из прохождения instrumented-тестов не следует.
+
+
+## STAB-07 — финальная сборка кандидата, 2026-11-24
+
+**Статус: проверки и сборка PASS; release — UNSIGNED / NOT FOR PUBLICATION.
+Публикационная готовность BLOCKED до штатной подписи владельцем.**
+Этот раздел дополняет доказательства STAB-06; прежние FAIL и последующие
+исправления выше сохранены. Успешная сборка не означает разрешения публикации.
+
+### Проверенный commit, конфигурация и неизменность
+
+Проверен commit `cd7e02b274061f4d033eaf5b8ea3a01bb23811c3`
+(`STAB-06: Выполнить реальные Android instrumented-тесты`), ветка `main`.
+До начала рабочее дерево чистое. STAB-07 меняет только этот документ;
+код, тесты, данные, версии, зависимости, ключи, юридические решения и
+защищённые пути не изменяются. Git-операции записи и публикация не выполнялись.
+
+Окружение: Linux, Temurin JDK 21.0.13+9-LTS, Gradle 9.3.1, AGP 9.1.1,
+Kotlin 2.2.10, Android Build Tools 36.0.0; compileSdk/targetSdk 36,
+minSdk 24. Зависимости сборок взяты из локального кэша (`--offline`).
+Логи и вспомогательные проверки — `/tmp/stab07-evidence/`, вне репозитория.
+Для Python установлен `PYTHONDONTWRITEBYTECODE=1`.
+
+На 2026-11-24 около 14:20 UTC публичный GitHub API
+`GET https://api.github.com/repos/volmir/words-combination/releases`
+вернул последним опубликованным выпуском
+[1.0.4 (5)](https://github.com/volmir/words-combination/releases/tag/1.0.4),
+без опубликованной 1.1.0. README и заголовок очереди также называют 1.1.0 (6)
+кандидатом. Проверка других каналов распространения не проводилась; если
+владелец уже опубликовал (6) в другом канале, выбор новой версии остаётся
+обязательным блокирующим условием. Версия не менялась.
+
+### Фактический PASS STAB-06 на том же коде
+
+Read-only проверены запись `gate: passed`, `manual: true` STAB-06
+от 14:18:29 UTC в `orchestrator/PROGRESS.md` и завершение лога
+`orchestrator/.runtime/logs/20261124T131923.764349Z/STAB-06.gate.0.log`:
+`Finished 340 tests`, `BUILD SUCCESSFUL in 3m 21s`.
+XML внешнего gate API 24 имеет 340 testcase, tests=340, failures=0,
+errors=0, skipped=0, timestamp `2026-11-24T14:18:28`, SHA-256
+`eba270d5390458d617a7220747840b3cf8f506a370c0ed7b754c10d738b7c2e4`.
+Повторно разобраны также сохранённые итоговые XML API 24 и API 36:
+оба 340/0/0/0, SHA совпадают с предыдущим разделом отчёта.
+
+Все 209 файлов из `/tmp/stab06-final-source-manifest.txt` сравнены с текущими
+байтами: расхождений нет (exit 0). Повторно построенный по приведённому выше
+алгоритму манифест имеет тот же SHA-256
+`378dc030da7b7c6b226ad09184851b9fde4a89d709d261abe3b5e324c32989cc`.
+Это связывает фактически испытанные production-исходники и тесты с текущим
+commit, созданным после успешного gate. После этого gate production-код
+не менялся. В STAB-07 connected-тесты заново не запускались.
+
+### Целостность кампании, словаря и утверждённых загадок
+
+Фактические SHA сверены Python/hashlib с заголовком очереди и manifest:
+
+| Файл | SHA-256 |
+| --- | --- |
+| `data/words.txt` | `a8964442ca99334cf3c1ae198fc5a61e476c52ac250992abd3002d75f4f960f5` |
+| `data/campaign.json` | `995e8c8d454dfe1c50a7c68b8c6d3308716263d41183e4bf6b06fd73990451e4` |
+| `data/manifest.json` | `114c5551c9f1c6d3976efdb9b9c88a7bc1ca003a1b88f6360d232589768d96f7` |
+| `data/owned_riddles.json` | `05e3c05099fe38648834a6b9f70f458cf51238edc7bacdc85d8af3932ad11f63` |
+| `docs/owned_hints.json` | `214a14ca721cc33d7abc1933e5ecdd605e722441910dbecf4a137b4bd70e784d` |
+| `docs/OWN_HINTS_OWNER_APPROVAL.json` | `2856445f4405c5f3b7fb6b1865f4629795c8a4f1fac5451237210da191fda63d` |
+| `docs/OWN_HINTS_MANUAL_AUDIT.json` | `00f49e4fae3dd39f32987ba065de6741c538532d8a7eee7801ad0a5c2a97d3c4` |
+
+Ровно 20 103 строки словаря = `manifest.words`, 15 уровней, 49 заданий/возможных
+звёзд; runtime содержит 11 T4-текстов для 6 заданий. Все шесть поставляемых
+файлов данных в `app/src/main/assets` побайтово совпали с `data/`.
+`verifyOwnedHints` дополнительно проверил утверждённые source/approval/audit,
+категории и воспроизводимость загадок, без записи/регенерации данных.
+`manifest.json` служит входом сборки и в APK не поставляется — это штатный
+набор `syncDictionaryAssets`, а не пропущенный asset.
+
+### Реально выполненные проверки и exit codes
+
+Полный gate выполнен составляющими профиля `checks.full` из текущего
+`orchestrator/config.json`; Gradle дополнительно ограничен `--offline`.
+Обёртка `--check full` и очередь агентом не запускались: внешний gate
+выполняет оркестратор. Команды и критерии профиля не ослаблены.
+
+| Команда из корня проекта | Exit | Результат |
+| --- | ---: | --- |
+| `bash ./gradlew --offline :app:verifyDictionaryLicenses :app:verifyOwnedHints :app:verifyRuntimeNotices :app:verifyPrivacyPublication :app:lintDebug :app:compileDebugAndroidTestKotlin --console=plain` | 0 | BUILD SUCCESSFUL, 7s; все имена задач существуют; lint 0 errors, 13 warnings |
+| `python3 -m unittest discover -s tools/tests` | 0 | 594 теста, OK, 113.599s |
+| `python3 -m unittest discover -s orchestrator/tests` | 0 | 99 тестов, OK, 42.271s; тестовые фикстуры во временных каталогах |
+| `bash ./gradlew --offline :core:test :app:assembleDebug --console=plain` | 0 | BUILD SUCCESSFUL, 6s; обе задачи UP-TO-DATE |
+| `bash ./gradlew --offline :app:assembleRelease --console=plain` | 0 | BUILD SUCCESSFUL, 1m 29s; 28 задач исполнены, 30 UP-TO-DATE |
+
+Логи строк таблицы: `/tmp/stab07-evidence/check-1.log` … `check-5.log`,
+коды возврата записаны непосредственно после subprocess в `results.json`.
+Core XML: 36 наборов, 262 tests / 0 failures / 0 errors / 0 skipped;
+это сохранённые результаты, принятые Gradle как UP-TO-DATE, а не новый прогон.
+Вывод `missing.json.gz` в tools относится к успешной отрицательной проверке;
+итог unittest — OK. Release выполнил `verifyDefinitionsAudit` (`release_audit: ok`),
+`verifyReleaseSigning`, `minifyReleaseWithR8`, `optimizeReleaseResources`,
+`lintVitalRelease`, `packageRelease` и `assembleRelease`.
+
+### Проверка фактических APK
+
+`aapt2` и `apksigner` взяты из
+`/home/vladimir/.local/share/words-combination/android-sdk/build-tools/36.0.0/`.
+Для каждого debug/release APK выполнены `aapt2 dump badging APK`,
+`aapt2 dump permissions APK` и
+`aapt2 dump xmltree --file AndroidManifest.xml APK`: exit 0.
+Оба APK: applicationId `io.github.volmir.wordscombination`, versionName
+`1.1.0`, versionCode `6`, minSdk `24`, targetSdk `36`.
+`uses-permission` отсутствуют полностью, включая INTERNET.
+Debug имеет `debuggable=true`; release этого флага не имеет.
+`output-metadata.json` подтверждает variantName debug/release соответственно.
+В `build.gradle.kts` release использует `isMinifyEnabled=true`,
+`isShrinkResources=true`, optimize proguard и только отдельный signingConfig
+release при его наличии. Настройки не менялись; факт R8 подтверждён логом.
+
+ZIP-проверка Python (`zipfile`, `hashlib`, `gzip`) подтвердила все 12 runtime
+assets и равенство содержимого исходникам: `words.txt`, `campaign.json`,
+`levels.json`, `owned_riddles.json`, `word_familiarity.txt`, `word_sources.jsonl`,
+`LICENSE`, `THIRD_PARTY_NOTICES.txt`, `Apache-2.0.txt`, `CC-BY-SA-4.0.txt`,
+`LIBRARY_NOTICES.txt`, `RUNTIME_LIBRARIES.json`.
+AGP распаковывает исходный `word_sources.jsonl.gz` в `word_sources.jsonl`;
+сравнение выполнено с декомпрессированным источником. В release дополнительно
+присутствуют штатные `assets/dexopt/baseline.prof` и `baseline.profm`.
+Первоначальные assertions вспомогательного ZIP-скрипта дали exit 1 на этих
+особенностях упаковки; после корректного учёта gzip и baseline profiles
+полная проверка равенства дала exit 0. Исходники/сборка ради неё не менялись.
+
+В обоих упакованных манифестах `allowBackup=true`, `fullBackupContent`
+ссылается на ресурс `0x7f0d0000`, `dataExtractionRules` — `0x7f0d0001`.
+Для debug `aapt2 dump xmltree --file res/xml/backup_rules.xml APK` и
+аналогичная команда для `res/xml/data_extraction_rules.xml` дали exit 0.
+Для release те же исходные ZIP-пути дали exit 1 (`failed to find file`):
+оптимизация переименовала их. `aapt2 dump resources APK` (exit 0) разрешил
+ресурсы в `res/Qq.xml` и `res/4j.xml`; `aapt2 dump xmltree --file` по каждому
+фактическому пути дал exit 0. Проверено содержимое обоих XML: девять
+исключений всех доменов для Android 7–11 и cloud-backup; device-transfer
+на Android 12+ включает только domain=file, path=datastore/progress.json.
+Это статическая проверка правил, не перенос между физическими телефонами.
+
+SHA-256 полученных/проверенных APK:
+
+| Артефакт | SHA-256 |
+| --- | --- |
+| `app/build/outputs/apk/debug/app-debug.apk` | `1f428edfdee2cac7f08c6d87e45f4eebff23f53a8938d7a2603bff1160ed9676` |
+| `app/build/outputs/apk/release/app-release-unsigned.apk` | `54b5a66ae151e25c21cc553d160381c8ec0cce5d48caf64337dc32d1cd1ba26e` |
+| Существующий STAB-06 `app-debug-androidTest.apk` (в STAB-07 не пересобирался) | `eed0cf9b5ff836836a0ad59f716786ee5f18ce3325f27383100c338796b6ec03` |
+| Скачанный опубликованный `WordsCombination-v1.0.4.apk` | `3df5c933536a1c6201f071fe9873e009a26c06da3d8dcf0068c625f210082574` |
+
+### Подпись и блокирующие условия
+
+Для debug, release и скачанного с GitHub предыдущего APK выполнена команда
+`apksigner verify --verbose --print-certs APK`:
+
+| APK | Exit | Фактический результат |
+| --- | ---: | --- |
+| Опубликованный 1.0.4 (5), скачан в `/tmp/stab07-evidence/previous-published-1.0.4.apk` | 0 | v2 verified, CN=Words Combination; SHA-256 сертификата `a10cdd4ff4000673f14db9fe4a814f8bbd63b6e2007f5f38b1fe5cfb7310f353` |
+| Debug 1.1.0 (6) | 0 | v2 verified, CN=Android Debug; SHA-256 сертификата `b38eafea4f467575d60c47578e0b7ac69750c64b7f0a1de66fb30c7602d15264` |
+| Release 1.1.0 (6) | 1 | DOES NOT VERIFY; Missing META-INF/MANIFEST.MF; сертификата нет |
+
+`verifyReleaseSigning` явно сообщил: release-ключ не настроен, артефакт
+неподписанный и не предназначен для публикации или установки. Debug fingerprint
+не совпадает с опубликованным и не заменяет release-подпись. Сравнение
+fingerprint кандидата с предыдущей версией пока невозможно: у release
+кандидата нет сертификата. Секретные файлы и значения не читались/не логировались
+агентом, ключи не создавались; Gradle выполнил штатную проверку конфигурации.
+
+Остаются условия до публикационного допуска:
+
+1. Владелец обеспечивает штатную release-подпись; повторная проверка
+   `apksigner` должна пройти и подтвердить fingerprint предыдущего APK.
+   SHA подписанного APK фиксируется заново: приведённый SHA относится
+   исключительно к неподписанному файлу.
+2. Проверить установку подписанного кандидата поверх опубликованного (5)
+   с валидным прогрессом и сохранением достижений/звёзд; в STAB-07 не выполнено.
+3. Заполнить и принять [ручной чек-лист](RELEASE_CHECKLIST_1_1.md), включая
+   TalkBack, физические устройства и перенос между телефонами; автоматические
+   debug-тесты не означают прохождения ручной приёмки.
+4. Выполнить gate воспроизводимости кандидата из двух чистых клонов и
+   сопоставить подписанный APK с проверенным commit; исторические результаты
+   1.0.x не являются доказательством для 1.1.0. В STAB-07 не запускалось.
+5. Отдельная независимая публикационная приёмка прав, QA, подписи и канала
+   распространения; прежние юридические решения не изменены. Автоматической
+   публикации, создания тега и перехода к STAB-08 нет.
+
+### Проверка дополненного отчёта
+
+`PYTHONDONTWRITEBYTECODE=1 bash orchestrator/run.sh --check docs` — exit 0:
+UTF-8, ссылки и индекс корректны, три теста соответствия SPEC/кампании — OK.
+`git diff --check` — exit 0. После сборок повторно подтверждён неизменный
+SHA манифеста 209 исходных файлов STAB-06. `git status --short` показывает
+изменение только `docs/RELEASE_1_1_TEST_EVIDENCE.md`; diff по `app`, `core`,
+`data`, `legal`, `orchestrator` пуст. Заключение STAB-07: сборки и проверки
+успешны, подписанного release-кандидата нет; до действия владельца — BLOCKED.
