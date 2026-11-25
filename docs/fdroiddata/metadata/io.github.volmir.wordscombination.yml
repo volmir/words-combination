@@ -18,13 +18,8 @@ Builds:
     versionCode: 7
     commit: bfeec0e6d67a2972622416d75abb3cd066562318
     subdir: app
-    sudo:
-      - apt-get update
-      - apt-get install -y openjdk-21-jdk-headless
     gradle:
       - yes
-    prebuild: printf '\norg.gradle.java.home=%s\n' "${JAVA21_HOME:-/usr/lib/jvm/java-21-openjdk-amd64}"
-      >> ../gradle.properties
     scanignore:
       - data/word_sources.jsonl.gz
     scandelete:
@@ -34,24 +29,6 @@ Builds:
       - docs/qa/pre04-17/verification-logs.zip
 
 AllowedAPKSigningKeys: a10cdd4ff4000673f14db9fe4a814f8bbd63b6e2007f5f38b1fe5cfb7310f353
-
-MaintainerNotes: |-
-  data/word_sources.jsonl.gz contains UTF-8 JSONL provenance for all 20,103
-  dictionary words (CC-BY-SA-4.0), not executable code. Its SHA-256 is
-  bbb9392fb53d7652da2ecfb1965e0ac4140d1e73b713ed1ca62320dca6206d0d,
-  enforced by the upstream verifyDictionaryLicenses build gate. The exact
-  scanignore retains this attribution asset; scandelete only removes QA ZIPs.
-  Android packages its decompressed content as assets/word_sources.jsonl
-  (3,791,287 bytes). Both verifyDictionaryLicenses and syncDictionaryAssets
-  require this file; it must not be removed before building.
-
-  The published APK contains no DependencyInfoBlock. dependenciesInfo
-  includeInApk/includeInBundle are disabled in app/build.gradle.kts. Auto-update
-  follows the upstream release tags; developer-signed artifacts are published as
-  WordsCombination-v<version>.apk. Release 1.1.1 (7) was built from two clean
-  clones at different absolute paths; the exported developer-signed APK and
-  its public download passed local apksigcopier verification. JDK 21 is
-  selected persistently through org.gradle.java.home, not a transient export.
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags

@@ -14,6 +14,7 @@
 |---|---|---|
 | `SPEC.md` | действует | — |
 | `INDEX.md` | действует | — |
+| `fdroiddata/FDROID_REVIEW_2026_11_25.md` | действует | — |
 | `PROJECT_STATUS.md` | действует | — |
 | `RELEASE_PROCESS.md` | действует (подготовка, публикация, F-Droid MR) | — |
 | `FDROID_MAIN_INTEGRATION.md` | отчёт переноса проверенного процесса в main | — |
