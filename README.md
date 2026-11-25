@@ -105,8 +105,14 @@ bash ./gradlew --offline :core:test :app:verifyDictionaryLicenses :app:verifyOwn
 Актуальная [заявка F-Droid !58000](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/58000)
 касается технического выпуска **1.1.1 (7)**. Релиз опубликован; локальные чистые
 сборки, публичный APK и локальная сборка средствами F-Droid сопоставлены через
-`apksigcopier`. Актуальные CI, аудит чекбоксов и вопросы Inclusion Policy — в
-[отчёте FDROID-RELEASE-111](docs/fdroiddata/FDROID_RELEASE_111_REPORT.md).
+`apksigcopier`. Последние замечания ревьювера, CI и чекбоксы — в
+[отчёте проверки MR](docs/fdroiddata/FDROID_REVIEW_2026_11_25.md);
+доказательства выпуска — в [FDROID-RELEASE-111](docs/fdroiddata/FDROID_RELEASE_111_REPORT.md).
+Перед обновлением заявки выполнить `python3 tools/check_fdroid_submission_candidate.py`
+для локальной копии и с `--metadata` для реального YAML fdroiddata. Проверка
+не допускает возврата удалённых ревьювером полей и дубликата summary;
+тексты описания поступают из Fastlane, Java предоставляет buildserver.
+Порядок проверки и обновления MR — в [RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
 Подача заявки и успешный CI не означают включение приложения в каталог.
 
 Словарь и кампания перегенерируются только через `tools/`: нужен локальный дамп

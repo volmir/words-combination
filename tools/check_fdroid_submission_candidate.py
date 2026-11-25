@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static checks for the fdroiddata proposal; NOT an fdroid build or scanner."""
+"""Static checks for this project's reviewed F-Droid recipe; NOT a build or scanner."""
 
 import argparse
 import json
@@ -92,7 +92,18 @@ def verify_recipe(contents):
     for field in ('output', 'WebSite', 'UpdateCheckData'):
         if re.search(rf'^\s*{field}:', contents, re.MULTILINE):
             raise ValueError('Obsolete metadata field: ' + field)
+    # Project agreement from MR !58000, not a restriction of the F-Droid schema.
+    for field in ('MaintainerNotes', 'sudo', 'prebuild', 'Name', 'Summary', 'Description'):
+        if re.search(rf'^\s*{field}:', contents, re.MULTILINE):
+            raise ValueError('Field contradicts the reviewed project recipe: ' + field)
     return {'version': version, 'code': int(code), 'commit': commits[0]}
+
+
+def verify_metadata(metadata):
+    recipe = verify_recipe(metadata.read_text(encoding='utf-8'))
+    for summary in sorted(metadata.with_suffix('').glob('*/summary.txt')):
+        raise ValueError('Localized summary must come from upstream Fastlane: ' + str(summary))
+    return recipe
 
 
 def git_at_tag(repository, version, path):
@@ -143,7 +154,7 @@ def main():
     args = parser.parse_args()
     metadata = args.metadata or (args.repo / 'docs/fdroiddata/metadata' / f'{APP_ID}.yml')
     try:
-        recipe = verify_recipe(metadata.read_text(encoding='utf-8'))
+        recipe = verify_metadata(metadata)
         commit = verify_tag(args.repo, recipe)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         parser.error(str(error))
