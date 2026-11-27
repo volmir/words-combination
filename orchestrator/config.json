@@ -32,14 +32,14 @@
   "retry_delay": 30,
   "models": {
     "codex": {
-      "light": "gpt-5.6-luna",
+      "light": "gpt-6-luna",
       "standard": "gpt-6.1-sol",
       "heavy": "gpt-6.1-sol"
     },
     "opencode": {
-      "light": "opencode/muse-ember-1.0#medium",
-      "standard": "opencode/deepseek-v4.1-flash#max",
-      "heavy": "opencode/deepseek-v4.1-flash#max"
+      "light": "opencode/deepseek-v4.1-flash-free#high",
+      "standard": "opencode/deepseek-v4.1-flash-free#high",
+      "heavy": "opencode/deepseek-v4.1-flash-free#high"
     }
   },
   "model_sets": {
@@ -49,13 +49,13 @@
         "standard": "opencode/beam-free#high",
         "heavy": "opencode/beam-free#high"
       },
-    "big-pickle": {
+      "big-pickle": {
         "light": "opencode/big-pickle",
         "standard": "opencode/big-pickle",
         "heavy": "opencode/big-pickle"
       },
-    "deepseek-v4.1-flash-free": {
-        "light": "opencode/deepseek-v4.1-flash-free",
+      "deepseek-v4.1-flash-free": {
+        "light": "opencode/deepseek-v4.1-flash-free#high",
         "standard": "opencode/deepseek-v4.1-flash-free#high",
         "heavy": "opencode/deepseek-v4.1-flash-free#high"
       }
