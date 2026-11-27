@@ -33,8 +33,8 @@
   "models": {
     "codex": {
       "light": "gpt-6-luna",
-      "standard": "gpt-6.1-sol",
-      "heavy": "gpt-6.1-sol"
+      "standard": "gpt-6.2-sol",
+      "heavy": "gpt-6.2-sol"
     },
     "opencode": {
       "light": "opencode/deepseek-v4.1-flash-free#high",
